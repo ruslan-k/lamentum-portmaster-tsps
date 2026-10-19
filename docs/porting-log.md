@@ -909,3 +909,21 @@ Every sampled frame is still black, and all window draws are configured correctl
 1280x720, scissor larger than the target, destination blend factor ZERO). Until a run reaches frames past
 the first few, the "loading screen vs black shader output" question stays open, and the concrete blocker
 is now the completion/error bookkeeping of the present path, not the drawing state.
+
+## The pending 0x505 is not our framebuffer
+
+Three checks in the synchronous-queue path (build-113 + env runs):
+
+1. binding the panel target **before** the present quad (so the quad cannot land in the default
+   framebuffer of an invalidated surface) - the stop is unchanged:
+   `NVN_QUEUE_FINISH_ERROR detail=0x505`;
+2. `COTM_FBO_CHECK=1` (completeness of every cached framebuffer bind) - **no** `NVN_FBO_STALE` lines, so
+   the framebuffer bound when the error surfaces is complete;
+3. `COTM_GL_ERROR_PER_OP=1` inside the replay loop - no per-op error, so the offending call is outside the
+   replay dispatch (present path or a context/surface switch).
+
+So the error is generated where the *current surface* is not valid for the current context - the same
+family as the `EGL_BAD_SURFACE` measured earlier - rather than by a framebuffer attachment. The next
+diagnostic must print, at the moment `nvn_gl_finish_current` sees the error, the bound framebuffer, its
+completeness, the EGL draw/read surface and the EGL context. That is the only remaining unknown between
+the current state and a long run that can answer the black-frame question.

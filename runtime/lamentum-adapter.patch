@@ -646,7 +646,7 @@ index 410deb4..7269206 100644
  }
  /* Called after Submit, outside the producer/regions locks. A quick atomic
 diff --git a/native/nvn_present.h b/native/nvn_present.h
-index 8c0254b..6d76859 100644
+index 8c0254b..a9e26f1 100644
 --- a/native/nvn_present.h
 +++ b/native/nvn_present.h
 @@ -13,6 +13,20 @@
@@ -690,16 +690,20 @@ index 8c0254b..6d76859 100644
          /* This is a logical context use even though its physical binding is
           * retained. Do not reuse a completion proof from before the quad. */
          if(!++nvn_gl_completion.use_serial)stop("NVN_GL_SERIAL_WRAP",nvn_caller,0,24);
-@@ -199,7 +213,7 @@ static unsigned nvn_present_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -199,15 +213,19 @@ static unsigned nvn_present_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
      }
      nvn_present_setup();
      momo_stencil_selftest();
 -    if(!nvn_single_make_current(nvn_window.surface,nvn_window.surface,nvn_present.context))stop("NVN_PRESENT_CONTEXT",nvn_caller,eglGetError(),21);
 +    nvn_present_bind(nvn_present.context,nvn_caller);
      t2_present_gpu_wait_issue(); /* FRENTE-C: GPU-side order after the frame (T2_PRESENT_GPU_WAIT=1) */
++    /* Bind the panel target before the quad: with panel presentation the default framebuffer is the
++     * pbuffer (or the window surface, which the driver has already invalidated), and drawing the quad
++     * there is what sets GL_INVALID_FRAMEBUFFER_OPERATION (0x505) for the rest of the frame. */
++    if(nvn_fb_present_enabled())nvn_fb_present_bind();
      nvn_single_present_quad(nvn_present.program,nvn_present.vertices);
      struct nvn_texture *t=nvn_window.textures[index];unsigned width=nvn_window.fb.width,height=nvn_window.fb.height;
-@@ -207,7 +221,7 @@ static unsigned nvn_present_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+ #ifdef ANIMAL_WELL_SHADERS
      if(aw_fbcopy_enabled()){aw_fbcopy_open(width,height);glBindFramebuffer(GL_FRAMEBUFFER,aw_fbcopy.fbo);}
      else glBindFramebuffer(GL_FRAMEBUFFER,0);
  #else
@@ -708,7 +712,7 @@ index 8c0254b..6d76859 100644
  #endif
      const nxcompat_video_owner_decision *video=t2_video_layout(
          (int)((uint64_t)nvn_window.crop[2]*nvn_low_render_width(t)/t->b.width),
-@@ -231,6 +245,39 @@ static unsigned nvn_present_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -231,6 +249,39 @@ static unsigned nvn_present_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
      glUniform2f(nvn_present.image_scale,scale*nvn_window.crop[2]/t->b.width,scale_y*nvn_window.crop[3]/t->b.height);
      glUniform2f(nvn_present.image_offset,scale*nvn_window.crop[0]/t->b.width,scale_y*nvn_window.crop[1]/t->b.height);
      glDrawArrays(GL_TRIANGLE_STRIP,0,4);nvn_present.frames++;
@@ -748,7 +752,7 @@ index 8c0254b..6d76859 100644
      if(t2_video_needs_readback()) {
          GLint viewport[4];EGLint measured_w=0,measured_h=0;
          glGetIntegerv(GL_VIEWPORT,viewport);
-@@ -308,7 +355,21 @@ static unsigned nvn_present_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -308,7 +359,21 @@ static unsigned nvn_present_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
  #ifdef ANIMAL_WELL_SHADERS
      if(aw_fbcopy_enabled())aw_fbcopy_present();else {
          nxgl_frame_proof_before_present(width,height);
