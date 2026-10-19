@@ -1085,3 +1085,30 @@ delivered to the slots it binds - yet no pixel differs from black. Whatever rema
 locations not resolving for the rewritten `sampler2D` uniforms, the vertex attribute layout, or the title
 still being inside its loading screen at these early frames. Each is a bounded measurement, but they are
 measurements in a chain of them, not a last step.
+
+## The cbuf uniforms resolve and bind - and two names collide on one location
+
+`COTM_CBUF_GL=6` checks the rewritten sampler uniforms after upload:
+
+```
+NVN_CBUF_GL name=c4_1 location=0 unit-now=15 avail=368 floats=92 texels=23
+NVN_CBUF_GL name=c4   location=0 unit-now=15 avail=176 floats=44 texels=11
+NVN_CBUF_GL name=c3   location=2 unit-now=15 avail=16  floats=4  texels=1
+```
+
+The unit assignment sticks (`glGetUniformiv` reads back 15) and the uploads carry the title's bytes. But
+`c4` and `c4_1` - two different blocks - both report **location 0**, so the second upload overwrites the
+first and the shader can only ever see one of them. Locations are resolved once by name after linking
+(`nvn_shaders.h:609`), so either the two names do not both exist in the linked program and the lookup
+returns a value that is not -1, or the catalogue entry and the runtime index are paired wrongly.
+
+With that collision, the vertex shader still reads a partially wrong cbuf and the frame stays black
+(`nonblack=0`, `max=0` at frames 1 and 2).
+
+Status of the port after this session, stated plainly: the title loads, initialises the SDK and the
+platform service (with a real shared font), compiles and links 34 translated ESSL 3 shaders, draws 31
+times with correct state, presents through a panel path, and the cbuf bytes reach the sampler uniforms.
+Six distinct layers of the WoL-derived runtime have been measured and five fixed. The picture is still
+black, and each remaining candidate (this location collision, the attribute layout, the possibility that
+the title is simply still on its loading screen at these frames) is a separate measurement in a chain,
+not a final step.
