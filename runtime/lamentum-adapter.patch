@@ -1,3 +1,35 @@
+diff --git a/native/graphics_trace.h b/native/graphics_trace.h
+index f85a59d..13390cf 100644
+--- a/native/graphics_trace.h
++++ b/native/graphics_trace.h
+@@ -25,12 +25,24 @@ static unsigned graphics_trace_entry(uint64_t pc,uint32_t instruction,ucontext_t
+         if(n==128)stop("GRAPHICS_QUERY_LENGTH",pc,n,24);
+     }
+     emit(&log);
+-    if(i<2 && (instruction&0xffc07fffU)==0xa9807bfdU) {
+-        /* stp x29,x30,[sp,#-N]! : replay the exact pinned prologue store. */
++    if(i<2 && (instruction&0xffc00000U)==0xa9800000U) {
++        /* stp xA,xB,[sp,#-N]! : pre-indexed pair store. Replay the exact pinned prologue:
++         * the two stored registers are whatever the instruction names (the title's SDK may
++         * frame x19/x20 rather than x29/x30), and the immediate is the signed imm7*8. */
+         int64_t imm=(int64_t)((int32_t)(((instruction>>15)&0x7f)<<25)>>25)*8;
++        unsigned ra=instruction&0x1f, rb=(instruction>>10)&0x1f;
+         uint64_t sp=ctx->uc_mcontext.sp+imm;
+         if(!accessible(sp,16,PROT_WRITE))stop("GRAPHICS_TRACE_STACK",pc,sp,24);
+-        memcpy((void *)(uintptr_t)sp,&ctx->uc_mcontext.regs[29],16);ctx->uc_mcontext.sp=sp;
++        uint64_t pair[2]={ra<31?ctx->uc_mcontext.regs[ra]:0,rb<31?ctx->uc_mcontext.regs[rb]:0};
++        memcpy((void *)(uintptr_t)sp,pair,16);ctx->uc_mcontext.sp=sp;
++    } else if(i<2 && (instruction&0xffe00c00U)==0xf8000c00U) {
++        /* str xT,[sp,#-N]! : single-register pre-indexed store (this SDK's bootstrap opens
++         * with "str x20,[sp,#-0x20]!"). */
++        int64_t imm=(int64_t)((int32_t)((instruction>>12)&0x1ff)<<23)>>23;
++        unsigned rt=instruction&0x1f;
++        uint64_t sp=ctx->uc_mcontext.sp+imm,value=rt<31?ctx->uc_mcontext.regs[rt]:0;
++        if(!accessible(sp,8,PROT_WRITE))stop("GRAPHICS_TRACE_STACK",pc,sp,24);
++        memcpy((void *)(uintptr_t)sp,&value,8);ctx->uc_mcontext.sp=sp;
+     } else if(i<2 && (instruction&0xffc003ffU)==0xd10003ffU) {
+         /* sub sp,sp,#imm12 */
+         ctx->uc_mcontext.sp-=(instruction>>10)&0xfff;
 diff --git a/native/nvn_commands.h b/native/nvn_commands.h
 index 1aa4c67..1b86124 100644
 --- a/native/nvn_commands.h
@@ -36,3 +68,28 @@ index 0feaef1..ab194b5 100644
  static void zero_record_target_view(uint64_t object,const uint8_t *view,unsigned attachment) {
      struct nvn_texture *t=object?nvn_texture_find(object):NULL;
  #ifdef MOMO_SHADERS
+diff --git a/native/nvn_window.h b/native/nvn_window.h
+index 241c564..6a61515 100644
+--- a/native/nvn_window.h
++++ b/native/nvn_window.h
+@@ -51,8 +51,18 @@ static unsigned nvn_window_dispatch(unsigned id,struct nvn_frame *f,uint64_t *re
+         /* Animal Well SDK 17.5.3 window builder (measured): +8 device, +0x10 count, +0x18 native window,
+          * +0x20 present interval minus one, +0x28 textures pointer. */
+         struct nvn_window_builder b;const uint8_t *raw=nvn_pointer(a[1],0x30,PROT_READ);
+-        memset(&b,0,sizeof(b));memcpy(&b.device,raw+8,8);memcpy(&b.count,raw+0x10,4);memcpy(&b.native,raw+0x18,8);
+-        memcpy(&b.interval_minus_one,raw+0x20,4);memcpy(&b.textures,raw+0x28,8);
++        /* Diagnostic: dump the untouched builder words so the layout for THIS SDK is measured
++         * instead of assumed (LC2_WINDOW_DUMP=1; the layout below is inherited from another title). */
++        {const char *wd=getenv("LC2_WINDOW_DUMP");
++         if(wd && strcmp(wd,"0")){struct line d={0};text(&d,"LC2_WINDOW_RAW builder=");hex(&d,a[1]);text(&d,":");
++          for(unsigned i=0;i<0x30;i+=8){uint64_t q;memcpy(&q,raw+i,8);text(&d," ");hex(&d,q);}emit(&d);}}
++        /* MEASURED for this SDK generation (Lamentum, SDK 10.9.0.0), not inherited: a raw dump of the
++         * builder at the contract check showed {+0x00 pad, +0x08 device, +0x10 count, +0x18 textures
++         * pointer (guest stack array), +0x20 native window, +0x28 present interval}. The inherited
++         * 17.5.3 profile (native +0x18, interval +0x20, textures +0x28) read the native-window object
++         * as the interval and NULL as the texture array. */
++        memset(&b,0,sizeof(b));memcpy(&b.device,raw+8,8);memcpy(&b.count,raw+0x10,4);memcpy(&b.textures,raw+0x18,8);
++        memcpy(&b.native,raw+0x20,8);memcpy(&b.interval_minus_one,raw+0x28,4);
+         if(!nvn_device.live || b.device!=nvn_device.address || nvn_window.live || !layer.opened || !b.native || b.count<2 || b.count>3)
+             stop("NVN_WINDOW_CONTRACT",nvn_caller,b.count,24);
+         if(b.interval_minus_one<-1 || b.interval_minus_one>0)stop("NVN_WINDOW_INTERVAL_REQUIRED",nvn_caller,b.interval_minus_one,20);

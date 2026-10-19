@@ -26,6 +26,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--budget', type=int, default=90, help='MEGAMAN_PROBE_SECONDS for the run')
     ap.add_argument('--wait', type=int, default=180, help='seconds to watch the run')
+    ap.add_argument('--env', action='append', default=[], help='extra KEY=VALUE exported before the launch')
     ap.add_argument('--evidence', type=pathlib.Path, default=None)
     a = ap.parse_args()
 
@@ -39,8 +40,9 @@ def main():
         return 2
 
     ssh('truncate -s 0 %s/logs/latest.log' % PORT_DIR)
-    cmd = ('export LAMENTUM_PROBE_SECONDS=%d;chmod a+x "%s";"%s" "%s"\n'
-           % (a.budget, STD_LAUNCH, STD_LAUNCH, LAUNCHER))
+    exports = ' '.join('export %s;' % e for e in a.env)
+    cmd = ('%sexport LAMENTUM_PROBE_SECONDS=%d;chmod a+x "%s";"%s" "%s"\n'
+           % (exports + (' ' if exports else ''), a.budget, STD_LAUNCH, STD_LAUNCH, LAUNCHER))
     ssh("cat > /tmp/cmd_to_run.sh <<'EOF'\n%sEOF\nchmod a+x /tmp/cmd_to_run.sh; sh -n /tmp/cmd_to_run.sh && echo cmd-ok" % cmd)
     print(ssh('sh -n /tmp/cmd_to_run.sh && echo syntax-ok').stdout.strip())
 

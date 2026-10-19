@@ -122,3 +122,70 @@ of the fault from inside the runtime, i.e. log the global before the first `Allo
 If it is NULL, the SDK's own init for VAMM did not run/complete on this title, and the question
 becomes which init call the runtime answered differently (candidates: `svcGetInfo` heap/ASLR
 information and the `InitializeVirtualAddressMemory` tail call through the bridge at `0x0bd5af80`).
+
+## Runs 04-09 — the boot frontier moves into NVN
+
+Each run below is one bounded principal-flow launch; `evidence/device-0N/` holds the port log
+and the post-run device state (always `runtime procs=0 mainui=1 cpu-online=4-7`).
+
+### Run 04 — relocation check by measurement
+
+`MOMO_DUMP=0xc452140:0x100` at the stop showed the SDK's data table **is** relocated correctly
+(word at `0x0c452180` = `0x0c4c5018`, a valid `sdk.data` pointer), so run 03's NULL `this` was
+not a relocation failure.
+
+### Runs 05-06 — the actual cause: `svcGetInfo(16)` reported 0
+
+The runtime's own source documents the rule (`loader.c`, `case 16`):
+
+```
+/* MOMODORA (MEDIDO): Unity 2021 calls nn::os::AllocateAddressRegion unconditionally, so
+ * VammManager::InitializeIfEnabled must enable itself. It enables on InfoType 16
+ * (SystemResourceSizeTotal) != 0; the NPDM of this title declares 16 MiB. */
+case 16:value=LC2_SYSTEM_RESOURCE_SIZE;break;
+```
+
+My owner-image generator had copied a constant `LC2_SYSTEM_RESOURCE_SIZE 0`, so the guest's SDK
+saw system-resource size 0, skipped the VAMM init, and then dereferenced the unconstructed
+address-region manager — exactly the `ldr x0,[x0,#0xa8]` fault of run 03.
+`tools/prepare_lamentum_image.py` now reads the value from the title's own NPDM (`META` header,
+`+0x14`): **16 MiB** for this title, and refuses to build an image when it is 0.
+
+Result (run 06): the guest built its SDK managers, created 24+ threads, made 138 `QueryMemory`
+calls and reached **NVN** (`nvnBootstrapLoader`).
+
+### Run 06-08 — graphics entry trace and the window builder layout
+
+- `GRAPHICS_TRACE_PROLOGUE` at `nvnBootstrapLoader`: this SDK's bootstrap opens with
+  `str x20,[sp,#-0x20]!`, while the adapter only replayed `stp x29,x30` / `sub sp,sp,#imm`.
+  The adapter patch now replays any pre-indexed `stp`/`str` prologue (the instruction's own
+  registers and signed immediate), so the trace stays a faithful replay rather than a guess.
+- `NVN_WINDOW_INTERVAL_REQUIRED`: the adapter decoded the window builder with the inherited
+  17.5.3 profile (native +0x18, interval +0x20, textures +0x28) and read `+0x20` as the interval.
+  `LC2_WINDOW_DUMP=1` printed the raw builder and the runtime's own NVN call trace named every
+  field, so the layout is **measured** now:
+
+  | offset | field | evidence |
+  |---|---|---|
+  | +0x08 | device | `nvnWindowBuilderSetDevice(builder, 0x340d70010)` |
+  | +0x10 | texture count | `nvnWindowBuilderSetTextures(builder, 3, 0x600ffa80)` |
+  | +0x18 | textures pointer | same call, array on the guest stack |
+  | +0x20 | native window | `nvnWindowBuilderSetNativeWindow(builder, 0x340d77020)` |
+  | +0x28 | present interval (minus one) | `nvnWindowBuilderSetPresentInterval(builder, 1)` |
+
+### Run 09 — current frontier: the shader catalogue
+
+```
+NVN_WINDOW_REAL framebuffer=1280x720 bpp=32 textures=3 context-preserved=1 no-draw-no-present
+ZERO_SHADER_UNRECOGNIZED code-bytes=256 control-bytes=2176 \
+  code-hash=b3913c5cf5773c0e3a8d943f162b9d6d94297f269402690306575186a56e88ff \
+  control-hash=b30b42eb5e91adc2a62a805707923b3704a7eefd916c04d3ae327cf1453a8a87
+STOP status=ZERO_SHADER_NOT_PINNED pc=main.text.seg+0x542f1c
+```
+
+The runtime now creates the real 1280x720 window (three textures, context preserved, nothing
+drawn or presented), Unity submits its first shader program, and the build - which ships the
+empty catalogue stub - refuses to guess a translation. That refusal is the honest state of the
+port: **no frame has been rendered yet**, and the shader catalogue is the next work item.
+
+Current installed runtime: `lamentum-nextos` SHA-256 `85d4211b5e82e426eaca5d3e3b2cde44eb9d43c6d39237b2491f48b75ca0aace`.

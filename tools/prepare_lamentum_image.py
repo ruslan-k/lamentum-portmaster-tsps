@@ -49,6 +49,15 @@ def main():
     mods = {n: inspect_nso(a.exefs / n) for n in MODULE_ORDER}
     if a.output.exists():
         raise ValueError('output must not exist')
+    # The SDK enables virtual address memory (VAMM) only when svcGetInfo(16) reports a
+    # non-zero system resource size, so this value must come from the title's own NPDM
+    # instead of a borrowed constant.
+    npdm_raw = (a.exefs / 'main.npdm').read_bytes()
+    if npdm_raw[:4] != b'META' or len(npdm_raw) < 0x20:
+        raise ValueError('main.npdm is not an NPDM')
+    system_resource_size = struct.unpack_from('<I', npdm_raw, 0x14)[0]
+    if system_resource_size == 0:
+        raise ValueError('NPDM declares no system resource size; VAMM cannot be enabled')
 
     subprocess.run([sys.executable, str(pathlib.Path(__file__).with_name('prepare_image.py')),
                     str(a.exefs), str(a.output)], check=True)
@@ -125,7 +134,7 @@ def main():
          '#define LC2_MAIN_CORE %d' % npdm['default_cpu_id'],
          '#define LC2_ALLOWED_CORE_MASK 7ULL',
          '#define LC2_ALLOWED_PRIORITY_MASK 0x%xULL' % sum(1 << i for i in range(28, 60)),
-         '#define LC2_SYSTEM_RESOURCE_SIZE 0ULL',
+         '#define LC2_SYSTEM_RESOURCE_SIZE 0x%xULL' % system_resource_size,
          '#define ROMFS_SECTION_NAME "lamentum-romfs.section"',
          '#define ROMFS_SECTION_SIZE %dULL' % rom['section_size'],
          '#define ROMFS_OFFSET %dULL' % rom['romfs_offset'],
