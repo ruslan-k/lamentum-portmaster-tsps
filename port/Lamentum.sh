@@ -37,6 +37,10 @@ export SDL_NO_SIGNAL_HANDLERS=1
 # TSPS trimsui virtual pad: SDL GUID carries a CRC16 of the device name.
 export SDL_GAMECONTROLLERCONFIG='0300a3845e0400008e02000014010000,TRIMUI Player1,a:b0,b:b1,back:b6,dpdown:h0.4,dpleft:h0.8,dpright:h0.2,dpup:h0.1,guide:b8,leftshoulder:b4,leftstick:b9,lefttrigger:a2,leftx:a0,lefty:a1,rightshoulder:b5,rightstick:b10,righttrigger:a5,rightx:a3,righty:a4,start:b7,x:b2,y:b3,platform:Linux,'
 export COTM_RUN_ID=$(date +%s)
+# The baseline's lazy-mesh IL2CPP patch is keyed to another title's main module (segment size
+# and text SHA-256 pins); on this title it fail-closes as T2_LAZY_MESH_SEGMENT. It is a load-time
+# optimisation only, so it stays off here.
+export T2_LAZY_MESH="${T2_LAZY_MESH:-0}"
 # Bounded diagnostic budget; 0 = no alarm (ordinary play).
 export MEGAMAN_PROBE_SECONDS="${LAMENTUM_PROBE_SECONDS:-0}"
 export AW_RELEASE="${AW_RELEASE:-1}"
