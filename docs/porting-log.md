@@ -357,3 +357,29 @@ data-partition variants.
 Status before this is solved: the port boots the original game code, creates its NVN device and
 1280x720 window, uploads textures, and stops on the first program whose semantics ESSL2 cannot
 express. No frame has been rendered.
+
+## Run 21 — the shader-model ceiling, measured
+
+Two capability experiments, both real:
+
+1. **The runtime runs on an OpenGL ES 3 context.** `LC2_GLES3=1` switches the EGL renderable
+   type and context version; the run then uploads the same textures and reaches the same shader
+   request (`ZERO_SHADER_NOT_PINNED`). So the ES2 request is not a driver limitation - the ceiling
+   can be raised without breaking the recorded-command path.
+2. **The translator can emit GLSL ES.** `shader-compiler-cli --es 310` adds an ESSL 3.10 target
+   (spirv-cross `V3_10Es`, `vulkan_semantics=false`). The ten built-in programs still translate.
+   The captured skinned vertex program fails with:
+
+   ```
+   Buffer block cannot be expressed as any of std430, std140, scalar, even with enhanced layouts.
+   You can try flattening this block to support a more flexible layout.
+   ```
+
+   i.e. its SSBO uses a scalar layout ESSL 3.10 cannot declare as an SSBO. Rendering that program
+   on this backend therefore needs either a flattened SSBO layout or a texture-based bone-matrix
+   feed - both are per-program re-authoring, not a flag.
+
+Verdict recorded for the record: the port's remaining work is the shader-catalogue phase (one
+re-authored program family per material plus the data-partition variants), followed by command
+replay, memory, audio and input. That is a multi-week effort of the same shape as the West of
+Loathing port, not a continuation of the contract fixes that carried runs 01-21.
