@@ -546,7 +546,7 @@ index 90771fd..cd8e278 100644
          unsigned slot=4096;
          for(unsigned i=0;i<4096;i++) {
 diff --git a/native/nvn_shaders.h b/native/nvn_shaders.h
-index 0fb14ec..ad53efa 100644
+index 0fb14ec..3d050e8 100644
 --- a/native/nvn_shaders.h
 +++ b/native/nvn_shaders.h
 @@ -24,6 +24,103 @@ struct nvn_uniform {char name[64];uint32_t stage,binding,offset,size,kind,texel_
@@ -672,7 +672,53 @@ index 0fb14ec..ad53efa 100644
      printf("ZERO_SHADER_UNRECOGNIZED code-bytes=%u control-bytes=%u code-hash=",code_size,control_size);
      for(unsigned i=0;i<32;i++)printf("%02x",code_hash[i]);
      printf(" control-hash=");for(unsigned i=0;i<32;i++)printf("%02x",control_hash[i]);putchar('\n');
-@@ -455,7 +564,9 @@ static void nvn_program_link(struct nvn_program *p) {
+@@ -272,11 +381,19 @@ static void nvn_program_link(struct nvn_program *p) {
+ #endif
+         if(fragment->wave_contract && (p->sources[0]!=17 || p->sources[1]!=16))
+             stop("NVN_LC2_WAVE_STAGE_PAIR_REQUIRED",nvn_caller,p->sources[0],20);
+-        unsigned varying_vectors=0;
++        unsigned varying_vectors=0,missing_varyings=0;
+         for(unsigned i=0;i<ZERO_SHADER_VARYING_SLOTS;i++)if(fragment->varying_read_masks[i]) {
+             varying_vectors++;
+-            if(fragment->varying_read_masks[i]&~vertex->varying_write_masks[i])
+-            stop("NVN_LC2_SHADER_UNDEFINED_VARYING",nvn_caller,i,20);
++            if(fragment->varying_read_masks[i]&~vertex->varying_write_masks[i]) {
++                /* Mali refuses to link a fragment input that its vertex partner never declares (L0007),
++                 * while the console accepts an unmatched varying and simply leaves it undefined. The
++                 * vertex interface is completed below with an unwritten declaration, so the pair links
++                 * and the value stays as undefined as it was on the console. */
++                struct line b={0};text(&b,"NVN_VARYING_UNDECLARED location=");hex(&b,i);
++                text(&b," read=");hex(&b,fragment->varying_read_masks[i]);
++                text(&b," written=");hex(&b,vertex->varying_write_masks[i]);emit(&b);
++                missing_varyings++;
++            }
+         }
+         GLint varying_limit=0;glGetIntegerv(GL_MAX_VARYING_VECTORS,&varying_limit);
+         if(varying_vectors>(unsigned)varying_limit)stop("ZERO_SHADER_ACTIVE_VARYING_CAPACITY",nvn_caller,varying_vectors,20);
+@@ -328,6 +445,22 @@ static void nvn_program_link(struct nvn_program *p) {
+                 }
+             }
+ #endif
++            char *completion=NULL;
++            if(!i && missing_varyings) {
++                char add[512];size_t used=0;add[0]=0;
++                for(unsigned k=0;k<ZERO_SHADER_VARYING_SLOTS;k++) {
++                    if(!fragment->varying_read_masks[k])continue;
++                    if(!(fragment->varying_read_masks[k]&~vertex->varying_write_masks[k]))continue;
++                    char name[32];snprintf(name,sizeof name,"varying_%u",k);
++                    if(strstr(source,name))continue;
++                    if(used+40<sizeof add)used+=snprintf(add+used,sizeof add-used,"out vec4 %s;\n",name);
++                }
++                if(used) {
++                    completion=malloc(strlen(source)+used+1);
++                    if(completion){strcpy(completion,source);strcat(completion,add);source=completion;
++                        printf("NVN_VARYING_COMPLETED declarations=%u\n",missing_varyings);}
++                }
++            }
+             char *interface_source=NULL;
+             if(!i && ZERO_SHADER_VARYING_SLOTS>8) {
+                 interface_source=zero_shader_vertex_varyings(source,fragment->varying_read_masks,ZERO_SHADER_VARYING_SLOTS);
+@@ -455,7 +588,9 @@ static void nvn_program_link(struct nvn_program *p) {
                          printf("MOMO_DIAG_RED_INSTALLED program=%u vertex=%u fragment=%u\n",p->name,p->sources[0],p->sources[1]);}
                  }
              }

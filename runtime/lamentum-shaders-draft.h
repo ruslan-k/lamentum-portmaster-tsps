@@ -173,8 +173,10 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 " * log marks it TEST and no picture claim may rest on it. */\n"
 	 "in vec4 in_attr0;\n"
 	 "in vec4 in_attr1;\n"
-	 "out vec4 out_attr0;\n"
-	 "void main() { gl_Position = vec4(in_attr0.xy, in_attr0.z, 1.0); out_attr0 = in_attr1; }\n"
+	 "layout(location = 1) out vec4 varying_1;\n"
+	 "layout(location = 2) out vec4 varying_2;\n"
+	 "layout(location = 3) out vec4 varying_3;\n"
+	 "void main() { gl_Position = vec4(in_attr0.xy, in_attr0.z, 1.0); varying_1 = in_attr1; varying_2 = in_attr1; varying_3 = in_attr1; }\n"
 	 "", 0},
 	/* 6 dump-33650b4b fragment */
 	{"", "\n"
@@ -182,7 +184,7 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "precision mediump float;\n"
 	 "out vec4 frag_color0;\n"
 	 "/* TEST-ONLY substitute: NOT a translation (see the vertex stage note). */\n"
-	 "in vec4 out_attr0;\n"
+	 "in vec4 varying_1;\n"
 	 "void main() { frag_color0 = vec4(0.5, 0.5, 0.5, 1.0); }\n"
 	 "", 1},
 	/* 7 dump-3a41323d vertex */
@@ -394,7 +396,7 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "precision mediump float;\n"
 	 "out vec4 frag_color0;\n"
 	 "/* TEST-ONLY substitute: NOT a translation (see the vertex stage note). */\n"
-	 "in vec4 out_attr0;\n"
+	 "in vec4 varying_1;\n"
 	 "void main() { frag_color0 = vec4(0.5, 0.5, 0.5, 1.0); }\n"
 	 "", 1},
 	/* 14 dump-800121db fragment */
@@ -605,7 +607,7 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "precision mediump float;\n"
 	 "out vec4 frag_color0;\n"
 	 "/* TEST-ONLY substitute: NOT a translation (see the vertex stage note). */\n"
-	 "in vec4 out_attr0;\n"
+	 "in vec4 varying_1;\n"
 	 "void main() { frag_color0 = vec4(0.5, 0.5, 0.5, 1.0); }\n"
 	 "", 1},
 	/* 20 dump-d032944a fragment */
@@ -650,7 +652,7 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "precision mediump float;\n"
 	 "out vec4 frag_color0;\n"
 	 "/* TEST-ONLY substitute: NOT a translation (see the vertex stage note). */\n"
-	 "in vec4 out_attr0;\n"
+	 "in vec4 varying_1;\n"
 	 "void main() { frag_color0 = vec4(0.5, 0.5, 0.5, 1.0); }\n"
 	 "", 1},
 	/* 22 dump-e6091e72 fragment */
@@ -755,7 +757,7 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "precision mediump float;\n"
 	 "out vec4 frag_color0;\n"
 	 "/* TEST-ONLY substitute: NOT a translation (see the vertex stage note). */\n"
-	 "in vec4 out_attr0;\n"
+	 "in vec4 varying_1;\n"
 	 "void main() { frag_color0 = vec4(0.5, 0.5, 0.5, 1.0); }\n"
 	 "", 1},
 	/* 27 main-86ef08 fragment */
@@ -764,7 +766,7 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "precision mediump float;\n"
 	 "out vec4 frag_color0;\n"
 	 "/* TEST-ONLY substitute: NOT a translation (see the vertex stage note). */\n"
-	 "in vec4 out_attr0;\n"
+	 "in vec4 varying_1;\n"
 	 "void main() { frag_color0 = vec4(0.5, 0.5, 0.5, 1.0); }\n"
 	 "", 1},
 	/* 28 main-86fcc8 fragment */
@@ -773,7 +775,7 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "precision mediump float;\n"
 	 "out vec4 frag_color0;\n"
 	 "/* TEST-ONLY substitute: NOT a translation (see the vertex stage note). */\n"
-	 "in vec4 out_attr0;\n"
+	 "in vec4 varying_1;\n"
 	 "void main() { frag_color0 = vec4(0.5, 0.5, 0.5, 1.0); }\n"
 	 "", 1},
 	/* 29 main-870b88 fragment */
@@ -782,7 +784,7 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "precision mediump float;\n"
 	 "out vec4 frag_color0;\n"
 	 "/* TEST-ONLY substitute: NOT a translation (see the vertex stage note). */\n"
-	 "in vec4 out_attr0;\n"
+	 "in vec4 varying_1;\n"
 	 "void main() { frag_color0 = vec4(0.5, 0.5, 0.5, 1.0); }\n"
 	 "", 1},
 	/* 30 main-871848 fragment */
@@ -791,7 +793,7 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "precision mediump float;\n"
 	 "out vec4 frag_color0;\n"
 	 "/* TEST-ONLY substitute: NOT a translation (see the vertex stage note). */\n"
-	 "in vec4 out_attr0;\n"
+	 "in vec4 varying_1;\n"
 	 "void main() { frag_color0 = vec4(0.5, 0.5, 0.5, 1.0); }\n"
 	 "", 1},
 	/* 31 main-872608 fragment */
@@ -800,7 +802,7 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "precision mediump float;\n"
 	 "out vec4 frag_color0;\n"
 	 "/* TEST-ONLY substitute: NOT a translation (see the vertex stage note). */\n"
-	 "in vec4 out_attr0;\n"
+	 "in vec4 varying_1;\n"
 	 "void main() { frag_color0 = vec4(0.5, 0.5, 0.5, 1.0); }\n"
 	 "", 1},
 	/* 32 main-8734c8 vertex */

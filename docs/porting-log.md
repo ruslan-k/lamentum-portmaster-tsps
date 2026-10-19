@@ -672,3 +672,21 @@ draws 17 per run (was 11), two render targets cleared with real colours, and the
 one: `NVN_LC2_SHADER_UNDEFINED_VARYING detail=0x1` - a fragment reading `varying_1` that its vertex
 partner does not write, i.e. the remaining work is pairing varyings per program (the builder renames by
 location, so the offending pair must disagree on which locations the vertex writes).
+
+### Varyings completed instead of failing closed; 29 draws, and the replay now reports GL state
+
+The `NVN_LC2_SHADER_UNDEFINED_VARYING` stop was Mali-specific: the console accepts an unmatched varying
+(the value is undefined), Mali refuses to link a fragment input its vertex partner never declares
+(`L0007`). The runtime now records the gap, appends `out vec4 varying_<n>;` to the vertex stage
+(unwritten, exactly as undefined as on the console) and continues:
+
+```
+NVN_VARYING_UNDECLARED location=0x1 read=0x3 written=0x0
+NVN_VARYING_COMPLETED declarations=1
+MOMO_CLEAR_COLOR target=2 rgba=0,0,0,1 mask=0xf draws=29
+STOP status=NVN_REPLAY_GL_ERROR detail=0x505
+```
+
+draws 29 (17 before, 11 at the start of this run of fixes), three targets cleared, and the next stop is
+`detail=0x505` = `GL_INVALID_FRAMEBUFFER_OPERATION` during replay: something draws into an incomplete
+framebuffer. That is the next concrete gate - a framebuffer completeness question, not a shader one.

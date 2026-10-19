@@ -121,18 +121,21 @@ PLACEHOLDER_VERTEX = ('#version 300 es\n'
                      ' * log marks it TEST and no picture claim may rest on it. */\n'
                      'in vec4 in_attr0;\n'
                      'in vec4 in_attr1;\n'
-                     'out vec4 out_attr0;\n'
-                     'void main() { gl_Position = vec4(in_attr0.xy, in_attr0.z, 1.0); out_attr0 = in_attr1; }\n')
+                     'layout(location = 1) out vec4 varying_1;\n'
+                     'layout(location = 2) out vec4 varying_2;\n'
+                     'layout(location = 3) out vec4 varying_3;\n'
+                     'void main() { gl_Position = vec4(in_attr0.xy, in_attr0.z, 1.0);'
+                     ' varying_1 = in_attr1; varying_2 = in_attr1; varying_3 = in_attr1; }\n')
 
 
 def placeholder_fragment(sampler_names):
     """TEST-ONLY fragment: one texel of the first sampler, or mid grey when the program has none."""
     if sampler_names:
         body = ('uniform sampler2D %s;\n'
-                'in vec4 out_attr0;\n'
-                'void main() { frag_color0 = texture(%s, out_attr0.xy); }\n' % (sampler_names[0], sampler_names[0]))
+                'in vec4 varying_1;\n'
+                'void main() { frag_color0 = texture(%s, varying_1.xy); }\n' % (sampler_names[0], sampler_names[0]))
     else:
-        body = 'in vec4 out_attr0;\nvoid main() { frag_color0 = vec4(0.5, 0.5, 0.5, 1.0); }\n'
+        body = 'in vec4 varying_1;\nvoid main() { frag_color0 = vec4(0.5, 0.5, 0.5, 1.0); }\n'
     return ('#version 300 es\nprecision mediump float;\nout vec4 frag_color0;\n'
             '/* TEST-ONLY substitute: NOT a translation (see the vertex stage note). */\n' + body)
 
@@ -177,6 +180,12 @@ def component_masks(glsl, decl):
     for m in re.finditer(r'layout\(location = (\d+)\) ' + decl + r' (\w+)\s+(\w+);', glsl):
         loc, base = int(m.group(1)), m.group(3)
         mask = 0
+        # A whole-vector write carries every component (the placeholders and many real programs do this).
+        whole = re.findall(r'\b%s\s*=\s*([^;]+);' % re.escape(base), glsl)
+        whole_literal = bool(whole) and all(re.fullmatch(r'[-\d\.eEf]+|vec\d\([^)]*\)', a.strip()) for a in whole)
+        if whole and not whole_literal:
+            masks[loc] = 15
+            continue
         for comp, bit in (('x', 1), ('y', 2), ('z', 4), ('w', 8)):
             assign = re.findall(r'%s\.%s\s*=\s*([^;]+);' % (re.escape(base), comp), glsl)
             used = re.search(r'%s\.%s\b' % (re.escape(base), comp), glsl)
