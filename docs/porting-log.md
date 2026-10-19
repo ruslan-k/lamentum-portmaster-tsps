@@ -277,3 +277,19 @@ Two fixes landed here, both measured rather than guessed:
 
 Frontier: `NVN_RENDER_TARGET_VIEWS_REQUIRED` — the guest binds a render target with an implicit
 view; the next measurement is what this SDK's `nvnCommandBufferSetRenderTargets` actually passes.
+
+### The render-target frontier, measured (run 13)
+
+```
+NVN_TEXTURE_REAL object=0x340dd3018 format=0x35 size=1920x1080 levels=1 depth=1
+NVN_CALL name=nvnCommandBufferSetRenderTargets caller=main.text.seg+0x53024c
+  arg=cmd 0x3403c1390  arg=count 0x1  arg=targets 0x6a5e9aa0  arg=views 0x6a5e9a60
+  arg=depthStencil 0x340dd3018  arg=depthView 0x340d6f2c8
+STOP status=NVN_RENDER_TARGET_VIEWS_REQUIRED detail=0x1
+```
+
+The title binds one 1920x1080 colour target **and a 1920x1080 depth-stencil texture (format 0x35)**.
+The baseline's default profile refuses any depth attachment (`a[0]>1 || a[4]`) and only its
+`ZERO_ZX_GAME` profile records the depth target plus both views. Supporting this title therefore
+means giving it that record/replay shape under its own macro — record the colour target+view and
+the depth target+view, and replay them as an FBO with a depth attachment — not relaxing the check.
