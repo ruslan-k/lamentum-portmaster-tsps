@@ -1012,3 +1012,28 @@ The next question is now precise: whether `nvn_render.uniform[stage][binding]` a
 guest's cbuf (a non-zero range) at draw time. If the title never binds a uniform buffer for these
 programs, the texture is uploaded full of zeros and the shaders still multiply by zero - which would look
 exactly like this. That is the next measurement.
+
+## The cbuf data does arrive, but not on the slot the vertex shader reads
+
+`COTM_CBUF_LOG=8` prints, for each cbuf upload, what the guest had bound:
+
+```
+NVN_CBUF stage=0 binding=1 name=c4_1 size=65536 bound=368  address=0x391436300 first=0
+NVN_CBUF stage=0 binding=0 name=c4   size=65536 bound=0    address=0x0         first=0
+NVN_CBUF stage=1 binding=0 name=c3   size=65536 bound=16   address=0x391436200 first=1
+```
+
+So data exists (368 bytes for vertex slot 1, 16 bytes for fragment slot 0) but **vertex slot 0 - the block
+`c4` that a vertex shader reads its matrices from - is never bound**: `bound=0`, address `0x0`, and the
+texture we upload for it is therefore all zeros. That is exactly the condition that collapses the
+geometry.
+
+`COTM_UBO_LOG=12` shows why the numbering is suspect: `nvnCommandBufferBindUniformBuffer` is **never
+called** by this title (no `NVN_UBO_BIND` line at all). It binds through the plural/deferred forms
+(`nvnCommandBufferBindUniformBuffers` / `...Deferred`), which copy a run of ranges starting at a *slot
+index*. The catalogue numbers the blocks in declaration order, which need not be the title's slot
+numbering.
+
+Next step: log the plural/deferred binds (`stage`, `start`, `count`, addresses) and align each program's
+catalogue `binding` with the slot the title actually fills, so the matrix block lands on the bound slot
+instead of slot 0. Only then does the uniform path deliver anything the vertex shader can use.
