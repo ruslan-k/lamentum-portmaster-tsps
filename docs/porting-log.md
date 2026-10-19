@@ -625,3 +625,23 @@ Four driver-compatibility defects were cleared in sequence, each visible only af
 
 Next step: decide the dialect per program pair (if either stage needs ES3, both are ES3; the fragment then
 keeps `out frag_color0`/`in` instead of `varying`/`gl_FragColor`). Draws stay at 11 per run, no present yet.
+
+### Compile and link gates are cleared; the draw now stops on attribute kinds
+
+With one ESSL 3.00 dialect for the whole catalogue (`#version 300 es` for all 34 entries, zero
+`#version 100`), both stages compile **and link**, and the run reaches the draw path:
+
+```
+NVN_ATTRIB_KIND_MISMATCH index=0x0 shader-kind=0x2 format=0x22 format-kind=0x0
+STOP status=NVN_LC2_VERTEX_SHADER_KIND_MISMATCH detail=0x22
+```
+
+Attribute 0 is declared as an integer/uinteger attribute by the program while the guest binds NVN
+format 0x22, which decodes to 3 x float32. The instrumented stop (added this run) names the index and
+both kinds, so the next step is to find which catalogue entry reports kind 2 for attribute 0 - the
+builder's `attributes_of` derives it from the declared GLSL type, and no `uvec`/`ivec` appears in the
+generated header, so the kind most likely comes from the compiled program (`glGetActiveAttrib`) for a
+program whose GLSL types were rewritten. Either the affected program needs its attribute type preserved
+as integer, or Unity's packed attribute must be declared the way the title expects.
+
+Draws still 11 per run; no present yet; device clean after the reboot.

@@ -19,40 +19,35 @@ import argparse, json, pathlib, re
 
 
 def rewrite_essl100(source, stage):
-    """Mechanical rewrite of the compiler output into the runtime's ESSL100 dialect."""
-    body = source
-    body = re.sub(r'^#version[^\n]*\n+', '', body)
-    # Interface blocks (and their std140/std430 layouts) do not exist in ESSL 1.00. Programs that use
-    # them stay ES 3.00: keep in/out declarations, keep the block, do not rewrite to attribute/varying.
-    es3 = bool(re.search(r'uniform\s+\w+\s*\{', body)) or 'std140' in body or 'std430' in body
-    if es3:
-        prelude3 = ['#version 300 es',
-                    'precision highp float;' if stage == 'vertex' else 'precision mediump float;']
-        # ESSL 3.10 allows layout(location) only on vertex inputs and fragment outputs; the driver
-        # rejects it on vertex outputs ("S0060: Qualifier 'location' is not allowed on vertex output
-        # variable"). Varyings are matched by name, which spirv-cross keeps identical across stages.
-        if stage == 'vertex':
-            body = re.sub(r'layout\(location = \d+\) out ', 'out ', body)
-        else:
-            body = re.sub(r'layout\(location = \d+\) in ', 'in ', body)
-        if 'fma(' in body:
-            # ESSL 3.10 has no fma (GLSL 4.00 / EXT_gpu_shader5); the driver says
-            # "L0002: No matching function for call to 'fma'". Provide the fused form's semantics.
-            prelude3.append('#define fma(a, b, c) ((a) * (b) + (c))')
-        uses_texel_fetch = 'texelFetch' in body or 'textureSize' in body or 'textureQueryLevels' in body
-        return '\n'.join(prelude3) + '\n' + body.strip() + '\n', uses_texel_fetch
-    prelude = ['#version 100'] if stage == 'vertex' else ['#version 100']
-    prelude.append('precision highp float;' if stage == 'vertex' else 'precision mediump float;')
-    uses_texel_fetch = 'texelFetch' in body or 'textureSize' in body or 'textureQueryLevels' in body
-    # layout(location = N) in/out  -> attribute / varying
-    body = re.sub(r'layout\(location = (\d+)\) in (\w+)\s+(\w+);',
-                  lambda m: ('attribute %s %s;' % (m.group(2), m.group(3))) if stage == 'vertex'
-                  else ('varying %s %s;' % (m.group(2), m.group(3))), body)
-    body = re.sub(r'layout\(location = (\d+)\) out (\w+)\s+(\w+);',
-                  lambda m: 'varying %s %s;' % (m.group(2), m.group(3)), body)
-    body = re.sub(r'layout\([^)]*\) uniform (sampler2D|samplerCube)\s+(\w+);',
+    """Rewrite the compiler output into one ESSL 3.00 dialect for every program.
+
+    Both stages of a program must use the same GLSL version: Mali answers `L0001 Shader languages do not
+    match` when a `#version 300 es` vertex is linked with a `#version 100` fragment. The builder sees one
+    file at a time and cannot know its partner, so every entry is emitted as ESSL 3.00: interface blocks
+    survive, `attribute`/`varying` become `in`/`out`, and fragments write a declared output instead of
+    `gl_FragColor`.
+    """
+    body = re.sub(r'^#version[^\n]*\n+', '', source)
+    prelude = ['#version 300 es',
+               'precision highp float;' if stage == 'vertex' else 'precision mediump float;']
+    if stage == 'vertex':
+        # ESSL 3.10 forbids layout(location) on vertex outputs ("S0060"); varyings match by name.
+        body = re.sub(r'layout\(location = \d+\) out ', 'out ', body)
+        body = re.sub(r'\battribute\b', 'in', body)
+        body = re.sub(r'\bvarying\b', 'out', body)
+    else:
+        body = re.sub(r'layout\(location = \d+\) in ', 'in ', body)
+        body = re.sub(r'\bvarying\b', 'in', body)
+        body = body.replace('frag_color0', 'nvn_frag_color').replace('gl_FragColor', 'nvn_frag_color')
+        if 'out vec4 nvn_frag_color' not in body:
+            prelude.append('out vec4 nvn_frag_color;')
+    # Sampler layouts are not portable here; the runtime binds by name.
+    body = re.sub(r'layout\([^)]*\)\s*uniform (sampler2D|samplerCube|sampler2DArray)\s+(\w+);',
                   lambda m: 'uniform %s %s;' % (m.group(1), m.group(2)), body)
-    body = body.replace('frag_color0', 'gl_FragColor') if stage == 'fragment' else body
+    if 'fma(' in body:
+        # ESSL 3.10 has no fma ("L0002: No matching function for call to 'fma'").
+        prelude.append('#define fma(a, b, c) ((a) * (b) + (c))')
+    uses_texel_fetch = 'texelFetch' in body or 'textureSize' in body or 'textureQueryLevels' in body
     return '\n'.join(prelude) + '\n' + body.strip() + '\n', uses_texel_fetch
 
 
@@ -78,26 +73,27 @@ def filter_rewrite(source, sampler_names):
     if not varying:
         return None
     uv = varying.group(1)
-    return ('#version 100\n'
+    return ('#version 300 es\n'
             'precision mediump float;\n'
+            'out vec4 nvn_frag_color;\n'
             'uniform sampler2D %s;\n'
             'uniform vec2 %s_size;\n'
-            'varying vec4 %s;\n'
+            'in vec4 %s;\n'
             '%s\n'
             'void main() {\n'
             '    vec2 texel = floor(%s.xy * %s_size);\n'
-            '    gl_FragColor = texture2D(%s, (texel + 0.5) / %s_size);\n'
+            '    nvn_frag_color = texture(%s, (texel + 0.5) / %s_size);\n'
             '}\n' % (main, main, uv, FILTER_NOTE, uv, main, main, main))
 
 
-PLACEHOLDER_VERTEX = ('#version 100\n'
+PLACEHOLDER_VERTEX = ('#version 300 es\n'
                      'precision highp float;\n'
                      '/* TEST-ONLY substitute: NOT a translation of the title\'s program. Written so the\n'
                      ' * replay can exercise draws/present while the real program is untranslated; the\n'
                      ' * log marks it TEST and no picture claim may rest on it. */\n'
-                     'attribute vec4 in_attr0;\n'
-                     'attribute vec4 in_attr1;\n'
-                     'varying vec4 out_attr0;\n'
+                     'in vec4 in_attr0;\n'
+                     'in vec4 in_attr1;\n'
+                     'out vec4 out_attr0;\n'
                      'void main() { gl_Position = vec4(in_attr0.xy, in_attr0.z, 1.0); out_attr0 = in_attr1; }\n')
 
 
@@ -105,11 +101,11 @@ def placeholder_fragment(sampler_names):
     """TEST-ONLY fragment: one texel of the first sampler, or mid grey when the program has none."""
     if sampler_names:
         body = ('uniform sampler2D %s;\n'
-                'varying vec4 out_attr0;\n'
-                'void main() { gl_FragColor = texture2D(%s, out_attr0.xy); }\n' % (sampler_names[0], sampler_names[0]))
+                'in vec4 out_attr0;\n'
+                'void main() { nvn_frag_color = texture(%s, out_attr0.xy); }\n' % (sampler_names[0], sampler_names[0]))
     else:
-        body = 'varying vec4 out_attr0;\nvoid main() { gl_FragColor = vec4(0.5, 0.5, 0.5, 1.0); }\n'
-    return ('#version 100\nprecision mediump float;\n'
+        body = 'in vec4 out_attr0;\nvoid main() { nvn_frag_color = vec4(0.5, 0.5, 0.5, 1.0); }\n'
+    return ('#version 300 es\nprecision mediump float;\nout vec4 nvn_frag_color;\n'
             '/* TEST-ONLY substitute: NOT a translation (see the vertex stage note). */\n' + body)
 
 
@@ -121,10 +117,22 @@ def samplers_of(source):
 
 
 def attributes_of(glsl):
+    """Vertex inputs with their locations.
+
+    ES 3.00 sources may declare `in vec4 in_attr0;` without a location (the placeholders do, and the
+    compiler output is not guaranteed to carry one). Those used to be dropped, leaving every attribute
+    kind at the default, and the draw then stopped on NVN_LC2_VERTEX_SHADER_KIND_MISMATCH: the format is
+    compared per attribute index, so an empty list means "float" while the title binds an integer format.
+    """
     out = []
     for m in re.finditer(r'layout\(location = (\d+)\) in (\w+)\s+(\w+);', glsl):
         out.append({'location': int(m.group(1)), 'type': m.group(2), 'name': m.group(3)})
-    return out
+    taken = {a['location'] for a in out}
+    for m in re.finditer(r'^\s*in\s+(\w+)\s+(\w+)\s*;', glsl, re.M):
+        location = next(i for i in range(16) if i not in taken)
+        taken.add(location)
+        out.append({'location': location, 'type': m.group(1), 'name': m.group(2)})
+    return sorted(out, key=lambda a: a['location'])
 
 
 def varying_locations(glsl, decl):

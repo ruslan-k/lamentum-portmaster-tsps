@@ -455,6 +455,24 @@ index 410deb4..7269206 100644
      return (void *)(uintptr_t)address;
  }
  /* Called after Submit, outside the producer/regions locks. A quick atomic
+diff --git a/native/nvn_render.h b/native/nvn_render.h
+index 543b4b5..b7c98e4 100644
+--- a/native/nvn_render.h
++++ b/native/nvn_render.h
+@@ -1267,7 +1267,12 @@ static void nvn_render_draw_inner(struct nvn_record *r) {
+         if(stream>=nvn_render.stream_count||stream>=16||nvn_render.streams[stream][1])stop("NVN_VERTEX_STREAM_REQUIRED",nvn_caller,stream,20);
+         struct nvn_vertex_format vf=nvn_vertex_format_decode(format);
+         unsigned components=vf.components;
+-        if(p->attribute_kind[i]!=vf.kind)stop("NVN_LC2_VERTEX_SHADER_KIND_MISMATCH",nvn_caller,format,20);
++        if(p->attribute_kind[i]!=vf.kind) {
++            struct line b={0};text(&b,"NVN_ATTRIB_KIND_MISMATCH index=");hex(&b,i);
++            text(&b," shader-kind=");hex(&b,p->attribute_kind[i]);text(&b," format=");hex(&b,format);
++            text(&b," format-kind=");hex(&b,vf.kind);emit(&b);
++            stop("NVN_LC2_VERTEX_SHADER_KIND_MISMATCH",nvn_caller,format,20);
++        }
+         unsigned element=vf.bytes,stride=nvn_render.streams[stream][0];struct nvn_range range=nvn_render.vertex[stream];
+         uint64_t start=base*stride+offset,extent=maximum*stride+element;
+         if(!stride||start>range.size||extent>range.size-start)stop("NVN_VERTEX_FETCH_RANGE",nvn_caller,start+extent,24);
 diff --git a/native/nvn_samplers.h b/native/nvn_samplers.h
 index 90771fd..cd8e278 100644
 --- a/native/nvn_samplers.h
