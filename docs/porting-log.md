@@ -736,3 +736,24 @@ Next step: separate the render binding from the present binding - render into th
 the window surface only for the swap - instead of returning to `make_current(window surface)` after the
 present. That is also where the black frame has to be investigated: 13 texture draws are recorded before
 the present, and the sampled backbuffer is uniformly black.
+
+### The fbdev window surface can be swapped exactly once
+
+Three attempts, all measured on device:
+
+1. **Render on the pbuffer, bind the window surface only for the swap** (build-100): the replay stops
+   asking for `make_current` on the window surface, and the run gets one frame further - the failure
+   moves from the queue acquire (`NVN_QUEUE_CONTEXT`) to the *second present* (`NVN_PRESENT_CONTEXT
+   detail=0x300d`). So rendering is fine on the pbuffer; presenting is the problem.
+2. **Recreate the window surface when the bind fails** (build-101): a freshly created
+   `eglCreateWindowSurface` for the same native window is refused too - no recreation is logged because
+   the retry fails before the log line, and the stop is the same.
+3. **`eglReleaseThread()` after the swap** (build-102, gated by `COTM_EGL_RELEASE_AFTER_SWAP=1`): the
+   release line never appears, because the next present stops at the bind before reaching that code.
+
+Conclusion: on this Mali/fbdev stack a window surface accepts one `eglSwapBuffers` and then refuses every
+`eglMakeCurrent`, including on a recreated surface. Presentation therefore cannot stay on
+`eglSwapBuffers`; the next step is the framebuffer-copy path (`nvn_direct_composition.h` in this runtime
+already binds the default framebuffer, and TSPS ports normally present by writing the composited texture
+to the panel), driven from the same "copy the final texture" step the present path already performs.
+Also still open: the first frame is black (`nonblack=0`) with 13 texture draws before it.

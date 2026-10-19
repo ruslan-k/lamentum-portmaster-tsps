@@ -254,10 +254,21 @@ index 0564e33..9f8d3b2 100644
      normal_guard_require_clear(address,size,pc);
      if(id>=nshared || address%PAGE || size!=shared_regions[id].size || permission!=shared_regions[id].permission)
 diff --git a/native/nvn_bridge.h b/native/nvn_bridge.h
-index 50dfaa1..9126ab2 100644
+index 50dfaa1..694e196 100644
 --- a/native/nvn_bridge.h
 +++ b/native/nvn_bridge.h
-@@ -48,6 +48,9 @@ static void nvn_gl_drain(void);
+@@ -28,6 +28,10 @@ static _Thread_local uint64_t nvn_caller;
+ extern uint64_t cotm_nvn_original_lookup(uint64_t,const char *,uint64_t);
+ extern uint64_t cotm_nvn_call_original(uint64_t,struct nvn_frame *);
+ static struct {uint64_t address;uint32_t flags;EGLDisplay display;EGLConfig config;EGLContext context;EGLSurface surface;
++/* The pbuffer the context was created against. Rendering keeps this binding; the window surface is
++ * bound only for the swap - Mali refuses eglMakeCurrent on the fbdev window surface after a swap
++ * (EGL_BAD_SURFACE 0x300d) and the replay then stops on the next queue acquire. */
++EGLSurface render_surface;
+     GLint texture_limit,attributes,texture_units;unsigned live,window_origin,depth_mode,intermediate_cache_hint;} nvn_device;
+ static struct {int configured;unsigned enabled,started;pthread_t thread;pthread_mutex_t mutex;pthread_cond_t post,finished;
+     struct nvn_gl_job *pending;uint64_t jobs;} nvn_gl_worker={.mutex=PTHREAD_MUTEX_INITIALIZER,.post=PTHREAD_COND_INITIALIZER,.finished=PTHREAD_COND_INITIALIZER};
+@@ -48,6 +52,9 @@ static void nvn_gl_drain(void);
  static unsigned nvn_gl_frame_pending(void);
  static void nvn_gl_sync_report(void);
  #include "nvn_single_context.h"
@@ -267,7 +278,7 @@ index 50dfaa1..9126ab2 100644
  #include "nvn_pointer.h"
  static unsigned nvn_find(const char *name) {
      for(unsigned i=1;i<NI_COUNT;i++)if(!strcmp(name,nvn_functions[i].name))return i;
-@@ -80,6 +83,12 @@ static uint64_t nvn_original_helper(unsigned id,struct nvn_frame *f) {
+@@ -80,6 +87,12 @@ static uint64_t nvn_original_helper(unsigned id,struct nvn_frame *f) {
   * no fbdev, no window configs -> pbuffer surfaces, like the compile-time diagnostic host. Never set on device. */
  static int t2_pc_bench(void){static int v=-1;if(v<0){const char *e=getenv("NX_PC_BENCH");v=e&&*e&&*e!='0';}return v;}
  #include "nvn_platform_sdl.h"
@@ -280,7 +291,7 @@ index 50dfaa1..9126ab2 100644
  static uint64_t nvn_device_initialize(struct nvn_frame *f) {
      nvn_single_require_owner();
      if(nvn_device.live)stop("NVN_SECOND_DEVICE_UNSUPPORTED",nvn_caller,f->args[0],20);
-@@ -91,11 +100,17 @@ static uint64_t nvn_device_initialize(struct nvn_frame *f) {
+@@ -91,11 +104,17 @@ static uint64_t nvn_device_initialize(struct nvn_frame *f) {
      if(!system_window) {
      nvn_device.display=eglGetDisplay(EGL_DEFAULT_DISPLAY);
      if(!eglInitialize(nvn_device.display,&major,&minor) || !eglBindAPI(EGL_OPENGL_ES_API))stop("NVN_EGL_INITIALIZE",nvn_caller,eglGetError(),21);
@@ -300,7 +311,15 @@ index 50dfaa1..9126ab2 100644
      EGLint surface_types=0;
      if(system_window && !eglGetConfigAttrib(nvn_device.display,nvn_device.config,EGL_SURFACE_TYPE,&surface_types))
          stop("NVN_SDL_EGL_SURFACE_TYPES",nvn_caller,eglGetError(),21);
-@@ -293,7 +308,7 @@ static uint64_t cotm_nvn_dispatch_body(struct nvn_frame *f,unsigned id) {
+@@ -104,6 +123,7 @@ static uint64_t nvn_device_initialize(struct nvn_frame *f) {
+     nvn_device.surface=system_window && !(surface_types&EGL_PBUFFER_BIT)
+         ?nvn_platform_sdl_surface:eglCreatePbufferSurface(nvn_device.display,nvn_device.config,pb);
+     if(!system_window)nvn_device.context=eglCreateContext(nvn_device.display,nvn_device.config,EGL_NO_CONTEXT,ctx);
++    nvn_device.render_surface=nvn_device.surface;
+     if(nvn_device.surface==EGL_NO_SURFACE || nvn_device.context==EGL_NO_CONTEXT ||
+        !nvn_single_make_current(nvn_device.surface,nvn_device.surface,nvn_device.context))stop("NVN_EGL_CONTEXT",nvn_caller,eglGetError(),21);
+     const char *renderer=(const char *)glGetString(GL_RENDERER),*version=(const char *)glGetString(GL_VERSION);
+@@ -293,7 +313,7 @@ static uint64_t cotm_nvn_dispatch_body(struct nvn_frame *f,unsigned id) {
      if(!id || id>=NI_COUNT || signal_handler_depth || nvn_bridge_depth>=8)stop("NVN_BRIDGE_CONTEXT",f->lr,id,24);
      if(t2p_in_cmdmem_callback){struct timespec t;clock_gettime(CLOCK_MONOTONIC,&t);printf("T2P_CB_NVN name=%s caller=0x%"PRIx64" ns=%"PRIu64"\n",nvn_functions[id].name,f->lr,(uint64_t)t.tv_sec*UINT64_C(1000000000)+(uint64_t)t.tv_nsec);} /* FRENTE-P diag */
      nvn_async_api_enter();
@@ -309,7 +328,7 @@ index 50dfaa1..9126ab2 100644
      uint64_t count=++nvn_calls[id];nvn_bridge_calls++;
      if(id!=NI_nvnDeviceGetProcAddress && (count<=4 || !(count&(count-1)))) {
          struct line log={0};text(&log,"NVN_CALL name=");text(&log,nvn_functions[id].name);text(&log," caller=");location(&log,f->lr);
-@@ -380,5 +395,5 @@ complete:
+@@ -380,5 +400,5 @@ complete:
         id==NI_nvnMemoryPoolBuilderGetSize || id==NI_nvnMemoryPoolGetSize)
          printf("NVN_RESULT name=%s result=0x%"PRIx64"\n",nvn_functions[id].name,result);
      if(id==NI_nvnQueueSubmitCommands)nvn_pointer_report(nvn_replay.last_frame);
@@ -500,8 +519,70 @@ index 410deb4..7269206 100644
      return (void *)(uintptr_t)address;
  }
  /* Called after Submit, outside the producer/regions locks. A quick atomic
+diff --git a/native/nvn_present.h b/native/nvn_present.h
+index 8c0254b..8bcaba6 100644
+--- a/native/nvn_present.h
++++ b/native/nvn_present.h
+@@ -13,6 +13,13 @@
+ #include "nvn_capture_request.h"
+ #include "nxgl_frame_proof_adapter.h"
+ #include "t2_present_pace.h"
++static void nvn_present_bind(EGLContext context,uint64_t pc) {
++    if(nvn_single_make_current(nvn_window.surface,nvn_window.surface,context))return;
++    nvn_window_surface_recreate(pc);
++    if(!nvn_single_make_current(nvn_window.surface,nvn_window.surface,context))
++        stop("NVN_PRESENT_CONTEXT",pc,eglGetError(),21);
++    struct line b={0};text(&b,"NVN_PRESENT_SURFACE_RECREATED");emit(&b);
++}
+ static struct {EGLContext context;GLuint program,vertices;GLint image_scale,image_offset;unsigned frames,black_streak,proved,sampled_pixels,full_readback,sample_y,sample_rows;
+     unsigned sparse_readback,sample_frame_logs;struct nvn_pixel_band band;} nvn_present;
+ static void nvn_present_receipt(const char *status,unsigned nonblack,unsigned maximum,unsigned draws) {
+@@ -97,8 +104,8 @@ static void nvn_present_setup(void) {
+     if(nvn_present.sample_frame_logs)printf("NVN_VIDEO_LOG_CADENCE measured=always unmeasured=journal-only journal=one-per-frame\n");
+     const EGLint attrs[]={EGL_CONTEXT_CLIENT_VERSION,2,EGL_NONE};
+     nvn_present.context=nvn_single_enabled()?nvn_device.context:eglCreateContext(nvn_device.display,nvn_device.config,nvn_device.context,attrs);
+-    if(nvn_present.context==EGL_NO_CONTEXT || !nvn_single_make_current(nvn_window.surface,nvn_window.surface,nvn_present.context))
+-        stop("NVN_PRESENT_CONTEXT",nvn_caller,eglGetError(),21);
++    if(nvn_present.context==EGL_NO_CONTEXT)stop("NVN_PRESENT_CONTEXT",nvn_caller,eglGetError(),21);
++    nvn_present_bind(nvn_present.context,nvn_caller);
+     const char *gl_extensions=(const char *)glGetString(GL_EXTENSIONS),*egl_extensions=eglQueryString(nvn_device.display,EGL_EXTENSIONS);
+     EGLint proof_width=0,proof_height=0;
+     (void)eglQuerySurface(nvn_device.display,nvn_window.surface,EGL_WIDTH,&proof_width);
+@@ -186,7 +193,7 @@ static unsigned nvn_present_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+     if(!nvn_async_frame_enabled())nvn_async_present_wait_locked(q,single);
+     if(!single)nvn_egl_present_reader_wait();
+     if(single) {
+-        if(!nvn_single_make_current(nvn_window.surface,nvn_window.surface,nvn_device.context))stop("NVN_PRESENT_CONTEXT",nvn_caller,eglGetError(),21);
++        nvn_present_bind(nvn_device.context,nvn_caller);
+         /* This is a logical context use even though its physical binding is
+          * retained. Do not reuse a completion proof from before the quad. */
+         if(!++nvn_gl_completion.use_serial)stop("NVN_GL_SERIAL_WRAP",nvn_caller,0,24);
+@@ -199,7 +206,7 @@ static unsigned nvn_present_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+     }
+     nvn_present_setup();
+     momo_stencil_selftest();
+-    if(!nvn_single_make_current(nvn_window.surface,nvn_window.surface,nvn_present.context))stop("NVN_PRESENT_CONTEXT",nvn_caller,eglGetError(),21);
++    nvn_present_bind(nvn_present.context,nvn_caller);
+     t2_present_gpu_wait_issue(); /* FRENTE-C: GPU-side order after the frame (T2_PRESENT_GPU_WAIT=1) */
+     nvn_single_present_quad(nvn_present.program,nvn_present.vertices);
+     struct nvn_texture *t=nvn_window.textures[index];unsigned width=nvn_window.fb.width,height=nvn_window.fb.height;
+@@ -309,6 +316,14 @@ static unsigned nvn_present_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+     if(aw_fbcopy_enabled())aw_fbcopy_present();else {
+         nxgl_frame_proof_before_present(width,height);
+         if(!eglSwapInterval(nvn_device.display,0) || !nvn_platform_swap(nvn_device.display,nvn_window.surface))stop("NVN_PRESENT_SWAP_FAILED",nvn_caller,eglGetError(),22);
++    /* Mali's fbdev path leaves the thread's EGL binding in a state where the next eglMakeCurrent on any
++     * window surface fails with EGL_BAD_SURFACE. Releasing the thread binding after the swap lets the
++     * next bind start clean (diagnostic A/B, logged). */
++    {
++        static int configured,enabled;
++        if(!configured){const char *o=getenv("COTM_EGL_RELEASE_AFTER_SWAP");enabled=o&&!strcmp(o,"1");configured=1;}
++        if(enabled){eglReleaseThread();printf("NVN_PRESENT_EGL_RELEASED\n");}
++    }
+     }
+ #else
+     nxgl_frame_proof_before_present(width,height);
 diff --git a/native/nvn_queue.h b/native/nvn_queue.h
-index 0545586..e2243aa 100644
+index 0545586..fe71751 100644
 --- a/native/nvn_queue.h
 +++ b/native/nvn_queue.h
 @@ -99,11 +99,33 @@ static struct {
@@ -517,13 +598,13 @@ index 0545586..e2243aa 100644
      nvn_single_require_owner();
      if(!nvn_single_enabled())nvn_egl_present_reader_wait();
 -    if(!nvn_single_make_current(nvn_device.surface,nvn_device.surface,nvn_device.context))stop("NVN_QUEUE_CONTEXT",nvn_caller,eglGetError(),21);
-+    if(!nvn_single_make_current(nvn_device.surface,nvn_device.surface,nvn_device.context)) {
++    if(!nvn_single_make_current(nvn_device.render_surface?nvn_device.render_surface:nvn_device.surface,(nvn_device.render_surface?nvn_device.render_surface:nvn_device.surface),nvn_device.context)) {
 +        /* EGL_BAD_SURFACE (0x300d) right after the first present: drop the binding and retry once. The
 +         * surface and display handles are the same objects the present path used a moment earlier, so
 +         * the failure is a stale binding rather than a destroyed surface. */
 +        eglMakeCurrent(nvn_device.display,EGL_NO_SURFACE,EGL_NO_SURFACE,EGL_NO_CONTEXT);
 +        nvn_single_state_reset();
-+        if(nvn_single_make_current(nvn_device.surface,nvn_device.surface,nvn_device.context)) {
++        if(nvn_single_make_current(nvn_device.render_surface?nvn_device.render_surface:nvn_device.surface,(nvn_device.render_surface?nvn_device.render_surface:nvn_device.surface),nvn_device.context)) {
 +            printf("NVN_QUEUE_CONTEXT_RETRY ok after detach\n");
 +            return;
 +        }
@@ -870,7 +951,7 @@ index 0feaef1..ab194b5 100644
      struct nvn_texture *t=object?nvn_texture_find(object):NULL;
  #ifdef MOMO_SHADERS
 diff --git a/native/nvn_window.h b/native/nvn_window.h
-index 241c564..6a61515 100644
+index 241c564..9e55b31 100644
 --- a/native/nvn_window.h
 +++ b/native/nvn_window.h
 @@ -51,8 +51,18 @@ static unsigned nvn_window_dispatch(unsigned id,struct nvn_frame *f,uint64_t *re
@@ -894,6 +975,22 @@ index 241c564..6a61515 100644
          if(!nvn_device.live || b.device!=nvn_device.address || nvn_window.live || !layer.opened || !b.native || b.count<2 || b.count>3)
              stop("NVN_WINDOW_CONTRACT",nvn_caller,b.count,24);
          if(b.interval_minus_one<-1 || b.interval_minus_one>0)stop("NVN_WINDOW_INTERVAL_REQUIRED",nvn_caller,b.interval_minus_one,20);
+@@ -171,3 +181,15 @@ static unsigned nvn_window_dispatch(unsigned id,struct nvn_frame *f,uint64_t *re
+     }
+     return 1;
+ }
++
++/* Mali's fbdev window surface stops accepting eglMakeCurrent after a swap (EGL_BAD_SURFACE 0x300d,
++ * measured on the second present). Recreating it is the only way to keep presenting; the surface is a
++ * handle, not state, so nothing else changes. */
++static void nvn_window_surface_recreate(uint64_t pc) {
++    if(nvn_window.surface!=EGL_NO_SURFACE)eglDestroySurface(nvn_device.display,nvn_window.surface);
++    if(nvn_platform_sdl_window)return;
++    nvn_window.surface=eglCreateWindowSurface(nvn_device.display,nvn_device.config,
++        (EGLNativeWindowType)&nvn_window.fb,NULL);
++    if(nvn_window.surface==EGL_NO_SURFACE)stop("NVN_EGL_WINDOW_RECREATE",pc,eglGetError(),21);
++    if(!nvn_window.game_pbuffer)nvn_device.surface=nvn_window.surface;
++}
 diff --git a/native/sanitize_shader_diagnostics.py b/native/sanitize_shader_diagnostics.py
 index 9ab8126..1db3c58 100644
 --- a/native/sanitize_shader_diagnostics.py
