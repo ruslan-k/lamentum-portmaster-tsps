@@ -459,10 +459,10 @@ index 1aa4c67..caccaf3 100644
  #endif
 diff --git a/native/nvn_fb_present.h b/native/nvn_fb_present.h
 new file mode 100644
-index 0000000..9d19bfc
+index 0000000..5e30bde
 --- /dev/null
 +++ b/native/nvn_fb_present.h
-@@ -0,0 +1,103 @@
+@@ -0,0 +1,120 @@
 +#ifndef NVN_FB_PRESENT_H
 +#define NVN_FB_PRESENT_H
 +/* Presentation straight to the panel.
@@ -564,6 +564,23 @@ index 0000000..9d19bfc
 +    ioctl(nvn_fb_present.fd, FBIOPAN_DISPLAY, &nvn_fb_present.var);
 +    nvn_fb_present.page = page;
 +    nvn_fb_present.frames++;
++    /* COTM_FB_PRESENT_FRAMES=<n>: present that many frames and then stop deliberately. The panel path is
++     * the only one that gets past the first swap, so it is also the only way to watch later frames - and a
++     * bounded run cannot leave the device presenting forever. */
++    static int limit_configured;
++    static unsigned limit;
++    if (!limit_configured) {
++        const char *o = getenv("COTM_FB_PRESENT_FRAMES");
++        limit = o ? (unsigned)strtoul(o, NULL, 0) : 0;
++        limit_configured = 1;
++    }
++    if (limit && nvn_fb_present.frames >= limit) {
++        struct line b = {0};
++        text(&b, "NVN_FB_PRESENT_FRAMES_DONE frames=");
++        hex(&b, nvn_fb_present.frames);
++        emit(&b);
++        stop("NVN_FB_PRESENT_FRAMES_DONE", nvn_caller, nvn_fb_present.frames, 24);
++    }
 +}
 +#endif
 diff --git a/native/nvn_framebuffers.h b/native/nvn_framebuffers.h

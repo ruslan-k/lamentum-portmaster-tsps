@@ -888,3 +888,24 @@ Two explanations remain, and they are cheap to separate: the title is presenting
 screen** (black by design while the 1.8 GB of assets stream in) or the fragment output of 12/14 is black
 because its inputs are not uploaded yet. Both need a run that reaches later frames, which is exactly what
 the two present paths block: EGL stops after the first swap, and the panel path can wedge the device.
+
+## Bounded panel presentation, and where the run stops now
+
+`COTM_FB_PRESENT_FRAMES=<n>` ends a panel-presented run deliberately after n frames, so a run cannot
+keep presenting (or wedge) forever. Two bounded runs, 40 frames requested:
+
+| run | queue | frames presented | stop |
+|---|---|---|---|
+| bounded-01 | default (async) | 3 | `NVN_COMMAND_REUSE_BEFORE_COMPLETION detail=0x2` |
+| bounded-02 | `COTM_ASYNC_QUEUE=0 T2_GPU_PIPELINE=0` | - | `NVN_QUEUE_FINISH_ERROR detail=0x505` |
+
+So the two present paths are limited by different things: with the async queue the command list is
+recycled before its completion is proven (the swap used to provide that proof), and with the synchronous
+queue the still-unexplained `0x505` (`GL_INVALID_FRAMEBUFFER_OPERATION`) surfaces in `nvn_gl_finish_current`
+even though every framebuffer this runtime creates passes `glCheckFramebufferStatus`. That error is real
+and pending, not inert: it is the same value the batched boundary reported before.
+
+Every sampled frame is still black, and all window draws are configured correctly (mask 1111, viewport
+1280x720, scissor larger than the target, destination blend factor ZERO). Until a run reaches frames past
+the first few, the "loading screen vs black shader output" question stays open, and the concrete blocker
+is now the completion/error bookkeeping of the present path, not the drawing state.
