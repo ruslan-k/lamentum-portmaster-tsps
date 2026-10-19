@@ -226,3 +226,26 @@ Remaining work before a frame: (1) per-program `mm_shader_binding` metadata (att
 varying masks, uniforms/samplers, colour-write mask, precision) and an ESSL100 rewrite of the
 compiler's `#version 450`; (2) the runtime stops at the FIRST untranslated program, so the
 catalogue has to grow until the title stops asking for new ones.
+
+### Draft catalogue (not yet validated on device)
+
+`tools/build_lamentum_catalogue.py` turns the translation workspace into a catalogue header in
+the runtime's contract (`runtime/lamentum-shaders-draft.h`): our own ESSL100 rewrite of the
+compiler output, attributes from the `in_attrN` declarations, per-slot varying masks inferred
+from component usage, colour-write mask 15, mediump fragment contract.
+
+Known limits of the draft, stated rather than hidden:
+
+- six of the ten fragments use `texelFetch`/`textureSize`/`textureQueryLevels`, which ESSL100
+  does not have. They are emitted with `error` set, so the runtime stops on them instead of
+  drawing something that merely looks plausible; the rewrite (texture-size uniform +
+  `texture2D` on a half-texel centre) is the next translation task;
+- varying masks are inferred from the GLSL text, not measured on the device;
+- `varying_read_masks` is only meaningful for fragment entries (for a vertex, `in` means
+  attributes) - the draft prints both for every entry and the generator must be narrowed;
+- no uniforms or samplers are declared yet; entries that need them must be extended from the
+  control section's constant layout before they can be claimed as working.
+
+The draft is therefore a scaffold for the next device iterations, not a working catalogue: the
+runtime must be run, the next requested program read from the log, translated, added, and the
+cycle repeated until the title stops asking for programs it does not have.
