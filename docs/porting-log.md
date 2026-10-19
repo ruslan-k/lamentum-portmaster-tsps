@@ -607,3 +607,21 @@ the `.glsl` files never reaches the runtime. Confirmed locally: 13 entries in th
 Next step is therefore a builder change, not a runtime one: keep `#version 300 es` (and the precision
 line) for entries whose body uses interface blocks or in/out declarations, keep the ESSL 1.00 header for
 the legacy attribute/varying programmes.
+
+### ESSL 3 catalogue: compile gate cleared, link gate is next
+
+Four driver-compatibility defects were cleared in sequence, each visible only after the previous one
+(`0:4 layout` -> `0:3 block name` -> `0:33 fma` -> `0:18 location on vertex output`):
+
+1. the catalogue builder re-headered every entry as `#version 100`; entries with interface blocks or
+   `std140` blocks now keep `#version 300 es`;
+2. ESSL 3.10 has no `fma` -> `#define fma(a, b, c) ((a) * (b) + (c))` in the ES3 prelude;
+3. `layout(location)` is illegal on vertex outputs in ESSL 3.10 (`S0060`) -> varyings are matched by
+   name, spirv-cross keeps the names identical across stages;
+4. result: both stages **compile**, and the run now stops on
+   `NVN_PROGRAM_LINK_FAILED detail=0x1` with `L0001 Shader languages do not match` - the vertex stage is
+   ESSL 3.00 (interface blocks) while its fragment partner is still ESSL 1.00, because the builder
+   decides the dialect per file, not per program.
+
+Next step: decide the dialect per program pair (if either stage needs ES3, both are ES3; the fragment then
+keeps `out frag_color0`/`in` instead of `varying`/`gl_FragColor`). Draws stay at 11 per run, no present yet.

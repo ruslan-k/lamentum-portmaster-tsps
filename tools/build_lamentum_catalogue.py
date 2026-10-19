@@ -22,6 +22,25 @@ def rewrite_essl100(source, stage):
     """Mechanical rewrite of the compiler output into the runtime's ESSL100 dialect."""
     body = source
     body = re.sub(r'^#version[^\n]*\n+', '', body)
+    # Interface blocks (and their std140/std430 layouts) do not exist in ESSL 1.00. Programs that use
+    # them stay ES 3.00: keep in/out declarations, keep the block, do not rewrite to attribute/varying.
+    es3 = bool(re.search(r'uniform\s+\w+\s*\{', body)) or 'std140' in body or 'std430' in body
+    if es3:
+        prelude3 = ['#version 300 es',
+                    'precision highp float;' if stage == 'vertex' else 'precision mediump float;']
+        # ESSL 3.10 allows layout(location) only on vertex inputs and fragment outputs; the driver
+        # rejects it on vertex outputs ("S0060: Qualifier 'location' is not allowed on vertex output
+        # variable"). Varyings are matched by name, which spirv-cross keeps identical across stages.
+        if stage == 'vertex':
+            body = re.sub(r'layout\(location = \d+\) out ', 'out ', body)
+        else:
+            body = re.sub(r'layout\(location = \d+\) in ', 'in ', body)
+        if 'fma(' in body:
+            # ESSL 3.10 has no fma (GLSL 4.00 / EXT_gpu_shader5); the driver says
+            # "L0002: No matching function for call to 'fma'". Provide the fused form's semantics.
+            prelude3.append('#define fma(a, b, c) ((a) * (b) + (c))')
+        uses_texel_fetch = 'texelFetch' in body or 'textureSize' in body or 'textureQueryLevels' in body
+        return '\n'.join(prelude3) + '\n' + body.strip() + '\n', uses_texel_fetch
     prelude = ['#version 100'] if stage == 'vertex' else ['#version 100']
     prelude.append('precision highp float;' if stage == 'vertex' else 'precision mediump float;')
     uses_texel_fetch = 'texelFetch' in body or 'textureSize' in body or 'textureQueryLevels' in body
