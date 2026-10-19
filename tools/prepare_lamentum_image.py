@@ -9,7 +9,7 @@ Derivation rules (fail-closed, no borrowed offsets):
   * the NVN bootstrap lookup thunk is decoded from the title's own sdk module;
   * every derived value is checked against the instruction pattern it came from.
 """
-import argparse, hashlib, json, pathlib, shutil, struct, subprocess, sys
+import argparse, hashlib, json, os, pathlib, shutil, struct, subprocess, sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from inspect_nso import inspect_nso
@@ -143,7 +143,10 @@ def main():
     (a.output / 'image_table.h').write_text('\n'.join(h) + '\n')
     (a.output / 'megaman_lc2_contract.h').write_text(
         '/* No title-specific overrides: the Lamentum owner image_table.h carries the contract. */\n')
-    shutil.copy2(section, a.output / 'lamentum-romfs.section')
+    try:
+        os.link(section, a.output / 'lamentum-romfs.section')
+    except OSError:
+        shutil.copy2(section, a.output / 'lamentum-romfs.section')
     print('Owner contracts generated; shader translation absent.')
     print('image module bases:', {k: hex(v) for k, v in bases.items()})
     print('NVN lookup thunk:', hex(bases['sdk'] + lookup), 'object:', hex(pointer))

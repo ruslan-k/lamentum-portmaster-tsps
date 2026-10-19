@@ -15,7 +15,10 @@ logged, which controlled stop ended the run, and how the device was left.
 | Adapter patch | 2 files / 8 lines (helper hoisting + declaration) |
 | Build 01 | failed: `-Werror` on the baseline's own `write()` diagnostics and unused helpers in the pinned gcc 9.4 container |
 | Build 02 | failed: `ZERO_ZX_GAME` undeclared / helpers unreachable outside the ZX profile / `type-limits` from `romfs_offset=0` |
-| Build 03 | **ok** — `lamentum-nextos` 1,808,328 B, SHA-256 `9265c9e3d77d83341a83d5f9ea4bca2fc05c42f67092f3d4205be790bfe61bb9`, GLIBC ≤ 2.27 |
+| Build 03 | **ok** — `lamentum-nextos` 1,808,328 B, SHA-256 `9265c9e3d77d83341a83d5f9ea4bca2fc05c42f67092f3d4205be790bfe61bb9`, GLIBC ≤ 2.27 (base v0 content, superseded) |
+| Update merge | `hactool --basenca … --exefsdir/--romfsdir` and `--section1=` produce the merged content: `main` 23,861,213 → 23,878,177 B, `main.npdm` changed, 11 RomFS files changed. Merged section dump 1,832,059,520 B; its own extraction is byte-identical to the merged tree (34/34 files) |
+| Merged image | 0x200 pad + merged RomFS → section SHA-256 `80ad4427164a0b7ad61c3a3fcd955bd158635aac1ee42ebb67d01dfae279b893` (1,832,060,032 B) |
+| Build 04 | **ok** — merged-content ELF `lamentum-nextos` 1,808,328 B, SHA-256 `9332846797605be9404ea814b54b06aaf3d64cd470a93550b2051c73b90e1a79` |
 
 Open questions this build does not answer: which NVN structure profile this SDK generation
 actually uses, whether the guest survives to its first `ProgramSetShaders`, and what the
