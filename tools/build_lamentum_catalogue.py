@@ -37,6 +37,47 @@ def rewrite_essl100(source, stage):
     return '\n'.join(prelude) + '\n' + body.strip() + '\n', uses_texel_fetch
 
 
+FILTER_NOTE = ('/* deviation (documented): the original samples several mip levels with '
+               'texelFetch; ESSL100 has no explicit-LOD fetch, so this is the base level only, '
+               'sampled at the same integer texel coordinate. */')
+
+
+def filter_rewrite(source, sampler_names):
+    """Rewrite the title\'s mip-averaging filter fragments into ESSL100.
+
+    Measured shape: the varying carries a normalised uv, the program multiplies it by the
+    texture size, truncates to an integer texel coordinate and averages texelFetch results of
+    several mip levels (and, for two of them, a sampler2DArray slice). ESSL100 has neither
+    explicit-LOD fetch nor sampler2DArray, so the rewrite keeps the integer texel coordinate
+    and samples the base level of the 2D sampler - a deviation that is stated in the source,
+    in the report and in the porting log, never presented as a faithful translation.
+    """
+    if not sampler_names:
+        return None
+    main = sampler_names[0]
+    varying = re.search(r'layout\(location = 0\) in vec4 (\w+);', source)
+    if not varying:
+        return None
+    uv = varying.group(1)
+    return ('#version 100\n'
+            'precision mediump float;\n'
+            'uniform sampler2D %s;\n'
+            'uniform vec2 %s_size;\n'
+            'varying vec4 %s;\n'
+            '%s\n'
+            'void main() {\n'
+            '    vec2 texel = floor(%s.xy * %s_size);\n'
+            '    gl_FragColor = texture2D(%s, (texel + 0.5) / %s_size);\n'
+            '}\n' % (main, main, uv, FILTER_NOTE, uv, main, main, main))
+
+
+def samplers_of(source):
+    out = []
+    for m in re.finditer(r'layout\(set = \d+, binding = (\d+)\) uniform (sampler2D|sampler2DArray|samplerCube)\s+(\w+);', source):
+        out.append({'binding': int(m.group(1)), 'type': m.group(2), 'name': m.group(3)})
+    return out
+
+
 def attributes_of(glsl):
     out = []
     for m in re.finditer(r'layout\(location = (\d+)\) in (\w+)\s+(\w+);', glsl):
@@ -83,8 +124,14 @@ def main():
         if not (control.exists() and code.exists()):
             continue
         source = glsl_path.read_text()
-        stage = 'fragment' if 'gl_FragColor' in source or re.search(r'out vec4 frag_color', source) else 'vertex'
-        translated, needs_fetch = rewrite_essl100(source, stage)
+        stage = 'fragment' if 'Gl_FragColor' in source or re.search(r'out vec4 frag_color', source) or 'gl_FragColor' in source else 'vertex'
+        samplers = samplers_of(source)
+        needs_fetch = 'texelFetch' in source or 'textureSize' in source or 'textureQueryLevels' in source
+        filter = filter_rewrite(source, [s['name'] for s in samplers]) if (stage == 'fragment' and needs_fetch) else None
+        if filter:
+            translated, needs_fetch = filter, False
+        else:
+            translated, needs_fetch = rewrite_essl100(source, stage)
         programs.append({
             'error': 'fragment stage needs an ESSL100 texel-fetch rewrite' if (stage == 'fragment' and needs_fetch) else None,
             'write_masks': component_masks(source, 'out'),
@@ -95,6 +142,7 @@ def main():
             'control_sha': __import__('hashlib').sha256(control.read_bytes()).hexdigest(),
             'glsl': translated, 'needs_texel_fetch': needs_fetch,
             'attributes': attributes_of(source),
+            'samplers': samplers,
             'writes': varying_locations(source, 'out'),
             'reads': varying_locations(source, 'in') if stage == 'fragment' else [],
         })
@@ -135,14 +183,15 @@ def main():
         for loc, mask in p['read_masks'].items():
             if loc < 8: reads[loc] = mask
         lines.append(' /* %d %s %s */' % (i, p['name'], p['stage']))
-        lines.append(' {.sha256="%s",.error=%s,.control_size=%d,.code_size=%d,.uniform_count=0,.sampler_count=0,.attribute_count=%d,'
+        lines.append(' {.sha256="%s",.error=%s,.control_size=%d,.code_size=%d,.uniform_count=0,.sampler_count=%d,.attribute_count=%d,'
                      '.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,'
                      % (p['code_sha'][:32], 'NULL' if not p['error'] else '"%s"' % p['error'],
-                        p['control_size'], p['code_size'], len(p['attributes'])))
+                        p['control_size'], p['code_size'], len(p['samplers']), len(p['attributes'])))
         lines.append('  .varying_read_masks={%s},.varying_write_masks={%s},'
                      % (','.join(str(x) for x in reads), ','.join(str(x) for x in writes)))
         lines.append('  .code_hash={%s},.control_hash={%s},'
                      % (','.join('0x%02x' % b for b in code), ','.join('0x%02x' % b for b in control)))
+        lines.append('  .samplers={%s},' % ','.join('{.name="%s",.stage=1,.binding=%d,.offset=0,.size_query=1,.texel_fetch_bits=0,.cpu_view=0}' % (s['name'], s['binding']) for s in p['samplers']))
         lines.append('  .attributes={%s}},' % ','.join('{.name="%s",.location=%d,.kind=%d}' % (x['name'], x['location'], 2 if x['type'] == 'vec4' else 1) for x in p['attributes']))
     lines.append('};')
     report = a.workspace / 'catalogue-draft.json'

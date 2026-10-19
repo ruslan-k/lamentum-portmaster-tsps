@@ -30,6 +30,66 @@ index f85a59d..13390cf 100644
      } else if(i<2 && (instruction&0xffc003ffU)==0xd10003ffU) {
          /* sub sp,sp,#imm12 */
          ctx->uc_mcontext.sp-=(instruction>>10)&0xfff;
+diff --git a/native/nvn_bridge.h b/native/nvn_bridge.h
+index 50dfaa1..54186eb 100644
+--- a/native/nvn_bridge.h
++++ b/native/nvn_bridge.h
+@@ -48,6 +48,9 @@ static void nvn_gl_drain(void);
+ static unsigned nvn_gl_frame_pending(void);
+ static void nvn_gl_sync_report(void);
+ #include "nvn_single_context.h"
++/* Thread-local identity of the NVN entry currently being dispatched: a pointer refusal must be
++ * attributable to the exact call, not only to the guest return address. */
++static _Thread_local unsigned nvn_current_id;
+ #include "nvn_pointer.h"
+ static unsigned nvn_find(const char *name) {
+     for(unsigned i=1;i<NI_COUNT;i++)if(!strcmp(name,nvn_functions[i].name))return i;
+@@ -293,7 +296,7 @@ static uint64_t cotm_nvn_dispatch_body(struct nvn_frame *f,unsigned id) {
+     if(!id || id>=NI_COUNT || signal_handler_depth || nvn_bridge_depth>=8)stop("NVN_BRIDGE_CONTEXT",f->lr,id,24);
+     if(t2p_in_cmdmem_callback){struct timespec t;clock_gettime(CLOCK_MONOTONIC,&t);printf("T2P_CB_NVN name=%s caller=0x%"PRIx64" ns=%"PRIu64"\n",nvn_functions[id].name,f->lr,(uint64_t)t.tv_sec*UINT64_C(1000000000)+(uint64_t)t.tv_nsec);} /* FRENTE-P diag */
+     nvn_async_api_enter();
+-    nvn_bridge_depth++;uint64_t previous=nvn_caller;nvn_caller=f->lr;
++    nvn_bridge_depth++;uint64_t previous=nvn_caller;nvn_caller=f->lr;unsigned previous_id=nvn_current_id;nvn_current_id=id;
+     uint64_t count=++nvn_calls[id];nvn_bridge_calls++;
+     if(id!=NI_nvnDeviceGetProcAddress && (count<=4 || !(count&(count-1)))) {
+         struct line log={0};text(&log,"NVN_CALL name=");text(&log,nvn_functions[id].name);text(&log," caller=");location(&log,f->lr);
+@@ -380,5 +383,5 @@ complete:
+        id==NI_nvnMemoryPoolBuilderGetSize || id==NI_nvnMemoryPoolGetSize)
+         printf("NVN_RESULT name=%s result=0x%"PRIx64"\n",nvn_functions[id].name,result);
+     if(id==NI_nvnQueueSubmitCommands)nvn_pointer_report(nvn_replay.last_frame);
+-    nvn_caller=previous;nvn_bridge_depth--;nvn_async_api_exit();return result;
++    nvn_current_id=previous_id;nvn_caller=previous;nvn_bridge_depth--;nvn_async_api_exit();return result;
+ }
+diff --git a/native/nvn_command_callback.h b/native/nvn_command_callback.h
+index 008c6d8..759b542 100644
+--- a/native/nvn_command_callback.h
++++ b/native/nvn_command_callback.h
+@@ -24,8 +24,23 @@ static void nvn_command_request_memory(struct nvn_command_buffer *c,unsigned eve
+     t2p_in_cmdmem_callback=1;cotm_nvn_call_original(c->callback,&call);t2p_in_cmdmem_callback=0;
+     clock_gettime(CLOCK_MONOTONIC,&t2p_ts);uint64_t t2p_cb1=(uint64_t)t2p_ts.tv_sec*1000000000ULL+t2p_ts.tv_nsec;
+     pthread_mutex_lock(&nvn_command_recorder_mutex);nvn_command_recorder_held=held;
+-    {static unsigned t2p_vt_logged;if(!event&&!t2p_vt_logged++&&c->callback_data){const uint64_t *o=nvn_pointer(c->callback_data,8,PROT_READ);const uint64_t *vt=nvn_pointer(o[0],48,PROT_READ);
+-        printf("T2P_CMDMEM_CALLBACK_TARGET data=0x%"PRIx64" vtable=0x%"PRIx64" slot4=0x%"PRIx64"\n",c->callback_data,o[0],vt[4]);}}
++    /* Diagnostic only: this must never fail-close. It used to dereference the callback object's
++     * vtable through the fail-closed pointer validator; a title whose callback data carries a NULL
++     * vtable slot was stopped by our own probe (measured: NVN_POINTER_REJECT id=154 address=0x0
++     * bytes=48). Read membership first and print what is actually there. */
++    {static unsigned t2p_vt_logged;
++     if(!event && !t2p_vt_logged++ && c->callback_data) {
++        uint64_t object=0;
++        if(!accessible(c->callback_data,8,PROT_READ)) {
++            printf("T2P_CMDMEM_CALLBACK_TARGET data=0x%"PRIx64" object=unmapped\n",c->callback_data);
++        } else {
++            memcpy(&object,(void *)(uintptr_t)c->callback_data,8);
++            if(!object) printf("T2P_CMDMEM_CALLBACK_TARGET data=0x%"PRIx64" vtable=NULL\n",c->callback_data);
++            else if(!accessible(object,48,PROT_READ)) printf("T2P_CMDMEM_CALLBACK_TARGET data=0x%"PRIx64" vtable=0x%"PRIx64" unmapped\n",c->callback_data,object);
++            else {uint64_t slot=0;memcpy(&slot,(void *)(uintptr_t)(object+32),8);
++                  printf("T2P_CMDMEM_CALLBACK_TARGET data=0x%"PRIx64" vtable=0x%"PRIx64" slot4=0x%"PRIx64"\n",c->callback_data,object,slot);}
++        }
++     }}
+     printf("T2P_CMDMEM_CALLBACK_TIME event=%u guest-ms=%.3f relock-ms=%.3f thread=%u\n",event,(t2p_cb1-t2p_cb0)*1e-6,(clock_gettime(CLOCK_MONOTONIC,&t2p_ts),(double)((uint64_t)t2p_ts.tv_sec*1000000000ULL+t2p_ts.tv_nsec-t2p_cb1))*1e-6,guest_thread_index);
+     c->callback_active=0;
+     if(!c->live || !c->recording || c->list!=active || (active&&memcmp(active,&active_before,sizeof(active_before))))
 diff --git a/native/nvn_commands.h b/native/nvn_commands.h
 index 1aa4c67..1b86124 100644
 --- a/native/nvn_commands.h
@@ -47,6 +107,78 @@ index 1aa4c67..1b86124 100644
  #include "nvn_command_lists.h"
  static struct nvn_command_buffer *nvn_command_find(uint64_t object) {
      for(unsigned i=0;i<32;i++)if(nvn_command_buffers[i].live&&nvn_command_buffers[i].object==object)return &nvn_command_buffers[i];
+diff --git a/native/nvn_pointer.h b/native/nvn_pointer.h
+index 410deb4..7269206 100644
+--- a/native/nvn_pointer.h
++++ b/native/nvn_pointer.h
+@@ -75,7 +75,11 @@ static void *nvn_pointer(uint64_t address,uint64_t size,unsigned perm) {
+         } else nvn_pointer_profile.clock_failures++;
+     }
+     pthread_mutex_unlock(&regions_mutex);
+-    if(!valid)stop("NVN_GUEST_POINTER",nvn_caller,address,24);
++    if(!valid) {
++        if(nvn_current_id)printf("NVN_POINTER_REJECT id=%u address=0x%llx bytes=%llu perm=%u\n",
++            nvn_current_id,(unsigned long long)address,(unsigned long long)size,perm);
++        stop("NVN_GUEST_POINTER",nvn_caller,address,24);
++    }
+     return (void *)(uintptr_t)address;
+ }
+ /* Called after Submit, outside the producer/regions locks. A quick atomic
+diff --git a/native/nvn_samplers.h b/native/nvn_samplers.h
+index 90771fd..cd8e278 100644
+--- a/native/nvn_samplers.h
++++ b/native/nvn_samplers.h
+@@ -9,6 +9,26 @@ _Static_assert(offsetof(struct nvn_sampler_builder,anisotropy)==0x40,"observed s
+ /* Animal Well SDK 17.5.3 sampler builder (measured from the game's setter calls): device +0, lodMin +8, lodMax +0xc,
+  * lodBias +0x10, anisotropy +0x14, lodSnap +0x18, border[4] +0x1c, packed +0x2c = wrapS|wrapT<<4|wrapR<<8|min<<16|mag<<20|
+  * compareEnable<<24|compareFunc<<26|reduction<<30. */
++/* MEASURED for this title's SDK generation (10.9.0.0) from its own setters and Initialize:
++ * nvnSamplerBuilderSetDevice stores x1 at +0x00; SetMinMagFilter stores the two filters at +0x08/
++ * +0x0c; SetWrapMode at +0x10/+0x14/+0x18; SetLodClamp at +0x1c/+0x20; SetLodBias at +0x24;
++ * SetCompare at +0x28/+0x2c; SetMaxAnisotropy at +0x40; SetDefaults writes wrapR=1, zeroes the
++ * border words at +0x30..+0x3f and seeds +0x1c with a double pair (lodMin/lodMax);
++ * nvnSamplerInitialize zeroes 0x60 bytes of the sampler object and copies the 0x50-byte builder
++ * to object+0x08. The inherited profile below is SDK 17.5.3's PACKED builder (fields at +0x2c):
++ * feeding it this builder decoded the lod floats as denormals and stopped the run. */
++#ifdef LC2_SAMPLER_UNPACKED
++static void aw_sampler_builder_translate(const uint8_t *raw,struct nvn_sampler_builder *b) {
++    memset(b,0,sizeof(*b));
++    memcpy(&b->device,raw,8);
++    memcpy(&b->min,raw+0x08,4);memcpy(&b->mag,raw+0x0c,4);
++    memcpy(&b->wrap[0],raw+0x10,4);memcpy(&b->wrap[1],raw+0x14,4);memcpy(&b->wrap[2],raw+0x18,4);
++    memcpy(&b->lod_min,raw+0x1c,4);memcpy(&b->lod_max,raw+0x20,4);memcpy(&b->lod_bias,raw+0x24,4);
++    memcpy(&b->compare,raw+0x28,4);memcpy(&b->compare_func,raw+0x2c,4);
++    memcpy(b->border,raw+0x30,16);
++    memcpy(&b->anisotropy,raw+0x40,4);
++}
++#else
+ static void aw_sampler_builder_translate(const uint8_t *raw,struct nvn_sampler_builder *b) {
+     uint32_t packed;memcpy(&packed,raw+0x2c,4);
+     memset(b,0,sizeof(*b));memcpy(&b->device,raw,8);
+@@ -17,6 +37,7 @@ static void aw_sampler_builder_translate(const uint8_t *raw,struct nvn_sampler_b
+     b->wrap[0]=packed&15;b->wrap[1]=(packed>>4)&15;b->wrap[2]=(packed>>8)&15;b->min=(packed>>16)&15;b->mag=(packed>>20)&15;
+     b->compare=(packed>>24)&1;b->compare_func=(packed>>26)&15;b->reduction=(packed>>30)&3;
+ }
++#endif
+ struct nvn_sampler {uint64_t object,id;struct nvn_sampler_builder b;unsigned live,references;};
+ static struct nvn_sampler nvn_samplers[4096];
+ static struct nvn_sampler *nvn_sampler_find(uint64_t object) {
+@@ -41,8 +62,15 @@ static unsigned nvn_sampler_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+         aw_sampler_builder_translate(nvn_pointer(a[1],sizeof(b),PROT_READ),&b);
+         if(!nvn_device.live||b.device!=nvn_device.address)stop("NVN_SAMPLER_DEVICE",nvn_caller,b.device,24);
+         printf("AW_SAMPLER min=%u mag=%u wrap=%u/%u/%u lod=%g..%g bias=%g compare=%u/%u reduction=%u\n",b.min,b.mag,b.wrap[0],b.wrap[1],b.wrap[2],b.lod_min,b.lod_max,b.lod_bias,b.compare,b.compare_func,b.reduction);
++        /* This SDK disables anisotropy by writing 0.0 (its own SetMaxAnisotropy is called with 0
++         * by the title); the inherited profile required >= 1.0, which is a 17.5.3 convention. */
++#ifdef LC2_SAMPLER_UNPACKED
++        if(b.min>5 || b.mag>1 || b.wrap[0]>7 || b.wrap[1]>7 || b.wrap[2]>7 || b.compare>1 || b.reduction>2 ||
++           !isfinite(b.lod_min)||!isfinite(b.lod_max)||!isfinite(b.lod_bias)||!isfinite(b.anisotropy)||b.anisotropy<0)
++#else
+         if(b.min>5 || b.mag>1 || b.wrap[0]>7 || b.wrap[1]>7 || b.wrap[2]>7 || b.compare>1 || b.reduction>2 ||
+            !isfinite(b.lod_min)||!isfinite(b.lod_max)||!isfinite(b.lod_bias)||!isfinite(b.anisotropy)||!isfinite(b.lod_snap)||b.anisotropy<1)
++#endif
+             stop("NVN_SAMPLER_PARAMETERS",nvn_caller,b.min,24);
+         unsigned slot=4096;
+         for(unsigned i=0;i<4096;i++) {
 diff --git a/native/nvn_textures.h b/native/nvn_textures.h
 index 0feaef1..ab194b5 100644
 --- a/native/nvn_textures.h
@@ -93,3 +225,37 @@ index 241c564..6a61515 100644
          if(!nvn_device.live || b.device!=nvn_device.address || nvn_window.live || !layer.opened || !b.native || b.count<2 || b.count>3)
              stop("NVN_WINDOW_CONTRACT",nvn_caller,b.count,24);
          if(b.interval_minus_one<-1 || b.interval_minus_one>0)stop("NVN_WINDOW_INTERVAL_REQUIRED",nvn_caller,b.interval_minus_one,20);
+diff --git a/native/sanitize_shader_diagnostics.py b/native/sanitize_shader_diagnostics.py
+index 9ab8126..1db3c58 100644
+--- a/native/sanitize_shader_diagnostics.py
++++ b/native/sanitize_shader_diagnostics.py
+@@ -46,8 +46,14 @@ def sanitize(data):
+         suffix = b'/translated/' + shader.encode() + b'.frag'
+         pattern = rb'glslang: (/[^\x00\r\n]*' + re.escape(suffix) + rb')\n[^\x00]*'
+         matches = list(re.finditer(pattern, data))
++        if not matches:
++            # A catalogue that does not carry this shader identity has no glslang diagnostic to
++            # shorten. Skipping is an honest no-op: this tool only rewrites long build paths in
++            # diagnostic strings and never changes executable code, so a title whose catalogue
++            # has other shader names must not fail the build here.
++            continue
+         if len(matches) != 1:
+-            raise ValueError('expected one original diagnostic per shader identity')
++            raise ValueError('expected more than one original diagnostic for one shader identity')
+         match = matches[0]
+         if not section[4] <= match.start() < match.end() < section[4] + section[5]:
+             raise ValueError('diagnostic lies outside .rodata')
+@@ -64,8 +70,11 @@ def sanitize(data):
+                             replacement_message=message.decode(), padding_bytes=len(before)-len(message)))
+     allowed = {i for c in changes for i in range(c['offset'], c['offset'] + c['length'])}
+     differences = [i for i, (a, b) in enumerate(zip(data, output)) if a != b]
+-    if len(output) != len(data) or not differences or not set(differences) <= allowed:
+-        raise ValueError('mutation exceeded the four diagnostic strings')
++    # Every changed byte must lie inside a recorded diagnostic range. An empty change set is a
++    # valid no-op (a title whose catalogue carries other shader identities has no diagnostic to
++    # rewrite); this is not evidence of a mutation bug.
++    if len(output) != len(data) or not set(differences) <= allowed:
++        raise ValueError('mutation exceeded the recorded diagnostic strings')
+     return bytes(output), dict(schema='t2-shader-diagnostic-sanitization/1',
+                                input_sha256=sha(data), output_sha256=sha(output),
+                                size=len(data), changed_bytes=len(differences), changes=changes,

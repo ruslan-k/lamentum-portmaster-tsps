@@ -249,3 +249,31 @@ Known limits of the draft, stated rather than hidden:
 The draft is therefore a scaffold for the next device iterations, not a working catalogue: the
 runtime must be run, the next requested program read from the log, translated, added, and the
 cycle repeated until the title stops asking for programs it does not have.
+
+## Runs 10-13 — into the draw path, one measured contract at a time
+
+| run | runtime SHA-256 (first 16) | stop | what it proved |
+|---|---|---|---|
+| 10 | `86f97fe1d43924ba` | `NVN_SAMPLER_PARAMETERS` | the generated catalogue was accepted: several `nvnProgramSetShaders` calls complete and the run moves past the shader stage |
+| 11 | `7af845dca58086ba` | `NVN_GUEST_POINTER` at `main+0x526fb4` | after the sampler profile fix the sampler decodes correctly (`min=2 mag=0 wrap=1/1/1 lod=0:1000`) |
+| 12 | `4b0d87c8d4eb8c63` | `NVN_GUEST_POINTER` | the refusal is our own diagnostic: `NVN_POINTER_REJECT id=154 address=0x0 bytes=48 perm=1` |
+| 13 | `462aad71d45cc23c` | `NVN_RENDER_TARGET_VIEWS_REQUIRED` at `main+0x53024c` | the diagnostic no longer fail-closes (`T2P_CMDMEM_CALLBACK_TARGET … vtable=NULL`) and the run reaches render-target binding |
+
+Two fixes landed here, both measured rather than guessed:
+
+1. **Sampler builder for this SDK generation.** The title's own setters give the layout
+   (`SetDevice` +0x00, `SetMinMagFilter` +0x08/+0x0c, `SetWrapMode` +0x10/+0x14/+0x18,
+   `SetLodClamp` +0x1c/+0x20, `SetLodBias` +0x24, `SetCompare` +0x28/+0x2c,
+   `SetMaxAnisotropy` +0x40, border +0x30..+0x3f; `nvnSamplerInitialize` copies 0x50 bytes to
+   object+0x08). The inherited 17.5.3 profile is a *packed* builder and decoded this one as
+   denormals. Selected by `LC2_SAMPLER_UNPACKED` in the owner image; the other profile is kept
+   behind `#else`. This SDK also disables anisotropy with 0.0, which the inherited check
+   rejected (`<1`).
+2. **The command-memory-callback diagnostic was fail-closed.** It dereferenced the callback
+   object's vtable through the strict pointer validator; this title carries a NULL vtable slot
+   there, so our own probe stopped a healthy guest. It now checks membership first and prints
+   what it finds (`vtable=NULL`, `unmapped`, …) instead of stopping — a diagnostic must never
+   fail-close.
+
+Frontier: `NVN_RENDER_TARGET_VIEWS_REQUIRED` — the guest binds a render target with an implicit
+view; the next measurement is what this SDK's `nvnCommandBufferSetRenderTargets` actually passes.
