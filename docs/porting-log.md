@@ -645,3 +645,30 @@ program whose GLSL types were rewritten. Either the affected program needs its a
 as integer, or Unity's packed attribute must be declared the way the title expects.
 
 Draws still 11 per run; no present yet; device clean after the reboot.
+
+### Draw path reached with real clears: the ESSL3 gates are cleared
+
+Sequence of defects closed in one session, each visible only after the previous (all in our glue):
+
+| # | driver / runtime report | cause | fix |
+|---|---|---|---|
+| 1 | `0:4 layout` | catalogue re-headered every entry `#version 100` | builder keeps `#version 300 es` for block programs |
+| 2 | `0:3 block name` | dialect chosen per file, not per program | one ES3 dialect for every entry (34/34) |
+| 3 | `L0001 Shader languages do not match` | ES3 vertex linked with ESSL1 fragment | same |
+| 4 | `L0007 varying in_attr2 not declared in vertex` | two stages name varyings differently | varyings renamed `varying_<location>` in both stages from the translator's locations |
+| 5 | `S0060 location on vertex output` / `P0003 separate_shader_objects not supported` | Mali has no such extension | locations dropped, names carry the pairing |
+| 6 | `0:33 fma`, `unpackFloat2x16`, `#error FP16` | GLSL 4.x / fp16 in an ES3 world | `#define fma(...)`, `unpackHalf2x16`, fp16 promoted to fp32 |
+| 7 | `NVN_LC2_VERTEX_SHADER_KIND_MISMATCH index=0 shader-kind=2 format=0x22` | builder mapped `vec4` -> kind 2 (uint) and everything else -> 1 | kind from the type: float 0, int 1, uint 2 |
+| 8 | `NVN_LC2_UNDEFINED_FRAGMENT_COLOR detail=0xffffffff` | Animal Well's "programme 6 writes no colour" special case keyed on the id | keyed on the declaration (`declared_mask==0`) |
+
+Measured now:
+
+```
+MOMO_CLEAR_COLOR target=176 rgba=0.0235294,0.0235294,0.0235294,0 mask=0xf draws=0
+MOMO_CLEAR_COLOR target=221 rgba=0,0,0,1 mask=0xf draws=17
+```
+
+draws 17 per run (was 11), two render targets cleared with real colours, and the next stop is a varying
+one: `NVN_LC2_SHADER_UNDEFINED_VARYING detail=0x1` - a fragment reading `varying_1` that its vertex
+partner does not write, i.e. the remaining work is pairing varyings per program (the builder renames by
+location, so the offending pair must disagree on which locations the vertex writes).

@@ -438,6 +438,23 @@ index 1aa4c67..caccaf3 100644
          if(f->args[1] && f->args[3] && *(uint64_t *)nvn_pointer(f->args[3],8,PROT_READ))
              stop("NVN_RENDER_TARGET_VIEWS_REQUIRED",nvn_caller,f->args[1],20);
  #endif
+diff --git a/native/nvn_megaman_color_mask.h b/native/nvn_megaman_color_mask.h
+index 3ecf8ab..1dd8c49 100644
+--- a/native/nvn_megaman_color_mask.h
++++ b/native/nvn_megaman_color_mask.h
+@@ -8,8 +8,10 @@
+ static inline unsigned nvn_megaman_color_mask(unsigned fragment_source,
+         unsigned declared_mask,unsigned requested_mask,unsigned *effective_mask) {
+     if(!effective_mask || (requested_mask&~15U) || (declared_mask&~15U))return 0;
+-    if(fragment_source==6) {
+-        if(declared_mask)return 0;
++    /* Programme 6 of the Animal Well trunk writes no colour; the id alone is not a property of the
++     * shader, so require that the declaration agrees (Lamentum's entry 6 is an ordinary colour-writing
++     * fragment and used to stop here with NVN_LC2_UNDEFINED_FRAGMENT_COLOR). */
++    if(fragment_source==6 && !declared_mask) {
+         *effective_mask=0;return 1;
+     }
+     if(requested_mask&~declared_mask)return 0;
 diff --git a/native/nvn_pointer.h b/native/nvn_pointer.h
 index 410deb4..7269206 100644
 --- a/native/nvn_pointer.h

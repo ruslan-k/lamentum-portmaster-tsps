@@ -30,20 +30,48 @@ def rewrite_essl100(source, stage):
     body = re.sub(r'^#version[^\n]*\n+', '', source)
     prelude = ['#version 300 es',
                'precision highp float;' if stage == 'vertex' else 'precision mediump float;']
+    # Varyings must pair across stages by name: Mali has no GL_EXT_separate_shader_objects ("P0003
+    # Extension ... not supported"), so layout(location) on vertex outputs / fragment inputs is illegal,
+    # and spirv-cross names the two sides differently ("L0007 Fragment shader uses a varying in_attr2
+    # that has not been declared in the vertex shader"). Rename every varying to varying_<location> in
+    # both stages, from the locations the translator already emitted, then drop the qualifier.
+    def rewrite_varyings(text, direction, stage_name):
+        mapping = {}
+
+        def repl(m):
+            location, type_name, name = m.group(1), m.group(2), m.group(3)
+            mapping[name] = 'varying_%s' % location
+            return '%s %s varying_%s;' % (direction, type_name, location)
+
+        text = re.sub(r'layout\(location = (\d+)\) %s (\w+)\s+(\w+);' % direction, repl, text)
+        for old, new in mapping.items():
+            text = re.sub(r'\b%s\b' % re.escape(old), new, text)
+        return text
+
     if stage == 'vertex':
-        # ESSL 3.10 forbids layout(location) on vertex outputs ("S0060"); varyings match by name.
-        body = re.sub(r'layout\(location = \d+\) out ', 'out ', body)
+        body = rewrite_varyings(body, 'out', stage)
         body = re.sub(r'\battribute\b', 'in', body)
         body = re.sub(r'\bvarying\b', 'out', body)
     else:
-        body = re.sub(r'layout\(location = \d+\) in ', 'in ', body)
+        body = rewrite_varyings(body, 'in', stage)
         body = re.sub(r'\bvarying\b', 'in', body)
-        body = body.replace('frag_color0', 'nvn_frag_color').replace('gl_FragColor', 'nvn_frag_color')
-        if 'out vec4 nvn_frag_color' not in body:
-            prelude.append('out vec4 nvn_frag_color;')
+    # Some programs are compiled against 16-bit floats. Mali exposes no FP16 extension through this
+    # path and spirv-cross emits "#error: No extension available for FP16" (measured: 0:6 P0002).
+    # Promote the arithmetic to 32-bit instead of failing the whole program.
+    body = re.sub(r'^\s*#error[^\n]*FP16[^\n]*$', '', body, flags=re.M)
+    for wide, narrow in (('float16_t', 'float'), ('f16vec2', 'vec2'), ('f16vec3', 'vec3'),
+                         ('f16vec4', 'vec4'), ('f16mat2', 'mat2'), ('f16mat3', 'mat3'),
+                         ('f16mat4', 'mat4'), ('f16mat2x2', 'mat2'), ('uint16_t', 'uint'),
+                         ('int16_t', 'int')):
+        body = body.replace(wide, narrow)
     # Sampler layouts are not portable here; the runtime binds by name.
     body = re.sub(r'layout\([^)]*\)\s*uniform (sampler2D|samplerCube|sampler2DArray)\s+(\w+);',
                   lambda m: 'uniform %s %s;' % (m.group(1), m.group(2)), body)
+    if 'unpackFloat2x16' in body or 'packFloat2x16' in body:
+        # GLSL 4.20 names; ESSL 3.10 has the same operation as *Half2x16 ("No matching function for
+        # call to 'unpackFloat2x16'").
+        prelude.append('#define unpackFloat2x16(a) unpackHalf2x16(a)')
+        prelude.append('#define packFloat2x16(a) packHalf2x16(a)')
     if 'fma(' in body:
         # ESSL 3.10 has no fma ("L0002: No matching function for call to 'fma'").
         prelude.append('#define fma(a, b, c) ((a) * (b) + (c))')
@@ -75,14 +103,14 @@ def filter_rewrite(source, sampler_names):
     uv = varying.group(1)
     return ('#version 300 es\n'
             'precision mediump float;\n'
-            'out vec4 nvn_frag_color;\n'
+            'out vec4 frag_color0;\n'
             'uniform sampler2D %s;\n'
             'uniform vec2 %s_size;\n'
             'in vec4 %s;\n'
             '%s\n'
             'void main() {\n'
             '    vec2 texel = floor(%s.xy * %s_size);\n'
-            '    nvn_frag_color = texture(%s, (texel + 0.5) / %s_size);\n'
+            '    frag_color0 = texture(%s, (texel + 0.5) / %s_size);\n'
             '}\n' % (main, main, uv, FILTER_NOTE, uv, main, main, main))
 
 
@@ -102,10 +130,10 @@ def placeholder_fragment(sampler_names):
     if sampler_names:
         body = ('uniform sampler2D %s;\n'
                 'in vec4 out_attr0;\n'
-                'void main() { nvn_frag_color = texture(%s, out_attr0.xy); }\n' % (sampler_names[0], sampler_names[0]))
+                'void main() { frag_color0 = texture(%s, out_attr0.xy); }\n' % (sampler_names[0], sampler_names[0]))
     else:
-        body = 'in vec4 out_attr0;\nvoid main() { nvn_frag_color = vec4(0.5, 0.5, 0.5, 1.0); }\n'
-    return ('#version 300 es\nprecision mediump float;\nout vec4 nvn_frag_color;\n'
+        body = 'in vec4 out_attr0;\nvoid main() { frag_color0 = vec4(0.5, 0.5, 0.5, 1.0); }\n'
+    return ('#version 300 es\nprecision mediump float;\nout vec4 frag_color0;\n'
             '/* TEST-ONLY substitute: NOT a translation (see the vertex stage note). */\n' + body)
 
 
@@ -249,7 +277,17 @@ def main():
         lines.append('  .code_hash={%s},.control_hash={%s},'
                      % (','.join('0x%02x' % b for b in code), ','.join('0x%02x' % b for b in control)))
         lines.append('  .samplers={%s},' % ','.join('{.name="%s",.stage=1,.binding=%d,.offset=0,.size_query=1,.texel_fetch_bits=0,.cpu_view=0}' % (s['name'], s['binding']) for s in p['samplers']))
-        lines.append('  .attributes={%s}},' % ','.join('{.name="%s",.location=%d,.kind=%d}' % (x['name'], x['location'], 2 if x['type'] == 'vec4' else 1) for x in p['attributes']))
+        # Attribute kind must match the NVN vertex format the guest binds: 0 = float, 1 = int,
+        # 2 = uint (nvn_vertex_format_decode). The old expression mapped vec4 -> 2 and everything else
+        # -> 1, so an ordinary float attribute was announced as uint and the draw stopped on
+        # NVN_LC2_VERTEX_SHADER_KIND_MISMATCH for attribute 0 (format 0x22, 3 x float32).
+        def attribute_kind(type_name):
+            if type_name.startswith('u'):
+                return 2
+            if type_name.startswith('i'):
+                return 1
+            return 0
+        lines.append('  .attributes={%s}},' % ','.join('{.name="%s",.location=%d,.kind=%d}' % (x['name'], x['location'], attribute_kind(x['type'])) for x in p['attributes']))
     lines.append('};')
     report = a.workspace / 'catalogue-draft.json'
     report.write_text(json.dumps(programs, indent=2) + '\n')
