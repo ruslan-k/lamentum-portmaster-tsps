@@ -843,3 +843,26 @@ Next step: stop trying to express the cbuf as a block and rewrite those accesses
 which Mali supports through `GL_EXT_texture_buffer` (present in this device's extension string) and which
 has no 64 KB block-layout restriction. The runtime side needs the cbuf bytes uploaded into a buffer
 texture per draw, next to the existing uniform upload path.
+
+### Correction: the drawn programs are real translations, and the panel path can hang the device
+
+Two corrections to what this log said earlier.
+
+1. **No placeholders are in use.** Parsing the generated catalogue entry by entry (the `TEST-ONLY`
+   marker inside an entry, not the placeholder templates that are always emitted) shows 34 entries and
+   **zero** substitutes. Every program the run draws with is a real translation:
+   `16/19, 11/9, 11/6, 11/22, 10/13, 12/14, 17/4, 18/21, 2/23, 7/0`. The earlier claim that "about ten
+   programs are TEST placeholders, which is why the frame is black" was wrong - the 11 `TEST-ONLY`
+   matches were the two placeholder *templates* in the header, not entries.
+   So the black frame is a real rendering question, not a translation gap.
+
+2. **The panel-present path can wedge the device.** The run with `COTM_FB_PRESENT=1` and
+   `MOMO_WINDOW_DRAWS=1` (the window-draw census) did not finish: the harness' log fetch timed out and
+   the device then stopped answering - `ping` 100% loss, `ssh` "No route to host" - i.e. a black-screen
+   hang of the class already seen on this hardware, not a graceful stop. Remote recovery is impossible
+   from here; it needs a physical power cycle. Consequence for the port: panel presentation stays opt-in
+   (`COTM_FB_PRESENT`), and any run that uses it must be treated as potentially fatal to the device.
+
+State before the hang: 21-program catalogue all translated, compile+link pass, 31 draws, three frames
+presented through the panel path, window textures sampled complete but black (`max=0`), and the drawn
+pairs listed above.
