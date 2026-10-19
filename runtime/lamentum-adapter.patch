@@ -30,6 +30,21 @@ index f85a59d..13390cf 100644
      } else if(i<2 && (instruction&0xffc003ffU)==0xd10003ffU) {
          /* sub sp,sp,#imm12 */
          ctx->uc_mcontext.sp-=(instruction>>10)&0xfff;
+diff --git a/native/ipc.h b/native/ipc.h
+index 7389a4e..e6014b7 100644
+--- a/native/ipc.h
++++ b/native/ipc.h
+@@ -296,6 +296,10 @@ static enum endpoint sm_lookup(const uint8_t *name) {
+     if(!memcmp(name,"audren:u",8))found=EP_AUDREN_MANAGER;
+     /* SDK 17 services with no laboratory behaviour: every command succeeds with no output; command 0 yields a child object. */
+     if(!memcmp(name,"ectx:aw\0",8))found=EP_AW_STUB;
++    /* Play log (pl:u / pl:s): the title reports statistics; nothing in the port can observe them,
++     * so every command succeeds with no output like the other laboratory stubs. Measured request:
++     * GET_SERVICE name=pl:u, then UNIMPLEMENTED_SERVICE at the SM dispatch. */
++    if(!memcmp(name,"pl:u\0\0\0\0",8) || !memcmp(name,"pl:s\0\0\0\0",8))found=EP_AW_STUB;
+     /* MOMODORA: Unity 2021 calls nn::ro::Initialize unconditionally (main+0x7c5e44, MEDIDO). No module is
+      * ever loaded here: the title has no rom:/.nrr/dynamic.nrr, so the fsp OpenFile below returns PathNotFound. */
+     if(!memcmp(name,"ldr:ro\0\0",8))found=EP_AW_STUB;
 diff --git a/native/megaman_texture_view.h b/native/megaman_texture_view.h
 index 90cb048..a1ba190 100644
 --- a/native/megaman_texture_view.h

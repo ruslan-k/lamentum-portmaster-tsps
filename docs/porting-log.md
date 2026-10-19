@@ -383,3 +383,25 @@ Verdict recorded for the record: the port's remaining work is the shader-catalog
 re-authored program family per material plus the data-partition variants), followed by command
 replay, memory, audio and input. That is a multi-week effort of the same shape as the West of
 Loathing port, not a continuation of the contract fixes that carried runs 01-21.
+
+## Automated catalogue loop and the frontiers after the shader stage
+
+`tools/shader_loop.py` closes the loop: build -> deploy -> principal-flow run with
+`LC2_SHADER_DUMP=1 AW_RELEASE=0` -> fetch the dumped program -> translate -> fold into the
+catalogue (TEST-ONLY substitutes where ESSL cannot express the program) -> next iteration. It
+stops as soon as a run ends on something other than `ZERO_SHADER_NOT_PINNED`.
+
+What it found (each iteration is one build + one device run):
+
+| frontier | detail | action |
+|---|---|---|
+| `ZERO_SHADER_NOT_PINNED` (768 B program) | second data-partition program | translated, catalogue 12 entries |
+| `UNIMPLEMENTED_SERVICE detail=1` | `GET_SERVICE name=pl:u` | PlayLog stubbed like the other laboratory services (`pl:u`, `pl:s`), commands succeed with no output |
+| `TIME_LIMIT` after 45 s | 32 guest threads alive, 98 textures, RSS 630 MB, 0 `DrawArrays/DrawElements`, 123 RomFS reads | the title runs but issues **no draws** yet |
+| `T2_MEMORY_FLOOR` (default 140 MiB, then 64) | `available-MiB=58` while the guest holds ~600 MB | raised for the run only, never as a fix |
+| `AUDOUT_HOST_FAILURE` | nxaudio stream start/pause error in one run (the previous run had audio with underruns) | device-level flakiness, not yet separated |
+
+So the port now gets past SDK init, NVN device, window, textures, the shader catalogue and the
+PlayLog service, and then sits in the title's own loading/initialisation without issuing a single
+draw. The next work is therefore not more shader entries but (a) why the title never reaches its
+first draw and (b) the memory headroom on a 986 MB board, with audio to be separated afterwards.

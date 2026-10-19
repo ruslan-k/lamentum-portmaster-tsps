@@ -71,6 +71,29 @@ def filter_rewrite(source, sampler_names):
             '}\n' % (main, main, uv, FILTER_NOTE, uv, main, main, main))
 
 
+PLACEHOLDER_VERTEX = ('#version 100\n'
+                     'precision highp float;\n'
+                     '/* TEST-ONLY substitute: NOT a translation of the title\'s program. Written so the\n'
+                     ' * replay can exercise draws/present while the real program is untranslated; the\n'
+                     ' * log marks it TEST and no picture claim may rest on it. */\n'
+                     'attribute vec4 in_attr0;\n'
+                     'attribute vec4 in_attr1;\n'
+                     'varying vec4 out_attr0;\n'
+                     'void main() { gl_Position = vec4(in_attr0.xy, in_attr0.z, 1.0); out_attr0 = in_attr1; }\n')
+
+
+def placeholder_fragment(sampler_names):
+    """TEST-ONLY fragment: one texel of the first sampler, or mid grey when the program has none."""
+    if sampler_names:
+        body = ('uniform sampler2D %s;\n'
+                'varying vec4 out_attr0;\n'
+                'void main() { gl_FragColor = texture2D(%s, out_attr0.xy); }\n' % (sampler_names[0], sampler_names[0]))
+    else:
+        body = 'varying vec4 out_attr0;\nvoid main() { gl_FragColor = vec4(0.5, 0.5, 0.5, 1.0); }\n'
+    return ('#version 100\nprecision mediump float;\n'
+            '/* TEST-ONLY substitute: NOT a translation (see the vertex stage note). */\n' + body)
+
+
 def samplers_of(source):
     out = []
     for m in re.finditer(r'layout\(set = \d+, binding = (\d+)\) uniform (sampler2D|sampler2DArray|samplerCube)\s+(\w+);', source):
@@ -114,6 +137,8 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('workspace', type=pathlib.Path)
     ap.add_argument('output', type=pathlib.Path)
+    ap.add_argument('--placeholder', action='store_true',
+                    help='emit TEST-ONLY substitutes for programs ESSL cannot express (never a translation)')
     a = ap.parse_args()
 
     programs = []
@@ -128,7 +153,12 @@ def main():
         samplers = samplers_of(source)
         needs_fetch = 'texelFetch' in source or 'textureSize' in source or 'textureQueryLevels' in source
         filter = filter_rewrite(source, [s['name'] for s in samplers]) if (stage == 'fragment' and needs_fetch) else None
-        if filter:
+        placeholder = None
+        if a.placeholder and (needs_fetch or 'ssbo' in source or 'uint ' in source):
+            placeholder = PLACEHOLDER_VERTEX if stage == 'vertex' else placeholder_fragment([s['name'] for s in samplers])
+        if placeholder:
+            translated, needs_fetch = placeholder, False
+        elif filter:
             translated, needs_fetch = filter, False
         else:
             translated, needs_fetch = rewrite_essl100(source, stage)
