@@ -549,3 +549,17 @@ left, 11 draws per run. Current stop: `NVN_SHADER_COMPILE_FAILED` for program 0x
 block ends up after non-preprocessor tokens once the runtime's later wrappers (varying interface /
 precision) are prepended, so the fix belongs in the runtime's final source assembly (hoist
 `#extension` right after `#version`), not in the catalogue files (which were normalised anyway).
+
+## Shader source normalisation: extensions first, then version
+
+The compile gate for program 0x10 moved three times, each step exposing the next real defect:
+
+| attempt | driver error | cause | fix |
+|---|---|---|---|
+| 1 | `0:4: P0001: Extension directive must occur before any non-preprocessor tokens` | translator/wrapper preludes pushed `#extension` below other tokens | `nvn_hoist_extensions()` pulls `#version` and every `#extension` out and rebuilds the source as version, extensions, rest |
+| 2 | `0:3: P0003: Extension 'GL_EXT_scalar_block_layout' not supported` | translator asks for scalar layout, Mali has none | unsupported extension dropped instead of required |
+| 3 | `0:4: L0001: Typename expected, found 'layout'` | the source carries `layout(...)`/`in`/`out` but **no `#version` line**, so the driver parses it as ESSL 1.00 | not fixed yet: prepend `#version 300 es` when a source uses ES3 syntax and declares no version |
+
+Draws are stable at 11 per run through all of this; the environment (SDK, platform service, font,
+catalogue) holds. The next step is the version-less-source case above, after which the compile gate
+should clear and the run can reach its first present.
