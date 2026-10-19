@@ -794,7 +794,7 @@ index 0545586..fe71751 100644
      nvn_gl_completion.completion_valid=0;
  }
 diff --git a/native/nvn_render.h b/native/nvn_render.h
-index 543b4b5..b7c98e4 100644
+index 543b4b5..997d40a 100644
 --- a/native/nvn_render.h
 +++ b/native/nvn_render.h
 @@ -1267,7 +1267,12 @@ static void nvn_render_draw_inner(struct nvn_record *r) {
@@ -811,6 +811,38 @@ index 543b4b5..b7c98e4 100644
          unsigned element=vf.bytes,stride=nvn_render.streams[stream][0];struct nvn_range range=nvn_render.vertex[stream];
          uint64_t start=base*stride+offset,extent=maximum*stride+element;
          if(!stride||start>range.size||extent>range.size-start)stop("NVN_VERTEX_FETCH_RANGE",nvn_caller,start+extent,24);
+@@ -1449,6 +1454,31 @@ static void nvn_render_draw_inner(struct nvn_record *r) {
+     }
+     if(preserve)momo_stencil_probe(nvn_replay.draws+1,p->sources[0],p->sources[1]);
+     momo_window_draws_census(nvn_render.target,nvn_replay.last_frame,nvn_replay.draws+1,p->sources[0],p->sources[1]);
++    {   /* COTM_DRAW_LOG=<n>: which target and which program each of the first n draws uses. The window
++         * census only fires on a chosen frame, and the frame counter does not reach 1 in every run. */
++        static int draw_log_configured;static unsigned draw_log_limit,draw_log_printed;
++        if(!draw_log_configured){const char *o=getenv("COTM_DRAW_LOG");draw_log_limit=o?(unsigned)strtoul(o,NULL,0):0;draw_log_configured=1;}
++        if(draw_log_printed<draw_log_limit) {
++            draw_log_printed++;
++            int window=momo_window_image_index(nvn_render.target)>=0;
++            if(window) {
++                GLboolean mask[4]={0,0,0,0};glGetBooleanv(GL_COLOR_WRITEMASK,mask);
++                GLint viewport[4]={0,0,0,0};glGetIntegerv(GL_VIEWPORT,viewport);
++                GLint box[4]={0,0,0,0};glGetIntegerv(GL_SCISSOR_BOX,box);
++                printf("NVN_DRAW target=%"PRIu64" window=1 program=%u/%u index=%u/%u frame=%u"
++                       " blend=%d mask=%d%d%d%d viewport=%d,%d,%dx%d scissor=%d box=%d,%d,%dx%d blend=0x%x\n",
++                    nvn_render.target->id,p->sources[0],p->sources[1],draw_log_printed,draw_log_limit,
++                    nvn_replay.last_frame,glIsEnabled(GL_BLEND)?1:0,
++                    mask[0]?1:0,mask[1]?1:0,mask[2]?1:0,mask[3]?1:0,
++                    viewport[0],viewport[1],viewport[2],viewport[3],glIsEnabled(GL_SCISSOR_TEST)?1:0,
++                    box[0],box[1],box[2],box[3],(unsigned)nvn_render.blend[0]);
++            } else {
++                printf("NVN_DRAW target=%"PRIu64" window=0 program=%u/%u index=%u/%u frame=%u\n",
++                    nvn_render.target->id,p->sources[0],p->sources[1],draw_log_printed,draw_log_limit,
++                    nvn_replay.last_frame);
++            }
++        }
++    }
+     nvn_replay.draws++;nvn_render.target->draws++;
+     struct nvn_texture *target_storage=zero_texture_storage_state(nvn_render.target);
+     if(target_storage!=nvn_render.target)target_storage->draws++;
 diff --git a/native/nvn_replay.h b/native/nvn_replay.h
 index b3d6c20..761dd84 100644
 --- a/native/nvn_replay.h

@@ -866,3 +866,25 @@ Two corrections to what this log said earlier.
 State before the hang: 21-program catalogue all translated, compile+link pass, 31 draws, three frames
 presented through the panel path, window textures sampled complete but black (`max=0`), and the drawn
 pairs listed above.
+
+## The window draws are correctly configured - the black frame is not a state bug
+
+`COTM_DRAW_LOG=40` records every draw with its target and, for window targets, the state at draw time:
+
+```
+NVN_DRAW target=176 window=0 program=16/19 ... (18 draws into intermediate targets)
+NVN_DRAW target=2 window=1 program=11/9  index=19/40 frame=0 blend=0 mask=1111 viewport=0,0,1280x720 scissor=1 box=0,0,16384x16384 blend=0x110c0007
+NVN_DRAW target=2 window=1 program=12/14 index=20/40 frame=0 blend=1 mask=1111 viewport=0,0,1280x720 scissor=1 box=0,0,16384x16384 blend=0x110c0007
+NVN_DRAW target=2 window=1 program=12/14 index=21..24 ...
+```
+
+So the title does draw into the first swapchain image (texture id 2), with real translated programs
+(11/9 then 12/14), colour mask all four channels, a 1280x720 viewport, a scissor box larger than the
+target, and blending whose destination factor is ZERO (result = source). None of that explains a black
+result - and the earlier `MOMO_WINDOW_DRAWS` census never fired because the draws all happen at
+`frame=0`, which that switch ignores.
+
+Two explanations remain, and they are cheap to separate: the title is presenting its own **loading
+screen** (black by design while the 1.8 GB of assets stream in) or the fragment output of 12/14 is black
+because its inputs are not uploaded yet. Both need a run that reaches later frames, which is exactly what
+the two present paths block: EGL stops after the first swap, and the panel path can wedge the device.
