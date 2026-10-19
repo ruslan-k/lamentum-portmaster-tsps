@@ -445,3 +445,27 @@ to the stub). The remaining question is what the SDK needs from the `pl:u` sessi
 (the runtime's session lifecycle or the guest after an error) and which reply shape makes
 `nn::pl::Initialize` succeed. That is the next measurement; no re-authored shader or draw work can
 make progress before it.
+
+### The `pl:u` retry loop is the platform (shared-font) service, and the guest closes the session
+
+Refinement of the `pl:u` finding:
+
+- `pl:u` in this SDK is **`nn::pl` = the platform service**, not PlayLog. Its symbols in the title's
+  own `sdk` module are `nn::pl::RequestSharedFontLoad(fontType)`, `nn::pl::GetSharedFontLoadState(fontType)`,
+  `nn::pl::GetCurrentIlluminance`, `nn::pl::BeginVrMode` - i.e. shared-font and platform queries.
+- The runtime prints `IPC_SESSION_PEER_CLOSED` only when the **guest** sends a session-close
+  message (`loader.c`, `h0==2`). So the SDK closes the `pl:u` session itself, immediately after our
+  laboratory stub answers command 1 with "success, no output". The SDK then retries: 931
+  `GET_SERVICE name=pl:u` in 100 s, with a `CloseHandle` spin (935 profiler samples at the
+  CloseHandle wrapper).
+- In other words the loop is not our session dying: it is the SDK rejecting the reply shape and
+  closing the session. The reply must carry what the platform proxy expects, and the shared-font
+  data the title asks for does not exist in this port at all.
+
+Physical check while the title "ran": the device's own `kmsgrab` capture taken mid-run shows the
+SpruceOS standby clock (`08:19 PM / Monday, October 19 / 90%`), i.e. nothing of the game reached
+the panel - consistent with zero draws.
+
+Next step: implement the platform service's shared-font contract (the load-state query and the
+font payload), or prove the title can boot with a font substitution. Until that reply is right the
+guest never leaves its initialisation loop, so no shader, draw or memory work can produce a frame.
