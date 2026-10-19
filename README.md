@@ -1,6 +1,13 @@
 # Lamentum — experimental Switch-to-Linux-ARM64 port (TSPS / SpruceOS)
 
-**Status: bring-up. No game frame, no playable launch, not a PortMaster release.**
+**Status: bring-up. The port boots the original title code into NVN and creates its real
+1280x720 window; no frame has been rendered yet and there is no playable launch.**
+
+Last measured device run (`evidence/device-09`): owner modules mapped -> original `rtld` ->
+SDK init (24+ threads) -> `nvnBootstrapLoader` -> NVN device/window (three 1280x720 textures,
+context preserved, nothing drawn) -> first `ProgramSetShaders` -> controlled stop
+`ZERO_SHADER_NOT_PINNED`. The runtime refuses to invent a shader translation, which is why the
+port stops there; the shader catalogue is the open work item.
 
 This repository tracks the attempt to run the owner's Nintendo Switch copy of *Lamentum*
 (Unity 2019.4.4f1, IL2CPP, ARM64) natively on a TrimUI Smart Pro S class handheld through a

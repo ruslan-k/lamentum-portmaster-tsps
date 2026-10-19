@@ -189,3 +189,18 @@ empty catalogue stub - refuses to guess a translation. That refusal is the hones
 port: **no frame has been rendered yet**, and the shader catalogue is the next work item.
 
 Current installed runtime: `lamentum-nextos` SHA-256 `85d4211b5e82e426eaca5d3e3b2cde44eb9d43c6d39237b2491f48b75ca0aace`.
+
+## Shader inventory of the title's own modules (host-side scan)
+
+Scanning the owner image segments for the NVN control-section magic `0x98761234` (version 1,
+plausible control/code sizes) finds **10 programs**, all in `main.rodata`, each with a
+`0x880`-byte control section and 0x100-0x400-byte code, e.g. at `main.rodata+0x86cac8`
+(control 0x880, code 0x100). The size matches the runtime's own report
+(`control-bytes=2176`, `code-bytes=256`) and the `MOMO_SHADERS` note about the `0x880` control
+section, so this SDK generation is the modern-layout family.
+
+That inventory is only what the title links into its modules: Unity 2019.4 keeps its
+shader-variant set in the data partition (the 1.8 GB `Data/*.assets`/`level*` payload), so the
+catalogue a playable build needs is larger than these ten and must be collected from the
+programs the title actually requests at runtime (the runtime logs each request with both
+hashes before it refuses).
