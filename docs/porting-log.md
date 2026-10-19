@@ -757,3 +757,31 @@ Conclusion: on this Mali/fbdev stack a window surface accepts one `eglSwapBuffer
 already binds the default framebuffer, and TSPS ports normally present by writing the composited texture
 to the panel), driven from the same "copy the final texture" step the present path already performs.
 Also still open: the first frame is black (`nonblack=0`) with 13 texture draws before it.
+
+## Panel presentation implemented (COTM_FB_PRESENT=1)
+
+`eglSwapBuffers` on this Mali/fbdev stack accepts one swap and then refuses every `make_current`
+(build-100..102). Presentation now bypasses EGL entirely: the present quad renders into an offscreen
+FBO, the frame is read back (`GL_BGRA_EXT`, rows flipped) and copied into the mapped `/dev/fb0`, with
+`FBIOPAN_DISPLAY` flipping between the two pages. `nvn_fb_present.h` holds it; the render binding stays
+on the pbuffer, so the broken window surface is never touched again.
+
+Measured (build-105/106):
+
+```
+NVN_FB_PRESENT enabled=1 fb=1280x720 line=0xb40 pages=2 swap=none
+NVN_PRESENT_PIXELS frame=1 ... status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=2 ... status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=3 ... status=BLACK-SAMPLE
+STOP status=NVN_COMMAND_REUSE_BEFORE_COMPLETION detail=0x2
+```
+
+So frames are now presented through the panel path (three before the stop, instead of one), and the stop
+moved to the command-list recycling that the swap used to mark complete; marking the GL completion after
+the readback did not clear it (the list's `completed` flag is set by the queue path, not by the GL
+serial).
+
+Two facts to keep straight: (a) the physical screenshot taken 105 s into the run still shows the Spruce
+PORTS menu with Lamentum selected, so the panels' pixels are not yet ours at that moment; (b) every
+presented frame samples black (`nonblack=0`) even though 13 texture draws precede it. The next work is
+therefore (1) the command-list completion after a panel present, and (2) why the composed frame is black.

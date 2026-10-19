@@ -457,6 +457,115 @@ index 1aa4c67..caccaf3 100644
          if(f->args[1] && f->args[3] && *(uint64_t *)nvn_pointer(f->args[3],8,PROT_READ))
              stop("NVN_RENDER_TARGET_VIEWS_REQUIRED",nvn_caller,f->args[1],20);
  #endif
+diff --git a/native/nvn_fb_present.h b/native/nvn_fb_present.h
+new file mode 100644
+index 0000000..9d19bfc
+--- /dev/null
++++ b/native/nvn_fb_present.h
+@@ -0,0 +1,103 @@
++#ifndef NVN_FB_PRESENT_H
++#define NVN_FB_PRESENT_H
++/* Presentation straight to the panel.
++ *
++ * Measured on this Mali/fbdev stack: a window surface accepts exactly one eglSwapBuffers and then
++ * refuses every eglMakeCurrent - including on a freshly created surface and after eglReleaseThread()
++ * (build-100..102). Rendering itself is fine on the pbuffer, so the frame is drawn into an offscreen
++ * colour target, read back and copied into the mapped /dev/fb0, flipping pages with FBIOPAN_DISPLAY.
++ * That is the same mechanism the Animal Well trunk used behind AW_FB_COPY, made available here under
++ * COTM_FB_PRESENT=1 and without the eglSwapBuffers call that breaks the surface.
++ */
++struct nvn_fb_present_state {
++    int configured, enabled, fd;
++    unsigned width, height, line, pages, page;
++    uint8_t *map, *pixels;
++    size_t map_len;
++    struct fb_var_screeninfo var;
++    GLuint fbo, texture;
++    uint64_t frames;
++};
++static struct nvn_fb_present_state nvn_fb_present = {.fd = -1};
++
++static unsigned nvn_fb_present_enabled(void) {
++    if (!nvn_fb_present.configured) {
++        const char *option = getenv("COTM_FB_PRESENT");
++        nvn_fb_present.enabled = option && !strcmp(option, "1");
++        nvn_fb_present.configured = 1;
++    }
++    return nvn_fb_present.enabled;
++}
++
++static void nvn_fb_present_open(unsigned width, unsigned height, uint64_t pc) {
++    if (nvn_fb_present.fd >= 0) return;
++    nvn_fb_present.fd = open("/dev/fb0", O_RDWR | O_CLOEXEC);
++    if (nvn_fb_present.fd < 0) stop("NVN_FB_PRESENT_OPEN", pc, errno, 21);
++    struct fb_fix_screeninfo fix;
++    if (ioctl(nvn_fb_present.fd, FBIOGET_FSCREENINFO, &fix) < 0 ||
++        ioctl(nvn_fb_present.fd, FBIOGET_VSCREENINFO, &nvn_fb_present.var) < 0)
++        stop("NVN_FB_PRESENT_INFO", pc, errno, 21);
++    if (nvn_fb_present.var.xres != width || nvn_fb_present.var.yres != height ||
++        nvn_fb_present.var.bits_per_pixel != 32)
++        stop("NVN_FB_PRESENT_FORMAT", pc, nvn_fb_present.var.bits_per_pixel, 21);
++    nvn_fb_present.line = fix.line_length;
++    nvn_fb_present.pages = nvn_fb_present.var.yres_virtual / height;
++    if (!nvn_fb_present.pages) nvn_fb_present.pages = 1;
++    if (nvn_fb_present.pages > 2) nvn_fb_present.pages = 2;
++    nvn_fb_present.map_len = fix.smem_len;
++    nvn_fb_present.map = mmap(NULL, nvn_fb_present.map_len, PROT_READ | PROT_WRITE, MAP_SHARED,
++                              nvn_fb_present.fd, 0);
++    if (nvn_fb_present.map == MAP_FAILED) stop("NVN_FB_PRESENT_MMAP", pc, errno, 21);
++    nvn_fb_present.pixels = malloc((size_t)width * height * 4);
++    if (!nvn_fb_present.pixels) stop("NVN_FB_PRESENT_MEMORY", pc, width * height * 4, 21);
++    nvn_fb_present.width = width;
++    nvn_fb_present.height = height;
++    glGenTextures(1, &nvn_fb_present.texture);
++    glBindTexture(GL_TEXTURE_2D, nvn_fb_present.texture);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)width, (GLsizei)height, 0, GL_RGBA,
++                 GL_UNSIGNED_BYTE, NULL);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++    glGenFramebuffers(1, &nvn_fb_present.fbo);
++    glBindFramebuffer(GL_FRAMEBUFFER, nvn_fb_present.fbo);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
++                           nvn_fb_present.texture, 0);
++    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
++        stop("NVN_FB_PRESENT_FBO", pc, 0, 21);
++    struct line b = {0};
++    text(&b, "NVN_FB_PRESENT enabled=1 fb=");
++    hex(&b, width);
++    text(&b, "x");
++    hex(&b, height);
++    text(&b, " line=");
++    hex(&b, nvn_fb_present.line);
++    text(&b, " pages=");
++    hex(&b, nvn_fb_present.pages);
++    text(&b, " swap=none");
++    emit(&b);
++}
++
++static void nvn_fb_present_bind(void) {
++    if (nvn_fb_present.fd < 0) nvn_fb_present_open(nvn_window.fb.width, nvn_window.fb.height, nvn_caller);
++    glBindFramebuffer(GL_FRAMEBUFFER, nvn_fb_present.fbo);
++}
++
++static void nvn_fb_present_swap(void) {
++    unsigned width = nvn_fb_present.width, height = nvn_fb_present.height;
++    /* The panel is BGRA in memory; Mali exposes GL_EXT_read_format_bgra (present in the device's
++     * extension string), so the swizzle happens in the driver and rows are only flipped here. */
++    glReadPixels(0, 0, (GLsizei)width, (GLsizei)height, GL_BGRA_EXT, GL_UNSIGNED_BYTE,
++                 nvn_fb_present.pixels);
++    unsigned page = (nvn_fb_present.page + 1) % nvn_fb_present.pages;
++    uint8_t *dst = nvn_fb_present.map + (size_t)page * height * nvn_fb_present.line;
++    for (unsigned y = 0; y < height; y++) {
++        const uint8_t *src = nvn_fb_present.pixels + (size_t)(height - 1 - y) * width * 4;
++        memcpy(dst + (size_t)y * nvn_fb_present.line, src, (size_t)width * 4);
++    }
++    nvn_fb_present.var.yoffset = page * height;
++    nvn_fb_present.var.xoffset = 0;
++    ioctl(nvn_fb_present.fd, FBIOPAN_DISPLAY, &nvn_fb_present.var);
++    nvn_fb_present.page = page;
++    nvn_fb_present.frames++;
++}
++#endif
 diff --git a/native/nvn_framebuffers.h b/native/nvn_framebuffers.h
 index c8d8057..7cf03f7 100644
 --- a/native/nvn_framebuffers.h
@@ -520,14 +629,21 @@ index 410deb4..7269206 100644
  }
  /* Called after Submit, outside the producer/regions locks. A quick atomic
 diff --git a/native/nvn_present.h b/native/nvn_present.h
-index 8c0254b..8bcaba6 100644
+index 8c0254b..da38c7c 100644
 --- a/native/nvn_present.h
 +++ b/native/nvn_present.h
-@@ -13,6 +13,13 @@
+@@ -13,6 +13,20 @@
  #include "nvn_capture_request.h"
  #include "nxgl_frame_proof_adapter.h"
  #include "t2_present_pace.h"
++#include "nvn_fb_present.h"
 +static void nvn_present_bind(EGLContext context,uint64_t pc) {
++    /* With panel presentation the frame goes to an offscreen FBO, so the pbuffer stays current and the
++     * window surface (which the driver stops accepting after one swap) is never bound again. */
++    if(nvn_fb_present_enabled()&&nvn_device.render_surface) {
++        if(nvn_single_make_current(nvn_device.render_surface,nvn_device.render_surface,context))return;
++        stop("NVN_PRESENT_CONTEXT",pc,eglGetError(),21);
++    }
 +    if(nvn_single_make_current(nvn_window.surface,nvn_window.surface,context))return;
 +    nvn_window_surface_recreate(pc);
 +    if(!nvn_single_make_current(nvn_window.surface,nvn_window.surface,context))
@@ -537,7 +653,7 @@ index 8c0254b..8bcaba6 100644
  static struct {EGLContext context;GLuint program,vertices;GLint image_scale,image_offset;unsigned frames,black_streak,proved,sampled_pixels,full_readback,sample_y,sample_rows;
      unsigned sparse_readback,sample_frame_logs;struct nvn_pixel_band band;} nvn_present;
  static void nvn_present_receipt(const char *status,unsigned nonblack,unsigned maximum,unsigned draws) {
-@@ -97,8 +104,8 @@ static void nvn_present_setup(void) {
+@@ -97,8 +111,8 @@ static void nvn_present_setup(void) {
      if(nvn_present.sample_frame_logs)printf("NVN_VIDEO_LOG_CADENCE measured=always unmeasured=journal-only journal=one-per-frame\n");
      const EGLint attrs[]={EGL_CONTEXT_CLIENT_VERSION,2,EGL_NONE};
      nvn_present.context=nvn_single_enabled()?nvn_device.context:eglCreateContext(nvn_device.display,nvn_device.config,nvn_device.context,attrs);
@@ -548,7 +664,7 @@ index 8c0254b..8bcaba6 100644
      const char *gl_extensions=(const char *)glGetString(GL_EXTENSIONS),*egl_extensions=eglQueryString(nvn_device.display,EGL_EXTENSIONS);
      EGLint proof_width=0,proof_height=0;
      (void)eglQuerySurface(nvn_device.display,nvn_window.surface,EGL_WIDTH,&proof_width);
-@@ -186,7 +193,7 @@ static unsigned nvn_present_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -186,7 +200,7 @@ static unsigned nvn_present_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
      if(!nvn_async_frame_enabled())nvn_async_present_wait_locked(q,single);
      if(!single)nvn_egl_present_reader_wait();
      if(single) {
@@ -557,7 +673,7 @@ index 8c0254b..8bcaba6 100644
          /* This is a logical context use even though its physical binding is
           * retained. Do not reuse a completion proof from before the quad. */
          if(!++nvn_gl_completion.use_serial)stop("NVN_GL_SERIAL_WRAP",nvn_caller,0,24);
-@@ -199,7 +206,7 @@ static unsigned nvn_present_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -199,7 +213,7 @@ static unsigned nvn_present_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
      }
      nvn_present_setup();
      momo_stencil_selftest();
@@ -566,10 +682,27 @@ index 8c0254b..8bcaba6 100644
      t2_present_gpu_wait_issue(); /* FRENTE-C: GPU-side order after the frame (T2_PRESENT_GPU_WAIT=1) */
      nvn_single_present_quad(nvn_present.program,nvn_present.vertices);
      struct nvn_texture *t=nvn_window.textures[index];unsigned width=nvn_window.fb.width,height=nvn_window.fb.height;
-@@ -309,6 +316,14 @@ static unsigned nvn_present_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -207,7 +221,7 @@ static unsigned nvn_present_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+     if(aw_fbcopy_enabled()){aw_fbcopy_open(width,height);glBindFramebuffer(GL_FRAMEBUFFER,aw_fbcopy.fbo);}
+     else glBindFramebuffer(GL_FRAMEBUFFER,0);
+ #else
+-    glBindFramebuffer(GL_FRAMEBUFFER,0);
++    if(nvn_fb_present_enabled())nvn_fb_present_bind();else glBindFramebuffer(GL_FRAMEBUFFER,0);
+ #endif
+     const nxcompat_video_owner_decision *video=t2_video_layout(
+         (int)((uint64_t)nvn_window.crop[2]*nvn_low_render_width(t)/t->b.width),
+@@ -308,7 +322,21 @@ static unsigned nvn_present_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+ #ifdef ANIMAL_WELL_SHADERS
      if(aw_fbcopy_enabled())aw_fbcopy_present();else {
          nxgl_frame_proof_before_present(width,height);
-         if(!eglSwapInterval(nvn_device.display,0) || !nvn_platform_swap(nvn_device.display,nvn_window.surface))stop("NVN_PRESENT_SWAP_FAILED",nvn_caller,eglGetError(),22);
+-        if(!eglSwapInterval(nvn_device.display,0) || !nvn_platform_swap(nvn_device.display,nvn_window.surface))stop("NVN_PRESENT_SWAP_FAILED",nvn_caller,eglGetError(),22);
++        if(nvn_fb_present_enabled()) {
++        nvn_fb_present_swap(); /* no eglSwapBuffers: it is what invalidates the fbdev surface */
++        /* The swap used to be the point where the frame's command lists were known complete. Without
++         * it the guest reused an arena still marked submitted and hit NVN_COMMAND_REUSE_BEFORE_COMPLETION;
++         * the readback above already waited for the GPU, so mark completion here. */
++        nvn_gl_finish_current();
++    } else if(!eglSwapInterval(nvn_device.display,0) || !nvn_platform_swap(nvn_device.display,nvn_window.surface))stop("NVN_PRESENT_SWAP_FAILED",nvn_caller,eglGetError(),22);
 +    /* Mali's fbdev path leaves the thread's EGL binding in a state where the next eglMakeCurrent on any
 +     * window surface fails with EGL_BAD_SURFACE. Releasing the thread binding after the swap lets the
 +     * next bind start clean (diagnostic A/B, logged). */
