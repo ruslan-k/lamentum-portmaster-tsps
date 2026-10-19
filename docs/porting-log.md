@@ -716,3 +716,23 @@ because it was recreated by the swap path.
 
 Next two gates, in order: (1) EGL_BAD_SURFACE at the queue wait, (2) why the presented frame is black
 while 13 texture draws are recorded (asset upload / final composition source).
+
+### After the first present the window surface stops being usable for make_current
+
+Measured (build-98/99, `COTM_GL_ERROR_IGNORE=1`):
+
+```
+NVN_PRESENT_PIXELS frame=1 nonblack=0 max=0 white=0 texture-draws=13 status=BLACK-SAMPLE
+NVN_QUEUE_CONTEXT_DETAIL display=0x55b7ac00e0 surface=0x55b7c1c670 context=0x55b7c1cd40 egl=0x300d
+STOP status=NVN_QUEUE_CONTEXT pc=main.text.seg+0x53b8d8
+```
+
+`0x300d` = `EGL_BAD_SURFACE`. The handles are the objects the present path had just used successfully, so
+the surface is not a stale value - the driver refuses it after `eglSwapBuffers` on the fbdev window
+surface. A detach-and-retry (`eglMakeCurrent(NO_SURFACE)` then retry, build-99) does **not** clear it, so
+it is not a stale binding.
+
+Next step: separate the render binding from the present binding - render into the pbuffer/FBOs and bind
+the window surface only for the swap - instead of returning to `make_current(window surface)` after the
+present. That is also where the black frame has to be investigated: 13 texture draws are recorded before
+the present, and the sampled backbuffer is uniformly black.

@@ -500,6 +500,45 @@ index 410deb4..7269206 100644
      return (void *)(uintptr_t)address;
  }
  /* Called after Submit, outside the producer/regions locks. A quick atomic
+diff --git a/native/nvn_queue.h b/native/nvn_queue.h
+index 0545586..e2243aa 100644
+--- a/native/nvn_queue.h
++++ b/native/nvn_queue.h
+@@ -99,11 +99,33 @@ static struct {
+     uint64_t use_serial,completed_serial,skipped_waits,real_waits;
+     unsigned completion_valid;
+ } nvn_gl_completion={.mutex=PTHREAD_MUTEX_INITIALIZER};
++static void nvn_single_state_reset(void) {
++    nvn_single_state.context=EGL_NO_CONTEXT;nvn_single_state.draw=EGL_NO_SURFACE;
++    nvn_single_state.read=EGL_NO_SURFACE;nvn_single_state.display=EGL_NO_DISPLAY;
++}
+ static void nvn_gl_acquire_locked(void) {
+     nvn_single_transfer_acquire_locked();
+     nvn_single_require_owner();
+     if(!nvn_single_enabled())nvn_egl_present_reader_wait();
+-    if(!nvn_single_make_current(nvn_device.surface,nvn_device.surface,nvn_device.context))stop("NVN_QUEUE_CONTEXT",nvn_caller,eglGetError(),21);
++    if(!nvn_single_make_current(nvn_device.surface,nvn_device.surface,nvn_device.context)) {
++        /* EGL_BAD_SURFACE (0x300d) right after the first present: drop the binding and retry once. The
++         * surface and display handles are the same objects the present path used a moment earlier, so
++         * the failure is a stale binding rather than a destroyed surface. */
++        eglMakeCurrent(nvn_device.display,EGL_NO_SURFACE,EGL_NO_SURFACE,EGL_NO_CONTEXT);
++        nvn_single_state_reset();
++        if(nvn_single_make_current(nvn_device.surface,nvn_device.surface,nvn_device.context)) {
++            printf("NVN_QUEUE_CONTEXT_RETRY ok after detach\n");
++            return;
++        }
++        /* Name every handle involved: after the first present the surface becomes invalid and the bare
++         * EGL error (0x300d) does not say which of them the driver rejects. */
++        struct line b={0};text(&b,"NVN_QUEUE_CONTEXT_DETAIL display=");hex(&b,(uint64_t)nvn_device.display);
++        text(&b," surface=");hex(&b,(uint64_t)nvn_device.surface);
++
++        text(&b," context=");hex(&b,(uint64_t)nvn_device.context);
++        text(&b," egl=");hex(&b,eglGetError());emit(&b);
++        stop("NVN_QUEUE_CONTEXT",nvn_caller,eglGetError(),21);
++    }
+     if(!++nvn_gl_completion.use_serial)stop("NVN_GL_SERIAL_WRAP",nvn_caller,0,24);
+     nvn_gl_completion.completion_valid=0;
+ }
 diff --git a/native/nvn_render.h b/native/nvn_render.h
 index 543b4b5..b7c98e4 100644
 --- a/native/nvn_render.h
