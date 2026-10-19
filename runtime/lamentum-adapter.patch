@@ -103,6 +103,18 @@ index 7389a4e..59df724 100644
      if(endpoint==EP_AW_STUB) {
          struct line stub={0};text(&stub,"AW_STUB_SERVICE command=");hex(&stub,req.command);text(&stub," data=");hex(&stub,req.data_size);emit(&stub);
          if(req.command==0){ipc_child(buffer,s,&req,EP_AW_STUB,pc);return;}
+diff --git a/native/loader.c b/native/loader.c
+index 8018af5..21c9362 100644
+--- a/native/loader.c
++++ b/native/loader.c
+@@ -741,6 +741,7 @@ int main(int argc,char **argv) {
+     }
+     t2_lazy_mesh_apply(images,sizeof(images)/sizeof(images[0])); /* Frente L: lazy quad meshes, T2_LAZY_MESH=0 disables */
+     t2_image_file_map_report();
++    host_mappings_reserve(0); /* the guest must not pick addresses the host already uses */
+     /* Build and staging pin the original main NSO and segment hashes. The
+      * optional movie handler also checks each relevant native instruction. */
+     /* Historical LC2 hooks stay off: their code and object layouts are not
 diff --git a/native/megaman_texture_view.h b/native/megaman_texture_view.h
 index 90cb048..a1ba190 100644
 --- a/native/megaman_texture_view.h
@@ -188,7 +200,7 @@ index 90cb048..a1ba190 100644
  #define MEGAMAN_TEXTURE_VIEW_BYTES 36U
  static inline unsigned megaman_texture_view_identity(const uint8_t *view,unsigned levels) {
 diff --git a/native/memory.h b/native/memory.h
-index 0564e33..f5a91ee 100644
+index 0564e33..9f8d3b2 100644
 --- a/native/memory.h
 +++ b/native/memory.h
 @@ -103,7 +103,8 @@ static void stack_alias_locked(uint64_t dest,uint64_t source,uint64_t size,unsig
@@ -201,6 +213,46 @@ index 0564e33..f5a91ee 100644
      char name[]="/tmp/cotm-switch-shm-XXXXXX";int fd=mkstemp(name);
      if(fd<0)stop("SHARED_BACKING_FAILED",pc,errno,21);
      unlink(name);fcntl(fd,F_SETFD,FD_CLOEXEC);
+@@ -112,6 +113,39 @@ static unsigned shared_create(uint64_t size,unsigned permission,uint64_t pc) {
+     if(writer==MAP_FAILED)stop("SHARED_WRITER_FAILED",pc,errno,21);
+     shared_regions[nshared]=(struct shared_region){fd,size,writer,permission};return nshared++;
+ }
++/* Host mappings are part of the same address space as the guest's, but the guest cannot see them:
++ * svcQueryMemory only reports what this table knows, so the title's allocator happily picks an address
++ * inside the host's libc/EGL range and its MapSharedMemory then fails (measured: the platform font at
++ * 0x7f6e204000, SHARED_MAP_FAILED). Register every host mapping below the guest limit as occupied. */
++static void host_mappings_reserve(uint64_t pc) {
++    FILE *f=fopen("/proc/self/maps","r");
++    if(!f)return;
++    char line[512];uint64_t last_end=0;unsigned added=0;
++    while(fgets(line,sizeof line,f)) {
++        uint64_t base=0,end=0;char perms[8]={0};
++        if(sscanf(line,"%llx-%llx %7s",(unsigned long long *)&base,(unsigned long long *)&end,perms)!=3)continue;
++        if(end<=base || base>=AS_END)continue;
++        if(end>AS_END)end=AS_END;
++        base&=~(PAGE-1);end=(end+PAGE-1)&~(PAGE-1);
++        if(last_end && base<last_end)base=last_end;
++        if(end<=base)continue;
++        int covered=0;
++        for(size_t i=0;i<nregions;i++) {
++            struct region r=regions[i];
++            if(base>=r.base && end<=r.base+r.size){covered=1;break;}
++        }
++        if(covered)continue;
++        unsigned perm=0;
++        if(perms[0]=='r')perm|=1;
++        if(perms[1]=='w')perm|=2;
++        if(perms[2]=='x')perm|=4;
++        region_insert((struct region){base,end-base,perm,1,"host_mapping",0},pc);
++        last_end=end;added++;
++    }
++    fclose(f);
++    struct line b={0};text(&b,"HOST_MAPPINGS_RESERVED count=");hex(&b,added);
++    text(&b," regions=");hex(&b,nregions);emit(&b);
++}
+ static void shared_map_locked(unsigned id,uint64_t address,uint64_t size,unsigned permission,uint64_t pc) {
+     normal_guard_require_clear(address,size,pc);
+     if(id>=nshared || address%PAGE || size!=shared_regions[id].size || permission!=shared_regions[id].permission)
 diff --git a/native/nvn_bridge.h b/native/nvn_bridge.h
 index 50dfaa1..9126ab2 100644
 --- a/native/nvn_bridge.h
@@ -264,6 +316,52 @@ index 50dfaa1..9126ab2 100644
 -    nvn_caller=previous;nvn_bridge_depth--;nvn_async_api_exit();return result;
 +    nvn_current_id=previous_id;nvn_caller=previous;nvn_bridge_depth--;nvn_async_api_exit();return result;
  }
+diff --git a/native/nvn_clip_control.h b/native/nvn_clip_control.h
+index 79a0ce9..18b15be 100644
+--- a/native/nvn_clip_control.h
++++ b/native/nvn_clip_control.h
+@@ -8,20 +8,32 @@
+ #include <stdlib.h>
+ #include <string.h>
+ static inline char *nvn_clip_vertex_source(const char *source) {
+-    static const char marker[]="void main() {",renamed[]="void nvnOriginalVertexMain() {";
+     static const char wrapper[]=
+         "\nuniform highp vec2 nvnClipControl;\n"
+         "void main(){nvnOriginalVertexMain();gl_Position.y*=nvnClipControl.x;"
+         "if(nvnClipControl.y>0.5)gl_Position.z=2.0*gl_Position.z-gl_Position.w;}\n";
++    static const char rename_to[]="nvnOriginalVertexMain";
+     if(!source)return NULL;
+-    size_t size=strlen(source);if(size>32768 || strstr(source,"nvnClipControl") || strstr(source,"nvnOriginalVertexMain"))return NULL;
+-    const char *at=strstr(source,marker);if(!at || strstr(at+sizeof(marker)-1,marker))return NULL;
+-    size_t prefix=(size_t)(at-source),suffix=size-prefix-(sizeof(marker)-1);
+-    size_t total=prefix+sizeof(renamed)-1+suffix+sizeof(wrapper);
+-    char *result=malloc(total);if(!result)return NULL;
+-    memcpy(result,source,prefix);memcpy(result+prefix,renamed,sizeof(renamed)-1);
+-    memcpy(result+prefix+sizeof(renamed)-1,at+sizeof(marker)-1,suffix);
+-    memcpy(result+prefix+sizeof(renamed)-1+suffix,wrapper,sizeof(wrapper));
++    size_t size=strlen(source);
++    if(size>32768 || strstr(source,"nvnClipControl") || strstr(source,"nvnOriginalVertexMain"))return NULL;
++    /* The translator emits "void main()" with the brace on the next line; the old marker required
++     * them on one line, which is why program 0x10 stopped with NVN_LC2_CLIP_VERTEX_SOURCE. Match the
++     * signature only and rename the entry point in place. */
++    const char *sig=strstr(source,"void main(");
++    if(!sig)return NULL;
++    if(strstr(sig+sizeof("void main(")-1,"void main("))return NULL;
++    const char *brace=strchr(sig,'{');
++    if(!brace)return NULL;
++    size_t prefix=(size_t)(sig-source)+sizeof("void ")-1;      /* "void " kept */
++    size_t skip=sizeof("main")-1;                              /* replaced word */
++    size_t suffix=size-(prefix+skip);
++    size_t total=prefix+sizeof(rename_to)-1+suffix+sizeof(wrapper);
++    char *result=malloc(total);
++    if(!result)return NULL;
++    memcpy(result,source,prefix);
++    memcpy(result+prefix,rename_to,sizeof(rename_to)-1);
++    memcpy(result+prefix+sizeof(rename_to)-1,source+prefix+skip,suffix);
++    memcpy(result+prefix+sizeof(rename_to)-1+suffix,wrapper,sizeof(wrapper));
+     return result;
+ }
+ #endif
 diff --git a/native/nvn_command_callback.h b/native/nvn_command_callback.h
 index 008c6d8..759b542 100644
 --- a/native/nvn_command_callback.h

@@ -528,3 +528,24 @@ That means the service side of the port now holds: SDK init, NVN device/window/t
 service with a real shared font, and the automated shader catalogue. The remaining gate before the
 first draw is the catalogue size: `tools/shader_loop.py` folds one program per build+run cycle
 (build-43..48 in six iterations, all translated, zero ESSL100 texel-fetch entries left).
+
+## Two host-side fixes that moved the port to real draws
+
+1. **Host mappings are invisible to the guest** (`HOST_MAPPINGS_RESERVED count=0x46 regions=0x52`).
+   The guest shares the address space with the host, but `svcQueryMemory` only knew guest regions, so
+   the title's allocator picked an address inside the host's libc/EGL range and its MapSharedMemory
+   failed: `SHARED_MAP_FAILED detail=0x7f6e204000`. `host_mappings_reserve()` now reads
+   `/proc/self/maps` at startup and registers every host mapping below the guest limit as occupied.
+   Effect: the font maps, and the same run recorded **11** `DrawElements` calls (was 1, earlier 0).
+
+2. **The clip wrapper required `void main() {` on one line**, but the translator emits
+   `void main()` with the brace on the next line, so program 0x10 stopped with
+   `NVN_LC2_CLIP_VERTEX_SOURCE`. The wrapper now matches `void main(` and renames the entry point in
+   place, keeping `()` and any parameters.
+
+Catalogue status after the automated loop: 21 translated programs, no ESSL100 texel-fetch entries
+left, 11 draws per run. Current stop: `NVN_SHADER_COMPILE_FAILED` for program 0x10 with
+`0:4: P0001: Extension directive must occur before any non-preprocessor tokens` - the `#extension`
+block ends up after non-preprocessor tokens once the runtime's later wrappers (varying interface /
+precision) are prepended, so the fix belongs in the runtime's final source assembly (hoist
+`#extension` right after `#version`), not in the catalogue files (which were normalised anyway).
