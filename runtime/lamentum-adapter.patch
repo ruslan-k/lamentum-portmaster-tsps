@@ -629,7 +629,7 @@ index 410deb4..7269206 100644
  }
  /* Called after Submit, outside the producer/regions locks. A quick atomic
 diff --git a/native/nvn_present.h b/native/nvn_present.h
-index 8c0254b..da38c7c 100644
+index 8c0254b..6d76859 100644
 --- a/native/nvn_present.h
 +++ b/native/nvn_present.h
 @@ -13,6 +13,20 @@
@@ -691,7 +691,47 @@ index 8c0254b..da38c7c 100644
  #endif
      const nxcompat_video_owner_decision *video=t2_video_layout(
          (int)((uint64_t)nvn_window.crop[2]*nvn_low_render_width(t)/t->b.width),
-@@ -308,7 +322,21 @@ static unsigned nvn_present_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -231,6 +245,39 @@ static unsigned nvn_present_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+     glUniform2f(nvn_present.image_scale,scale*nvn_window.crop[2]/t->b.width,scale_y*nvn_window.crop[3]/t->b.height);
+     glUniform2f(nvn_present.image_offset,scale*nvn_window.crop[0]/t->b.width,scale_y*nvn_window.crop[1]/t->b.height);
+     glDrawArrays(GL_TRIANGLE_STRIP,0,4);nvn_present.frames++;
++    /* COTM_WINDOW_SAMPLE=1: sample each swapchain texture as presented. A black presented frame can be
++     * a black source texture (the title drew nothing) or our own present pass (scale/crop/viewport), and
++     * only this tells the two apart. */
++    {
++        static int configured,sample;
++        if(!configured){const char *o=getenv("COTM_WINDOW_SAMPLE");sample=o&&!strcmp(o,"1");configured=1;}
++        if(sample&&nvn_fb_present.fbo) {
++            static uint8_t probe[64*36*4];
++            for(unsigned k=0;k<nvn_window.count && k<3;k++) {
++                struct nvn_texture *wt=nvn_window.textures[k];
++                if(!wt)continue;
++                GLuint fbo=0;glGenFramebuffers(1,&fbo);glBindFramebuffer(GL_FRAMEBUFFER,fbo);
++                glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,wt->name,0);
++                GLenum st=glCheckFramebufferStatus(GL_FRAMEBUFFER);
++                unsigned nonblack=0,maxv=0;
++                if(st==GL_FRAMEBUFFER_COMPLETE) {
++                    glReadPixels(0,0,64,36,GL_RGBA,GL_UNSIGNED_BYTE,probe);
++                    for(unsigned i=0;i<64*36;i++) {
++                        unsigned v=probe[i*4]+probe[i*4+1]+probe[i*4+2];
++                        if(v>6)nonblack++;
++                        if(v>maxv)maxv=v;
++                    }
++                }
++                glBindFramebuffer(GL_FRAMEBUFFER,nvn_fb_present.fbo);glDeleteFramebuffers(1,&fbo);
++                struct line b={0};text(&b,"NVN_WINDOW_SAMPLE index=");hex(&b,k);
++                text(&b," id=");hex(&b,wt->id);text(&b," texture=");hex(&b,wt->name);
++                text(&b," size=");hex(&b,wt->b.width);text(&b,"x");hex(&b,wt->b.height);
++                text(&b," nonblack=");hex(&b,nonblack);text(&b," max=");hex(&b,maxv);
++                text(&b," status=");hex(&b,st);emit(&b);
++            }
++            glBindFramebuffer(GL_FRAMEBUFFER,nvn_fb_present.fbo);
++        }
++    }
+     if(t2_video_needs_readback()) {
+         GLint viewport[4];EGLint measured_w=0,measured_h=0;
+         glGetIntegerv(GL_VIEWPORT,viewport);
+@@ -308,7 +355,21 @@ static unsigned nvn_present_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
  #ifdef ANIMAL_WELL_SHADERS
      if(aw_fbcopy_enabled())aw_fbcopy_present();else {
          nxgl_frame_proof_before_present(width,height);

@@ -785,3 +785,30 @@ Two facts to keep straight: (a) the physical screenshot taken 105 s into the run
 PORTS menu with Lamentum selected, so the panels' pixels are not yet ours at that moment; (b) every
 presented frame samples black (`nonblack=0`) even though 13 texture draws precede it. The next work is
 therefore (1) the command-list completion after a panel present, and (2) why the composed frame is black.
+
+## Why the frame is black: the swapchain textures are untouched, and most programs are TEST substitutes
+
+`COTM_WINDOW_SAMPLE=1` samples each swapchain texture at present time:
+
+```
+NVN_WINDOW_SAMPLE index=0 id=2 texture=1 size=1920x1080 nonblack=0 max=0 status=0x8cd5
+NVN_WINDOW_SAMPLE index=1 id=3 texture=2 size=1920x1080 nonblack=0 max=0 status=0x8cd5
+NVN_WINDOW_SAMPLE index=2 id=4 texture=3 size=1920x1080 nonblack=0 max=0 status=0x8cd5
+```
+
+`0x8cd5` is `GL_FRAMEBUFFER_COMPLETE`, so the sample is valid and the three window textures are
+**completely black** (`max=0`, not merely dark). The clears the log shows (`target=176 rgba=0.0235…`,
+`target=221 rgba=0 0 0 1`, `target=2`) go to intermediate render targets, never to the swapchain: the
+title's final composite pass does not write into the window textures in this run.
+
+The reason is in the catalogue: 11 of its sources are TEST-ONLY substitutes (`grep -c TEST-ONLY`), i.e.
+about ten programs are placeholders, not translations. They are placeholders because their constant
+buffers are **SSBO storage blocks** (`uniform … { float data[16384]; }`), which ESSL 3.10 does not have,
+and spirv-cross refuses to express them: "Buffer block cannot be expressed as any of std430, std140,
+scalar, even with enhanced layouts."
+
+Next step, concrete and bounded: convert those blocks to **uniform blocks** in the SPIR-V before
+cross-compiling - rewrite `OpDecorate BufferBlock` to `Block` and the variable's storage class from
+`StorageBuffer` to `Uniform` - then translate with `--es 310`. A read-only cbuf is a UBO semantically,
+and the Mali-G57 uniform-block limit (64 KB) covers `float data[16384]`. That turns the placeholders into
+real translations, which is the precondition for anything appearing on the panel.
