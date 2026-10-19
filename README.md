@@ -23,8 +23,16 @@ keys, no saves. Only our own tooling, the adapter patch and measured evidence ar
 - **Runtime build**: the recovered GPL baseline reconstructs to 435 files with matching
   SHA-256 (`tools/baseline-manifest.sha256`, 435/435 OK) and cross-builds for aarch64 in
   `pmjs-arm64-spruce-local:20261002-gcc10` with `runtime/lamentum-adapter.patch` applied.
-  First successful ELF: `lamentum-nextos`, 1,808,328 B,
-  SHA-256 `9265c9e3d77d83341a83d5f9ea4bca2fc05c42f67092f3d4205be790bfe61bb9`, GLIBC ≤ 2.27.
+  Base-only ELF (superseded): 1,808,328 B,
+  SHA-256 `9265c9e3d77d83341a83d5f9ea4bca2fc05c42f67092f3d4205be790bfe61bb9`.
+  Merged-content ELF: 1,808,328 B, SHA-256
+  `9332846797605be9404ea814b54b06aaf3d64cd470a93550b2051c73b90e1a79`, GLIBC ≤ 2.27.
+- **The port uses the merged (base + update v393216) content**, as a console with the update
+  installed would: the merged ExeFS replaces `main` (23,861,213 → 23,878,177 B) and
+  `main.npdm`, and 11 RomFS files differ (`global-metadata.dat`, `globalgamemanagers*`,
+  `level0`, `level2`, `resources.assets*`, `sharedassets0.*`, `sharedassets2.*`). Merged RomFS
+  image 1,832,059,520 B; its extraction was compared file-by-file with the merged tree —
+  34/34 identical.
 - **Adapter patch scope** (2 files, 8 lines): hoist two texture-lifetime helpers out of the
   `ZERO_ZX_GAME` guard so the generic command recorder can reach them, and declare
   `zero_texture_record_id` for every title profile. Nothing else is changed.
