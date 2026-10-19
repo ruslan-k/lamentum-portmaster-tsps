@@ -30,6 +30,90 @@ index f85a59d..13390cf 100644
      } else if(i<2 && (instruction&0xffc003ffU)==0xd10003ffU) {
          /* sub sp,sp,#imm12 */
          ctx->uc_mcontext.sp-=(instruction>>10)&0xfff;
+diff --git a/native/megaman_texture_view.h b/native/megaman_texture_view.h
+index 90cb048..a1ba190 100644
+--- a/native/megaman_texture_view.h
++++ b/native/megaman_texture_view.h
+@@ -7,7 +7,7 @@
+ #define MEGAMAN_TEXTURE_VIEW_H
+ #include <stdint.h>
+ #include <string.h>
+-#ifdef MOMO_SHADERS
++#if defined(MOMO_SHADERS) && !defined(LC2_TEXTURE_VIEW_36)
+ /* NintendoSDK 18.3.2 NVNtextureView, MEDIDO in the sdk NSO: SetDefaults (0x4766d0) zeroes exactly
+  * 16 bytes; SetLevels (0x4766e0) writes base at byte 4, count at byte 5 and flag bit 56; SetLayers
+  * (0x476710) writes base/count in bits 0..31 and flag bit 57; SetFormat (0x476730) writes u32 at +8
+@@ -55,6 +55,70 @@ static inline unsigned momo_texture_view_identity(const uint8_t *v,unsigned leve
+ static inline unsigned megaman_texture_view_identity(const uint8_t *view,unsigned levels) {
+     return momo_texture_view_identity_target(view,levels,0,0);
+ }
++#elif defined(LC2_TEXTURE_VIEW_36)
++/* MEASURED for this title's SDK generation (10.9.0.0) from its own view setters in sdk.text:
++ * SetDefaults (0x469ec0) zeroes 0x24 bytes; SetLevels (0x469ed0) sets flag bit 0 and stores the
++ * level base at +1 and the count at +2; SetLayers (0x469ef0) sets bit 1 and stores u16 base/count
++ * at +4/+6; SetFormat (0x469f10) sets bit 2 and stores u32 at +8; SetSwizzle (0x469f30) sets bit 3
++ * and stores four u32 at +0xc..+0x1b; SetDepthStencilMode (0x469f50) sets bit 4 and stores u32 at
++ * +0x1c. That is the 36-byte form, not the 16-byte SDK 18 layout the MOMO profile assumes: the
++ * 16-byte reader took the level range bytes as reserved bits and stopped the run.
++ * Only views identical to the whole single-level 2D image are admitted. */
++#define MEGAMAN_TEXTURE_VIEW_BYTES 36U
++#define LC2_VIEW_FLAG_LEVELS 0x01U
++#define LC2_VIEW_FLAG_LAYERS 0x02U
++#define LC2_VIEW_FLAG_FORMAT 0x04U
++#define LC2_VIEW_FLAG_SWIZZLE 0x08U
++#define LC2_VIEW_FLAG_DEPTH_STENCIL 0x10U
++#define LC2_VIEW_FLAG_TARGET 0x20U
++/* MOMO-gated code in the tree shares these names; keep them pointing at the bits this layout
++ * actually uses so that code tests the measured fields instead of the 16-byte ones. */
++#define MOMO_VIEW_FLAG_LEVELS LC2_VIEW_FLAG_LEVELS
++#define MOMO_VIEW_FLAG_LAYERS LC2_VIEW_FLAG_LAYERS
++#define MOMO_VIEW_FLAG_FORMAT LC2_VIEW_FLAG_FORMAT
++#define MOMO_VIEW_FLAG_SWIZZLE LC2_VIEW_FLAG_SWIZZLE
++#define MOMO_VIEW_FLAG_DEPTH_STENCIL LC2_VIEW_FLAG_DEPTH_STENCIL
++#define MOMO_VIEW_FLAG_TARGET LC2_VIEW_FLAG_TARGET
++static inline unsigned momo_texture_view_identity_target(const uint8_t *v,unsigned levels,unsigned format,unsigned target) {
++    (void)target;
++    if(!v)return 1;
++    unsigned flags=v[0];
++    if(flags&~0x3fU)return 0;
++    if((flags&LC2_VIEW_FLAG_TARGET) && target && v[0x20]!=target)return 0;
++    if(!(flags&LC2_VIEW_FLAG_TARGET) && v[0x20])return 0;
++    if((flags&LC2_VIEW_FLAG_LEVELS) && (v[1] || (v[2]!=1 && v[2]!=0)))return 0;
++    if(levels!=1)return 0;
++    if(flags&LC2_VIEW_FLAG_LAYERS) {
++        uint16_t base,count;memcpy(&base,v+4,2);memcpy(&count,v+6,2);
++        if(base || (count!=1 && count!=0))return 0;
++    }
++    if(flags&LC2_VIEW_FLAG_FORMAT) {
++        uint32_t vformat;memcpy(&vformat,v+8,4);
++        if(format && vformat!=format)return 0;
++    }
++    if(flags&LC2_VIEW_FLAG_SWIZZLE) {
++        const uint32_t identity[4]={2,3,4,5};uint32_t s[4];memcpy(s,v+0xc,16);
++        if(memcmp(s,identity,16))return 0;
++    }
++    if(flags&LC2_VIEW_FLAG_DEPTH_STENCIL) {
++        uint32_t mode;memcpy(&mode,v+0x1c,4);
++        if(mode)return 0;
++    }
++    return 1;
++}
++static inline unsigned momo_texture_view_single_level(const uint8_t *v,unsigned format,unsigned target) {
++    if(!v)return 1;
++    if((v[0]&LC2_VIEW_FLAG_LEVELS) && v[2]!=1 && v[2]!=0)return 0;
++    uint8_t single[MEGAMAN_TEXTURE_VIEW_BYTES];
++    memcpy(single,v,sizeof(single));single[1]=0;
++    return momo_texture_view_identity_target(single,1,format,target);
++}
++static inline unsigned momo_texture_view_identity(const uint8_t *v,unsigned levels,unsigned format) {
++    return momo_texture_view_identity_target(v,levels,format,0);
++}
++static inline unsigned megaman_texture_view_identity(const uint8_t *view,unsigned levels) {
++    return momo_texture_view_identity_target(view,levels,0,0);
++}
+ #else
+ #define MEGAMAN_TEXTURE_VIEW_BYTES 36U
+ static inline unsigned megaman_texture_view_identity(const uint8_t *view,unsigned levels) {
 diff --git a/native/nvn_bridge.h b/native/nvn_bridge.h
 index 50dfaa1..54186eb 100644
 --- a/native/nvn_bridge.h
@@ -91,7 +175,7 @@ index 008c6d8..759b542 100644
      c->callback_active=0;
      if(!c->live || !c->recording || c->list!=active || (active&&memcmp(active,&active_before,sizeof(active_before))))
 diff --git a/native/nvn_commands.h b/native/nvn_commands.h
-index 1aa4c67..1b86124 100644
+index 1aa4c67..caccaf3 100644
 --- a/native/nvn_commands.h
 +++ b/native/nvn_commands.h
 @@ -73,6 +73,12 @@ static unsigned nvn_command_recorder_threads(void) {
@@ -107,6 +191,35 @@ index 1aa4c67..1b86124 100644
  #include "nvn_command_lists.h"
  static struct nvn_command_buffer *nvn_command_find(uint64_t object) {
      for(unsigned i=0;i<32;i++)if(nvn_command_buffers[i].live&&nvn_command_buffers[i].object==object)return &nvn_command_buffers[i];
+@@ -138,9 +144,19 @@ static unsigned nvn_command_shape(const struct nvn_record *r,unsigned *vectors,u
+ #if ZERO_ZX_GAME
+         if(a[0]>1)stop("NVN_RENDER_TARGET_COUNT_REQUIRED",nvn_caller,a[0],20);
+         *payload=16+2*MEGAMAN_TEXTURE_VIEW_BYTES;break;
++#else
++#ifdef LC2_RENDER_TARGET_DEPTH
++        /* This title binds one colour target plus a depth-stencil target per pass (measured:
++         * nvnCommandBufferSetRenderTargets(count=1, targets, views, depth 0x340dd3018 depth=1
++         * format 0x35, depthView)). The replay already attaches depth/stencil through
++         * nvn_framebuffer_bind, so the record shape only has to carry the two textures; the
++         * per-pass views are dropped and that is stated here rather than silently assumed. */
++        if(a[0]>1)stop("NVN_RENDER_TARGET_COUNT_REQUIRED",nvn_caller,a[0],20);
++        *payload=16;break;
+ #else
+         if(a[0]>1 || a[4])stop("NVN_RENDER_TARGET_VIEWS_REQUIRED",nvn_caller,a[0],20);
+         *payload=16;break;
++#endif
+ #endif
+     case NI_nvnCommandBufferReportCounter:case NI_nvnCommandBufferSetSamplerPool:case NI_nvnCommandBufferSetTexturePool:
+     case NI_nvnCommandBufferSetViewport:case NI_nvnCommandBufferSetScissor:case NI_nvnCommandBufferBarrier:
+@@ -462,7 +478,7 @@ static void nvn_command_record_inner(struct nvn_command_buffer *c,unsigned id,st
+     case NI_nvnCommandBufferBindUniformBuffers:
+         source=f->args[4];break;
+     case NI_nvnCommandBufferSetRenderTargets: {
+-#if !ZERO_ZX_GAME
++#if !ZERO_ZX_GAME && !defined(LC2_RENDER_TARGET_DEPTH)
+         if(f->args[1] && f->args[3] && *(uint64_t *)nvn_pointer(f->args[3],8,PROT_READ))
+             stop("NVN_RENDER_TARGET_VIEWS_REQUIRED",nvn_caller,f->args[1],20);
+ #endif
 diff --git a/native/nvn_pointer.h b/native/nvn_pointer.h
 index 410deb4..7269206 100644
 --- a/native/nvn_pointer.h
@@ -179,6 +292,29 @@ index 90771fd..cd8e278 100644
              stop("NVN_SAMPLER_PARAMETERS",nvn_caller,b.min,24);
          unsigned slot=4096;
          for(unsigned i=0;i<4096;i++) {
+diff --git a/native/nvn_shaders.h b/native/nvn_shaders.h
+index 0fb14ec..b2b2716 100644
+--- a/native/nvn_shaders.h
++++ b/native/nvn_shaders.h
+@@ -106,6 +106,18 @@ static unsigned nvn_megaman_shader_match(uint64_t code,uint64_t control) {
+            !memcmp(code_hash,m->code_hash,32) && !memcmp(control_hash,m->control_hash,32))return i;
+ #endif
+     }
++    /* LC2_SHADER_DUMP=<dir-prefix>: write the untranslated program's control and code blobs so the
++     * offline translator can produce a catalogue entry for exactly what the title asked for. Owner
++     * data: the dumps stay in the port's private workspace and are never committed. */
++    {const char *dump=getenv("LC2_SHADER_DUMP");
++     if(dump && *dump && strcmp(dump,"0")) {
++        static unsigned dumped;
++        nvn_private_dump("lc2-shader-control",dumped,head,control_size);
++        nvn_private_dump("lc2-shader-code",dumped,nvn_gpu_pointer(code,code_size,PROT_READ),code_size);
++        printf("LC2_SHADER_DUMPED sequence=%u code-bytes=%u control-bytes=%u (needs AW_RELEASE=0)\n",
++            dumped,code_size,control_size);
++        dumped++;
++     }}
+     printf("ZERO_SHADER_UNRECOGNIZED code-bytes=%u control-bytes=%u code-hash=",code_size,control_size);
+     for(unsigned i=0;i<32;i++)printf("%02x",code_hash[i]);
+     printf(" control-hash=");for(unsigned i=0;i<32;i++)printf("%02x",control_hash[i]);putchar('\n');
 diff --git a/native/nvn_textures.h b/native/nvn_textures.h
 index 0feaef1..ab194b5 100644
 --- a/native/nvn_textures.h
@@ -259,3 +395,66 @@ index 9ab8126..1db3c58 100644
      return bytes(output), dict(schema='t2-shader-diagnostic-sanitization/1',
                                 input_sha256=sha(data), output_sha256=sha(output),
                                 size=len(data), changed_bytes=len(differences), changes=changes,
+diff --git a/native/zero_texture_writes.h b/native/zero_texture_writes.h
+index 3d23814..2b4ce9b 100644
+--- a/native/zero_texture_writes.h
++++ b/native/zero_texture_writes.h
+@@ -5,7 +5,7 @@ static void zero_texture_write(struct nvn_frame *f,unsigned flush) {
+     uint8_t view[MEGAMAN_TEXTURE_VIEW_BYTES]={0};
+     if(a[1])memcpy(view,nvn_pointer(a[1],MEGAMAN_TEXTURE_VIEW_BYTES,PROT_READ),MEGAMAN_TEXTURE_VIEW_BYTES);
+     unsigned level=0,layer=0;uint16_t first,count;
+-#ifdef MOMO_SHADERS
++#if defined(MOMO_SHADERS) && !defined(LC2_TEXTURE_VIEW_36)
+     /* SDK 18.3.2 view (16 bytes, megaman_texture_view.h): flags at [7], level base/count at [4]/[5],
+      * layer base/count as u16 at [0]/[2]. A texel write selects one level of one layer. */
+     memcpy(&first,view,2);memcpy(&count,view+2,2);
+@@ -19,6 +19,49 @@ static void zero_texture_write(struct nvn_frame *f,unsigned flush) {
+     else if(first||count)stop("ZERO_TEXEL_VIEW_RESERVED",nvn_caller,4,24);
+     if(!(view[7]&0x20U) && view[6])stop("ZERO_TEXEL_VIEW_RESERVED",nvn_caller,6,24);
+     for(unsigned i=8;i<MEGAMAN_TEXTURE_VIEW_BYTES;i++)if(view[i])stop("ZERO_TEXEL_VIEW_RESERVED",nvn_caller,i,24);
++#elif defined(LC2_TEXTURE_VIEW_36)
++    /* 36-byte view for this SDK generation (measured in megaman_texture_view.h): flags at [0],
++     * level base/count at [1]/[2], layer base/count u16 at [4]/[6], format u32 at [8], swizzle
++     * 4xu32 at [0xc], depth-stencil mode u32 at [0x1c]. The 16-byte reader above took the layer
++     * words as reserved bytes and stopped the run. */
++    if(view[0]&~0x3fU)stop("ZERO_TEXEL_VIEW_REQUIRED",nvn_caller,view[0],20);
++    if(view[0]&1){level=view[1];if(view[2]!=1)stop("ZERO_TEXEL_LEVEL_COUNT",nvn_caller,view[2],20);}
++    else if(view[1]||view[2])stop("ZERO_TEXEL_VIEW_RESERVED",nvn_caller,1,24);
++    memcpy(&first,view+4,2);memcpy(&count,view+6,2);
++    if(view[0]&2){layer=first;if(count!=1)stop("ZERO_TEXEL_LAYER_COUNT",nvn_caller,count,20);}
++    else if(first||count) {
++        /* Measured dump before refusing: this profile's view words are not what the previous
++         * title's layout predicted, and a refusal has to name the bytes it saw. */
++        static unsigned dumped;
++        if(dumped++<4) {
++            printf("LC2_TEXEL_VIEW_WORDS flags=0x%02x level=%u count=%u a=%02x%02x%02x%02x%02x%02x%02x%02x "
++                   "b=%02x%02x%02x%02x%02x%02x%02x%02x tail=%02x%02x%02x%02x\n",
++                   view[0],view[1],view[2],
++                   view[4],view[5],view[6],view[7],view[8],view[9],view[10],view[11],
++                   view[12],view[13],view[14],view[15],view[16],view[17],view[18],view[19],
++                   view[0x20],view[0x21],view[0x22],view[0x23]);
++        }
++        stop("ZERO_TEXEL_VIEW_RESERVED",nvn_caller,4,24);
++    }
++    if(view[0]&4) {
++        uint32_t stated=0;memcpy(&stated,view+8,4);
++        if(stated && stated!=t->b.format)stop("ZERO_TEXEL_VIEW_FORMAT",nvn_caller,stated,20);
++    } else for(unsigned i=8;i<0xc;i++)if(view[i])stop("ZERO_TEXEL_VIEW_RESERVED",nvn_caller,i,24);
++    if(view[0]&8) {
++        static const uint32_t identity[4]={2,3,4,5};
++        if(memcmp(view+0xc,identity,16))stop("ZERO_TEXEL_VIEW_SWIZZLE",nvn_caller,0,20);
++    } else for(unsigned i=0xc;i<0x1c;i++)if(view[i])stop("ZERO_TEXEL_VIEW_RESERVED",nvn_caller,i,24);
++    if(view[0]&0x10) {
++        uint32_t mode=0;memcpy(&mode,view+0x1c,4);
++        if(mode)stop("ZERO_TEXEL_VIEW_DEPTH_MODE",nvn_caller,mode,20);
++    } else for(unsigned i=0x1c;i<0x20;i++)if(view[i])stop("ZERO_TEXEL_VIEW_RESERVED",nvn_caller,i,24);
++    /* Target flag (measured: flags 0x23 on this title's cube-face write) carries the target at
++     * +0x20; a cube written through a 2D view is admitted exactly as the 16-byte profile did. */
++    if(view[0]&0x20) {
++        unsigned stated=view[0x20];
++        if(stated && stated!=t->b.target && !(t->b.target==8 && (stated==9 || stated==1)))
++            stop("ZERO_TEXEL_VIEW_TARGET",nvn_caller,((uint64_t)stated<<8)|t->b.target,20);
++    } else for(unsigned i=0x20;i<0x24;i++)if(view[i])stop("ZERO_TEXEL_VIEW_RESERVED",nvn_caller,i,24);
+ #else
+     if(view[0]&~3U || view[3])stop("ZERO_TEXEL_VIEW_REQUIRED",nvn_caller,view[0],20);
+     if(view[0]&1){level=view[1];if(view[2]!=1)stop("ZERO_TEXEL_LEVEL_COUNT",nvn_caller,view[2],20);}

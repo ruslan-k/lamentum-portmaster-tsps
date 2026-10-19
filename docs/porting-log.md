@@ -293,3 +293,42 @@ The baseline's default profile refuses any depth attachment (`a[0]>1 || a[4]`) a
 `ZERO_ZX_GAME` profile records the depth target plus both views. Supporting this title therefore
 means giving it that record/replay shape under its own macro — record the colour target+view and
 the depth target+view, and replay them as an FBO with a depth attachment — not relaxing the check.
+
+## Runs 14-20 — depth targets, the 36-byte texture view, and the shader-capture loop
+
+| run | stop | fix that moved the frontier |
+|---|---|---|
+| 14 | `ZERO_TEXEL_VIEW_RESERVED detail=4` | depth-stencil render target admitted (`LC2_RENDER_TARGET_DEPTH`: colour + depth recorded, replay already attaches depth/stencil) |
+| 15-16 | same | the stop is the view decoder, not the target binder |
+| 17-18 | `ZERO_TEXEL_VIEW_REQUIRED detail=0x23` | texture view re-keyed to the **36-byte** form measured from this SDK's own setters |
+| 19 | **textures upload**, then `ZERO_SHADER_NOT_PINNED` | `ZERO_TEXEL_WRITE` lines: 640x512, 1920x1080, a mip chain, 512x512, 1280x720 - the title's real texture data reaches the host |
+| 20 | `ZERO_SHADER_NOT_PINNED` (new program) | capture loop: `LC2_SHADER_DUMP=1` wrote the untranslated program's blobs |
+
+Measured texture-view layout for this SDK generation (from `sdk.text` setters, not inherited):
+
+| setter | address | store | meaning |
+|---|---|---|---|
+| `nvnTextureViewSetDefaults` | `sdk+0x469ec0` | zeroes 0x24 bytes | the view is **36 bytes** |
+| `nvnTextureViewSetLevels` | `sdk+0x469ed0` | flag bit 0, base u8 +1, count u8 +2 | level range |
+| `nvnTextureViewSetLayers` | `sdk+0x469ef0` | flag bit 1, u16 base +4, u16 count +6 | layer range |
+| `nvnTextureViewSetFormat` | `sdk+0x469f10` | flag bit 2, u32 +8 | format |
+| `nvnTextureViewSetSwizzle` | `sdk+0x469f30` | flag bit 3, 4xu32 +0xc | swizzle |
+| `nvnTextureViewSetDepthStencilMode` | `sdk+0x469f50` | flag bit 4, u32 +0x1c | depth-stencil mode |
+| (target) | — | flag bit 5, byte +0x20 | observed as flags `0x23` in a texel write |
+
+(The 16-byte SDK 18 layout read those layer words as reserved bytes and refused the program.)
+
+### The shader loop is now closed
+
+1. the runtime refuses an untranslated program and, with `LC2_SHADER_DUMP=1`, writes
+   `nvn-lc2-shader-{control,code}-<run>-<n>.bin` next to the port;
+2. `shader-compiler-cli` translates the blob into GLSL (measured stage from the SPH);
+3. `tools/build_lamentum_catalogue.py` folds it into the catalogue header;
+4. rebuild, redeploy, run - the next program appears.
+
+Run 20 captured the first data-partition program: code 2816 B, control 2176 B, hashes
+`29d0db82…` / `8b4a63c3…`, stage 1 (vertex). Its translation declares **constant buffers**
+(`layout(set = 0, binding = 0, scalar) uniform vs_cbuf_block_0u { uint data[16384]; } c0;`), so
+the catalogue entry needs uniform/constant-bank metadata — the builder currently emits only
+attributes and samplers. That metadata is the next work item; without it the entry would compile
+but read no transforms.
