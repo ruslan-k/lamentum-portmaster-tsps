@@ -469,3 +469,35 @@ the panel - consistent with zero draws.
 Next step: implement the platform service's shared-font contract (the load-state query and the
 font payload), or prove the title can boot with a font substitution. Until that reply is right the
 guest never leaves its initialisation loop, so no shader, draw or memory work can produce a frame.
+
+## `pl:u` contract implemented - the 931-request loop is gone
+
+The Switchbrew "Glue services" page documents the platform service (`pl:u`, `nn::pl::sharedresource::
+detail::IPlatformSharedResourceManager`) that this title uses for shared fonts:
+
+```
+0 RequestLoad(SharedFontType u32)              no output
+1 GetLoadState(SharedFontType u32)             -> LoadState u32 {0x00 Loading, 0x01 Loaded}
+2 GetSize(SharedFontType u32)                  -> u32
+3 GetSharedMemoryAddressOffset(SharedFontType)  -> u32
+4 GetSharedMemoryNativeHandle()                -> SharedMemory handle (mapped 0x1100000, R--, TTF data)
+5 GetSharedFontInOrderOfPriority(LanguageCode u64, 3 x type-0x6 buffers) -> u8 loaded, u32 count
+```
+
+`EP_PL` now implements 0/1/2/3/5 (state reports Loaded, sizes zero because no font blob is bundled).
+
+Measured effect on the device: `GET_SERVICE name=pl:u` dropped from **931 requests per 100 s to 2**,
+and the CloseHandle spin disappeared - the title leaves its initialisation loop.
+
+New frontier, same run: after the second `pl:u` request the guest sends command 4
+(`GetSharedMemoryNativeHandle`) and then stops with
+
+```
+STOP status=INVALID_SESSION_HANDLE pc=sdk.text.seg+0x393d70 detail=0x0
+```
+
+i.e. the SDK stored the (missing) shared-memory handle and later used it. The runtime has no
+shared-memory object kind (SVC 0x2c/0x2d here are MapPhysicalMemory/UnmapPhysicalMemory), so
+serving the font requires a new subsystem: allocate the 0x1100000 region, hand out a handle for it,
+implement svcMapSharedMemory/UnmapSharedMemory with R-- permissions, and place a TTF at offset 0.
+Still zero draws.

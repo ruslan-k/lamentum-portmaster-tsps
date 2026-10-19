@@ -31,20 +31,53 @@ index f85a59d..13390cf 100644
          /* sub sp,sp,#imm12 */
          ctx->uc_mcontext.sp-=(instruction>>10)&0xfff;
 diff --git a/native/ipc.h b/native/ipc.h
-index 7389a4e..e6014b7 100644
+index 7389a4e..618c1be 100644
 --- a/native/ipc.h
 +++ b/native/ipc.h
-@@ -296,6 +296,10 @@ static enum endpoint sm_lookup(const uint8_t *name) {
+@@ -18,7 +18,7 @@ enum endpoint { EP_NONE, EP_SM, EP_LM, EP_LOGGER, EP_APM, EP_APM_SESSION,
+     EP_VI_ROOT, EP_VI_DISPLAY, EP_BINDER, EP_NIFM, EP_NIFM_GENERAL, EP_BSD, EP_HID, EP_HID_RESOURCE, EP_NIFM_REQUEST,
+     EP_VIBRATION_LIST, EP_SETTINGS, EP_AUDREN_MANAGER, EP_AUDREN, EP_AUDIO_DEVICE,
+     EP_FRIENDS_CREATOR, EP_FRIENDS_SERVICE, EP_FRIENDS_NOTIFICATIONS, EP_FRIENDS_DAEMON,
+-    EP_ZERO_CONTROLLER, EP_ZERO_APP_STORAGE, EP_ZERO_APP_ACCESSOR, EP_AW_STUB, EP_AW_AUDOUT_LIST,
++    EP_ZERO_CONTROLLER, EP_ZERO_APP_STORAGE, EP_ZERO_APP_ACCESSOR, EP_AW_STUB, EP_PL, EP_AW_AUDOUT_LIST,
+     EP_AUDOUT_MANAGER, EP_AUDOUT, EP_SAVE_DIR };
+ static void endpoint_destroy(enum endpoint endpoint,unsigned state);
+ static void nv_destroy(unsigned state);
+@@ -296,6 +296,12 @@ static enum endpoint sm_lookup(const uint8_t *name) {
      if(!memcmp(name,"audren:u",8))found=EP_AUDREN_MANAGER;
      /* SDK 17 services with no laboratory behaviour: every command succeeds with no output; command 0 yields a child object. */
      if(!memcmp(name,"ectx:aw\0",8))found=EP_AW_STUB;
-+    /* Play log (pl:u / pl:s): the title reports statistics; nothing in the port can observe them,
-+     * so every command succeeds with no output like the other laboratory stubs. Measured request:
-+     * GET_SERVICE name=pl:u, then UNIMPLEMENTED_SERVICE at the SM dispatch. */
-+    if(!memcmp(name,"pl:u\0\0\0\0",8) || !memcmp(name,"pl:s\0\0\0\0",8))found=EP_AW_STUB;
++    /* nn::pl platform service (shared fonts), measured contract from the Glue services table:
++     * 0 RequestLoad(type), 1 GetLoadState(type) -> LoadState {0 Loading, 1 Loaded}, 2 GetSize(type),
++     * 3 GetSharedMemoryAddressOffset(type), 4 GetSharedMemoryNativeHandle, 5 GetSharedFontInOrderOfPriority.
++     * The title spins on GetLoadState when the reply carries no state (931 requests / 100 s, guest closes
++     * the session itself, no draws). Answer Loaded so the SDK leaves that loop. */
++    if(!memcmp(name,"pl:u\0\0\0\0",8) || !memcmp(name,"pl:s\0\0\0\0",8))found=EP_PL;
      /* MOMODORA: Unity 2021 calls nn::ro::Initialize unconditionally (main+0x7c5e44, MEDIDO). No module is
       * ever loaded here: the title has no rom:/.nrr/dynamic.nrr, so the fsp OpenFile below returns PathNotFound. */
      if(!memcmp(name,"ldr:ro\0\0",8))found=EP_AW_STUB;
+@@ -520,6 +526,21 @@ retry_audio: ;
+         }
+         stop("AUDOUT_OPEN_NOT_IN_THIS_GAME",pc,req.command,20);
+     }
++    if(endpoint==EP_PL) {
++        /* No shared-font blob is bundled yet, so the state query reports Loaded with a zero-size font:
++         * the SDK only needs the state to continue; GetSize/GetSharedMemoryAddressOffset stay honest. */
++        uint32_t value=(req.command==1)?1U:0U;
++        if(req.command<=3) {
++            ipc_reply(buffer,req.token,0,(req.command==0)?NULL:&value,(req.command==0)?0:4,0,req.domain);
++            return;
++        }
++        if(req.command==5) {
++            struct { uint8_t loaded; uint32_t count; } out={1,0};
++            ipc_reply(buffer,req.token,0,&out,sizeof out,0,req.domain);
++            return;
++        }
++        ipc_reply(buffer,req.token,0,NULL,0,0,req.domain);return;
++    }
+     if(endpoint==EP_AW_STUB) {
+         struct line stub={0};text(&stub,"AW_STUB_SERVICE command=");hex(&stub,req.command);text(&stub," data=");hex(&stub,req.data_size);emit(&stub);
+         if(req.command==0){ipc_child(buffer,s,&req,EP_AW_STUB,pc);return;}
 diff --git a/native/megaman_texture_view.h b/native/megaman_texture_view.h
 index 90cb048..a1ba190 100644
 --- a/native/megaman_texture_view.h
