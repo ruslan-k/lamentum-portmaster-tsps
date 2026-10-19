@@ -812,3 +812,34 @@ cross-compiling - rewrite `OpDecorate BufferBlock` to `Block` and the variable's
 `StorageBuffer` to `Uniform` - then translate with `--es 310`. A read-only cbuf is a UBO semantically,
 and the Mali-G57 uniform-block limit (64 KB) covers `float data[16384]`. That turns the placeholders into
 real translations, which is the precondition for anything appearing on the panel.
+
+### SSBO -> UBO in SPIR-V: tried, does not satisfy spirv-cross
+
+The translator now can rewrite storage blocks before cross-compiling
+(`shader-compiler-cli --cbuf-ubo`: `OpDecorate BufferBlock -> Block`, variable storage class
+`StorageBuffer -> Uniform`), and it reports what it changed:
+
+```
+CBUF_AS_UBO decorations-changed=1
+There was a compiler error: Buffer block cannot be expressed as any of std430, std140, scalar,
+even with enhanced layouts.
+```
+
+Dumping the module shows why the rewrite is small and why it does not help:
+
+```
+VARIABLE id=41 storage-class=2   ... (six uniform variables)
+VARIABLE id=55 storage-class=12  <- the only storage buffer (the cbuf)
+DECORATE target=38 decoration=2  (Block)
+DECORATE target=45 decoration=2  (Block)
+```
+
+The struct types are already `Block` (decoration 2), there is exactly one storage buffer, and flipping
+it to `Uniform` still leaves spirv-cross refusing the block: an ESSL 3.10 uniform block holding
+`float data[16384]` (64 KB) is not something it will emit.
+
+Next step: stop trying to express the cbuf as a block and rewrite those accesses as a **buffer texture** -
+`uniform highp samplerBuffer c1_buffer;` with `c1.data[i]` becoming `texelFetch(c1_buffer, i/4)[i%4]` -
+which Mali supports through `GL_EXT_texture_buffer` (present in this device's extension string) and which
+has no 64 KB block-layout restriction. The runtime side needs the cbuf bytes uploaded into a buffer
+texture per draw, next to the existing uniform upload path.
