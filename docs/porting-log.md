@@ -405,3 +405,43 @@ So the port now gets past SDK init, NVN device, window, textures, the shader cat
 PlayLog service, and then sits in the title's own loading/initialisation without issuing a single
 draw. The next work is therefore not more shader entries but (a) why the title never reaches its
 first draw and (b) the memory headroom on a 986 MB board, with audio to be separated afterwards.
+
+## Why there are no draws: the title spins on `pl:u` (measured with the stack profiler)
+
+Run with `MOMO_STACK_SAMPLE_MS=1500 MOMO_STACK_SAMPLE_AFTER=8` (guest stack profiler). The
+interrupted-PC histogram over the run is dominated by the SVC wrappers:
+
+```
+935  sdk.text.seg+0x393d98   -> SVC 0x16 (CloseHandle)
+417  sdk.text.seg+0x393dc8
+372  sdk.text.seg+0x393dd0
+205  sdk.text.seg+0x393e78
+```
+
+and the service log explains it exactly:
+
+```
+931  GET_SERVICE name=pl:u
+```
+
+Every attempt looks like this:
+
+```
+GET_SERVICE name=pl:u
+IPC handle=0x463 endpoint=0x3c type=0x6 command=0x1 data_bytes=0xc object=0x0
+AW_STUB_SERVICE command=0x1 data=0xc
+IPC_SESSION_PEER_CLOSED handle=0x463
+SVC id=0x16 ... arg0x0=0x463          (CloseHandle)
+```
+
+So the PlayLog service (`pl:u`) is requested ~931 times in 100 s: the title's SDK initialises it,
+the session ends right after our laboratory stub answers command 1, the SDK treats that as a
+failure and retries, closing the handle each time. The guest therefore never leaves its
+initialisation loop and never issues a draw - the "no draws" frontier is a *service-semantics*
+problem, not a rendering one.
+
+Note: this is not the earlier `UNIMPLEMENTED_SERVICE` (that one was fixed by routing `pl:u`/`pl:s`
+to the stub). The remaining question is what the SDK needs from the `pl:u` session: who closes it
+(the runtime's session lifecycle or the guest after an error) and which reply shape makes
+`nn::pl::Initialize` succeed. That is the next measurement; no re-authored shader or draw work can
+make progress before it.
