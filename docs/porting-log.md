@@ -1056,3 +1056,32 @@ State of the port: everything up to draws and a presented (black) frame works; t
 block sits on slot 0, which the title never fills, so geometry collapses. This is the fourth distinct
 layer found in the same runtime area (present surface, queue completion, 0x505, uniform slots), and each
 one is a property of the WoL-derived runtime that Lamentum exercises differently.
+
+## The title binds one cbuf slot per stage; the fallback fills it, the frame is still black
+
+`COTM_BIND_LOG=400` finally shows the calls the title issues:
+
+```
+NVN_BIND op=nvnCommandBufferBindUniformBuffers a0=0 a1=1 a2=1 a3=...   (vertex, first=1, count=1)
+NVN_BIND op=nvnCommandBufferBindUniformBuffers a0=1 a1=0 a2=1 a3=...   (fragment, first=0, count=1)
+```
+
+So the vertex stage binds **slot 1** (later measured 176 and 144 bytes for different programs) and the
+fragment stage **slot 0** (16 bytes). Vertex slot 0 is never touched, which is why a block declared there
+read zeros. The runtime now falls back to the slot the stage actually fills:
+
+```
+NVN_CBUF_FALLBACK stage=0x0 declared=0x0 using=0x1 bytes=0xb0
+NVN_CBUF_FALLBACK stage=0x1 declared=0x1 using=0x0 bytes=0x10
+```
+
+The cbuf texture therefore now contains the bytes the title wrote, and the frame is **still** black at
+frames 1 and 2 (`nonblack=0`, `max=0`).
+
+That is the fifth distinct layer in the same area. What is established after this session: the title
+loads, initialises the SDK and the platform (shared font) service, compiles and links 34 translated
+Essential-3 shaders, draws 31 times with correct state, presents through a panel path, and the cbuf data is
+delivered to the slots it binds - yet no pixel differs from black. Whatever remains is one of: the uniform
+locations not resolving for the rewritten `sampler2D` uniforms, the vertex attribute layout, or the title
+still being inside its loading screen at these early frames. Each is a bounded measurement, but they are
+measurements in a chain of them, not a last step.
