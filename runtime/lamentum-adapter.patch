@@ -253,6 +253,34 @@ index 0564e33..9f8d3b2 100644
  static void shared_map_locked(unsigned id,uint64_t address,uint64_t size,unsigned permission,uint64_t pc) {
      normal_guard_require_clear(address,size,pc);
      if(id>=nshared || address%PAGE || size!=shared_regions[id].size || permission!=shared_regions[id].permission)
+diff --git a/native/nvn_async_frame.h b/native/nvn_async_frame.h
+index 8e7c3b6..e8854a6 100644
+--- a/native/nvn_async_frame.h
++++ b/native/nvn_async_frame.h
+@@ -179,8 +179,21 @@ static void nvn_snapshot_build(struct nvn_snapshot *s,struct nvn_queue *q,const
+             case NI_nvnCommandBufferBindVertexBuffer:if(a[0]<16)st.vertex[a[0]]=(struct nvn_range){a[1],a[2]};break;
+             case NI_nvnCommandBufferBindVertexBuffers:memcpy(st.vertex+a[0],r.payload,a[1]*16);break;
+             case NI_nvnCommandBufferBindUniformBuffer:if(a[0]<2&&a[1]<16)st.uniform[a[0]][a[1]]=(struct nvn_range){a[2],a[3]};break;
+-            case NI_nvnCommandBufferBindUniformBuffers:memcpy(st.uniform[a[0]]+a[1],r.payload,a[2]*16);break;
+-            case NI_nvnCommandBufferBindUniformBuffersDeferred:memcpy(st.uniform[a[0]]+a[1],nvn_pointer(a[3],a[2]*16,PROT_READ),a[2]*16);break;
++            case NI_nvnCommandBufferBindUniformBuffers:
++                {   /* COTM_UBO_LOG=<n>: the slot numbering the title actually uses. */
++                    static int configured;static unsigned limit,printed;
++                    if(!configured){const char *o=getenv("COTM_UBO_LOG");limit=o?(unsigned)strtoul(o,NULL,0):0;configured=1;}
++                    if(printed<limit){printed++;printf("NVN_UBO_PLURAL stage=%llu first=%llu count=%llu\n",
++                        (unsigned long long)a[0],(unsigned long long)a[1],(unsigned long long)a[2]);}
++                }
++                memcpy(st.uniform[a[0]]+a[1],r.payload,a[2]*16);break;
++            case NI_nvnCommandBufferBindUniformBuffersDeferred:
++                {   static int configured;static unsigned limit,printed;
++                    if(!configured){const char *o=getenv("COTM_UBO_LOG");limit=o?(unsigned)strtoul(o,NULL,0):0;configured=1;}
++                    if(printed<limit){printed++;printf("NVN_UBO_DEFERRED stage=%llu first=%llu count=%llu ranges=0x%llx\n",
++                        (unsigned long long)a[0],(unsigned long long)a[1],(unsigned long long)a[2],(unsigned long long)a[3]);}
++                }
++                memcpy(st.uniform[a[0]]+a[1],nvn_pointer(a[3],a[2]*16,PROT_READ),a[2]*16);break;
+             case NI_nvnCommandBufferSetCopyRowStride:st.row_stride=a[0];break;
+             case NI_nvnCommandBufferUpdateUniformBuffer: {
+                 if(a[2]>a[1] || a[3]>a[1]-a[2] || a[3]>sizeof(r.payload))stop("NVN_UNIFORM_REPLAY_UPDATE_RANGE",nvn_caller,a[3],24);
 diff --git a/native/nvn_bridge.h b/native/nvn_bridge.h
 index 50dfaa1..694e196 100644
 --- a/native/nvn_bridge.h

@@ -1037,3 +1037,22 @@ numbering.
 Next step: log the plural/deferred binds (`stage`, `start`, `count`, addresses) and align each program's
 catalogue `binding` with the slot the title actually fills, so the matrix block lands on the bound slot
 instead of slot 0. Only then does the uniform path deliver anything the vertex shader can use.
+
+## Uniform slots: the bind commands the title uses are none of the ones instrumented
+
+Instrumented and measured with `COTM_UBO_LOG`:
+
+- `nvnCommandBufferBindUniformBuffer` (single): **never called** (`NVN_UBO_BIND` absent);
+- `nvnCommandBufferBindUniformBuffers` (plural) and `...Deferred`: **never called** in the synchronous
+  replay path (`NVN_UBO_PLURAL` / the pre-existing `T2_UNIFORM_BIND_DEFERRED` both absent), and the async
+  apply path logs nothing either.
+
+Yet ranges do appear at draw time (`stage=0 binding=1 bound=368`, `stage=1 binding=0 bound=16`), so they
+arrive through the state snapshot the runtime copies wholesale (`struct { ... uniform[2][16] ... } st` in
+`nvn_async_frame.h`, applied into `nvn_render`), not through any of the three bind commands that were
+instrumented. The next step is therefore to instrument the snapshot application, not the binds.
+
+State of the port: everything up to draws and a presented (black) frame works; the vertex shader's matrix
+block sits on slot 0, which the title never fills, so geometry collapses. This is the fourth distinct
+layer found in the same runtime area (present surface, queue completion, 0x505, uniform slots), and each
+one is a property of the WoL-derived runtime that Lamentum exercises differently.
