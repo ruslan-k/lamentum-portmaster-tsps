@@ -90,3 +90,35 @@ next measurement is to identify which SDK function owns the NULL object (guest-s
 initialiser) and to compare the runtime's service/SVC answers around `SetHeapSize`.
 
 Device left clean after every run: `runtime procs=0 mainui=1 cpu-online=4-7`.
+
+### Run 03 — symbol resolution of the fault
+
+The `sdk` module keeps 26,234 ELF symbols, so the faulting site resolves without guessing:
+
+| address | symbol |
+|---|---|
+| `sdk+0x33d4b0` | `nn::os::AllocateAddressRegion(unsigned long*, unsigned long)` |
+| `sdk+0x33d4a0` | `nn::os::InitializeVirtualAddressMemory()` |
+| `sdk+0x340fa0` | `nn::os::detail::VammManager::AllocateAddressRegion(unsigned long*, unsigned long)` |
+| `sdk+0x340e40` | `nn::os::detail::VammManager::IsVirtualAddressMemoryEnabled()` |
+| `sdk+0x340e90` | `nn::os::detail::AddressRegionManager::AddressRegionManager(unsigned long, unsigned long)` |
+| `sdk+0x2a3860` | `nn::init::Start(...)` |
+
+Both `InitializeVirtualAddressMemory` and `AllocateAddressRegion` reach their state through one
+global pointer:
+
+```
+adrp x8, #0xc452000
+ldr  x8, [x8, #0x180]        ; x8 = *(0x0c452180)  — the SDK's OS/VAMM manager object
+add  x0, x8, #0x3a0          ; this = manager + 0x3a0
+```
+
+The crash is *not* that call: it is a NULL `this` reaching a `VammManager`/`AddressRegionManager`
+member (`ldr x0,[x0,#0xa8]` with `x0 = 0 + 0x18`). So the guest is in the SDK's **virtual address
+memory (VAMM)** allocator path with an unconstructed manager.
+
+Next measurement (not yet run): read `*(0x0c452180)` (and the constructor's target) at the moment
+of the fault from inside the runtime, i.e. log the global before the first `AllocateAddressRegion`.
+If it is NULL, the SDK's own init for VAMM did not run/complete on this title, and the question
+becomes which init call the runtime answered differently (candidates: `svcGetInfo` heap/ASLR
+information and the `InitializeVirtualAddressMemory` tail call through the bridge at `0x0bd5af80`).
