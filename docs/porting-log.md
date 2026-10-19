@@ -584,3 +584,26 @@ emits ESSL blocks without set/binding/scalar), then rebuild the catalogue. That 
 `GL_EXT_scalar_block_layout` request that Mali refuses.
 
 State: 11 draws per run unchanged, present still not reached, device clean.
+
+### The catalogue builder re-headers every entry as ESSL 1.00
+
+With the programmes converted to ESSL 3 (`#version 300 es`, `set/binding/scalar` removed, `std430`
+turned into `std140` for uniform blocks, `#extension` lines stripped), the compiled source still came
+out as:
+
+```
+#version 100
+precision highp float;
+uniform vs_cbuf_block_0f
+{ float data[16384]; } c1;
+```
+
+and Mali answered `0:3: L0001: Typename expected, found 'vs_cbuf_block_0f'` - interface blocks do not
+exist in ESSL 1.00. The re-headering is `tools/build_lamentum_catalogue.py` itself: it prepends
+`#version 100` plus a precision line for every entry (lines 26 and 75), so the 300 es header written in
+the `.glsl` files never reaches the runtime. Confirmed locally: 13 entries in the generated header carry
+`#version 100`, none carry `300 es`.
+
+Next step is therefore a builder change, not a runtime one: keep `#version 300 es` (and the precision
+line) for entries whose body uses interface blocks or in/out declarations, keep the ESSL 1.00 header for
+the legacy attribute/varying programmes.
