@@ -952,3 +952,38 @@ in that context raises `GL_INVALID_FRAMEBUFFER_OPERATION` even though our own FB
 Next step: log the result and the before/after context identity of every `nvn_present_bind` and every
 `nvn_gl_acquire_locked`, so the point where the present context stays bound to the invalidated surface is
 named rather than inferred.
+
+## Root cause of the black frame: no uniform is ever uploaded
+
+`COTM_DRAW_LOG` now also prints each program's uniform count:
+
+```
+NVN_DRAW target=176 window=0 program=16/19 index=1/8 frame=0 uniforms=0
+NVN_DRAW target=176 window=0 program=7/0  index=2/8 frame=0 uniforms=0
+NVN_DRAW target=176 window=0 program=18/1 index=4/8 frame=0 uniforms=0
+NVN_DRAW target=176 window=0 program=10/13 index=6/8 frame=0 uniforms=0
+```
+
+**Every drawn program has `uniform_count = 0`.** The catalogue builder hardcodes it
+(`'.uniform_count=0'` in the emitter), so the runtime never declares, binds or uploads a single uniform:
+no view-projection matrix, no model matrix, no colour, no texture-size scale. A vertex shader that reads
+its matrices from an unbound uniform block multiplies every position by zero, collapses the geometry and
+rasters nothing - which is exactly what the swapchain textures show (`nonblack=0`, `max=0` while 13
+draws are recorded with correct mask/viewport/scissor/blend).
+
+This also explains why every other gate kept looking healthy: programs compile, link, draw with correct
+state, present through the panel path - and the picture is black because nothing that positions the
+geometry ever reaches the GPU.
+
+So the black frame is not a present-path problem, not a shader problem and not a state problem. The next
+work is the uniform path, in this order:
+
+1. parse each translated program's uniform blocks and scalars (name, stage, binding, byte offset, size)
+   instead of emitting `uniform_count=0`;
+2. map the guest's constant buffer for that program (the 64 KB `cbuf` regions already visible in the
+   SPIR-V as the storage/uniform blocks) onto those offsets;
+3. upload them per draw - `glUniform*` for scalars, a buffer texture or `glBindBufferBase` for the block -
+   and only then can the vertex shaders produce real clip-space positions.
+
+Everything measured before this point (present path, queue completion, 0x505) still matters, but it is
+downstream: with zero uniforms there is nothing to present.
