@@ -332,3 +332,28 @@ Run 20 captured the first data-partition program: code 2816 B, control 2176 B, h
 the catalogue entry needs uniform/constant-bank metadata — the builder currently emits only
 attributes and samplers. That metadata is the next work item; without it the entry would compile
 but read no transforms.
+
+### The captured vertex program: why the shader phase is the real wall
+
+Run 20's program (`code 29d0db82…`, stage vertex) translates into this interface:
+
+```glsl
+layout(set = 0, binding = 0, scalar) uniform vs_cbuf_block_0u { uint data[16384]; } c0;
+layout(set = 0, binding = 1, scalar) uniform c1            { uint data[16384]; } c1_1;
+layout(set = 0, binding = 2, scalar) uniform c3            { uint data[16384]; } c3_1;
+layout(set = 0, binding = 0, scalar) uniform vs_cbuf_block_0f { float data[16384]; } c0_1;
+layout(set = 0, binding = 3, std430) buffer ssbo0          { uint _m0[]; } ssbo0_1;
+```
+
+It is a **skinned-mesh** vertex program: it computes a per-instance bone matrix offset from
+`c0.data[68]` and `c3.data[24]` (`_86 * 56`, `>> 2`) and reads the bone matrix itself out of an
+**SSBO**. GLES2 has no storage buffers, no integer bit operations and no `uint` uniform arrays, so
+this program cannot be mechanically lowered: it has to be re-authored against the runtime's
+uniform model (`uniform highp vec4 cN[…]` fed from the guest constant bank, kind 7) with the
+skinning done from uniforms. That is the same class of work the West of Loathing port did by hand
+for its sprite/mesh programs - and this title has one such program family per material, plus the
+data-partition variants.
+
+Status before this is solved: the port boots the original game code, creates its NVN device and
+1280x720 window, uploads textures, and stops on the first program whose semantics ESSL2 cannot
+express. No frame has been rendered.
