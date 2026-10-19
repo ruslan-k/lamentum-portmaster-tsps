@@ -438,6 +438,34 @@ index 1aa4c67..caccaf3 100644
          if(f->args[1] && f->args[3] && *(uint64_t *)nvn_pointer(f->args[3],8,PROT_READ))
              stop("NVN_RENDER_TARGET_VIEWS_REQUIRED",nvn_caller,f->args[1],20);
  #endif
+diff --git a/native/nvn_framebuffers.h b/native/nvn_framebuffers.h
+index c8d8057..7cf03f7 100644
+--- a/native/nvn_framebuffers.h
++++ b/native/nvn_framebuffers.h
+@@ -79,7 +79,22 @@ static GLuint nvn_framebuffer_bind(const struct nvn_texture *color,const struct
+         nvn_framebuffer_profile.hits++;
+         if(nvn_framebuffers.entries[slot].framebuffer==nvn_framebuffers.active && !nvn_framebuffers.retired && nvn_framebuffer_rebind_skip_enabled())
+             nvn_framebuffer_profile.rebind_skipped++;
+-        else glBindFramebuffer(GL_FRAMEBUFFER,nvn_framebuffers.entries[slot].framebuffer);
++        else {
++            glBindFramebuffer(GL_FRAMEBUFFER,nvn_framebuffers.entries[slot].framebuffer);
++            /* COTM_FBO_CHECK=1: a cached framebuffer can go incomplete when one of its attachments is
++             * reallocated, and the replay then reports GL_INVALID_FRAMEBUFFER_OPERATION (0x505) far
++             * from the cause. Name the target here instead. */
++            static int check_configured,check_enabled;
++            if(!check_configured){const char *o=getenv("COTM_FBO_CHECK");check_enabled=o&&!strcmp(o,"1");check_configured=1;}
++            if(check_enabled) {
++                GLenum status=glCheckFramebufferStatus(GL_FRAMEBUFFER);
++                if(status!=GL_FRAMEBUFFER_COMPLETE) {
++                    struct line b={0};text(&b,"NVN_FBO_STALE color-id=");hex(&b,nvn_framebuffers.entries[slot].color_id);
++                    text(&b," depth-id=");hex(&b,nvn_framebuffers.entries[slot].depth_id);
++                    text(&b," status=");hex(&b,status);emit(&b);
++                }
++            }
++        }
+     } else {
+         nvn_framebuffer_profile.misses++;
+         slot=empty;
 diff --git a/native/nvn_megaman_color_mask.h b/native/nvn_megaman_color_mask.h
 index 3ecf8ab..1dd8c49 100644
 --- a/native/nvn_megaman_color_mask.h
@@ -490,6 +518,58 @@ index 543b4b5..b7c98e4 100644
          unsigned element=vf.bytes,stride=nvn_render.streams[stream][0];struct nvn_range range=nvn_render.vertex[stream];
          uint64_t start=base*stride+offset,extent=maximum*stride+element;
          if(!stride||start>range.size||extent>range.size-start)stop("NVN_VERTEX_FETCH_RANGE",nvn_caller,start+extent,24);
+diff --git a/native/nvn_replay.h b/native/nvn_replay.h
+index b3d6c20..761dd84 100644
+--- a/native/nvn_replay.h
++++ b/native/nvn_replay.h
+@@ -335,6 +335,24 @@ static uint64_t nvn_replay_run_list(struct nvn_command_list *list,unsigned batch
+                 if(!batch_errors||nvn_draw_diagnostic_active())nvn_replay_error_boundary();
+ #endif
+                 zero_gpu_cost_context("outside-record",0,0,0,0,0,0);
++                /* COTM_GL_ERROR_PER_OP=1: attribute a GL error to the command that produced it. The
++                 * batched boundary reports the error long after the offending op (measured: 0x505
++                 * GL_INVALID_FRAMEBUFFER_OPERATION with no FBO incomplete at bind time). */
++                {
++                    static int per_op_configured,per_op;
++                    if(!per_op_configured){const char *o=getenv("COTM_GL_ERROR_PER_OP");per_op=o&&!strcmp(o,"1");per_op_configured=1;}
++                    if(per_op) {
++                        GLenum e=glGetError();
++                        if(e) {
++                            printf("NVN_GL_ERROR_PER_OP op=%s error=0x%x a0=0x%llx a1=0x%llx target=0x%llx program=%u/%u\n",
++                                   nvn_functions[r.op].name,e,(unsigned long long)r.args[0],(unsigned long long)r.args[1],
++                                   nvn_render.target?(unsigned long long)nvn_render.target->id:0ULL,
++                                   nvn_render.program?nvn_render.program->sources[0]:0,
++                                   nvn_render.program?nvn_render.program->sources[1]:0);
++                            stop("NVN_REPLAY_GL_ERROR",nvn_caller,e,21);
++                        }
++                    }
++                }
+                 consumed+=r.bytes;next=r.next;
+             }
+             if(next || consumed!=list->recorded_bytes)stop("NVN_COMMAND_RECORD_COUNT",nvn_caller,next,24);
+diff --git a/native/nvn_replay_errors.h b/native/nvn_replay_errors.h
+index 8d9b110..7c3fa5e 100644
+--- a/native/nvn_replay_errors.h
++++ b/native/nvn_replay_errors.h
+@@ -13,5 +13,17 @@ static unsigned nvn_replay_errors_batched(void) {
+     return nvn_replay_errors_per_list;
+ }
+ static void nvn_replay_error_boundary(void) {
+-    GLenum error=glGetError();if(error)stop("NVN_REPLAY_GL_ERROR",nvn_caller,error,21);
++    GLenum error=glGetError();
++    if(error) {
++        /* COTM_GL_ERROR_IGNORE=1 is a DIAGNOSTIC switch, not a fix: it records the error and lets the
++         * replay continue so the run can show whether anything past it still produces frames. */
++        static int configured,ignore;
++        if(!configured){const char *o=getenv("COTM_GL_ERROR_IGNORE");ignore=o&&!strcmp(o,"1");configured=1;}
++        if(ignore) {
++            struct line b={0};text(&b,"NVN_REPLAY_GL_ERROR_IGNORED error=");hex(&b,error);
++            text(&b," draws=");hex(&b,nvn_replay.draws);text(&b," frame=");hex(&b,nvn_replay.last_frame);emit(&b);
++            return;
++        }
++        stop("NVN_REPLAY_GL_ERROR",nvn_caller,error,21);
++    }
+ }
 diff --git a/native/nvn_samplers.h b/native/nvn_samplers.h
 index 90771fd..cd8e278 100644
 --- a/native/nvn_samplers.h

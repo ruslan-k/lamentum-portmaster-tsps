@@ -690,3 +690,29 @@ STOP status=NVN_REPLAY_GL_ERROR detail=0x505
 draws 29 (17 before, 11 at the start of this run of fixes), three targets cleared, and the next stop is
 `detail=0x505` = `GL_INVALID_FRAMEBUFFER_OPERATION` during replay: something draws into an incomplete
 framebuffer. That is the next concrete gate - a framebuffer completeness question, not a shader one.
+
+### First present reached (frame is black) and what stops right after
+
+Two diagnostic switches (both labelled, neither a fix) made the failure visible:
+
+- `COTM_FBO_CHECK=1` - completeness check on cached framebuffer binds: **no stale framebuffer**, so the
+  `0x505` is not a binding problem.
+- `COTM_GL_ERROR_PER_OP=1` - per-command `glGetError()`: **no error after any single command**, so the
+  error is raised by the batched boundary itself (its own fence/publication work), not by the replay.
+
+With `COTM_GL_ERROR_IGNORE=1` (records the error and continues, explicitly a diagnostic) the run gets
+past it and **presents a frame**:
+
+```
+NVN_REPLAY_GL_ERROR_IGNORED error=0x505 draws=0x1f frame=0x0
+NVN_PRESENT_PIXELS frame=1 nonblack=0 max=0 white=0 texture-draws=13 status=BLACK-SAMPLE
+STOP status=NVN_QUEUE_CONTEXT pc=main.text.seg+0x53b8d8 detail=0x300d
+```
+
+So: 31 draws, a real `present`, and the sampled frame is entirely black (`nonblack=0`). The next stop is
+`NVN_QUEUE_CONTEXT detail=0x300d` = `EGL_BAD_SURFACE` from `nvn_single_make_current(surface, surface,
+context)` right after `nvnQueueWaitSync` - the surface is no longer valid at that point, most likely
+because it was recreated by the swap path.
+
+Next two gates, in order: (1) EGL_BAD_SURFACE at the queue wait, (2) why the presented frame is black
+while 13 texture draws are recorded (asset upload / final composition source).
