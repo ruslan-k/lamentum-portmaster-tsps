@@ -869,10 +869,55 @@ index 0545586..ac198d5 100644
      nvn_gl_completion.real_waits++;
  }
 diff --git a/native/nvn_render.h b/native/nvn_render.h
-index 543b4b5..6e10fe7 100644
+index 543b4b5..2ae6a17 100644
 --- a/native/nvn_render.h
 +++ b/native/nvn_render.h
-@@ -1267,7 +1267,12 @@ static void nvn_render_draw_inner(struct nvn_record *r) {
+@@ -793,19 +793,35 @@ static void nvn_render_draw_inner(struct nvn_record *r) {
+         if(u->location<0 && u->size_location<0)continue;
+         if(u->texel_fetch_bits && !u->cpu_view)stop("NVN_LC2_PACKED_TEXTURE_CONTRACT_REQUIRED",nvn_caller,u->texel_fetch_bits,20);
+         unsigned bytes=u->kind==1?64:u->kind==2?16:u->kind==3||u->kind==5?8:u->kind==4||u->kind==6?4:0;
+-#ifdef ANIMAL_WELL_SHADERS
++#ifndef GL_RGBA32F
++#define GL_RGBA32F 0x8814
++#endif
+         if(u->kind==7) {
+-            /* Whole dynamic range of the constant buffer as one vec4 array; short buffers read as zero; integer words converted by value. */
++            /* The program's constant buffer (cbuf) arrives as an RGBA32F texture: the shader reads it with
++             * core ES 3 texelFetch, 1024 texels per row, four floats per texel. Buffer textures are not
++             * available in this context ("P0003: Extension 'GL_EXT_texture_buffer' not supported"). */
+             struct nvn_range range=nvn_render.uniform[u->stage][u->binding];
+-            float words[64*4];memset(words,0,sizeof(words));
+-            unsigned avail=u->offset>=range.size?0:(unsigned)(range.size-u->offset);if(avail>u->size)avail=u->size;
+-            if(avail)memcpy(words,nvn_gpu_pointer(range.address+u->offset,avail,PROT_READ),avail);
+-            for(unsigned c=0;c<u->size/4;c++){uint32_t word;memcpy(&word,&words[c],4);if(!word)continue;unsigned exponent=(word>>23)&0xff;
+-                if(exponent<0x20 || exponent==0xff){int32_t sw;memcpy(&sw,&word,4);words[c]=(float)sw;}}
+-            if(location>=0)glUniform4fv(location,(GLsizei)(u->size/16),words);
++            unsigned avail=u->offset>=range.size?0:(unsigned)(range.size-u->offset);
++            if(avail>u->size)avail=u->size;
++            unsigned floats=(avail+3U)/4U;
++            unsigned texels=(floats+3U)/4U;
++            unsigned width=1024U,height=(texels+width-1U)/width;if(!height)height=1U;
++            static float staging[1024*16*4];
++            size_t need=(size_t)width*height*4U;
++            if(need>sizeof staging/sizeof staging[0])stop("NVN_CBUF_TEXTURE_SIZE",nvn_caller,(uint64_t)need,24);
++            memset(staging,0,need*sizeof(float));
++            if(avail)memcpy(staging,nvn_gpu_pointer(range.address+u->offset,avail,PROT_READ),avail);
++            static GLuint cbuf_texture[32];unsigned slot=(u->stage*16U+u->binding)&31U;
++            if(!cbuf_texture[slot])glGenTextures(1,&cbuf_texture[slot]);
++            glActiveTexture(GL_TEXTURE0+15);
++            glBindTexture(GL_TEXTURE_2D,cbuf_texture[slot]);
++            glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
++            glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
++            glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA32F,(GLsizei)width,(GLsizei)height,0,GL_RGBA,GL_FLOAT,staging);
++            if(location>=0)glUniform1i(location,15);
++            glActiveTexture(GL_TEXTURE0);
+             continue;
+         }
+-#endif
+         {   /* MOMO_UNIFORM_DUMP=<draw>: the whole constant bank bound for that draw, so a shader whose
+              * values look shifted can be checked against the raw buffer instead of guessed. */
+             static int cfg;static unsigned wanted;static unsigned done;
+@@ -1267,7 +1283,12 @@ static void nvn_render_draw_inner(struct nvn_record *r) {
          if(stream>=nvn_render.stream_count||stream>=16||nvn_render.streams[stream][1])stop("NVN_VERTEX_STREAM_REQUIRED",nvn_caller,stream,20);
          struct nvn_vertex_format vf=nvn_vertex_format_decode(format);
          unsigned components=vf.components;
@@ -886,7 +931,7 @@ index 543b4b5..6e10fe7 100644
          unsigned element=vf.bytes,stride=nvn_render.streams[stream][0];struct nvn_range range=nvn_render.vertex[stream];
          uint64_t start=base*stride+offset,extent=maximum*stride+element;
          if(!stride||start>range.size||extent>range.size-start)stop("NVN_VERTEX_FETCH_RANGE",nvn_caller,start+extent,24);
-@@ -1449,6 +1454,33 @@ static void nvn_render_draw_inner(struct nvn_record *r) {
+@@ -1449,6 +1470,33 @@ static void nvn_render_draw_inner(struct nvn_record *r) {
      }
      if(preserve)momo_stencil_probe(nvn_replay.draws+1,p->sources[0],p->sources[1]);
      momo_window_draws_census(nvn_render.target,nvn_replay.last_frame,nvn_replay.draws+1,p->sources[0],p->sources[1]);
@@ -1028,7 +1073,7 @@ index 90771fd..cd8e278 100644
          unsigned slot=4096;
          for(unsigned i=0;i<4096;i++) {
 diff --git a/native/nvn_shaders.h b/native/nvn_shaders.h
-index 0fb14ec..3d050e8 100644
+index 0fb14ec..f67a08a 100644
 --- a/native/nvn_shaders.h
 +++ b/native/nvn_shaders.h
 @@ -24,6 +24,103 @@ struct nvn_uniform {char name[64];uint32_t stage,binding,offset,size,kind,texel_
@@ -1154,6 +1199,25 @@ index 0fb14ec..3d050e8 100644
      printf("ZERO_SHADER_UNRECOGNIZED code-bytes=%u control-bytes=%u code-hash=",code_size,control_size);
      for(unsigned i=0;i<32;i++)printf("%02x",code_hash[i]);
      printf(" control-hash=");for(unsigned i=0;i<32;i++)printf("%02x",control_hash[i]);putchar('\n');
+@@ -150,14 +259,14 @@ static void nvn_megaman_uniforms(struct nvn_program *p,unsigned source) {
+         stop("NVN_LC2_UNIFORM_CAPACITY",nvn_caller,source,24);
+     for(unsigned i=0;i<m->uniform_count;i++) {
+         const struct mm_shader_uniform *v=&m->uniforms[i];struct nvn_uniform *u=&p->uniforms[p->uniform_count++];
+-        if(v->stage>1 || v->binding>=16 || (v->components!=1&&v->components!=2&&v->components!=4) || (v->size!=v->components*4 && !(v->word_array && v->components==4 && v->size==v->word_array*16 && v->word_array<=64)) || strlen(v->name)>=sizeof(u->name))
++        /* A cbuf is one big float array read through a buffer texture: 4096 vec4 for 64 KB, so the old
++         * 64-vector ceiling only applied while these ranges were uploaded with glUniform4fv. */
++        if(v->stage>1 || v->binding>=16 || (v->components!=1&&v->components!=2&&v->components!=4) || (v->size!=v->components*4 && !(v->word_array && v->components==4 && v->size==v->word_array*16 && v->word_array<=16384)) || strlen(v->name)>=sizeof(u->name))
+             stop("NVN_LC2_UNIFORM_METADATA",nvn_caller,source,24);
+         strcpy(u->name,v->name);u->stage=v->stage;u->binding=v->binding;u->offset=v->offset;u->size=v->size;
+         u->kind=v->components==4?2:v->components==2?5:4;u->size_location=-1;
+-#ifdef ANIMAL_WELL_SHADERS
+         if(v->word_array)u->kind=7;
+-        u->word_int=v->word_int;if(u->word_int && u->kind!=2)stop("AW_WORD_INT_UNIFORM_LAYOUT",nvn_caller,source,24);
+-#endif
++        u->word_int=v->word_int;if(u->word_int && u->kind!=2)stop("ZERO_WORD_INT_UNIFORM_LAYOUT",nvn_caller,source,24);
+ #if defined(ZERO_WORD_BOOLEAN_UNIFORMS) && ZERO_WORD_BOOLEAN_UNIFORMS
+         if(v->word_boolean) {
+             unsigned bool_binding=source==135?2u:3u;
 @@ -272,11 +381,19 @@ static void nvn_program_link(struct nvn_program *p) {
  #endif
          if(fragment->wave_contract && (p->sources[0]!=17 || p->sources[1]!=16))

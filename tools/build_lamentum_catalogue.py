@@ -18,6 +18,43 @@ fragment stage needs capabilities ESSL100 lacks (texelFetch with explicit LOD) a
 import argparse, json, pathlib, re
 
 
+
+def cbuf_blocks_of(source):
+    """Constant buffers as they arrive from spirv-cross: a uniform block holding one big float array.
+
+    ESSL 3.10 cannot express a 64 KB uniform block (spirv-cross refuses it and Mali's uniform vectors are
+    far smaller), but Mali does expose GL_EXT_texture_buffer, so each block becomes a buffer texture read
+    with texelFetch. Returns the metadata the runtime needs to bind it.
+    """
+    out = []
+    # Two shapes reach here: the raw spirv-cross output (with `layout(set = …, binding = …)`) and the
+    # converted tree where those qualifiers were already stripped. The binding is taken when present and
+    # otherwise assigned in declaration order - it is only used to match the guest's bound range.
+    pattern = (r'(?:layout\([^)]*\)\s*)?uniform\s+(\w+)\s*\{[^}]*?\b(?:float|vec4)\s+data\[(\d+)\]'
+               r'[^}]*\}\s*(\w+)\s*;')
+    for index, m in enumerate(re.finditer(pattern, source, re.S)):
+        binding = index
+        layout = re.search(r'layout\([^)]*binding\s*=\s*(\d+)[^)]*\)\s*uniform\s+' + re.escape(m.group(1)), source)
+        if layout:
+            binding = int(layout.group(1))
+        out.append({'set': 0, 'binding': binding, 'block': m.group(1),
+                    'count': int(m.group(2)), 'instance': m.group(3)})
+    return out
+
+
+def rewrite_cbuf_blocks(body, blocks):
+    """Turn each block into a samplerBuffer and rewrite its element accesses."""
+    for b in blocks:
+        decl = re.compile(r'(?:layout\([^)]*\)\s*)?uniform\s+' + re.escape(b['block']) +
+                          r'\s*\{[^}]*\}\s*' + re.escape(b['instance']) + r'\s*;', re.S)
+        body = decl.sub('uniform highp sampler2D %s;' % b['instance'], body, count=1)
+        access = re.compile(r'\b' + re.escape(b['instance']) + r'\.data\[([^\]]+)\]')
+        # Explicit int casts: the driver rejects mixed signedness in bitwise operators
+        # ("S0001: Bitwise operations operands signs must match"), and index expressions are sometimes uint.
+        body = access.sub(lambda m: 'texelFetch(%s, ivec2(int(%s) & 1023, int(%s) >> 10), 0)[int(%s) & 3]'
+                          % (b['instance'], m.group(1), m.group(1), m.group(1)), body)
+    return body
+
 def rewrite_essl100(source, stage):
     """Rewrite the compiler output into one ESSL 3.00 dialect for every program.
 
@@ -28,8 +65,14 @@ def rewrite_essl100(source, stage):
     `gl_FragColor`.
     """
     body = re.sub(r'^#version[^\n]*\n+', '', source)
+    blocks = cbuf_blocks_of(body)
+    if blocks:
+        body = rewrite_cbuf_blocks(body, blocks)
     prelude = ['#version 300 es',
                'precision highp float;' if stage == 'vertex' else 'precision mediump float;']
+    # Buffer textures are not available in the producer context on this driver
+    # ("P0003: Extension 'GL_EXT_texture_buffer' not supported"), so a cbuf is a plain RGBA32F texture
+    # read with core ES 3 texelFetch: 1024 texels per row, four floats per texel.
     # Varyings must pair across stages by name: Mali has no GL_EXT_separate_shader_objects ("P0003
     # Extension ... not supported"), so layout(location) on vertex outputs / fragment inputs is illegal,
     # and spirv-cross names the two sides differently ("L0007 Fragment shader uses a varying in_attr2
@@ -75,7 +118,11 @@ def rewrite_essl100(source, stage):
     if 'fma(' in body:
         # ESSL 3.10 has no fma ("L0002: No matching function for call to 'fma'").
         prelude.append('#define fma(a, b, c) ((a) * (b) + (c))')
-    uses_texel_fetch = 'texelFetch' in body or 'textureSize' in body or 'textureQueryLevels' in body
+    # Judge the texel-fetch requirement on the original source: the cbuf rewrite above introduces
+    # texelFetch itself and must not mark the program as needing an ESSL100 rewrite.
+    original = re.sub(r'^#version[^\n]*\n+', '', source)
+    uses_texel_fetch = ('texelFetch' in original or 'textureSize' in original or
+                        'textureQueryLevels' in original)
     return '\n'.join(prelude) + '\n' + body.strip() + '\n', uses_texel_fetch
 
 
@@ -227,6 +274,7 @@ def main():
         else:
             translated, needs_fetch = rewrite_essl100(source, stage)
         programs.append({
+            'cbufs': cbuf_blocks_of(source),
             'error': 'fragment stage needs an ESSL100 texel-fetch rewrite' if (stage == 'fragment' and needs_fetch) else None,
             'write_masks': component_masks(source, 'out'),
             'read_masks': component_masks(source, 'in'),
@@ -277,10 +325,17 @@ def main():
         for loc, mask in p['read_masks'].items():
             if loc < 8: reads[loc] = mask
         lines.append(' /* %d %s %s */' % (i, p['name'], p['stage']))
-        lines.append(' {.sha256="%s",.error=%s,.control_size=%d,.code_size=%d,.uniform_count=0,.sampler_count=%d,.attribute_count=%d,'
+        lines.append(' {.sha256="%s",.error=%s,.control_size=%d,.code_size=%d,.sampler_count=%d,.attribute_count=%d,'
                      '.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,'
                      % (p['code_sha'][:32], 'NULL' if not p['error'] else '"%s"' % p['error'],
                         p['control_size'], p['code_size'], len(p['samplers']), len(p['attributes'])))
+        # The kind-7 entries are the cbufs: the runtime uploads the whole bound range as vec4 data, the
+        # shader reads it through a buffer texture (texelFetch), one texel per four floats.
+        lines.append('  .uniform_count=%d,.uniforms={%s},' % (len(p.get('cbufs', [])), ','.join(
+            '{.name="%s",.stage=%d,.binding=%d,.offset=0,.size=%d,.components=4,.word_boolean=0,.word_int=0,.word_array=%d}' % (
+                b['instance'], 0 if p['stage'] == 'vertex' else 1, b['binding'],
+                b['count'] * 4, b['count'] // 4)
+            for b in p.get('cbufs', []))))
         lines.append('  .varying_read_masks={%s},.varying_write_masks={%s},'
                      % (','.join(str(x) for x in reads), ','.join(str(x) for x in writes)))
         lines.append('  .code_hash={%s},.control_hash={%s},'

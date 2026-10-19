@@ -987,3 +987,28 @@ work is the uniform path, in this order:
 
 Everything measured before this point (present path, queue completion, 0x505) still matters, but it is
 downstream: with zero uniforms there is nothing to present.
+
+## Uniform path implemented end to end (shaders compile with real cbuf uniforms)
+
+The black-frame root cause was `uniform_count = 0` for every program. That is now fixed in three parts:
+
+1. **Catalogue**: `cbuf_blocks_of()` finds each constant buffer (`uniform <Block> { float data[N]; } <inst>;`)
+   and the emitter publishes real uniform metadata - 19 programs now carry one, two or three cbufs with
+   `components=4`, `size=N*4`, `word_array=N/4`, which the runtime maps to `kind=7`.
+2. **Shaders**: the block becomes `uniform highp sampler2D <inst>;` and every `<inst>.data[i]` access
+   becomes `texelFetch(<inst>, ivec2(int(i) & 1023, int(i) >> 10), 0)[int(i) & 3]` - a 1024-texel-wide
+   RGBA32F image, four floats per texel. Three driver constraints were measured and handled on the way:
+   `L0003: Keyword 'samplerBuffer' is reserved` (needs an extension), `P0003: Extension
+   'GL_EXT_texture_buffer' not supported` (so no buffer textures at all on this producer context), and
+   `S0001: Bitwise operations operands signs must match` (explicit `int()` casts).
+3. **Runtime**: the kind-7 upload path is unconditional and uploads the guest's bound range for that
+   stage/binding into an RGBA32F texture on unit 15, then points the sampler at it. The old 64-vector
+   ceiling was raised to 16384 vectors, since the data no longer goes through `glUniform4fv`.
+
+Result: the run compiles every program (no `NVN_SHADER_COMPILE_FAILED`), reaches the present path, and
+still samples black (`nonblack=0`, `max=0`) at frames 1 and 2 through the panel path.
+
+The next question is now precise: whether `nvn_render.uniform[stage][binding]` actually carries the
+guest's cbuf (a non-zero range) at draw time. If the title never binds a uniform buffer for these
+programs, the texture is uploaded full of zeros and the shaders still multiply by zero - which would look
+exactly like this. That is the next measurement.
