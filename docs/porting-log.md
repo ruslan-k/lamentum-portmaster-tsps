@@ -501,3 +501,30 @@ shared-memory object kind (SVC 0x2c/0x2d here are MapPhysicalMemory/UnmapPhysica
 serving the font requires a new subsystem: allocate the 0x1100000 region, hand out a handle for it,
 implement svcMapSharedMemory/UnmapSharedMemory with R-- permissions, and place a TTF at offset 0.
 Still zero draws.
+
+### Shared font: the handle must be a CMIF copy-handle descriptor
+
+`pl:u` command 4 (`GetSharedMemoryNativeHandle`) needed a real shared-memory object, and the runtime
+already had the subsystem (`shared_create`, `EP_SHARED`, SVC 0x13 MapSharedMemory). Two things were
+missing:
+
+1. `shared_create` refused anything above 16 MiB; the platform font region is 0x1100000 (17 MiB).
+2. The reply shape: passing the handle through `ipc_reply`'s move field produced `handle=0` on the
+   guest side (it then called `MapSharedMemory(0, ...)` and stopped with INVALID_SESSION_HANDLE).
+   The shape the SDK parses is the CMIF **copy-handle descriptor**, the same one the HID
+   shared-memory reply uses:
+
+```
+ipc_reply(buffer,req.token,0,NULL,0,0,req.domain);
+put32(buffer+4,read32(buffer+4)|0x80000000U);put32(buffer+8,2);put32(buffer+12,handle);
+```
+
+With that, the title maps the font region and continues: `INVALID_SESSION_HANDLE` disappeared and the
+run moved on to `ZERO_SHADER_NOT_PINNED` again, i.e. back into shader compilation. The font itself is
+a real TTF copied into the region (`PL_SHARED_FONT path=/mnt/SDCARD/spruce/Font Files/Noto.ttf
+bytes=0x1e9f18`); `LC2_SHARED_FONT` overrides the path.
+
+That means the service side of the port now holds: SDK init, NVN device/window/textures, the platform
+service with a real shared font, and the automated shader catalogue. The remaining gate before the
+first draw is the catalogue size: `tools/shader_loop.py` folds one program per build+run cycle
+(build-43..48 in six iterations, all translated, zero ESSL100 texel-fetch entries left).

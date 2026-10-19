@@ -31,7 +31,7 @@ index f85a59d..13390cf 100644
          /* sub sp,sp,#imm12 */
          ctx->uc_mcontext.sp-=(instruction>>10)&0xfff;
 diff --git a/native/ipc.h b/native/ipc.h
-index 7389a4e..618c1be 100644
+index 7389a4e..59df724 100644
 --- a/native/ipc.h
 +++ b/native/ipc.h
 @@ -18,7 +18,7 @@ enum endpoint { EP_NONE, EP_SM, EP_LM, EP_LOGGER, EP_APM, EP_APM_SESSION,
@@ -56,16 +56,41 @@ index 7389a4e..618c1be 100644
      /* MOMODORA: Unity 2021 calls nn::ro::Initialize unconditionally (main+0x7c5e44, MEDIDO). No module is
       * ever loaded here: the title has no rom:/.nrr/dynamic.nrr, so the fsp OpenFile below returns PathNotFound. */
      if(!memcmp(name,"ldr:ro\0\0",8))found=EP_AW_STUB;
-@@ -520,6 +526,21 @@ retry_audio: ;
+@@ -520,6 +526,46 @@ retry_audio: ;
          }
          stop("AUDOUT_OPEN_NOT_IN_THIS_GAME",pc,req.command,20);
      }
++    static uint32_t pl_font_size;
 +    if(endpoint==EP_PL) {
 +        /* No shared-font blob is bundled yet, so the state query reports Loaded with a zero-size font:
 +         * the SDK only needs the state to continue; GetSize/GetSharedMemoryAddressOffset stay honest. */
-+        uint32_t value=(req.command==1)?1U:0U;
++        uint32_t value=(req.command==2)?pl_font_size:((req.command==1)?1U:0U);
 +        if(req.command<=3) {
 +            ipc_reply(buffer,req.token,0,(req.command==0)?NULL:&value,(req.command==0)?0:4,0,req.domain);
++            return;
++        }
++        if(req.command==4) {
++            /* GetSharedMemoryNativeHandle: the SDK maps 0x1100000 bytes R-- and reads a TTF at the
++             * offset from GetSharedMemoryAddressOffset. The platform font of the console is not part of
++             * the title, so a real TTF is copied in (LC2_SHARED_FONT overrides the path). */
++            static unsigned font_region_plus_one;
++            if(!font_region_plus_one) {
++                unsigned id=shared_create(0x1100000,1,pc);
++                font_region_plus_one=id+1;
++                const char *path=getenv("LC2_SHARED_FONT");
++                if(!path || !*path)path="/mnt/SDCARD/spruce/Font Files/Noto.ttf";
++                FILE *f=fopen(path,"rb");size_t n=0;
++                if(f){n=fread(shared_regions[id].writer,1,shared_regions[id].size,f);fclose(f);}
++                pl_font_size=(uint32_t)n;
++                struct line b={0};text(&b,"PL_SHARED_FONT path=");text(&b,path);
++                text(&b," bytes=");hex(&b,n);text(&b," region=");hex(&b,font_region_plus_one-1);emit(&b);
++            }
++            uint32_t handle=session_new(EP_SHARED,pc);
++            session_get(handle,pc)->initialized=font_region_plus_one-1;
++            /* The SDK reads the handle as a CMIF copy-handle descriptor (type 2), the same shape the
++             * HID shared-memory reply uses; the generic move-handle field is not what it parses. */
++            ipc_reply(buffer,req.token,0,NULL,0,0,req.domain);
++            put32(buffer+4,read32(buffer+4)|0x80000000U);put32(buffer+8,2);put32(buffer+12,handle);
 +            return;
 +        }
 +        if(req.command==5) {
@@ -162,6 +187,20 @@ index 90cb048..a1ba190 100644
  #else
  #define MEGAMAN_TEXTURE_VIEW_BYTES 36U
  static inline unsigned megaman_texture_view_identity(const uint8_t *view,unsigned levels) {
+diff --git a/native/memory.h b/native/memory.h
+index 0564e33..f5a91ee 100644
+--- a/native/memory.h
++++ b/native/memory.h
+@@ -103,7 +103,8 @@ static void stack_alias_locked(uint64_t dest,uint64_t source,uint64_t size,unsig
+     aliases[naliases++]=(struct stack_alias_record){dest,source,size,original.perm,original.attr};
+ }
+ static unsigned shared_create(uint64_t size,unsigned permission,uint64_t pc) {
+-    if(nshared==16 || !size || size%PAGE || size>(16U<<20))stop("INVALID_SHARED_REGION",pc,size,24);
++    /* pl:u maps its shared font as 0x1100000 (17 MiB); the old ceiling was 16 MiB. */
++    if(nshared==16 || !size || size%PAGE || size>(20U<<20))stop("INVALID_SHARED_REGION",pc,size,24);
+     char name[]="/tmp/cotm-switch-shm-XXXXXX";int fd=mkstemp(name);
+     if(fd<0)stop("SHARED_BACKING_FAILED",pc,errno,21);
+     unlink(name);fcntl(fd,F_SETFD,FD_CLOEXEC);
 diff --git a/native/nvn_bridge.h b/native/nvn_bridge.h
 index 50dfaa1..9126ab2 100644
 --- a/native/nvn_bridge.h
