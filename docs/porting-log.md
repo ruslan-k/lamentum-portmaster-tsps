@@ -927,3 +927,28 @@ family as the `EGL_BAD_SURFACE` measured earlier - rather than by a framebuffer 
 diagnostic must print, at the moment `nvn_gl_finish_current` sees the error, the bound framebuffer, its
 completeness, the EGL draw/read surface and the EGL context. That is the only remaining unknown between
 the current state and a long run that can answer the black-frame question.
+
+## 0x505 is set outside the replay and outside the present steps
+
+`NVN_FINISH_ERROR_DETAIL` (build-114) names the objects at the moment the queue path sees the error:
+
+```
+NVN_FINISH_ERROR_DETAIL error=0x505 fbo=0x1 status=0x8cd5
+  draw-surface=0x555b797070 read-surface=0x555b797070
+  context=0x555b152d40 device-surface=0x555b152670 render-surface=0x555b797070
+```
+
+The bound framebuffer is complete (`0x8cd5`), and the current draw/read surface is the **pbuffer**
+(`render-surface`), not the invalidated window surface (`device-surface`). Present-path checkpoints
+(build-115, `COTM_PRESENT_CHECKPOINTS=1`: after setup, after the stencil selftest, after the present quad,
+before the readback, after the panel swap) report **no** error at any step.
+
+So `0x505` is produced between the last present checkpoint and `nvn_gl_finish_current`, and the only code
+there is the queue path itself: a context/surface bind (`nvn_gl_acquire_locked`) plus the finish. The
+remaining hypothesis with evidence behind it: an earlier failed `eglMakeCurrent` on the invalidated window
+surface leaves the *present* context current with an incomplete default framebuffer, and the next GL work
+in that context raises `GL_INVALID_FRAMEBUFFER_OPERATION` even though our own FBOs are fine.
+
+Next step: log the result and the before/after context identity of every `nvn_present_bind` and every
+`nvn_gl_acquire_locked`, so the point where the present context stays bound to the invalidated surface is
+named rather than inferred.
