@@ -563,3 +563,24 @@ The compile gate for program 0x10 moved three times, each step exposing the next
 Draws are stable at 11 per run through all of this; the environment (SDK, platform service, font,
 catalogue) holds. The next step is the version-less-source case above, after which the compile gate
 should clear and the run can reach its first present.
+
+### The real cause of the `layout` error: the catalogue carries Vulkan GLSL
+
+Dumping the compiled source (`LC2_DUMP_SHADER=1`) settled it:
+
+```
+#version 100
+precision highp float;
+layout(set = 0, binding = 0, scalar) uniform vs_cbuf_block_0f
+{ float data[16384]; } c1;
+```
+
+That is **Vulkan GLSL** (spirv-cross default semantics: `set`, `binding`, `scalar`), wrapped in a
+`#version 100` header. Mali parses it as ESSL 1.00 and rejects the qualifier
+(`L0001: Typename expected, found 'layout'`). Runtime-side rewrites (hoist, drop unsupported
+extensions, qualifier stripping, forced `#version 300 es`) do not clear it, so the fix belongs one
+level up: **translate the programs with `--es 310`** (`shader-compiler-cli --es 310` already exists and
+emits ESSL blocks without set/binding/scalar), then rebuild the catalogue. That also removes the
+`GL_EXT_scalar_block_layout` request that Mali refuses.
+
+State: 11 draws per run unchanged, present still not reached, device clean.

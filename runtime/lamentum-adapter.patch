@@ -511,10 +511,10 @@ index 90771fd..cd8e278 100644
          unsigned slot=4096;
          for(unsigned i=0;i<4096;i++) {
 diff --git a/native/nvn_shaders.h b/native/nvn_shaders.h
-index 0fb14ec..026ebeb 100644
+index 0fb14ec..ad53efa 100644
 --- a/native/nvn_shaders.h
 +++ b/native/nvn_shaders.h
-@@ -24,6 +24,46 @@ struct nvn_uniform {char name[64];uint32_t stage,binding,offset,size,kind,texel_
+@@ -24,6 +24,103 @@ struct nvn_uniform {char name[64];uint32_t stage,binding,offset,size,kind,texel_
      GLint zero_mip_mask,zero_mip_last,zero_r8_mode,zero_r8_add,zero_r8_use,swizzle_location;unsigned zero_mip_slot;
      GLint t2_palette,t2_blockmap,t2_compact,t2_compact4;unsigned t2_sampler;   /* palette/map/compact-domain uniforms, per fragment sampler */};
  /* kind: 1 mat4, 2 vec4, 3 handle, 4 float, 5 vec2, 6 native uint32 != 0, 7 vec4 array (Animal Well dynamic cbuffer range). */
@@ -522,6 +522,39 @@ index 0fb14ec..026ebeb 100644
 + * precision/version prelude first and the runtime's own wrappers can push the extension block further
 + * down, which the Mali driver rejects with "0:4: P0001: Extension directive must occur before any
 + * non-preprocessor tokens". Hoist them right after #version before compiling. */
++
++/* spirv-cross emits Vulkan-GLSL blocks: layout(set = 0, binding = 0, scalar) uniform ... . ESSL has
++ * neither set/binding nor scalar, and the driver then reports "L0001: Typename expected, found
++ * 'layout'". Keep only the qualifiers ESSL understands. */
++static char *nvn_essl_layout(const char *src) {
++    size_t n=strlen(src);char *out=malloc(n+1);size_t o=0;
++    if(!out)return NULL;
++    const char *p=src;
++    while(*p) {
++        if(!strncmp(p,"layout(",7)) {
++            const char *close=strchr(p,')');
++            if(!close){out[o++]=*p++;continue;}
++            char buf[256];size_t b=0;const char *q=p+7;
++            while(q<close) {
++                const char *comma=strchr(q,',');const char *end=(comma&&comma<close)?comma:close;
++                size_t len=(size_t)(end-q);char tok[64];
++                if(len>=sizeof tok)len=sizeof tok-1;
++                memcpy(tok,q,len);tok[len]=0;
++                char *s=tok;while(*s==' ')s++;
++                if(!strncmp(s,"std140",6)||!strncmp(s,"std430",6)||!strncmp(s,"location",8)||
++                   !strncmp(s,"index",5)||!strncmp(s,"early_fragment_tests",20)) {
++                    if(b && b+strlen(s)+2<sizeof buf)buf[b++]=',';
++                    size_t l=strlen(s);if(b+l<sizeof buf){memcpy(buf+b,s,l);b+=l;}
++                }
++                q=end+1;
++            }
++            if(b){memcpy(out+o,"layout(",7);o+=7;memcpy(out+o,buf,b);o+=b;out[o++]=')';}
++            p=close+1;continue;
++        }
++        out[o++]=*p++;
++    }
++    out[o]=0;return out;
++}
 +static char *nvn_hoist_extensions(const char *source) {
 +    if(!source || (!strstr(source,"#extension") && !strstr(source,"#version")))return (char *)source;
 +    size_t size=strlen(source);
@@ -553,15 +586,39 @@ index 0fb14ec..026ebeb 100644
 +    if(!out){free(work);free(head);return (char *)source;}
 +    memcpy(out,head,hused);
 +    if(hused && out[hused-1]!='\n')out[hused++]='\n';
++    /* A source translated without a #version line is parsed as ESSL 1.00 and then rejects ES3 syntax
++     * ("0:4: L0001: Typename expected, found 'layout'"). Declare the version these programs are written
++     * against - but never for a shader that still uses attribute/varying. */
++    if(versions && strstr(head,"#version 100") &&
++       (strstr(source,"layout(") || strstr(source,"flat ") || strstr(source,"textureLod(")) &&
++       !strstr(source,"attribute ") && !strstr(source,"varying ")) {
++        char *v=strstr(out,"#version 100");
++        if(v)memcpy(v,"#version 300 es",15);
++    }
++    if(!versions && (strstr(source,"layout(") || strstr(source,"flat ") || strstr(source,"textureLod(")) &&
++       !strstr(source,"attribute ") && !strstr(source,"varying ")) {
++        static const char v310[]="#version 300 es\n";
++        char *with=malloc(hused+sizeof(v310));
++        if(with){memcpy(with,v310,sizeof(v310)-1);memcpy(with+sizeof(v310)-1,out,hused);
++            memcpy(out,with,sizeof(v310)-1+hused);free(with);hused+=sizeof(v310)-1;}
++    }
 +    memcpy(out+hused,rest,rest_size);
 +    out[hused+rest_size]=0;
++    if(!strstr(out,"attribute ") && !strstr(out,"varying ") && strstr(out,"layout(")) {
++        char *clean=nvn_essl_layout(out);
++        if(clean){free(out);out=clean;hused=strlen(out)-strlen(strstr(out,rest[0]?rest:"")?rest:"");}
++        /* a Vulkan-GLSL block body needs ES3 blocks: force the version line */
++        char *v=strstr(out,"#version");
++        if(v){char *nl=strchr(v,'\n');if(nl)memcpy(v,"#version 300 es",15);}
++        else {char *with=malloc(strlen(out)+16);if(with){strcpy(with,"#version 300 es\n");strcat(with,out);free(out);out=with;}}
++    }
 +    free(work);free(head);
 +    return out;
 +}
  static struct {unsigned attribute_count;struct {char name[64];uint32_t location;} attributes[16];} nvn_compilation;
  struct nvn_alpha_program {GLuint name;GLint locations[64],clip_control;};
  struct nvn_program {
-@@ -106,6 +146,18 @@ static unsigned nvn_megaman_shader_match(uint64_t code,uint64_t control) {
+@@ -106,6 +203,18 @@ static unsigned nvn_megaman_shader_match(uint64_t code,uint64_t control) {
             !memcmp(code_hash,m->code_hash,32) && !memcmp(control_hash,m->control_hash,32))return i;
  #endif
      }
@@ -580,12 +637,13 @@ index 0fb14ec..026ebeb 100644
      printf("ZERO_SHADER_UNRECOGNIZED code-bytes=%u control-bytes=%u code-hash=",code_size,control_size);
      for(unsigned i=0;i<32;i++)printf("%02x",code_hash[i]);
      printf(" control-hash=");for(unsigned i=0;i<32;i++)printf("%02x",control_hash[i]);putchar('\n');
-@@ -455,7 +507,8 @@ static void nvn_program_link(struct nvn_program *p) {
+@@ -455,7 +564,9 @@ static void nvn_program_link(struct nvn_program *p) {
                          printf("MOMO_DIAG_RED_INSTALLED program=%u vertex=%u fragment=%u\n",p->name,p->sources[0],p->sources[1]);}
                  }
              }
 -            glShaderSource(shaders[i],1,&source,NULL);glCompileShader(shaders[i]);GLint status=0;glGetShaderiv(shaders[i],GL_COMPILE_STATUS,&status);
 +            const char *final_source=nvn_hoist_extensions(source);
++            if(getenv("LC2_DUMP_SHADER")){printf("NVN_FINAL_SOURCE id=%u stage=%u begin\n%.900s\nNVN_FINAL_SOURCE end\n",p->sources[i],i,final_source);}
 +            glShaderSource(shaders[i],1,&final_source,NULL);glCompileShader(shaders[i]);GLint status=0;glGetShaderiv(shaders[i],GL_COMPILE_STATUS,&status);
              free(red);free(quad);free(noclip);free(t2page);free(compact_uv);
              free(premul);free(probe);free(sprite);free(flat);free(scaled);free(awf);free(mipped);free(r8);free(advent);free(lowered);free(wrapped);free(interface_source);
