@@ -204,3 +204,25 @@ shader-variant set in the data partition (the 1.8 GB `Data/*.assets`/`level*` pa
 catalogue a playable build needs is larger than these ten and must be collected from the
 programs the title actually requests at runtime (the runtime logs each request with both
 hashes before it refuses).
+
+## Shader translation is automatable for this title (verified locally)
+
+The Hades-lineage Maxwell compiler (`spikes/wol-switch/tools/hades-eval/shader-compiler-rs`,
+`cargo build --release` here in 1m54s) translates this title's program blobs into **real** GLSL
+- not the empty-branch output that means instructions were dropped. Input layout: 0x30-byte
+header, SPH at +0x30 (stage in bits 10-13: 1 = vertex, 5 = fragment), SASS from +0x80; the
+blob is fed as-is.
+
+All ten programs found in `main.rodata` translate (table and samples:
+`evidence/shader-translation/README.md`). Program #1 (`code b3913c5c…`, `control b30b42eb…`)
+is the program the last device run requested. Its translation is a 2D sprite vertex passthrough
+(position from attribute 0, uv from attribute 1) and the paired fragment samples two mip levels
+and averages them - the title's pixel-art upscale path, i.e. real game semantics.
+
+`tools/translate_lamentum_shaders.py <image-dir> <workspace>` reproduces the pipeline offline
+(owner blobs stay in the workspace; only our own GLSL and hashes may be published).
+
+Remaining work before a frame: (1) per-program `mm_shader_binding` metadata (attributes,
+varying masks, uniforms/samplers, colour-write mask, precision) and an ESSL100 rewrite of the
+compiler's `#version 450`; (2) the runtime stops at the FIRST untranslated program, so the
+catalogue has to grow until the title stops asking for new ones.
