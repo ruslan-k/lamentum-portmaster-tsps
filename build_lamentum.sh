@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# Build the Lamentum native Horizon adapter from the verified recovered baseline.
+# No game payload is packaged: the owner image (segments + RomFS section) is an input.
+#
+# Usage: build_lamentum.sh RECOVERED_SOURCE OWNER_IMAGE NEW_OUTPUT [OUTPUT_NAME]
+set -euo pipefail
+if [[ $# -lt 3 || $# -gt 4 ]]; then
+    printf 'Usage: %s RECOVERED_SOURCE OWNER_IMAGE NEW_OUTPUT [OUTPUT_NAME]\n' "$0" >&2
+    exit 64
+fi
+source_root=$(realpath "$1")
+image=$(realpath "$2")
+output=$(realpath -m "$3")
+output_name=${4:-lamentum-nextos}
+recipe=$(cd "$(dirname "$0")" && pwd)
+# Reject a modified or different recovered baseline before any build.
+(cd "$source_root" && sha256sum -c "$recipe/tools/baseline-manifest.sha256")
+[[ ! -e "$output" ]] || { printf 'NEW_OUTPUT already exists: %s\n' "$output" >&2; exit 65; }
+mkdir -p "$output/source"
+cp -a "$source_root/native" "$source_root/framework" "$output/source/"
+work="$output/source"
+if [[ -f "$recipe/runtime/lamentum-adapter.patch" ]]; then
+    git -C "$work" init -q
+    git -C "$work" apply --check "$recipe/runtime/lamentum-adapter.patch"
+    git -C "$work" apply "$recipe/runtime/lamentum-adapter.patch"
+fi
+: "${COTM_CC:=aarch64-linux-gnu-gcc}"
+export COTM_CC
+export COTM_NXINPUT_DIR="$work/framework/nxinput"
+export COTM_NXCOMPAT_DIR="$work/framework/nxcompat"
+export COTM_NXGL_DIR="$work/framework/nxgl"
+export COTM_NXLOADER_DIR="$work/framework/nxloader"
+export COTM_SDL_INCLUDE_DIR=/usr/include/SDL2
+# Static nxaudio provider (pinned framework source, built here).
+provider="$output/provider-build/nxaudio"
+mkdir -p "$provider"
+cp "$work/framework/nxaudio/include/"*.h "$provider/"
+for name in nxaudio nxaudio_receipt nxaudio_runtime; do
+    "$COTM_CC" -O2 -g -fno-omit-frame-pointer -fPIC -pthread -std=c11 -D_POSIX_C_SOURCE=200809L \
+        -I"$provider" -c "$work/framework/nxaudio/src/$name.c" -o "$provider/$name.o"
+done
+aarch64-linux-gnu-ar rcs "$provider/libnxaudio.a" "$provider/"*.o
+export COTM_NXAUDIO_DIR="$provider"
+export TMPDIR="$output/scratch"
+mkdir -p "$TMPDIR"
+bash "$work/native/build.sh" "$image" "$output/native-build"
+mv "$output/native-build/terminator2d-nextos" "$output/$output_name"
+sha256sum "$output/$output_name"

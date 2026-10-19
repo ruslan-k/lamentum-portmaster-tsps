@@ -1,0 +1,39 @@
+# owner data — never commit
+*.nsp
+*.nsz
+*.nca
+*.tik
+*.cert
+*.xci
+*.nro
+*.nso
+prod.keys
+title.keys
+image-*/
+*.seg
+*.section
+*romfs*
+wol-romfs*
+lamentum-romfs*
+lamentum-npdm.json
+module-identities.json
+native-layout.txt
+owner-*/
+logs/
+save-laboratory/
+
+# build outputs
+build-*/
+*-build/
+lamentum-nextos
+*.aarch64
+*.o
+*.log
+__pycache__/
+*.pyc
+
+# captures and dumps
+*.ppm
+*.pam
+*.png
+!docs/**/*.png
