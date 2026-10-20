@@ -1,0 +1,2 @@
+4c467c366b340362c8b7251d6801aaccd09e56d1ff44e652ad4127ed6149c197  /mnt/SDCARD/Roms/PORTS/lamentum-switch/lamentum-nextos
+Screenshot saved to /mnt/SDCARD/Roms/PORTS/lamentum-switch/bc-clean.png (FB ID: 160, 1280x720)

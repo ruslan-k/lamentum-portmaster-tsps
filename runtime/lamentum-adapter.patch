@@ -67,6 +67,38 @@ index f85a59d..13390cf 100644
      } else if(i<2 && (instruction&0xffc003ffU)==0xd10003ffU) {
          /* sub sp,sp,#imm12 */
          ctx->uc_mcontext.sp-=(instruction>>10)&0xfff;
+diff --git a/native/input_host.h b/native/input_host.h
+index cdecae8..a126470 100644
+--- a/native/input_host.h
++++ b/native/input_host.h
+@@ -238,16 +238,24 @@ static void hid_publish(struct hid_sample sample,unsigned connected) {
+     static int hh_cfg;static unsigned handheld;
+     if(!hh_cfg){const char *o=getenv("MOMO_NPAD_HANDHELD");handheld=!o||strcmp(o,"0");hh_cfg=1;
+         if(handheld)printf("MOMO_NPAD_HANDHELD enabled=1 entry=8 style-bit=1 scope=diagnostic\n");}
++    /* LC2_HID_BROADCAST=1 (diagnostic A/B): publish the same sample into EVERY npad entry and every ring.
++     * A title whose menu appears only with this on has a correct state layout but a different routing
++     * (which NpadId/style/ring it polls); a title that still ignores the press does not read this
++     * shared-memory shape at all. Never a ship setting. */
++    static int bc_cfg;static unsigned broadcast;
++    if(!bc_cfg){const char *o=getenv("LC2_HID_BROADCAST");broadcast=o&&!strcmp(o,"1");bc_cfg=1;
++        if(broadcast)printf("LC2_HID_BROADCAST enabled=1 entries=10 rings=7 scope=diagnostic\n");}
+     for(unsigned i=0;i<10;i++) {
+         uint8_t *entry=shared+0x9a00+0x5000*i;
+         unsigned is_handheld=handheld && i==8 && hid_state.active && (hid_state.styles&2) && connected;
+         uint32_t style=i==target?1:(is_handheld?2:0),old=__atomic_load_n((uint32_t *)entry,__ATOMIC_ACQUIRE);
+-        struct hid_sample actual=(i==target||is_handheld)?sample:(struct hid_sample){.number=sample.number};
+-        actual.attributes=(i==target||is_handheld)?1:0;
++        if(broadcast)style=1;
++        struct hid_sample actual=(i==target||is_handheld||broadcast)?sample:(struct hid_sample){.number=sample.number};
++        actual.attributes=(i==target||is_handheld||broadcast)?1:0;
+         /* Native full-key and system-ext views; other styles stay disconnected.
+          * The handheld entry publishes into its own ring (index 1) instead of the full-key one. */
+         for(unsigned ring=0;ring<7;ring++) {
+-            unsigned live=is_handheld?(ring==1||ring==6):(ring==0||ring==6);
++            unsigned live=broadcast||(is_handheld?(ring==1||ring==6):(ring==0||ring==6));
+             struct hid_sample value=live?actual:(struct hid_sample){.number=sample.number};
+             hid_ring_publish((struct hid_ring *)(entry+0x28+ring*0x350),value);
+         }
 diff --git a/native/ipc.h b/native/ipc.h
 index 7389a4e..59df724 100644
 --- a/native/ipc.h

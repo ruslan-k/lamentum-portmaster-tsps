@@ -8,10 +8,11 @@ import sys
 import time
 
 REPO = pathlib.Path('/home/ruslan/lamentum-work/repo')
-OUT = REPO / 'evidence' / 'title-input-02'
+OUT = REPO / 'evidence' / (sys.argv[2] if len(sys.argv) > 2 else 'title-input-02')
 PORT = '/mnt/SDCARD/Roms/PORTS/lamentum-switch'
 HOST = 'root@192.168.50.135'
-ENV = json.loads((REPO / 'evidence/lowfloor-32-01/env.json').read_text())
+ENV = json.loads(pathlib.Path(sys.argv[1] if len(sys.argv) > 1
+                             else REPO / 'evidence/lowfloor-32-01/env.json').read_text())
 BUDGET = 520
 PRESS_AFTER = 330          # measured: title logo present by ~300 s of runtime
 KEY_MS = 140

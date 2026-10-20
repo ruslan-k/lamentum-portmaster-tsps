@@ -2,10 +2,15 @@
 
 **Status: not playable. Build 193 reaches the game's own title screen ("Lamentum"
 logo on physical scanout) and a 420-second run ends on time rather than on a defect.
-The menu list, input actions, audio, saves and gameplay remain unverified.**
+The menu list, input actions, audio, saves and gameplay remain unverified:
+pressing A/Start reaches the adapter but the title does not react — loading has
+ended by then, and a broadcast to every npad entry/ring changed nothing, so the
+published pad record shape (not the routing) is the frontier.**
 
-Latest work: `docs/title-screen.md` (build 193: title screen reached, shader tail
-closed by appending captured programs, input now the measured frontier).
+Latest work: `docs/hid-input-contract.md` (build 194: loading proven finished
+before the title, per-frame IPC polling ruled out, npad-id broadcast falsified,
+SDK shared-memory accessor offsets measured). `docs/title-screen.md` (build 193:
+title screen reached, shader tail closed by appending captured programs).
 `docs/catalogue-tail.md` (build 191: the visible frame uses only real
 programs, the 64-MiB floor was the load wall, and an append-not-regenerate cycle
 closes the remaining shader tail; catalogue 34 → 37 programs).
@@ -23,7 +28,7 @@ original texture resolution and the owner image; the 420 MiB GPU ceiling is unch
 
 The installed launcher keeps experimental memory features off unless explicitly requested;
 it uses strict GL checks, synchronous submission, SDL/KMSDRM and a 96 MiB memory floor.
-The failed pageout experiment remains disabled. The latest binary is build 193, installed
+The failed pageout experiment remains disabled. The latest binary is build 194, installed
 with a device-side backup and independently verified SHA-256. The temporary watermark
 experiment was restored to its original value and is not a persistent system change.
 
