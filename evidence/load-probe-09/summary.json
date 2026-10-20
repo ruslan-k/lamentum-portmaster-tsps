@@ -1,0 +1,15 @@
+{
+  "build": "build218",
+  "arm": "T0 end-to-end: incremental collector + content-change navigation gate",
+  "navigation": {
+    "page_bright": 387,
+    "controls_bright": 1263,
+    "gate": "content change >=120 cells"
+  },
+  "samples": 32,
+  "last_frame": 440,
+  "status": "ended without a STOP line",
+  "log_killed": false,
+  "cleanup_errors": [],
+  "note": "collector counters matched the log exactly (presents == frame at every sample), rotation-safe"
+}
