@@ -5,6 +5,8 @@
 **Game status:** the real main menu, save slots, Options screen, and working UI navigation have been verified. **New Game, gameplay, audible audio, and save/reload have NOT yet been verified.** Functional verification must therefore precede gameplay performance claims.  
 **Platform:** Nintendo Switch version of Lamentum, Unity 2019.4.4f1 with ARM64 IL2CPP; guest Horizon + NVN translated to EGL/GLES on the TrimUI Smart Pro S Mali-G57 running SpruceOS; 1280×720 display and approximately 1 GiB of physical RAM. No Box64 and no distribution of modified original game images in the repository. All modifications to the manifest-pinned, 435-file recovered runtime baseline must be applied through runtime/lamentum-adapter.patch.
 
+**Latest reassessment, 2026-10-20 (main 51707cd8):** [Section 18](#18-post-roadmap-reassessment-2026-10-20) supersedes earlier status statements, implementation checklists and optimization priorities. Sections 0–17 preserve the original audit and are historical where they say that profiling/cbuf experiments were not implemented. The latest new results are exploratory, not verified gameplay FPS.
+
 History, architecture, and contracts: [README](../README.md), [architecture](architecture.md), [UI constant-buffer binding](ui-cbuf-binding.md), [shader catalogue tail](catalogue-tail.md), [loading-memory research](loading-memory.md), and [porting log](porting-log.md). Historical entries must not be mistaken for measurements of the current performance baseline.
 
 ## 0. Audit of the Existing Code and Measurements
@@ -394,3 +396,91 @@ tools/device_principal_test.py is **not a general-purpose test laboratory**: it 
 5. Then investigate the **Lamentum-specific 720p owner** if the internal 1080p target proves significant. Consider bloom, ASTC, asynchronous GPU submission, and compiler tuning only if profiling identifies a relevant cost and the appropriate safety gates are met.
 
 **Execution note:** this roadmap comes from a GitHub source and evidence audit. **No new handheld runs, verified 30 FPS benchmarks, proprietary game-executable patches, hardware deployments, or on-device tests were performed during the audit.** Build202 measurements establish the existence of a performance problem; the techniques above are engineering hypotheses and a plan for testing them, not completed fixes.
+
+
+---
+
+## 18. Post-roadmap reassessment (2026-10-20)
+
+**Source revision reviewed:** main 51707cd8b53229ba706d19a92a61e23ec592bd9b, including the three commits since the English roadmap: b3a3c207, 1889e870 and 51707cd8. This is a read-only review of committed code, documents and evidence, **not a new handheld run**. The original 30 FPS target and functional acceptance criteria remain unchanged.
+
+**Evidence limitations:** New performance directories such as evidence/perf-flush, perf-gz-cold250, perf-quiet-b202 and perf-sub-on contain only perf-distribution.json. Their raw latest.log, effective environment files, matching device ELF hashes, live screenshots and cleanup receipts are not committed. The numbers for frames 250–500 in [docs/fps-baseline-2026-10-20.md](fps-baseline-2026-10-20.md) are therefore author-reported; the committed summary JSONs independently contain only whole-run and late (500+) distributions. The README still identifies build202 as its installed reference ELF, while the new baseline mentions build208. Do not assume that the checked-in patch, benchmark build208 and installed executable are identical without their SHA-256 readback.
+
+### 18.1. Completed work and what the new measurements actually show
+
+| Work item | Code/evidence | Verified implementation and measured status | Decision |
+|---|---|---|---|
+| Frame distribution parser | tools/analyze_perf.py | Added and produces interval P50/P90/P95/P99, but its first sub-1000ms period heuristic is not scene validation | Keep, repair phase identification |
+| Quiet diagnostic comparison | docs/fps-baseline-2026-10-20.md and evidence/perf-* | Real runs reported; median diagnostic readback still ~2.3–2.4ms even in quiet variants | Publish complete evidence; test proof-preserving readback reduction |
+| Cbuf subimage reuse | runtime/lamentum-adapter.patch, native/nvn_render.h, LC2_CBUF_SUBIMAGE | Implemented and currently defaults ON. Reported period P50 609.2 -> 629.0ms and replay 274.8 -> 297.7ms; no measured gain. But the compared rows name build202 and build208 despite prose claiming same ELF | Same-ELF 0/1 control before causal conclusion; do not spend effort reimplementing C1 |
+| Guest compression timing | native/t2_guest_memory.h | Added compress/restore elapsed counters in T2_GZRAM | The code uses CLOCK_MONOTONIC: labels cpu-compress-ms and cpu-restore-ms are **wall elapsed**, not proven CPU time |
+| ZRAM cold threshold experiment | evidence/perf-gz-cold250 and baseline doc | Reported cold10 -> cold250: period P50 629.0 -> 579.3ms, replay 297.7 -> 240.8ms; timed paths 138 -> 59ms/frame and compressions 566 -> 248/frame | Promising but memory impact and repeatability still unverified |
+| Submit finish to flush | evidence/perf-flush and baseline doc | With cold250, reported period P50 579.3 -> 557.1ms, replay 240.8 -> 185.4ms | Diagnostic only until GPU completion and resource ownership are proven |
+| External per-thread sampler | tools/perf_sample.py | Implemented, but top_threads CPU calculation has a missing clock tick conversion | Correct before using for conclusions |
+| Input latch | native/lc2_input_latch.h and tools/test_input_latch.c | Implemented behind LC2_INPUT_LATCH=1, default OFF, seven host assertions | On-device button/visual validation pending |
+| New Game and tap probes | tools/newgame_probe.py, tap_sweep_probe.py, analyze_newgame.py | Added, but no corresponding verified New Game gameplay evidence published | Fix wrong Confirm event, capture/PID gates |
+
+**Important metric interpretation:** cold250 changes the reported median frame period by about 7.9% in the specific diagnostic window. The subsequent submit flush change improves the reported median by another ~3.8%, but does not demonstrate safe GPU completion or normal gameplay. The latest reported 557ms period is roughly **16.7 times the 33.33ms budget**, with about 338ms of remaining unattributed time. None of these results establishes playable 30 FPS.
+
+### 18.2. P0-A — Correct the New Game test before interpreting any failure
+
+**New source-level defect:** tools/newgame_probe.py currently sends Linux evdev key code **304** while commenting it as BTN_SOUTH/A Confirm. The title-specific measurements in [docs/hid-input-contract.md](hid-input-contract.md) and [the build202 action receipt](../evidence/ui-cbuf-fixed-01/control-actions.json) show **304 / BTN_SOUTH maps to guest Switch B and performed Back**; the successfully tested **Confirm was Linux code 305**. As written, the New Game probe may navigate to New Game and then press Back.
+
+**Implementation sequence:**
+
+1. Change the new-game Confirm event from 304 to **305** and replace the incorrect comment. Make a shared mapping table/constant containing Linux event type/code, guest button mask and previously verified role, with a host regression that checks the action matches the published receipt. Verify the physical evdev provider path/device identity at test start; /dev/input/event4 is a device-specific observation, not a universal constant.
+2. Model navigation as BOOT -> LIVE_MENU -> NEW_GAME_SELECTED -> CONFIRM_SENT -> SCENE_LOADING -> LIVE_GAMEPLAY or FAILED. The script currently assumes a default selection of Options and a single Up action reaches New Game. Verify actual highlighted item by a live KMS capture before pressing Confirm; otherwise fail closed and report uncertain selection. Do not label opened Options as New Game.
+3. Change shot() so it captures only when the **owned game PID and start_time** are present and the expected active DRM plane belongs to the game. The immediate before-title capture may otherwise be Spruce MainUI. Record PID, frame serial, image hash and capture outcome for every frame; a screenshot filename is not pixel proof.
+4. Replace reading only the last 4000 bytes of the log to infer the most recent frame with a low-overhead monotonic frame counter or incremental file cursor. The existing log is large; failure to see a frame in its tail is not proof that rendering stopped.
+5. Verify press/release and dwell: use the owner-observed 305 Confirm with an explicit release, then capture after at least one new presentation. Independently A/B short input taps of 120ms and 300ms versus 1000ms holds with LC2_INPUT_LATCH=0/1; ensure one physical tap does not become multiple menu actions or a stuck key.
+6. Back up all existing owner saves byte-for-byte, verify SHA, and do not restore over an active runtime. If New Game reaches a new shader tail, preserve the code/control identity and use append-only catalogue tools; do not regenerate the validated build202 UI mapping. Check sound, movement, interaction and scene correctness before claiming gameplay.
+
+**Owner-workspace command only after applying these fixes and validating idle device state:**
+
+~~~sh
+LAMENTUM_NEWGAME_BUDGET=600 LAMENTUM_MENU_FRAME=400 \
+  python3 tools/newgame_probe.py /owner/local/quiet-env.json newgame-verified-01
+python3 tools/analyze_newgame.py evidence/newgame-verified-01
+~~~
+
+**PASS:** actual New Game highlight, guest Confirm mapping, visual scene transition and a controllable scene, or an exact named shader/memory/SDK blocker. **STOP:** wrong selection, uncertain owned PID, unverified save backup, incomplete shader, unsafe memory pressure.
+
+### 18.3. P0-B — Repair performance evidence and parser validity
+
+**Problem:** results reported as one-variable comparisons cannot be independently audited if full runtime logs, effective flags, scene classification and ELF identities are absent. Moreover, tools/analyze_perf.py marks the first period below 1000ms as after_warmup; that can be the second frame during loading and is **not** valid phase identification. It clamps unattributed time at zero, masking negative residuals/overlapping instrumentation.
+
+**Tasks, in order:**
+
+1. Produce a complete and reproducible manifest for each run: Git SHA, recovered baseline manifest SHA, adapter patch SHA, owner section hash, shader catalogue hash, installed ELF SHA readback, kernel/Spruce/GLES driver identity, device CPU clocks and temperature, effective non-default env, stop reason and MainUI/CPU restoration.
+2. Retain raw compressed logs (or immutable private SHA-pinned log copies when distribution is inappropriate), along with exact frame-250–500 reports computed from those logs. Each evidence/perf-* directory should include identity.json, env.json, summary.json, per-frame metrics, device-state.json, cleanup.json and a game-PID-verified KMS capture. Do not include proprietary NSO/RomFS/shader binaries or user saves.
+3. Add explicit phase start/end parameters to tools/analyze_perf.py, tied to visual New Game/menu scene proof. Rename the old first-sub-1000ms criterion heuristic_only or remove it. Do not mark the entire run as warmed up because frame 2 happened to be below 1000ms.
+4. Audit the exact T2P_SLOW_FRAME logging predicate in the recovered baseline. If it logs only slow frames, the resulting distribution is selection-biased and becomes useless as performance approaches 30 FPS. Add unconditional cheap timestamp/serial sampling into a fixed-size ring and batch-output once per 60–120 frames or on exit. Track missing/reset serials, dropped samples, and CLOCK_MONOTONIC_RAW.
+5. Report signed residual = period - (explicit measured stages), together with negative-residual count. Keep inclusive/exclusive clocks and overlap separate; do not add independent stage medians to infer total frame time.
+6. Identify why quiet runs still spend ~2.3–2.4ms on pixel readback. Trace the real present/readback functions and error/proof dependencies before disabling anything. A/B the **diagnostic** readback path with physically identical KMS screenshots; leave GL errors strict.
+7. Repeat cbuf, cold threshold and submit arms with one flag changed on the **same ELF** and identical save/scene/clocks. At least A/B/A/B initially, then three matched pairs for any candidate before a release decision. Publish both P50 and P95/P99 and memory headroom.
+
+**PASS:** independent reviewer can reproduce the published 250–500 distribution, classify the real scene and account for sample selection/overhead. No menu-only or arbitrary frame-window results may be promoted as gameplay FPS.
+
+### 18.4. P0-C — Correct perf_sample.py CPU units and attribute the remaining 338ms
+
+**Critical arithmetic defect:** the script computes a top thread's cpu_ms_per_s as 1000 × delta_cpu_ticks / elapsed_seconds. Linux /proc/TID/stat utime+stime is in **clock ticks**, not milliseconds. It must divide by the **device CLK_TCK** too, just as aggregate CPU percentage does.
+
+~~~python
+# Example for the analyzer; obtain hz from the device, not the workstation:
+hz = device_clk_tck
+cpu_ms_per_s = 1000.0 * delta_cpu_ticks / (elapsed_seconds * hz)
+cpu_percent = 100.0 * delta_cpu_ticks / (elapsed_seconds * hz)
+~~~
+
+**Further fixes and precise instructions:**
+
+1. Collect os.sysconf("SC_CLK_TCK") on the target TSPS through the device-side sampler. The current Python controller calls the workstation's os.sysconf; equality between host and target should **not** be assumed. Add host tests with synthetic 100Hz and 250Hz target clocks.
+2. Record the owned PID and process starttime returned by the launcher. The script currently scans for the first matching truncated /proc/comm, which can select a stale/other process; refuse identity changes and handle PID/TID reuse. Parse /proc/PID/stat safely around the parenthesized comm field, not by blindly splitting a command name containing spaces.
+3. Return **every** thread's delta for utime/stime, minor/major faults, state, schedstat run/runnable-delay (when accessible), context switches and wchan. Preserve raw thread rows even if the terminal summary shows only the top six.
+4. Derive frame numbers from monotonic counters or incremental logs rather than scanning the last 3000 bytes of stdout; reject frame reset/negative delta/missing sample instead of silently deriving guest_frame_ms from unrelated SSH polling.
+5. Add true CLOCK_THREAD_CPUTIME_ID CPU instrumentation in the codec, compressor thread and relevant guest/render paths, along with CLOCK_MONOTONIC_RAW elapsed spans. The newly added T2_GZRAM cpu-compress-ms and cpu-restore-ms use CLOCK_MONOTONIC, meaning they include elapsed scheduling and allocation work and cannot be called exact CPU usage.
+6. Produce per-frame mutually exclusive categories: guest-main executing, guest-main runnable but not scheduled, guest-main sleeping on Horizon wait/timer, compressor executing, render/replay executing, GPU/context wait, and page-in/IO wait. CPU on different cores can overlap; **never sum thread CPU time as wall time**.
+7. Sample externally every 1–5 seconds first; enable a bounded internal ring only after naming the dominant wait/call path. Profile the same scene, ELF and memory envelope, with profiler overhead below 5%.
+8. Follow the resulting decision tree: guest-main CPU hotspot -> guest PC/IL2CPP/SDK stack; guest-main blocked -> WaitSynchronization/SleepThread/vblank/event loop; compressor contention -> §18.5; GL wait -> §18.6; major faults -> guest memory residency ledger.
+
+**PASS:** >=95% of complete frame period is attributed through consistent wall-time categories; thread CPU values use correct target units, and the ~338ms residual is no longer an unsupported guess.
