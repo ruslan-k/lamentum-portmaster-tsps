@@ -1,5 +1,7 @@
 # Lamentum (TrimUI Smart Pro S): Roadmap to Stable 30 FPS
 
+> **LATEST STATUS:** Start with [§26 — current load-probe GPU/CPU and gameplay priorities](#26-load-probe-0307-reassessment-gpu-atlas-residency-first-gameplay-and-cpu-performance-2026-10-20). Older §§0–25 document previous attempts; some of their TODOs are now done or superseded. **The game is still not playable.**
+
 > **CURRENT AUTHORITATIVE STATUS — build218 / newgame-20, source reviewed through [b35f21e](https://github.com/ruslan-k/lamentum-portmaster-tsps/commit/b35f21e14662e681e27de9c78cc91ea250f0d4be) on 2026-10-20.** Read **[§25 below](#25-build218-post-oom-audit-and-next-steps-2026-10-20)** for the latest priority summary and **[the living Gameplay Bring-up and Performance Plan §§13–20](current-gameplay-performance-plan.md#13-build218--newgame-20-reassessment)** for implementation-grade steps, test cases, safe A/B methodology and stop criteria. The prior build216 plan in §§0–24 is preserved as history and is no longer the current status. **This port is not playable and 30 FPS is not demonstrated.**
 
 > **New critical findings:** the catalogue now has **46 entries (0–45, including seven TEST substitutes)**; build218 successfully **linked** original fragment45, but **newgame-20 died by kernel SIGKILL during reported Mali GPU OOM**, not a new shader stop. The GPU notifier reported **725,992 kB** on a device with **986,064 kB MemTotal**, despite the existing nominal 420 MiB texture budget. A separate build217 Loading interval recorded **0.836 seconds of main-thread CPU per presented frame** with no new recorded ROMFS/texture/BC activity. Both the GPU memory owner and hot guest CPU path must be measured before claiming further performance wins. [OOM evidence](../evidence/newgame-20/summary.json) · [loading CPU evidence](time-governor-and-load-cost.md).
@@ -1582,3 +1584,141 @@ Use the existing `MOMO_STACK_SAMPLE_MS`, `MOMO_STACK_SAMPLES` and `MOMO_STACK_SA
 **Primary references:** [latest GPU wall](gpu-wall-after-entry45.md) · [newgame-20 summary](../evidence/newgame-20/summary.json) · [half-accurate fragment45](build218-entry45.md) · [measured navigation](menu-ground-truth.md) · [guest CPU/watchdog](time-governor-and-load-cost.md) · [live implementation plan, §§13–20](current-gameplay-performance-plan.md#13-build218--newgame-20-reassessment).
 
 **Status after this audit:** detailed roadmap and current plan updated; **no runtime source changes, new binary, on-device measurements, verified gameplay or 30 FPS** were produced by this documentation edit.
+
+
+---
+
+## 26. Load-probe 03–07 reassessment: GPU atlas residency, first gameplay and CPU performance (2026-10-20)
+
+> **Read this first.** This section supersedes the implementation order in §§0–25 where their historical status disagrees with the newer committed evidence. This review uses evidence/load-probe-03–07, runtime/lamentum-adapter.patch, tools/load_probe.py, tools/perf_sample.py, the independent current gameplay plan, and the newer incremental tools/load_metrics.py and its synthetic execution tests. The inspected repository advanced beyond the earlier build218 audit **during this review**; use the current actual HEAD and installed ELF hash for every future A/B. **No new game binary, device run, gameplay confirmation, or FPS measurement was produced by this documentation-only review.**
+
+### 26.1. Completed since the earlier roadmap; what is *actually* still blocked
+
+| Area | Confirmed completion or measurement | Remaining limitation |
+|---|---|---|
+| Navigation | Main menu, New Game configuration, controls page, Loading and Options actually reached; main-menu highlight y=475, EV_KEY305 Confirm / 304 Back, live KMS receipts | No confirmed player/world rendering, physical player movement, audible sound, save/reload |
+| Shader catalogue | build218 46 programs (indices 0–45), seven TEST substitutes; exact-code/control fragment45 with preserved half-precision arithmetic linked in newgame-20 | Linked does **not** mean four MRT colors, correct world pixels, or game activation are validated |
+| Runtime | BC3 striped decode, deferred BC uploads, owner-local fileback, guest ZRAM, default-on CBUF TexSubImage, corrected shader banks, nominal 420 MiB texture budget | These mitigations do not prevent allocation of a large **decoded GPU RGBA** resource. No proven 30 FPS |
+| GPU wall | [newgame-20](../evidence/newgame-20/summary.json) and [load-probe-03](../evidence/load-probe-03/summary.json) were terminated by kernel/Mali OOM, with **725,992 kB (~709 MiB)** GPU accounting against **986,064 kB** MemTotal | 75 notifier rows do not mean 75 independent leaks. Ownership of Mali-accounted bytes is not yet measured |
+| New live-storage evidence | [load-memory-probe](load-memory-probe.md) found a real T2_TEXTURE_BUDGET live counter: **411 MiB tracked texture storage** against a 420 MiB cap | Rough **298 MiB difference** from Mali ~709 MiB remains **unattributed**, not proof of FBOs/leak |
+| Lower budget | [load-probe-04](../evidence/load-probe-04/summary.json): T2_TEXTURE_BUDGET_MIB=300 -> controlled STOP, no OOM, last present 1081 | Still fails to load world. Frame count cannot establish FPS gain |
+| Identified first-use trigger | [load-probe-04](../evidence/load-probe-04/summary.json): LC2_BC_DEFERRED **id=295**, **8192×8192**, reservation **268,435,456 bytes = 256 MiB**, budget 155 -> 411 MiB | Need exact BC source metadata, mip count, sampler/resource lifetime, and actual GL bytes |
+| SD pressure | [load-probe-05](../evidence/load-probe-05/summary.json) stopped on LC2_FILEBACK_DISK_RESERVE; ~1,404 MiB SD free versus 1,280 MiB requested backing cap plus reserve | Disk capacity is distinct from GPU budget and cannot be solved with GPU flags |
+| Repeatable safe boundary | [load-probe-07](../evidence/load-probe-07/summary.json): budget 300 and fileback cap 512 -> controlled T2_TEXTURE_BUDGET, no kernel OOM, last present 806, sampled minimum MemAvailable 60,740 kB | Two independent budget-stop runs are better safety evidence, **not successful gameplay**. Different fileback caps and navigation timing invalidate naive 1081-vs-806 comparison |
+| Probe tools | Load probe, analyzer, measured cursor walker, hard-stop harness and tests exist; the newest load_metrics.py adds incremental processing and tests that **execute the payload** on synthetic logs | Need device-level collector integration, complete-line byte framing, run identity, genuine presentation/scene markers and pre-stop vs post-exit separation |
+| Guest CPU | Separate build217 20.14s Loading window: **0.836 s main-thread CPU / presented frame** and 1.63 s CPU across threads, zero new ROMFS reads/textures/BC deferrals in that window | This is a Loading measurement, **not gameplay FPS**. Top on-CPU PC and wait/GC/IPC ownership are not proven |
+
+**New critical inference:** the first controlled budget failure is not simply “too many textures.” A single **256 MiB first-use** decoded image increases accounted residency from around 155 to 411 MiB. The checked-in patch invokes t2_texture_budget_add **before** the corresponding glTexImage2D and striped glTexSubImage2D. Thus, a **clean reservation failure** does not itself prove physical GPU allocation took place. Raising the cap back to 420 just bypasses the guard and risks the earlier kernel kill.
+
+### 26.2. P0-T0 — finish reliable load instrumentation rather than starting from scratch
+
+**Files:** tools/load_metrics.py, tools/load_probe.py, tools/test_load_metrics.py, tools/analyze_load_probe.py, tools/perf_sample.py, tools/device_principal_test.py, tools/newgame_navigate.py. Reuse recent incremental-metrics implementation; do not redo completed work.
+
+1. Re-run the existing host suite and the synthetic payload-execution fixture in tools/test_load_metrics.py. Add missing cases for **split event lines**, no complete newline, invalid UTF-8, log truncation/regrowth, new inode with equal-or-greater length, and old PID reuse. The remote payload currently decodes a complete newly read chunk and parses it while advancing offset only to the last newline: parsing a **partial trailing record** may duplicate that record on the next poll. Read binary bytes first, find the last complete newline in bytes, parse *only* its prefix and advance by its raw byte length.
+2. Record (boot_id, run UUID, owned PID, /proc starttime, log dev/inode, executable SHA, source commit, image/catalogue hash, memory flags). A replacement log can grow beyond a previous offset before sampling; size check alone cannot detect all rotations. Reject cross-run counter merges.
+3. Separate **live game**, **controlled stop**, and **after game exit** periods. In load-probe-03 and 04, post-stop MemAvailable jumps because the game has been freed. Compute minimum/pre-stop/last-safe system memory using *only* samples while the correct game process is alive. Do not use post-kill values as pre-kill headroom.
+4. A load-probe-07 series reports frame 806 in successive samples while resource counters continue changing. Verify parser counters and a run-bound frame serial before inferring a rendering hang; a cached last frame number and actual no-present interval are different phenomena. No negative or missing presentation ID may be silently accepted.
+5. Correct tools/perf_sample.py: derive SC_CLK_TCK **on the target**, not the workstation; parse /proc/PID/stat after the closing parenthesis; key per-thread deltas by TID **and starttime**, and preserve schedstat/faults rather than only the top six names. CPU ms/s = 1000 * delta_ticks / (target_HZ * elapsed_seconds).
+6. Replace fixed New Game-page Down counts with a **page-specific cursor/selection oracle**. The measured main-menu y bands do not establish configuration-screen navigation semantics. Use short controlled press/release pulses and capture a **new** frame after each action; abort if selection is ambiguous.
+7. Keep host-side exact-PID hard stop independent of unreliable guest SIGALRM. Preserve genuine exit taxonomy: runtime budget stop, shader stop, kernel-correlated OOM SIGKILL, SIGKILL of unknown cause, host timeout, cleanup failure, and real world reached. A substring Killed with no matching kernel victim is **not proof** of OOM.
+8. Unit fixtures must run without a connected device, and the first device verification must take place under the previously demonstrated **safe** 300 MiB cap with the fileback 512 MiB capacity envelope. No automated stress/retry loop on a busy or physically unstable device.
+
+**PASS:** an independent reviewer can reconstruct all counters from one owned process/log generation, distinguish actual scene progress, and verify a **clean safe budget stop** without false pixels or stale log evidence.
+
+### 26.3. P0-G0 — audit the specific 8192×8192 id=295 resource *before* changing its format
+
+**Code owners:** runtime/lamentum-adapter.patch, especially native/nvn_textures.h zero_texture_refresh, lc2_bc_upload_stripes and nvn_texture_dispatch; original baseline native/nvn_framebuffers.h / GL lifetime APIs remain manifest-pinned.
+
+1. Add a **bounded one-shot** log when the id=295 first-use reserve is requested: NVN descriptor/source compression, width/height/depth/layers, format/sRGB flag, mip count/level offsets, output bpp, source pool/address/offset, guest write epoch, alias root, texture ID, GL context+name+generation, sampler and first draw consumer, budget bytes and actual future GL storage. Mask/protect owner-private asset bytes; source hashes, not binaries, belong in Git.
+2. Check whether the 256 MiB calculation covers just level zero or all mips; for an ordinary full pyramid total would be approximately **341.3 MiB**, not 256 MiB. If some mips are skipped or shared, document why. Validate every mip base/max level and compressed block alignment, swizzle, alpha and gamma semantics.
+3. Confirm **the resource really should be 8192²** in the original NVN descriptor. Check GL_MAX_TEXTURE_SIZE and whether the atlas is immutable and **sampled** rather than a render target, dynamically updated texture, shadow atlas or alias. Never lower dimensions or discard levels based solely on the large allocation size.
+4. On the same run, aggregate separate live counts for original NVN texture IDs, actual GL storage (context,name,generation), depth/stencil/renderbuffers, color MRT, vertex/index/PBO buffers, swap surfaces, temporary conversion buffers, and aliased/backed guest ranges. **Do not double count aliases or infer GPU heap from cumulative create sizes**.
+5. Use sparse snapshots around scene milestones and one pre-stop snapshot. Account for resource creation, lazy commitment, free/delete, generation replacement and outstanding GPU readers. Compare **411 MiB charged textures**, separately estimated other GL bytes and the Mali notifier **~709 MiB** as independent sources. Their ~298 MiB difference is currently **unknown**, not yet a leak.
+6. Preserve T2_TEXTURE_BUDGET_MIB=300 for first validation and never bypass T2_MEMORY_FLOOR, 420 MiB default ceiling, context/fence correctness or the board's physical headroom just to get a screenshot. Stop before unsafe allocation.
+
+**PASS:** the first-use record proves which original resource class needs 256 MiB; the total GPU allocation gap is classified by live owners with safe, bounded measurements.
+
+### 26.4. P1-G1 — primary new optimization: native ETC2/EAC or ASTC GPU storage
+
+**Why it matters:** existing 128-row striped BC3 decoding reduces **temporary CPU decode memory**, but glTexImage2D still reserves an **uncompressed RGBA image in GPU memory**. One 8192² RGBA8 base level is **256 MiB**. An ETC2 RGBA8/EAC or ASTC 4x4 block-compressed base level is about **64 MiB**; ASTC 6x6 is about **28.5 MiB**. Therefore an actually compressed 8bpp allocation could reduce this one base level's storage by **192 MiB**. These are theoretical storage sizes before mips, driver padding and staging, **not measured GPU savings**. Transcoding BC3 may introduce additional visual loss.
+
+**Implement as a gated, owner-local experiment:**
+
+1. Probe actual Mali GLES version, compressed format list, ASTC extension and GL_MAX_TEXTURE_SIZE; run a tiny independently testable upload/sample/readback fixture on the **actual driver**. GLES3 defines ETC2/EAC formats, including GL_COMPRESSED_RGBA8_ETC2_EAC and GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC; ASTC 4x4/6x6 requires advertised, successfully tested ASTC support. **Do not treat an advertised format as proof the driver stores it compressed.**
+2. Obtain owner-local original BC3 source bytes and pin SHA-256, sampler type, sRGB or linear interpretation, alpha, swizzle, mip count, orientation, and source write generation. Reject a dynamically modified atlas, render target or image-storage resource: immutable sampled images only.
+3. Precompute an **offline, bounded, content-addressed** transcode: owner-private BC3 -> RGBA -> ETC2 RGBA8 (first A/B); then ASTC 4x4 and possibly ASTC 6x6 for a separate visual-quality arm. Cache key must include original bytes hash, format, mip geometry, encoder/options/version and runtime format contract. Do not commit copyrighted inputs, raw decoded texels or output game assets.
+4. Preserve every mip, correct block padding, alpha and sRGB sampling behavior. Validate transparent sprite edges, dark gradients, pixel-art text, UV orientation, filtering/mip switching, and interpolation against actual KMS captures from the original lossless path. An image hash may change legitimately with lossy transcode; define visual tolerance and a strict correctness review.
+5. Add optional exact-descriptor/source-hash logic at the texture's **first materialization** (native/nvn_textures.h). Use glCompressedTexImage2D for all intended levels; do not allocate the full RGBA fallback **in addition to** the compressed texture. If GL rejects the format or cache identity is wrong, fail closed or use a capacity-verified lossless fallback, not a hidden OOM.
+6. Charge **actual compressed GPU bytes**, including live mip levels, against a separate verified storage generation. Instrument driver/system live memory. Keep the same safe 300 MiB budget and consistent fileback cap during the experiment. Verify that the former 256 MiB atlas no longer causes a 411 MiB budget jump; this is only a starting check, not sufficient proof of physical savings.
+7. Watch real Mali memory and headroom, early scene progress, materialization stalls and guest CPU. Off-device/precomputed encoding is preferable to expensive on-device software compression during already slow loading. Disk space is constrained: load-probe-05 showed only ~1.4 GiB free. Reserve room for saves, logs and rollback and bound the new cache separately from file backing.
+8. Run one short guarded validation, then **three matched test runs** comparing GPU/system peak memory, real world progress and visual correctness. If the driver silently expands the compressed data to RGBA, alpha changes visibly, or decode cost becomes the new bottleneck, revert this path.
+
+**Lower-priority alternatives:** a title-controlled texture-quality setting/4096 atlas with known UV/mip consequences; atlas virtual pages only if precise sampling/view remapping is possible; fragment-shader manual BC3 decoding from compressed-byte textures (complex texture filtering and extra fragment cost, **P3 research only**). **Do not** simply halve texture dimensions without correcting dependent coordinate/filtering semantics, and do not declare a BC3 image to be ETC2/ASTC without transcoding it.
+
+**PASS:** substantial physical GPU memory reduction, same meaningful scene output, and progression **past** the previously failed id=295 allocation with no kernel OOM or unsafe pressure.
+
+**Reference:** [Khronos KTX developer guide, ETC2 RGBA 4×4 block sizing and ES3 formats](https://github.com/KhronosGroup/3D-Formats-Guidelines/blob/main/KTXDeveloperGuide.md).
+
+### 26.5. P1-G2 — resolve the other ~298 MiB of Mali-accounted memory
+
+Even an ideal compressed atlas might not be sufficient if non-texture storage remains large. Choose the **actual owner** before trying broad graphics changes.
+
+1. Trace native/nvn_framebuffers.h, NVN target bindings, GL FBO/RBO color/depth/stencil allocations, buffer object reallocations, EGL window/pbuffer surfaces and duplicate texture generations. For each allocate/redefine/delete, record dimensions, format, samples, owner, GL context, generation, backend bytes and last consumer/fence. Distinguish an FBO object itself from its attached texture storage.
+2. Verify whether first-use BC upload plus eager texture creation leaves two physical GL storages, or descriptor aliasing charges bytes without duplicating storage. Account for GL delete and resource retirement **after** its final in-flight GPU consumer.
+3. As a sizing example, a 1920×1080 RGBA8 target is **7.91 MiB** and four full-size MRT color targets are **31.64 MiB** before depth/stencil and MSAA. The physical 1280×720 display is already 720p, so reducing display mode does **not** remove 1920×1080 internal render targets.
+4. If actual internal targets dominate, identify their **Lamentum-specific Unity owner** by original image/metadata hash and trace creation plus projection/UV dependencies. Then A/B an owner-scoped 1280×720 override with correct depth, viewport, scissor, matrix and texture sampling. Do not reuse West of Loathing offsets or blindly change FBO dimensions.
+5. If transient render targets accumulate, retain safe resource re-use only while no earlier GPU serial/fence reads the storage. Never globally call glInvalidateFramebuffer while bloom/composite still requires the attachment. Preserve strict GL errors, NVN completion and the synchronous queue by default.
+6. Compare **live allocated classes and true Mali/host memory peaks** with equivalent scene phases and same atlas format. A mere reduction in the number of glGen calls without lower physical residency is insufficient.
+
+**PASS:** a quantified, correct source of unbudgeted live GPU memory and a one-factor fix that reduces the actual driver/system peak.
+
+### 26.6. P0-C0 — stop guessing about the 0.836 CPU seconds on the main Loading thread
+
+1. Sample guest PCs using the **already implemented** MOMO_STACK_SAMPLE_MS, MOMO_STACK_SAMPLES, MOMO_STACK_SAMPLE_AFTER and tools/analyze_guest_samples.py in a bounded **pre-budget-stop** period. The isolated load-probe-01 PHYSICAL_MEMORY_CONFLICT has not been causally linked to stack sampling; compare with a no-sampler control and never dismiss a real alias violation.
+2. Map PCs only to exact **owner-private, SHA-pinned** main/sdk/subsdk images and available IL2CPP/Unity metadata. Capture module+offset, thread identity, interrupted PC and call chain; keep unresolved addresses explicit. Do not invent symbols from guessed offsets.
+3. Separate actual **CPU time** (CLOCK_THREAD_CPUTIME_ID or corrected target thread ticks), elapsed wall time, runnable scheduler delay, Horizon SVC wait, file backing, guest ZRAM compression/restoration and GL/GPU completion. The old T2_GZRAM cpu-compress-ms counters use CLOCK_MONOTONIC elapsed time, not proven executing CPU time.
+4. Classify the actual hot path: guest SVC/IPC spin or wrong timeout units, Unity/IL2CPP initialization/GC, repeated metadata/deserialization, guest page restore/recompression, GL submission, or scheduler/thermal limitation. Inspect a guest wait/event mapping against a suitable open-source Horizon implementation **only after finding the offending call**, preserving original return codes and event ownership.
+5. Build a synthetic unit fixture for **one identified** ABI/logic bug, implement a reversible adapter change, and benchmark **world-loading progress per CPU-second**, not Loading-spinner presentations. Never universally skip SleepThread, fake GPU completion, or change Unity time scale just to make the FPS counter advance.
+6. If CPU time really remains ~0.836 s for each meaningful game frame, stable 30 FPS is not remotely close on the present path; resolve that bottleneck before postprocessing and compiler-flag experiments.
+
+**PASS:** a measured top CPU routine/blocked wait or a rigorous distributed-hotspot profile, with less CPU per unit of *real* scene progress after the eventual fix.
+
+### 26.7. P0-W0 — gameplay bring-up once resource pressure allows it
+
+1. Record an owner-validated Unity scene/async-operation progress marker, camera/player update and newly **drawn** program pair; a rising present counter or static Loading animation does not establish successful scene activation.
+2. Confirm fragment45's **four MRT outputs** are actually written: GL_DRAW_BUFFER configuration, attachment 0–3 formats/sizes/samples, FBO completeness, shader location/layout, color mask, depth/stencil state, and producer/consumer order. The already verified link-on-native-pair-draw only proves shader linking, not correct pixels.
+3. Trace newly reached vertex44/fragment45 pairs and all seven remaining TEST substitutions with exact captured code/control identities. A substitute unused in menu can still break world lighting, sprites, depth/MSAA or skinning. Append real shaders only if a new exact STOP or verified demanded TEST path occurs.
+4. In native/nvn_render.h, a **title-specific fallback** can bind the other constant-buffer slot when the declared slot is empty. This rescued historical data paths but risks silently wiring a wrong bank for a newly reached world shader. Add bounded per-program fallback receipts, prove the actual binding and preserve c4 -> NVN UBO1, c1 literals and c3/c3_1 alias rules; never remove or broaden the fallback without a positive/negative regression test.
+5. If KMS appears blank/dark, isolate **render target -> swapchain image -> present quad -> panel** with one-shot, owned-PID readbacks. A blank **post-kill sleeping display** (already observed) is not a black in-game frame. Avoid always-on GPU readback for benchmarks.
+6. Require **physical** pad movement with visual player-coordinate changes, item interactions, dialogue/inventory, audible SFX/music and owner-save-backed **save -> quit -> cold launch -> load**. Test Spruce principal and CPU-mask restoration after both normal exit and controlled stop.
+
+**PASS:** a correct controllable world with verified rendering, interactions, sound and persistent saves. Only then change README from NOT PLAYABLE.
+
+### 26.8. P1-F0 — credible 30 FPS optimization *after* gameplay is working
+
+1. Obtain a genuinely quiet, unfiltered **per-present** 60-second world run three times. Record P50/P95/P99, true displayed throughput, missing/duplicate serials and panel refresh cadence. Separate menus, Loading, steady gameplay, movement, combat/effects and scene transition windows.
+2. Attribute **exclusive elapsed** frame stages plus concurrent CPU utilization and GPU waits: guest idle/on-CPU, GC/IPC/page restore, NVN queue/replay, GL state/FBO/CBUF/materialization, and present. Do not add independent column medians or call slow-frame-only logs complete FPS distributions.
+3. Choose **one measured** hotspot: CPU wait/fault -> guest runtime; memory -> compressed residency/lifetimes; draw submit -> state/cbuf cache; GPU fill -> title-specific render-target resolution or reversible quality preset. Earlier CBUF SubImage was already implemented without a proven whole-frame gain; generic ZERO_RENDER_SCALE=2 had little impact on historical Loading diagnostics.
+4. Avoid unsafe async queue, ignored GL errors, pageout without alias proof, forced CPU clocks and global bloom/stencil removal. Compare device temperature, governor, compressed cache storage, driver RAM and audio/input behavior.
+5. Declare stable 30 FPS **only** after three independent >=60s correct gameplay runs with complete-frame **P50 and P95 <=33.33 ms**, preferably P99 <=50ms, safe RAM, correct sounds, controls and cold save/load. If not attained, publish the actual verified frame-rate ceiling and its bottleneck.
+
+### 26.9. Updated concrete implementation order
+
+| Rank | Small scoped PR / files | Must produce before the next step |
+|---:|---|---|
+| **P0-1** | **T0** complete tests and byte-exact incremental collector (tools/load_metrics.py, load_probe.py, perf_sample.py, navigation + harness) | Trusted run/PID/log identity, real phase and pre-stop memory accounting; preserve newer completed test fixtures |
+| **P0-2** | **G0** id=295 original descriptor + GL resource ledger (adapter patch, nvn_textures.h / nvn_framebuffers.h) | Prove why a 256 MiB image is required, how mip levels are charged and which classes fill 411->709 MiB |
+| **P1-3** | **G1-A** owner-local ETC2/EAC offline cache + actual Mali compressed-upload fixture | Correct 8192² sample at <=64 MiB base allocation **if driver truly stores it compressed**; preserved visual parity |
+| **P1-4** | **G1-B** ASTC 4x4/6x6 **only** if device/quality tests justify it | Better measured residency/quality tradeoff, source-SHA-pinned cache, safe fallback |
+| **P1-5** | **G2** remove proven duplicate/oversized GL lifetime or source-verified internal 1080p target | Lower total driver peak, safe headroom, actual load progression beyond previous stop |
+| **P0-6** | **C0** target-correct guest-PC/CPU profile | Hot guest CPU call family, on-CPU vs blocked classification and low profiler overhead |
+| **P1-7** | **C1** narrow Horizon/IL2CPP adapter fix if top CPU site warrants it | Less CPU per unit of real scene progress; behavior/ABI regression tests |
+| **P0-8** | **W0** render actual world (MRT 45, texture/cbuf banks, draw census) | Real KMS frame, physical movement, no unjustified TEST substitutes |
+| **P0-9** | **PLAYABLE** sound, inventory, dialogue, cold saves and clean device lifecycle | May accurately label the title playable |
+| **P1-10** | **F0** world-only profiling and one-factor rendering/CPU optimization | Repeatable 30 FPS acceptance gate, or an accurately reported ceiling |
+
+**First proposed controlled A/B (not performed here):** same build218 owner image, validated 300 MiB texture budget and 512 MiB fileback cap; A is the **known clean id=295 budget stop**, B is an owner-local cache of that proven immutable id=295 source transcoded to ETC2 RGBA8, under **the exact same safe limits**. Check source format/sampler and compressed driver storage first. Success means correct world progression without kernel OOM and a real memory drop; merely turning STOP into SIGKILL is a failure.
+
+**Do not repeat already completed milestones:** cbuf TexSubImage implementation, build218 shader45 generation, measured New Game menu band, simple log-distribution parser, hard host-side timeout, or the newly committed synthetic incremental-metrics payload execution fixture. Extend/correct them based on fresh evidence instead.
+
+**Conclusion:** the next important performance fix is likely not another draw-call micro-optimization; it is **safe GPU residency for a demonstrably expensive 8192² texture**, followed by attribution of the independent **0.836-second main-thread Loading CPU cost**. The port cannot be called playable until a real world scene, controls, audio and saves work, and 30 FPS remains unmeasured.
