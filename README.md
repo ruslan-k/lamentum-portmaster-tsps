@@ -4,9 +4,10 @@
 physical scanout now shows a partial rainy scene rather than the white field.
 Complete rendering, the game menu, input and gameplay remain unverified.**
 
-Latest work: `docs/shader-literal-bank.md` (build 178: capture-validated literal
-specialization in five existing real programs; no demonstrated visual gain).
-`docs/cbuf-unit-isolation.md` records the preceding same-binary A/B: 37 colliding
+Latest work: `docs/probe-disabled-fragment.md` (build 180: one guarded real
+fragment translation, TEST substitutes 8 → 7). `docs/shader-literal-bank.md`
+records build 178's capture-validated literal specialization, and
+`docs/cbuf-unit-isolation.md` the preceding same-binary A/B: 37 colliding
 audit records versus zero, with physical captures. Memory history remains in
 `docs/loading-memory-170-174.md`, `docs/loading-memory.md` and `docs/porting-log.md`.
 The historical best loading probe initialized 522 textures before its physical-memory
@@ -16,7 +17,7 @@ original texture resolution and the owner image; the 420 MiB GPU ceiling is unch
 
 The installed launcher keeps experimental memory features off unless explicitly requested;
 it uses strict GL checks, synchronous submission, SDL/KMSDRM and a 96 MiB memory floor.
-The failed pageout experiment remains disabled. The latest binary is build 178, installed
+The failed pageout experiment remains disabled. The latest binary is build 180, installed
 with a device-side backup and independently verified SHA-256. The temporary watermark
 experiment was restored to its original value and is not a persistent system change.
 

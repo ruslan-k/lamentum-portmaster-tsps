@@ -1,3 +1,4 @@
+#define LC2_PROBE_SPECIALIZED_INDEX 19
 /* GENERATED DRAFT catalogue for Lamentum - our own translations, not game data.
  * Source: tools/build_lamentum_catalogue.py over the translate_lamentum_shaders.py workspace.
  * Every entry is a translation of the title's program; entries with an error string are
@@ -621,12 +622,74 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	/* 19 dump-c523448a fragment */
 	{"", "\n"
 	 "#version 310 es\n"
+	 "/* GUARDED translation: runtime requires probe flag != 1.0 before every draw. */\n"
+	 "precision highp int;\n"
 	 "precision mediump float;\n"
-	 "out vec4 frag_color0;\n"
-	 "/* TEST-ONLY substitute: NOT a translation (see the vertex stage note). */\n"
-	 "uniform sampler2D fs_tex0_20;\n"
+	 "#define unpackFloat2x16(a) unpackHalf2x16(a)\n"
+	 "#define packFloat2x16(a) packHalf2x16(a)\n"
+	 "#define fma(a, b, c) ((a) * (b) + (c))\n"
+	 "#if defined(GL_AMD_gpu_shader_half_float)\n"
+	 "#elif defined(GL_EXT_shader_explicit_arithmetic_types_float16)\n"
+	 "#else\n"
+	 "\n"
+	 "#endif\n"
+	 "\n"
+	 " uniform highp sampler2D c3;\n"
+	 "\n"
+	 " uniform sampler2D fs_tex0_20;\n"
+	 " \n"
+	 "\n"
+	 "in vec4 varying_0;\n"
 	 "in vec4 varying_1;\n"
-	 "void main() { frag_color0 = texture(fs_tex0_20, varying_1.xy); }\n"
+	 "in vec4 varying_2;\n"
+	 "in vec4 varying_3;\n"
+	 "in vec4 varying_4;\n"
+	 "layout(location = 0) out vec4 frag_color0;\n"
+	 "\n"
+	 "void main()\n"
+	 "{\n"
+	 "    mediump vec4 _72 = texture(fs_tex0_20, vec2(varying_0.x, varying_0.y));\n"
+	 "    uint _79 = packHalf2x16(vec2(_72.xy));\n"
+	 "    uint _81 = packHalf2x16(vec2(_72.zw));\n"
+	 "    \n"
+	 "    float _103 = float(float(unpackFloat2x16(_79).x) * varying_3.x);\n"
+	 "    vec2 _105 = unpackFloat2x16(_79);\n"
+	 "    _105.x = _103;\n"
+	 "    float _109 = float(float(_105.y) * varying_3.y);\n"
+	 "    vec2 _110 = _105;\n"
+	 "    _110.y = _109;\n"
+	 "    float _117 = float(float(float(unpackFloat2x16(_81).y) * varying_3.w));\n"
+	 "    float _122 = float(float(unpackFloat2x16(_81).x) * varying_3.z);\n"
+	 "    vec2 _124 = unpackFloat2x16(floatBitsToUint(varying_3.z));\n"
+	 "    _124.x = _122;\n"
+	 "    uint _257;\n"
+	 "    uint _258;\n"
+	 "    uint _259;\n"
+	 "    uint _260;\n"
+	 "    {\n"
+	 "        _257 = packFloat2x16(_124);\n"
+	 "        _258 = floatBitsToUint(varying_3.y);\n"
+	 "        _259 = packFloat2x16(_110);\n"
+	 "        _260 = _81;\n"
+	 "    }\n"
+	 "    uint _270;\n"
+	 "    uint _271;\n"
+	 "    uint _272;\n"
+	 "    uint _273;\n"
+	 "    {\n"
+	 "        uint _269 = floatBitsToUint(float((-unpackFloat2x16(0u).x) + unpackFloat2x16(1006648320u).x));\n"
+	 "        _270 = _269;\n"
+	 "        _271 = _269;\n"
+	 "        _272 = _269;\n"
+	 "        _273 = _269;\n"
+	 "    }\n"
+	 "    float _300 = clamp(fma(uintBitsToFloat(_270), texelFetch(c3, ivec2((int(7u) >> 2) & 1023, int(7u) >> 12), 0)[int(7u) & 3], fma(uintBitsToFloat(_271), texelFetch(c3, ivec2((int(6u) >> 2) & 1023, int(6u) >> 12), 0)[int(6u) & 3], fma(uintBitsToFloat(_272), texelFetch(c3, ivec2((int(5u) >> 2) & 1023, int(5u) >> 12), 0)[int(5u) & 3], uintBitsToFloat(_273) * texelFetch(c3, ivec2((int(4u) >> 2) & 1023, int(4u) >> 12), 0)[int(4u) & 3]))), 0.0, 1.0);\n"
+	 "    float _324 = max(0.0, fma(varying_1.z, texelFetch(c3, ivec2((int(2u) >> 2) & 1023, int(2u) >> 12), 0)[int(2u) & 3], fma(varying_1.y, texelFetch(c3, ivec2((int(1u) >> 2) & 1023, int(1u) >> 12), 0)[int(1u) & 3], varying_1.x * texelFetch(c3, ivec2((int(0u) >> 2) & 1023, int(0u) >> 12), 0)[int(0u) & 3])));\n"
+	 "    frag_color0.x = float(float(fma(_300 * texelFetch(c3, ivec2((int(36u) >> 2) & 1023, int(36u) >> 12), 0)[int(36u) & 3], _324, varying_4.x)) * float(_117 * float(_103)));\n"
+	 "    frag_color0.y = float(float(fma(_300 * texelFetch(c3, ivec2((int(37u) >> 2) & 1023, int(37u) >> 12), 0)[int(37u) & 3], _324, varying_4.y)) * float(_117 * float(_109)));\n"
+	 "    frag_color0.z = float(float(fma(_300 * texelFetch(c3, ivec2((int(38u) >> 2) & 1023, int(38u) >> 12), 0)[int(38u) & 3], _324, varying_4.z)) * float(_117 * float(_122)));\n"
+	 "    frag_color0.w = _117;\n"
+	 "}\n"
 	 "", 1},
 	/* 20 dump-d032944a fragment */
 	{"", "\n"
@@ -1029,7 +1092,7 @@ static const struct mm_shader_binding nvn_megaman_shader_bindings[]={
  /* 19 dump-c523448a fragment */
  {.sha256="c523448a188e019468627cb25b9a59af",.error=NULL,.control_size=2176,.code_size=1024,.sampler_count=1,.attribute_count=5,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
   .uniform_count=1,.uniforms={{.name="c3",.stage=1,.binding=0,.offset=0,.size=65536,.components=4,.word_boolean=0,.word_int=0,.word_array=4096}},
-  .varying_read_masks={0,15,0,0,0,0,0,0},.varying_write_masks={15,0,0,0,0,0,0,0},
+  .varying_read_masks={3,7,0,15,7,0,0,0},.varying_write_masks={15,0,0,0,0,0,0,0},
   .code_hash={0xc5,0x23,0x44,0x8a,0x18,0x8e,0x01,0x94,0x68,0x62,0x7c,0xb2,0x5b,0x9a,0x59,0xaf,0xc6,0xa9,0x1a,0x94,0x82,0xb5,0x13,0x68,0xc1,0xa1,0x8d,0xa4,0xa6,0x21,0xba,0x1e},.control_hash={0x71,0xbd,0x2d,0x6a,0x9d,0x63,0xd4,0x00,0x31,0x49,0x7b,0x5a,0x4f,0x22,0xd5,0x67,0x10,0x29,0x6e,0x20,0x62,0x23,0xed,0xd4,0x28,0x01,0x94,0xc2,0x0e,0x8f,0x52,0x44},
   .samplers={{.name="fs_tex0_20",.stage=1,.binding=14,.offset=0,.size_query=1,.texel_fetch_bits=0,.cpu_view=0}},
   .attributes={{.name="in_attr0",.location=0,.kind=0},{.name="in_attr1",.location=1,.kind=0},{.name="in_attr2",.location=2,.kind=0},{.name="in_attr3",.location=3,.kind=0},{.name="in_attr4",.location=4,.kind=0}}},

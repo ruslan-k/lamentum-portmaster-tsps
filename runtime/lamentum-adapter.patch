@@ -234,6 +234,22 @@ index 0000000..f54c2b6
 +    *bytes=(uint64_t)mib<<20;return 0;
 +}
 +#endif
+diff --git a/native/lc2_probe_guard.h b/native/lc2_probe_guard.h
+new file mode 100644
+index 0000000..ff9ab3b
+--- /dev/null
++++ b/native/lc2_probe_guard.h
+@@ -0,0 +1,10 @@
++#ifndef LC2_PROBE_GUARD_H
++#define LC2_PROBE_GUARD_H
++#include <stdint.h>
++/* c3 accesses through element 38 require at least 156 bytes. The captured
++ * shader enables its volume path iff the F32 flag at byte 32 equals +1.0. */
++static inline int lc2_probe_guard(uint64_t bytes,uint32_t word) {
++    if(bytes<156)return -1;
++    return word!=UINT32_C(0x3f800000);
++}
++#endif
 diff --git a/native/loader.c b/native/loader.c
 index 8018af5..7a90c9d 100644
 --- a/native/loader.c
@@ -1084,18 +1100,19 @@ index 0545586..ac198d5 100644
      nvn_gl_completion.real_waits++;
  }
 diff --git a/native/nvn_render.h b/native/nvn_render.h
-index 543b4b5..f1e6d5a 100644
+index 543b4b5..8ed2071 100644
 --- a/native/nvn_render.h
 +++ b/native/nvn_render.h
-@@ -2,6 +2,7 @@
+@@ -2,6 +2,8 @@
   * Resource data is consumed in command order; uniform locations and byte
   * offsets come from the original compiler reflection, not guessed bindings.
   */
 +#include "lc2_cbuf_units.h"
++#include "lc2_probe_guard.h"
  struct nvn_range {uint64_t address,size;};
  static struct {
      GLuint framebuffer;struct nvn_texture *target,*depth;struct nvn_program *program;
-@@ -234,11 +235,51 @@ static void nvn_render_stencil(void) {
+@@ -234,11 +236,51 @@ static void nvn_render_stencil(void) {
                              nvn_stencil_operation((state>>12)&15),nvn_stencil_operation((state>>8)&15));
      }
  }
@@ -1148,7 +1165,7 @@ index 543b4b5..f1e6d5a 100644
              return &d->entries[index];
          }
      }
-@@ -261,8 +302,33 @@ static unsigned momo_texture_unit(unsigned catalogue_offset,unsigned *ok) {
+@@ -261,8 +303,33 @@ static unsigned momo_texture_unit(unsigned catalogue_offset,unsigned *ok) {
  }
  #endif
  static struct nvn_sampler_binding nvn_render_sampler_prepare_mode(uint64_t handle,unsigned cpu_view,unsigned real_sample) {
@@ -1182,7 +1199,41 @@ index 543b4b5..f1e6d5a 100644
      if(t && t->zero_backend_deferred)stop("ZERO_FLOAT_TEXTURE_SAMPLER_BACKEND_REQUIRED",nvn_caller,t->b.format,20);
  #ifdef ANIMAL_WELL_SHADERS
      if(t && t->aw_clear_valid)aw_clear_flush(t);
-@@ -788,24 +854,95 @@ static void nvn_render_draw_inner(struct nvn_record *r) {
+@@ -667,6 +734,33 @@ static void nvn_render_draw_inner(struct nvn_record *r) {
+     if((p->sources[1]==163||p->sources[1]==93||p->sources[1]==97||p->sources[1]==135) && !p->zero_diagnostic_draws)diagnose=1;
+ #endif
+     if(!p||!p->live||!p->linked||!nvn_render.target)stop("NVN_DRAW_PIPELINE_INCOMPLETE",nvn_caller,r->op,24);
++#ifdef LC2_PROBE_SPECIALIZED_INDEX
++    if(p->sources[1]==LC2_PROBE_SPECIALIZED_INDEX) {
++        struct nvn_range range=nvn_render.uniform[1][0];uint32_t word=0;
++        if(range.size<156 || range.address>UINT64_MAX-156)
++            stop("LC2_PROBE_CBUF_REQUIRED",nvn_caller,range.size,20);
++        memcpy(&word,nvn_gpu_pointer(range.address+32,4,PROT_READ),4);
++        if(lc2_probe_guard(range.size,word)!=1)
++            stop("LC2_PROBE_VOLUME_BACKEND_REQUIRED",nvn_caller,word,20);
++        static uint64_t checked;checked++;
++        if(checked<=4 || !(checked%64))printf("LC2_PROBE_GUARD checked=%"PRIu64" frame=%u flag=0x%08x bytes=%"PRIu64" allowed=1\n",checked,nvn_replay.last_frame+1,word,range.size);
++    }
++#endif
++#ifdef LC2_TEXTURE_VIEW_36
++    if(p->sources[1]==19) {
++        static int cfg;static unsigned left;
++        if(!cfg){const char *o=getenv("LC2_SHADER19_PROBE");left=o?(unsigned)strtoul(o,NULL,10):0;cfg=1;}
++        if(left) {
++            left--;struct nvn_range range=nvn_render.uniform[1][0];uint32_t word=0;
++            void *data=range.size>=36 && range.address<=UINT64_MAX-36?
++                nvn_gpu_pointer_or_null(range.address+32,4,PROT_READ):NULL;
++            if(data)memcpy(&word,data,4);
++            printf("LC2_SHADER19_PROBE frame=%u draw=%u bytes=%"PRIu64" readable=%u flag-bits=0x%08x handle1=0x%"PRIx64" known1=%u\n",
++                   nvn_replay.last_frame+1,nvn_replay.draws,range.size,data!=NULL,word,
++                   nvn_render.texture_handles[1][1],(unsigned)((nvn_render.texture_known[1][0]>>1)&1));
++        }
++    }
++#endif
+     nvn_mfc_target(nvn_render.target);nvn_mfc_target(nvn_render.depth);
+     if(nvn_render.scratch_pool && !nvn_render.scratch_pool->live)
+         stop("NVN_SHADER_SCRATCH_POOL_LIFETIME",nvn_caller,nvn_render.scratch_pool->object,24);
+@@ -788,24 +882,95 @@ static void nvn_render_draw_inner(struct nvn_record *r) {
      unsigned units=0,samplers_total=0,momo_tmp_sprite_atlas=0;
      uint64_t pass_textures[8],pass_handles[8];unsigned pass_slots[8],pass_offsets[8],pass_texture_count=0;const char *pass_names[8];unsigned pass_sizes[8][2];
      for(unsigned i=0;i<p->uniform_count;i++)if(p->uniforms[i].kind==3)samplers_total++;
@@ -1287,7 +1338,7 @@ index 543b4b5..f1e6d5a 100644
          {   /* MOMO_UNIFORM_DUMP=<draw>: the whole constant bank bound for that draw, so a shader whose
               * values look shifted can be checked against the raw buffer instead of guessed. */
              static int cfg;static unsigned wanted;static unsigned done;
-@@ -1146,6 +1283,26 @@ static void nvn_render_draw_inner(struct nvn_record *r) {
+@@ -1146,6 +1311,26 @@ static void nvn_render_draw_inner(struct nvn_record *r) {
          for(uint64_t i=0;i<count;i++){uint32_t v=type==0?src[i]:type==1?(uint32_t)src[i*2]|((uint32_t)src[i*2+1]<<8):read32(src+i*4);scratch[i]=v-min;}
          }
      }
@@ -1314,7 +1365,7 @@ index 543b4b5..f1e6d5a 100644
      if(p->momo_tmp_sprite>=0) {
          /* A single-channel page cannot carry colour, so it is a font and the colour belongs to the face
           * texture; anything else is a sprite atlas and carries the picture. */
-@@ -1267,10 +1424,36 @@ static void nvn_render_draw_inner(struct nvn_record *r) {
+@@ -1267,10 +1452,36 @@ static void nvn_render_draw_inner(struct nvn_record *r) {
          if(stream>=nvn_render.stream_count||stream>=16||nvn_render.streams[stream][1])stop("NVN_VERTEX_STREAM_REQUIRED",nvn_caller,stream,20);
          struct nvn_vertex_format vf=nvn_vertex_format_decode(format);
          unsigned components=vf.components;
@@ -1353,7 +1404,7 @@ index 543b4b5..f1e6d5a 100644
          void *data=nvn_gpu_pointer(range.address+start,extent,PROT_READ);nvn_render_attrib_enable(i,1);
          if(megaman_frame_cadence_enabled() && p->sources[0]==8 && p->sources[1]==7 && i==0 &&
             vf.type==GL_FLOAT && components==2 && !vf.normalized && maximum==2 && count==3) {
-@@ -1449,6 +1632,71 @@ static void nvn_render_draw_inner(struct nvn_record *r) {
+@@ -1449,6 +1660,71 @@ static void nvn_render_draw_inner(struct nvn_record *r) {
      }
      if(preserve)momo_stencil_probe(nvn_replay.draws+1,p->sources[0],p->sources[1]);
      momo_window_draws_census(nvn_render.target,nvn_replay.last_frame,nvn_replay.draws+1,p->sources[0],p->sources[1]);
@@ -1425,7 +1476,7 @@ index 543b4b5..f1e6d5a 100644
      nvn_replay.draws++;nvn_render.target->draws++;
      struct nvn_texture *target_storage=zero_texture_storage_state(nvn_render.target);
      if(target_storage!=nvn_render.target)target_storage->draws++;
-@@ -1589,6 +1837,22 @@ static unsigned nvn_render_record(struct nvn_record *r) {
+@@ -1589,6 +1865,22 @@ static unsigned nvn_render_record(struct nvn_record *r) {
          static unsigned reported;if(!reported++)printf("NVN_LC2_SHADER_SCRATCH pool=0x%"PRIx64" offset=0x%"PRIx64" bytes=0x%"PRIx64" backend=GLES-driver-owned\n",a[0],a[1],size);
          return 1;
      }
@@ -1448,7 +1499,7 @@ index 543b4b5..f1e6d5a 100644
      case NI_nvnCommandBufferBindColorState:memcpy(&nvn_render.color,r->payload,4);return 1;
      case NI_nvnCommandBufferBindBlendState:memcpy(nvn_render.blend,r->payload,8);return 1;
      case NI_nvnCommandBufferBindDepthStencilState:memcpy(nvn_render.depth_state,r->payload,8);return 1;
-@@ -1621,6 +1885,14 @@ static unsigned nvn_render_record(struct nvn_record *r) {
+@@ -1621,6 +1913,14 @@ static unsigned nvn_render_record(struct nvn_record *r) {
      case NI_nvnCommandBufferBindVertexBuffers:memcpy(nvn_render.vertex+a[0],r->payload,a[1]*16);return 1;
      case NI_nvnCommandBufferBindUniformBuffer:
          if(a[0]>1||a[1]>=16)stop("NVN_UNIFORM_BINDING",nvn_caller,a[1],24);
@@ -1463,7 +1514,7 @@ index 543b4b5..f1e6d5a 100644
          nvn_render.uniform[a[0]][a[1]]=(struct nvn_range){a[2],a[3]};return 1;
      case NI_nvnCommandBufferBindUniformBuffersDeferred: {
          /* The ranges live in guest memory and are read now, at execution, which is the deferred contract. */
-@@ -1643,7 +1915,18 @@ static unsigned nvn_render_record(struct nvn_record *r) {
+@@ -1643,7 +1943,18 @@ static unsigned nvn_render_record(struct nvn_record *r) {
          }
          return 1;
      case NI_nvnCommandBufferBindTexture:

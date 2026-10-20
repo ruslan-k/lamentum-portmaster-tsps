@@ -1,0 +1,10 @@
+{
+  "stops": [
+    "TIME_LIMIT"
+  ],
+  "probe_draw_receipts": 54,
+  "zero_flag_receipts": 54,
+  "frame_ceiling": 54,
+  "textures": 148,
+  "audit_collisions": 0
+}

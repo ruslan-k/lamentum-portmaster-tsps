@@ -1,0 +1,30 @@
+$ python3 tools/test_probe_specialization.py
+..
+----------------------------------------------------------------------
+Ran 2 tests in 0.000s
+
+OK
+
+$ python3 tools/test_shader_literals.py
+.....
+----------------------------------------------------------------------
+Ran 5 tests in 0.003s
+
+OK
+
+$ python3 tools/test_sampler_metadata.py
+.......
+----------------------------------------------------------------------
+Ran 7 tests in 0.073s
+
+OK
+
+$ python3 tools/test_launcher.py
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.038s
+
+OK
+
+$ /home/ruslan/.hermes/cache/scratch/lamentum-probe-guard
+probe guard: disabled/enabled, NaN, signed zero and short cbuf OK
