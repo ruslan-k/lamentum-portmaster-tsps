@@ -1,0 +1,36 @@
+{
+  "build": "build218",
+  "installed_sha256": "034c8f963d7e6b3eb5a2d2e305e59c4e1d58756ced309b304252c2ff71e324c3",
+  "entry45_linked": true,
+  "entry45_link_line": "NVN_LC2_PROGRAM_STAGES object=0x341d23400 id=803 mask=2 sources=0/45 code-control-source=byte-exact link=on-native-pair-draw",
+  "last_present_frame": 709,
+  "termination": "SIGKILL through the kernel OOM path (launcher log prints \"Killed\"); no STOP status line, so this is not a fail-closed runtime stop",
+  "mali_oom": {
+    "reported_kb": 725992,
+    "notifier_rows": 75,
+    "mem_total_kb": 986064,
+    "mem_available_after_kb": 683012
+  },
+  "phase": "menu -> New game page -> controls screen -> loading; ended by the GPU memory wall",
+  "menu_ground_truth_verified": {
+    "rows": 4,
+    "cursor_row_y": [
+      425,
+      475,
+      525,
+      575
+    ],
+    "newgame_row_y": 475
+  },
+  "device_after": {
+    "game": false,
+    "MainUI": 1,
+    "principal": 1,
+    "runtime": 1,
+    "cpu_online": "0-7",
+    "menu_capture": "clean-menu-awake.png",
+    "menu_capture_nonblack": 102480,
+    "note": "the first post-run capture (clean-menu.png) was a blanked panel, 1769 non-black; a D-pad wake was required"
+  },
+  "inputs": "agent evdev injection, not physical human input"
+}

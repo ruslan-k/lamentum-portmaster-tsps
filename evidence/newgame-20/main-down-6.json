@@ -1,0 +1,30 @@
+{
+  "name": "main-down-6",
+  "changed_cells": 4,
+  "capture_sha256": "33a18daf20719f2631e1dc4f57568c196f27cfb9b1e3e441758683b1d69469bc",
+  "press": {
+    "action": "down",
+    "event_type": 3,
+    "code": 17,
+    "value": 1,
+    "hold_ms": 700,
+    "provider": "/dev/input/event4",
+    "name": "TRIMUI Player1",
+    "capabilities": {
+      "ev": "20002b",
+      "key": "7cdb000000000000 0 0 0 0",
+      "abs": "3003f"
+    },
+    "writes": [
+      24,
+      24,
+      24,
+      24
+    ],
+    "start_ns": 51913230667777,
+    "end_ns": 51913952056022,
+    "released": true,
+    "source": "agent evdev injection, not a physical human press"
+  },
+  "frame": 209
+}
