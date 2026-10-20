@@ -28,7 +28,7 @@ original texture resolution and the owner image; the 420 MiB GPU ceiling is unch
 
 The installed launcher keeps experimental memory features off unless explicitly requested;
 it uses strict GL checks, synchronous submission, SDL/KMSDRM and a 96 MiB memory floor.
-The failed pageout experiment remains disabled. The latest binary is build 195, installed
+The failed pageout experiment remains disabled. The latest binary is build 196, installed
 with a device-side backup and independently verified SHA-256. The temporary watermark
 experiment was restored to its original value and is not a persistent system change.
 

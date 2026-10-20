@@ -68,10 +68,18 @@ index f85a59d..13390cf 100644
          /* sub sp,sp,#imm12 */
          ctx->uc_mcontext.sp-=(instruction>>10)&0xfff;
 diff --git a/native/input_host.h b/native/input_host.h
-index cdecae8..8e2bedc 100644
+index cdecae8..f5f0ae0 100644
 --- a/native/input_host.h
 +++ b/native/input_host.h
-@@ -238,16 +238,24 @@ static void hid_publish(struct hid_sample sample,unsigned connected) {
+@@ -6,6 +6,7 @@
+ #include <sys/un.h>
+ #include <math.h>
+ #include "input_ring.h"
++#include "lc2_hid109.h"
+ #include "input_gptk.h"
+ #include "input_c6.h"
+ #include "t2_face_position.h"
+@@ -238,16 +239,51 @@ static void hid_publish(struct hid_sample sample,unsigned connected) {
      static int hh_cfg;static unsigned handheld;
      if(!hh_cfg){const char *o=getenv("MOMO_NPAD_HANDHELD");handheld=!o||strcmp(o,"0");hh_cfg=1;
          if(handheld)printf("MOMO_NPAD_HANDHELD enabled=1 entry=8 style-bit=1 scope=diagnostic\n");}
@@ -82,6 +90,33 @@ index cdecae8..8e2bedc 100644
 +    static int bc_cfg;static unsigned broadcast;
 +    if(!bc_cfg){const char *o=getenv("LC2_HID_BROADCAST");broadcast=o&&!strcmp(o,"1");bc_cfg=1;
 +        if(broadcast)printf("LC2_HID_BROADCAST enabled=1 entries=10 rings=7 scope=diagnostic\n");}
++    /* LC2_HID_SDK109=1 (diagnostic): publish the record shape this SDK's own reader
++     * uses — pointer table at +0x18 into per-npad blocks whose ring is 17 slots of
++     * {u64 sequence; 0x28-byte sample} at +0x48 (derived from sdk+0x208a40). */
++    static int s109_cfg;static unsigned s109;
++    if(!s109_cfg){const char *o=getenv("LC2_HID_SDK109");s109=o&&!strcmp(o,"1");s109_cfg=1;
++        if(s109)printf("LC2_HID_SDK109 enabled=1 table=+0x18 block=0x1000+0x400*i slots=17 stride=0x30 scope=diagnostic\n");}
++    if(s109) {
++        uint64_t guest=shared_regions[hid_state.shared_plus_one-1].guest;
++        static unsigned told;
++        if(!guest) {if(!told++)printf("LC2_HID_SDK109_NO_GUEST_MAP note=region-not-mapped-yet\n");}
++        else {
++            uint8_t payload[LC2_HID109_SAMPLE];memset(payload,0,sizeof payload);
++            memcpy(payload,&sample.number,8);memcpy(payload+8,&sample.buttons,8);
++            memcpy(payload+16,&sample.lx,4);memcpy(payload+20,&sample.ly,4);
++            memcpy(payload+24,&sample.rx,4);memcpy(payload+28,&sample.ry,4);
++            memcpy(payload+32,&sample.attributes,4);memcpy(payload+36,&sample.reserved,4);
++            for(unsigned i=0;i<10;i++) {
++                uint32_t offset=lc2_hid109_block_offset(i);
++                uint64_t pointer=guest+offset;
++                memcpy(shared+LC2_HID109_TABLE+8*i,&pointer,8);
++                lc2_hid109_publish(shared+offset,sample.number,payload,sizeof payload);
++            }
++            static unsigned reported;
++            if(reported++<4)printf("LC2_HID_SDK109_PUBLISH guest=0x%"PRIx64" block0=0x%"PRIx64" sample=%"PRIu64" buttons=0x%"PRIx64"\n",
++                guest,guest+lc2_hid109_block_offset(0),sample.number,sample.buttons);
++        }
++    }
      for(unsigned i=0;i<10;i++) {
          uint8_t *entry=shared+0x9a00+0x5000*i;
          unsigned is_handheld=handheld && i==8 && hid_state.active && (hid_state.styles&2) && connected;
@@ -99,7 +134,7 @@ index cdecae8..8e2bedc 100644
              struct hid_sample value=live?actual:(struct hid_sample){.number=sample.number};
              hid_ring_publish((struct hid_ring *)(entry+0x28+ring*0x350),value);
          }
-@@ -263,6 +271,18 @@ static void hid_publish(struct hid_sample sample,unsigned connected) {
+@@ -263,6 +299,18 @@ static void hid_publish(struct hid_sample sample,unsigned connected) {
      if(sample.buttons!=hid_host.last_buttons) {
          printf("HID_SAMPLE number=%"PRIu64" buttons=0x%"PRIx64" player=%u\n",sample.number,sample.buttons,target);
          hid_host.last_buttons=sample.buttons;
@@ -285,6 +320,60 @@ index 0000000..f54c2b6
 +    *bytes=(uint64_t)mib<<20;return 0;
 +}
 +#endif
+diff --git a/native/lc2_hid109.h b/native/lc2_hid109.h
+new file mode 100644
+index 0000000..ddc43c2
+--- /dev/null
++++ b/native/lc2_hid109.h
+@@ -0,0 +1,48 @@
++/* SDK 10.9.0.0 npad shared-memory record: measured from the title's own reader.
++ *
++ * nn::hid::detail::GetNpadStates (sdk+0x208a40) dereferences the pointer held at
++ * shared+0x18+8*id, then reads [block+0x40] (count, clamped to the requested
++ * number) and [block+0x38] (ring tail), and copies 0x28 bytes from
++ * block+0x48+(tail%17)*0x30+8 into the caller's NpadFullKeyState. The slot is
++ * therefore {u64 sequence; 0x28-byte sample} and the ring holds 17 slots.
++ *
++ * Diagnostic only: nothing here is enabled unless LC2_HID_SDK109=1.
++ */
++#ifndef LC2_HID109_H
++#define LC2_HID109_H
++#include <stdint.h>
++#include <string.h>
++
++#define LC2_HID109_TABLE 0x18U
++#define LC2_HID109_BLOCK_BASE 0x1000U
++#define LC2_HID109_BLOCK_STRIDE 0x400U
++#define LC2_HID109_TAIL 0x38U
++#define LC2_HID109_COUNT 0x40U
++#define LC2_HID109_RING 0x48U
++#define LC2_HID109_SLOT 0x30U
++#define LC2_HID109_SLOTS 17U
++#define LC2_HID109_SAMPLE 0x28U
++
++static inline uint32_t lc2_hid109_block_offset(unsigned id) {
++    return LC2_HID109_BLOCK_BASE + LC2_HID109_BLOCK_STRIDE * id;
++}
++
++/* Publish one sample into one block. `sample` is the 0x28-byte npad payload
++ * (sampling number, buttons, four stick axes, attributes, reserved). Returns the
++ * slot index used. */
++static inline unsigned lc2_hid109_publish(uint8_t *block, uint64_t sequence,
++                                          const void *sample, size_t size) {
++    uint64_t tail = 0, count = 0;
++    memcpy(&tail, block + LC2_HID109_TAIL, 8);
++    memcpy(&count, block + LC2_HID109_COUNT, 8);
++    tail = (tail + 1) % LC2_HID109_SLOTS;
++    if (count < LC2_HID109_SLOTS) count++;
++    memcpy(block + LC2_HID109_TAIL, &tail, 8);
++    memcpy(block + LC2_HID109_COUNT, &count, 8);
++    uint8_t *slot = block + LC2_HID109_RING + tail * LC2_HID109_SLOT;
++    memcpy(slot, &sequence, 8);
++    memset(slot + 8, 0, LC2_HID109_SAMPLE);
++    memcpy(slot + 8, sample, size < LC2_HID109_SAMPLE ? size : LC2_HID109_SAMPLE);
++    return (unsigned)tail;
++}
++#endif
 diff --git a/native/lc2_probe_guard.h b/native/lc2_probe_guard.h
 new file mode 100644
 index 0000000..ff9ab3b
@@ -427,10 +516,19 @@ index 90cb048..a1ba190 100644
  #define MEGAMAN_TEXTURE_VIEW_BYTES 36U
  static inline unsigned megaman_texture_view_identity(const uint8_t *view,unsigned levels) {
 diff --git a/native/memory.h b/native/memory.h
-index 0564e33..9f8d3b2 100644
+index 0564e33..a176125 100644
 --- a/native/memory.h
 +++ b/native/memory.h
-@@ -103,7 +103,8 @@ static void stack_alias_locked(uint64_t dest,uint64_t source,uint64_t size,unsig
+@@ -4,7 +4,7 @@
+ struct stack_alias_record {uint64_t dest,source,size;unsigned original_perm,original_attr;};
+ static struct stack_alias_record aliases[256];   /* Unity 2021 aliases a stack per thread and keeps many (MEDIDO run momo-074) */
+ static unsigned naliases;
+-struct shared_region {int fd;uint64_t size;void *writer;unsigned permission;};
++struct shared_region {int fd;uint64_t size;void *writer;unsigned permission;uint64_t guest;};
+ static struct shared_region shared_regions[16];
+ static unsigned nshared;
+ /* Protection splits do not create new heap backings. Restore their original
+@@ -103,14 +103,48 @@ static void stack_alias_locked(uint64_t dest,uint64_t source,uint64_t size,unsig
      aliases[naliases++]=(struct stack_alias_record){dest,source,size,original.perm,original.attr};
  }
  static unsigned shared_create(uint64_t size,unsigned permission,uint64_t pc) {
@@ -440,10 +538,12 @@ index 0564e33..9f8d3b2 100644
      char name[]="/tmp/cotm-switch-shm-XXXXXX";int fd=mkstemp(name);
      if(fd<0)stop("SHARED_BACKING_FAILED",pc,errno,21);
      unlink(name);fcntl(fd,F_SETFD,FD_CLOEXEC);
-@@ -112,6 +113,39 @@ static unsigned shared_create(uint64_t size,unsigned permission,uint64_t pc) {
+     if(ftruncate(fd,size))stop("SHARED_RESIZE_FAILED",pc,errno,21);
+     void *writer=mmap(NULL,size,3,MAP_SHARED,fd,0);
      if(writer==MAP_FAILED)stop("SHARED_WRITER_FAILED",pc,errno,21);
-     shared_regions[nshared]=(struct shared_region){fd,size,writer,permission};return nshared++;
- }
+-    shared_regions[nshared]=(struct shared_region){fd,size,writer,permission};return nshared++;
++    shared_regions[nshared]=(struct shared_region){fd,size,writer,permission,0};return nshared++;
++}
 +/* Host mappings are part of the same address space as the guest's, but the guest cannot see them:
 + * svcQueryMemory only reports what this table knows, so the title's allocator happily picks an address
 + * inside the host's libc/EGL range and its MapSharedMemory then fails (measured: the platform font at
@@ -476,10 +576,17 @@ index 0564e33..9f8d3b2 100644
 +    fclose(f);
 +    struct line b={0};text(&b,"HOST_MAPPINGS_RESERVED count=");hex(&b,added);
 +    text(&b," regions=");hex(&b,nregions);emit(&b);
-+}
+ }
  static void shared_map_locked(unsigned id,uint64_t address,uint64_t size,unsigned permission,uint64_t pc) {
      normal_guard_require_clear(address,size,pc);
-     if(id>=nshared || address%PAGE || size!=shared_regions[id].size || permission!=shared_regions[id].permission)
+@@ -120,6 +154,7 @@ static void shared_map_locked(unsigned id,uint64_t address,uint64_t size,unsigne
+     if(target.state || address>=AS_END || size>target.base+target.size-address)stop("SHARED_MAP_CONFLICT",pc,address,24);
+     void *p=mmap((void *)(uintptr_t)address,size,permission,MAP_SHARED,shared_regions[id].fd,0);
+     if(p==MAP_FAILED || (uintptr_t)p!=address){if(p!=MAP_FAILED)munmap(p,size);stop("SHARED_MAP_FAILED",pc,address,21);}
++    shared_regions[id].guest=address;
+     region_insert((struct region){address,size,permission,6,"service_shared_memory",0},pc);
+ }
+ struct transfer_region {uint64_t address,size;unsigned permission,original_perm,original_attr,open;void *buffer;};
 diff --git a/native/nvn_async_frame.h b/native/nvn_async_frame.h
 index 8e7c3b6..e8854a6 100644
 --- a/native/nvn_async_frame.h

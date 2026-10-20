@@ -132,3 +132,36 @@ Build 194 installed (`lamentum-nextos.before-194` keeps build 193), SHA-256
 the device. After the probe: no port process, MainUI=1, principal=1, runtime=1;
 the restored Spruce menu is in `../evidence/hid-broadcast-01/clean-menu.png`.
 `LC2_HID_BROADCAST` is off unless explicitly set to `1`.
+
+## 8. First implementation of that shape — still no menu (measured)
+
+Build 196 implements the derived contract behind `LC2_HID_SDK109=1`
+(`lc2_hid109.h` + `docs` section 6): the pointer table at `+0x18` is filled with
+the guest address of each block, and every publish advances a 17-slot ring of
+`{u64 sequence; 0x28-byte sample}` at `block+0x48`, with the tail at `+0x38` and
+the count at `+0x40`. Host test `tools/test_hid109.c` checks slot layout, wrap at
+17, count saturation and block bounds (`0x1000 + 0x400*i`, last block inside
+`0x9a00`).
+
+Live receipt (`../evidence/hid-sdk109-01/latest.log`):
+`LC2_HID_SDK109 enabled=1 …`, `LC2_HID_SDK109_PUBLISH guest=0x100ce04000
+block0=0x100ce05000 sample=1..4`, and the press registered as
+`HID_SAMPLE … buttons=0x2`. Physical result: no change again —
+
+| capture | mean luminance | band 300–600 | vs title |
+|---|---:|---:|---:|
+| at-title | 3.69 | — | — |
+| after A | 3.72 | 3.27 | 4062 px >10, max Δ 103 |
+| after Start | 3.74 | — | ember-level |
+
+So filling the correct-looking table did not move the picture either. What is now
+ruled out: routing (broadcast), the zero head (table filled), and the record shape
+as derived from `GetNpadStates(NpadFullKeyState)`. What is NOT yet known: whether
+the title calls that reader at all on its title screen — it may poll a different
+state type (Handheld/JoyDual), or gate input on a style/assignment answer it gets
+from the service at startup.
+
+Next measurement must observe the GUEST's access, not our writes: protect the
+shared region so a guest read faults (unprotecting only around our own writes) and
+log whether the title ever touches it, and from which call site. That distinguishes
+"never reads" from "reads and rejects" without another blind A/B.
