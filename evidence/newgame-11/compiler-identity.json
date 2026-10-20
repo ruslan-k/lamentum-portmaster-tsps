@@ -1,0 +1,7 @@
+{
+  "compiler_git_head": "f9f0fbc998279a663d0bc98937a0bde880efc8db",
+  "compiler_dirty_diff_sha256": "ad779c7a48ee936b02a8289904734def57769de596ad26fa51ab1eae72dfcf25",
+  "compiler_binary_sha256": "071c160c8c03a3a287cdb8b63dea59bed2305131a5f105c4c01d983b27740014",
+  "command": "shader-compiler-cli missing.code.bin original-vulkan.glsl (no --es and no --fix-strides)",
+  "note": "owner-local compiler includes preexisting decoder changes; not an upstream pristine build"
+}

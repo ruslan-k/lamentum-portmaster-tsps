@@ -37,14 +37,14 @@ def select_branch(source, condition, take_true):
     return source[:m.start()] + selected + source[d+1:]
 
 
-def specialize(source):
-    source, n = re.subn(r'\bbool\s+_98\s*=\s*c3\.data\[8u\]\s*==\s*1\.0\s*;', '', source)
+def specialize(source, flag='_98', sampler='fs_tex0_28'):
+    source, n = re.subn(r'\bbool\s+' + re.escape(flag) + r'\s*=\s*c3\.data\[8u\]\s*==\s*1\.0\s*;', '', source)
     if n != 1:
         raise ValueError('captured flag expression changed')
-    source = select_branch(source, '_98', False)
-    source = select_branch(source, '!_98', True)
-    source, n = re.subn(r'\buniform\s+sampler3D\s+fs_tex0_28\s*;', '', source)
-    if n != 1 or re.search(r'\b(?:_98|fs_tex0_28|sampler3D)\b', source):
+    source = select_branch(source, flag, False)
+    source = select_branch(source, '!' + flag, True)
+    source, n = re.subn(r'(?:layout\([^)]*\)\s*)?\buniform\s+sampler3D\s+' + re.escape(sampler) + r'\s*;', '', source)
+    if n != 1 or re.search(r'\b(?:' + re.escape(flag) + '|' + re.escape(sampler) + r'|sampler3D)\b', source):
         raise ValueError('probe dependency survived specialization')
     return source
 

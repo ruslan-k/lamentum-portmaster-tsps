@@ -9,7 +9,8 @@ back, CPU online mask restored.
 
 Never run this while another game is playing.
 """
-import argparse, json, re, subprocess, sys, time, pathlib
+import argparse, json, re, subprocess, sys, time, pathlib, shlex
+from lamentum_pad_contract import snapshot, validate_cleanup
 
 HOST = 'root@192.168.50.135'
 PORT_DIR = '/mnt/SDCARD/Roms/PORTS/lamentum-switch'
@@ -39,8 +40,18 @@ def main():
         print('device state check failed', file=sys.stderr)
         return 2
 
-    ssh('truncate -s 0 %s/logs/latest.log' % PORT_DIR)
-    exports = ' '.join('export %s;' % e for e in a.env)
+    before = snapshot()
+    if before['game'] or len(before['processes'].get('MainUI', [])) != 1:
+        print('device not idle; refusing launch', file=sys.stderr)
+        return 2
+    if a.evidence:
+        a.evidence.mkdir(parents=True, exist_ok=True)
+        (a.evidence / 'before.json').write_text(json.dumps(before, indent=2) + '\n')
+    ssh('truncate -s 0 %s/logs/latest.log' % PORT_DIR).check_returncode()
+    for e in a.env:
+        if not re.fullmatch(r'[A-Z][A-Z_0-9]*=.*', e):
+            raise ValueError('invalid env assignment')
+    exports = ' '.join('export %s;' % shlex.quote(e) for e in a.env)
     cmd = ('%sexport LAMENTUM_PROBE_SECONDS=%d;chmod a+x "%s";"%s" "%s"\n'
            % (exports + (' ' if exports else ''), a.budget, STD_LAUNCH, STD_LAUNCH, LAUNCHER))
     ssh("cat > /tmp/cmd_to_run.sh <<'EOF'\n%sEOF\nchmod a+x /tmp/cmd_to_run.sh; sh -n /tmp/cmd_to_run.sh && echo cmd-ok" % cmd)
@@ -65,17 +76,24 @@ def main():
         if re.search(r'STOP status=|exit status', log):
             break
 
-    state = ssh("ps | grep -c '[l]amentum-nextos'; ps | grep -c '[M]ainUI'; "
-                "cat /sys/devices/system/cpu/online").stdout.strip().splitlines()
-    print('runtime procs=%s mainui=%s cpu-online=%s' % tuple(state[:3]))
-
+    # A stop can precede launcher teardown; wait for the principal to restore the menu.
+    after = snapshot()
+    cleanup_deadline = time.monotonic() + 90
+    while validate_cleanup(before, after) and time.monotonic() < cleanup_deadline:
+        time.sleep(3)
+        after = snapshot()
+    errors = validate_cleanup(before, after)
+    print('cleanup', json.dumps({'state': after, 'errors': errors}))
+    log = ssh('cat %s/logs/latest.log' % PORT_DIR).stdout
+    stops = re.findall(r'STOP status=(\S+)', log)
+    result = {'cleanup_errors': errors, 'before': before, 'after': after,
+              'stops': stops, 'runtime_ok': bool(stops) and all(x == 'TIME_LIMIT' for x in stops)}
     if a.evidence:
-        a.evidence.mkdir(parents=True, exist_ok=True)
-        log = ssh('cat %s/logs/latest.log' % PORT_DIR).stdout
         (a.evidence / 'latest.log').write_text(log)
-        (a.evidence / 'device-state.txt').write_text('\n'.join(state) + '\n')
+        (a.evidence / 'cleanup.json').write_text(json.dumps(result, indent=2) + '\n')
         print('evidence ->', a.evidence)
-    return 0
+    # Cleanup failure differs from a guest fail-closed stop, and neither is success.
+    return 3 if errors else (0 if result['runtime_ok'] else 4)
 
 
 if __name__ == '__main__':

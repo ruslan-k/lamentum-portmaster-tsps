@@ -1,0 +1,20 @@
+{
+  "LC2_LIGHTPROBE": [],
+  "LC2_SCENE_VERTEX": [],
+  "ZERO_SHADER_UNRECOGNIZED": [
+    "ZERO_SHADER_UNRECOGNIZED code-bytes=256 control-bytes=2176 code-hash=6b33f39005c64c58fff9689ea7c0fef903f7533fe76af1dcacc30fc8cb26aed9 control-hash=a20534080b72d8c50f41bacbf07bfc9e37d0e655fec1ac34237a7b7376e00c45"
+  ],
+  "STOP status=": [
+    "STOP status=ZERO_SHADER_NOT_PINNED pc=main.text.seg+0x542b68 detail=0x3ffec3760 query_memory_calls=0x170 tls_trap_reads=0x0"
+  ],
+  "LC2_SHADER_DUMPED": [
+    "LC2_SHADER_DUMPED sequence=0 code-bytes=256 control-bytes=2176 (needs AW_RELEASE=0)"
+  ],
+  "NVN_PROFILE frame=": [
+    "NVN_PROFILE frame=241 count=60 elapsed-ms=633.294 replay-ms=264.786 present-ms=5.279 readback-ms=3.092 gap-ms=348.482 scope=wall-time-per-frame",
+    "NVN_PROFILE frame=301 count=60 elapsed-ms=638.289 replay-ms=245.525 present-ms=4.584 readback-ms=2.620 gap-ms=380.177 scope=wall-time-per-frame",
+    "NVN_PROFILE frame=361 count=60 elapsed-ms=598.540 replay-ms=294.150 present-ms=4.283 readback-ms=2.652 gap-ms=297.407 scope=wall-time-per-frame",
+    "NVN_PROFILE frame=421 count=60 elapsed-ms=563.491 replay-ms=262.929 present-ms=4.138 readback-ms=2.580 gap-ms=293.307 scope=wall-time-per-frame",
+    "NVN_PROFILE frame=481 count=60 elapsed-ms=359.921 replay-ms=192.932 present-ms=3.965 readback-ms=2.451 gap-ms=155.721 scope=wall-time-per-frame"
+  ]
+}

@@ -1,5 +1,51 @@
 # New Game bring-up: attempts and what each one proved
 
+## Current verification protocol (supersedes historical automatic-navigation claims)
+
+Follow roadmap §20.2–20.3: launch with `device_principal_test.py`, then use
+`lamentum_pad_contract.py capture/confirm/up/down/stick_down`. Inspect the live KMS
+capture before every Confirm. The shared mapping is EV_KEY **305 = Confirm**, **304 = Back**.
+Receipts record the unique game PID/starttime before/after capture, frame serial,
+provider identity, full press/release and image SHA. This is agent evdev injection,
+not a human physical-controller acceptance test. Legacy automatic-navigation scripts
+now refuse by default; their unverified selection logic must not establish gameplay.
+
+`newgame-09` (build210) independently confirms New Game selection, its configuration
+screen and the control screen, then hits the fragment e1d6ede5/68743131.
+`newgame-10` (build211) instead stops on vertex 84137e66/927f1841.
+`newgame-11` (build212) stops on fragment 6b33f390/a2053408.
+All three have zero cleanup errors: game absent, MainUI restored, unchanged supervisor
+identities and original CPU online mask. These are shader-tail frontiers, not gameplay.
+The first two new translated programs had not yet produced their draw-guard receipts
+before later program setup stopped; catalogue admission is not pixel validation.
+
+New catalogue entries (append-only; no TEST substitution added):
+
+- **39**: e1d6ede5 fragment, raw scalar float c3 lowered through RGBA32F/texelFetch.
+  Only the disabled probe-volume branch is supported. A mandatory per-draw native guard
+  requires UBO0 >=220 bytes and c3[8] != 1.0; enabled probes fail closed. Explicit scalar
+  f16 casts use core half pack/unpack, rather than silently dropping conversion points.
+- **40**: 84137e66 vertex, 51 scalar float loads, word indices through 59 (240 bytes),
+  hardware c3 -> NVN UBO0. A mandatory range guard rejects an undersized bound buffer.
+- **41**: 6b33f390 fragment, 256-byte original code, outputs the input normal mapped by
+  `x*0.5+0.5` with original alpha zero; no buffers/samplers and no substitute output.
+
+For entries 39/40, the offline compiler emits **unmodified SPIR-V to Vulkan scalar GLSL**,
+which is accepted without ESSL std140 stride changes. `float_cbuf_contract.py` checks
+finite, static, read-only scalar accesses before the existing texture lowering. Unknown
+or writable patterns refuse. `append_program.py` now derives application UBO slots from
+compiler cN hardware-bank provenance (slot=N-3), not declaration-order bindings. Existing
+catalogue entries are not regenerated.
+
+Host checks: 33 Python tests and the C disabled/enabled-probe guard fixture pass. These
+are not a device GLES memory-fixture result. No 30 FPS, audible sound, save/reload,
+controllable scene or complete graphics acceptance is claimed.
+
+The red cursive central word in earlier screenshots is **Loading...**, not a studio logo.
+Final `latest.log`, not an early `latest-end.log` copy, determines the actual stop.
+
+## Historical investigation (read with corrections above)
+
 Goal (roadmap §2, P0-FUNC): reach a real gameplay scene, not another menu, and only then
 talk about performance. Every attempt below ran through the Spruce principal flow with
 `tools/device_principal_test.py`; the device was verified clean (`MainUI`,
@@ -132,7 +178,18 @@ skinning programs already covered by TEST substitutes.
 Nothing here is a 30 FPS result: the port still cannot reach gameplay, and the measured
 gap (replay 250 ms + guest 316 ms per frame) is unchanged.
 
-## Fixed: New Game now passes the blocker (build210)
+## Historical build210 claim — corrected by full-log audit
+
+The interpretation below was premature. `newgame-07/08` used EV_KEY 304 (Back)
+while labelling it Accept. The controls panel and `Loading...` screenshot alone do
+not establish what was selected. In particular the apparent studio logo is the
+word **Loading...**, not a studio splash. `latest-end.log` was copied before the
+run ended; the complete `newgame-08/latest.log` actually contains a later
+`ZERO_SHADER_NOT_PINNED` for a **different** code/control identity, listed below.
+The original `7a45f946` program is accepted as catalogue entry 38, but gameplay,
+correct visible contribution of that program and absence of later stops are NOT proven.
+
+### Original implementation record (not a gameplay acceptance result)
 
 The failing program was a **vertex** shader whose single uniform block is
 `{ float data[16384]; } c4` with `ArrayStride = 4`. ESSL only has std140, where that array

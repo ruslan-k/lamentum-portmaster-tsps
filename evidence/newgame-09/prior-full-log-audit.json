@@ -1,0 +1,11 @@
+{
+  "source": "evidence/newgame-08/latest.log",
+  "sha256": "f5cf5fd857839e126e25adf36346587dadc46d3ead1e5d0f689eefd3a8e2c93f",
+  "bytes": 2732870,
+  "decisive_rows": [
+    "NVN_LC2_PROGRAM_STAGES object=0x3e908ab80 id=833 mask=1 sources=38/0 code-control-source=byte-exact link=on-native-pair-draw",
+    "ZERO_SHADER_UNRECOGNIZED code-bytes=1280 control-bytes=2176 code-hash=e1d6ede5c901f5d441954877f35e624b591f81762ca0d962343206a1e9d396ce control-hash=687431312e0b2413baa9419a5d8a7dc62c024569bf4791868cac8249d01ccad8",
+    "STOP status=ZERO_SHADER_NOT_PINNED pc=main.text.seg+0x542b68 detail=0x3fff93070 query_memory_calls=0x170 tls_trap_reads=0x0"
+  ],
+  "interpretation": "final log supersedes earlier snapshot latest-end.log; shader38 accepted, new identity not catalogued; gameplay not verified"
+}

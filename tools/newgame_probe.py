@@ -13,6 +13,7 @@ import pathlib
 import re
 import subprocess
 import sys
+from lamentum_pad_contract import ACTIONS, CONFIRM, press as pad_press
 import time
 
 REPO = pathlib.Path('/home/ruslan/lamentum-work/repo')
@@ -71,16 +72,11 @@ print(json.dumps(info))
 
 
 def press(t, code, value, hold_ms):
-    script = f'''import os,struct,time
-f=os.open("/dev/input/event4",os.O_WRONLY)
-e=lambda t,c,v:os.write(f,struct.pack("llHHi",0,0,t,c,v))
-try:
-    e({t},{code},{value});e(0,0,0);time.sleep({hold_ms/1000.0})
-finally:
-    e({t},{code},0);e(0,0,0);os.close(f)
-time.sleep(1.5)
-'''
-    return ssh('python3 -', data=script.encode())
+    action = next(k for k, v in ACTIONS.items() if v == (t, code, value))
+    receipt = pad_press(action, hold_ms)
+    with (OUT / 'presses.jsonl').open('a') as f:
+        f.write(json.dumps(receipt) + '\n')
+    return receipt
 
 
 def frames():
@@ -91,6 +87,8 @@ def frames():
 
 
 def main():
+    if os.environ.get('LAMENTUM_ALLOW_LEGACY_AUTONAV') != '1':
+        raise SystemExit('Legacy automatic selection is unverified. Use device_principal_test.py + lamentum_pad_contract.py with live screenshot review; see roadmap 20.2.')
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / 'env.json').write_text(json.dumps(ENV, indent=2) + '\n')
     (OUT / 'probe.json').write_text(json.dumps({
@@ -124,7 +122,7 @@ def main():
             shot('menu-after-nav')
             navigated = True
         elif navigated and not confirmed:
-            press(1, 304, 1, CONFIRM_HOLD_MS)  # BTN_SOUTH / A
+            press(*CONFIRM, CONFIRM_HOLD_MS)  # measured Switch A / EV_KEY 305
             time.sleep(5)
             shot('after-confirm')
             confirmed = True

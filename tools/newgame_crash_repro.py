@@ -17,6 +17,7 @@ import pathlib
 import re
 import subprocess
 import sys
+from lamentum_pad_contract import ACTIONS, CONFIRM, press as pad_press
 import time
 
 REPO = pathlib.Path('/home/ruslan/lamentum-work/repo')
@@ -43,14 +44,11 @@ def shot(name):
 
 
 def press(t, code, value, hold_ms, label):
-    script = f'''import os,struct,time
-f=os.open("/dev/input/event4",os.O_WRONLY)
-e=lambda t,c,v:os.write(f,struct.pack("llHHi",0,0,t,c,v))
-e({t},{code},{value});e(0,0,0);time.sleep({hold_ms/1000.0});e({t},{code},0);e(0,0,0);os.close(f)
-'''
-    r = ssh('python3 -', data=script.encode())
+    action = next(k for k, v in ACTIONS.items() if v == (t, code, value))
+    receipt = pad_press(action, hold_ms)
+    receipt['label'] = label
     with (OUT / 'presses.jsonl').open('a') as f:
-        f.write(json.dumps({'label': label, 'hold_ms': hold_ms, 'rc': r.returncode}) + '\n')
+        f.write(json.dumps(receipt) + '\n')
 
 
 def state():
@@ -85,6 +83,8 @@ def grab_log(tag):
 
 
 def main():
+    if os.environ.get('LAMENTUM_ALLOW_LEGACY_AUTONAV') != '1':
+        raise SystemExit('Legacy automatic selection is unverified. Use device_principal_test.py + lamentum_pad_contract.py with live screenshot review; see roadmap 20.2.')
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / 'env.json').write_text(json.dumps(ENV, indent=2) + '\n')
     (OUT / 'probe.json').write_text(json.dumps({
@@ -117,7 +117,7 @@ def main():
                     press(3, 17, 1, NAV_MS, 'nav-down')
                 time.sleep(1.5)
             shot('menu-after-nav')
-            press(1, 304, 1, CONFIRM_MS, 'accept-new-game')
+            press(*CONFIRM, CONFIRM_MS, 'confirm-305')
             started = True
             time.sleep(6)
             shot('after-accept')
@@ -131,7 +131,11 @@ def main():
                 shot('crash-state')
                 print(json.dumps({'crashed': True, 'state': s}))
                 break
-            if n >= 12:
+            # The intro sequence waits for input between screens ('Press any button to
+            # continue'); advance it so the run can reach the first playable scene.
+            if os.environ.get('LAMENTUM_ADVANCE') == '1' and n % 2 == 0:
+                press(*CONFIRM, 400, f'advance-{n}')
+            if n >= 26:
                 break
     if not crashed:
         grab_log('end')

@@ -42,6 +42,14 @@ def append(text, name, workspace):
     cbufs = cbuf_blocks_of(glsl)
     translated, literals = inline_literal_cbuf(translated, {b['instance'] for b in cbufs}, code, control)
     cbufs = [b for b in cbufs if b['instance'] not in literals]
+    # Hades names cN from desc.index (the hardware bank), not the declaration
+    # binding ordinal. SDK 10.9 BindUniformBuffers encodes bank = NVN slot + 3.
+    # Literal banks were specialized above; unknown non-literal names fail closed.
+    for b in cbufs:
+        match = re.fullmatch(r'c(\d+)', b['instance'])
+        if not match or not 3 <= int(match[1]) <= 18:
+            raise ValueError('unproven application cbuf bank: ' + b['instance'])
+        b['binding'] = int(match[1]) - 3
     samplers = samplers_of(glsl)
     head, src_body, between, meta_body = split_catalogue(text)
     index = len(re.findall(r'^\t/\* \d+ ', src_body, re.M))

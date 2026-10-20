@@ -1,0 +1,78 @@
+{
+  "kmsgrab": "Screenshot saved to /mnt/SDCARD/Roms/PORTS/lamentum-switch/logs/live-receipt.png (FB ID: 161, 1280x720)\n",
+  "sha256": "519c62d25e7a0e22f4813b02e4c1560077005813097591799cfec6f88378ea80",
+  "before": {
+    "processes": {
+      "runtime.sh": [
+        {
+          "pid": 1228,
+          "starttime": 637
+        }
+      ],
+      "principal.sh": [
+        {
+          "pid": 2190,
+          "starttime": 1019
+        },
+        {
+          "pid": 29334,
+          "starttime": 4245480
+        }
+      ],
+      "terminator2d-ne": [
+        {
+          "pid": 29449,
+          "starttime": 4245573
+        }
+      ]
+    },
+    "game": [
+      {
+        "pid": 29449,
+        "starttime": 4245573
+      }
+    ],
+    "online": "0-7",
+    "frame": 127,
+    "menu_events": 4,
+    "stops": [],
+    "log_inode": 6652
+  },
+  "after": {
+    "processes": {
+      "runtime.sh": [
+        {
+          "pid": 1228,
+          "starttime": 637
+        }
+      ],
+      "principal.sh": [
+        {
+          "pid": 2190,
+          "starttime": 1019
+        },
+        {
+          "pid": 29334,
+          "starttime": 4245480
+        }
+      ],
+      "terminator2d-ne": [
+        {
+          "pid": 29449,
+          "starttime": 4245573
+        }
+      ]
+    },
+    "game": [
+      {
+        "pid": 29449,
+        "starttime": 4245573
+      }
+    ],
+    "online": "0-7",
+    "frame": 128,
+    "menu_events": 4,
+    "stops": [],
+    "log_inode": 6652
+  }
+}

@@ -63,6 +63,14 @@ class AppendProgramTests(unittest.TestCase):
         self.assertIn('uniform highp sampler2D c3;', out)
         self.assertNotIn('demote', out)
 
+    def test_hardware_bank_is_not_declaration_binding(self):
+        with tempfile.TemporaryDirectory() as directory:
+            workspace = self.workspace(directory)
+            (workspace / 'gamma.glsl').write_text(GLSL.replace('c3', 'c4'))
+            out, _, _ = append(fixture_catalogue(), 'gamma', workspace)
+        self.assertIn('.name="c4",.stage=1,.binding=1,', out)
+        self.assertNotIn('.name="c4",.stage=1,.binding=0,', out)
+
     def test_duplicate_identity_refused(self):
         original = fixture_catalogue()
         with tempfile.TemporaryDirectory() as directory:
