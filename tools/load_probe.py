@@ -119,8 +119,12 @@ def navigate(out):
     time.sleep(9)
     capture(out / 'controls.png')
     controls_bright = bright(out / 'controls.png')
-    if controls_bright - page_bright < CONTROLS_BRIGHT_JUMP:
-        raise RuntimeError('page -> controls transition not observed (%d -> %d)' % (page_bright, controls_bright))
+    # Structural check, not a brightness jump: the New Game page carries a menu cursor band,
+    # the controls page does not. Measured controls brightness varies (602..1187), so an
+    # absolute jump threshold rejects a correct transition.
+    if cursor_row(out / 'controls.png') is not None:
+        raise RuntimeError('page -> controls transition not observed: a menu cursor is still present '
+                           '(page bright %d, controls bright %d)' % (page_bright, controls_bright))
     press('confirm', 1200)
     time.sleep(8)
     capture(out / 'loading.png')
