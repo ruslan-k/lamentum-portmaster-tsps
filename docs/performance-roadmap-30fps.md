@@ -1,6 +1,6 @@
 # Lamentum (TrimUI Smart Pro S): Roadmap to Stable 30 FPS
 
-> **Current authoritative worklist: [§21 — build210 and HEAD 2b6b2a1 reassessment](#21-head-2b6b2a1-reassessment--build210-updated-critical-path-2026-10-20).** Earlier numbered sections are retained as historical engineering evidence; §20's shader stop was resolved in the newest source revision.
+> **Current authoritative worklist: [§22 — source HEAD 2be834a, 42 shader entries, New Game frontier and FPS work](#22-head-2be834a-updated-post-shader-tail-audit-and-next-performance-plan-2026-10-20).** Sections 0–21 remain a historical audit trail. Recent code fixed several §21 tasks while exposing more shader-tail stops; do not follow older unfinished-task labels without checking §22.
 
 **Latest decision:** [§20 — b1832de audit and execution plan](#20-head-b1832de-audit--actionable-next-iteration-2026-10-20) supersedes the previous priority order where the new shader blocker, test-harness contradictions and runtime measurements change the next action.
 
@@ -1042,7 +1042,7 @@ python3 tools/analyze_perf.py /owner/bench-B/latest.log --from-frame 250 \
 
 ## 21. HEAD 2b6b2a1 reassessment — build210, updated critical path (2026-10-20)
 
-> **AUTHORITATIVE CURRENT ACTION PLAN.** Source state reviewed: [main at 2b6b2a1](https://github.com/ruslan-k/lamentum-portmaster-tsps/commit/2b6b2a1d35dead6a9aade1e611700cc9b378c0cb), **19 commits after** the English roadmap commit a4d0a2e. Sections 0–20 preserve the original measurements and successive historical recommendations, but §20's statement that the shader 7a45f946… is still blocked is now **obsolete**. Build210 passed that specific stop. No test was run on the actual handheld for this documentation-only reassessment. Where a device run is described below, its source is a committed owner report, not a new independent reproduction.
+> **HISTORICAL §21 SNAPSHOT; its task status is superseded by §22.** Source state reviewed: [main at 2b6b2a1](https://github.com/ruslan-k/lamentum-portmaster-tsps/commit/2b6b2a1d35dead6a9aade1e611700cc9b378c0cb), **19 commits after** the English roadmap commit a4d0a2e. Sections 0–20 preserve the original measurements and successive historical recommendations, but §20's statement that the shader 7a45f946… is still blocked is now **obsolete**. Build210 passed that specific stop. No test was run on the actual handheld for this documentation-only reassessment. Where a device run is described below, its source is a committed owner report, not a new independent reproduction.
 
 ### 21.1. Source/evidence delta and updated work status
 
@@ -1231,3 +1231,114 @@ python3 /owner/lamentum-repo/tools/analyze_perf.py /owner/bench-B/latest.log \
 **Best next execution path from this HEAD:** §21.2 (press through the tutorial and reach real gameplay), §21.3 (remove the generator's repeated wrong-slot regression) and §21.4 (make tests/evidence trustworthy) can be developed as separate small changes. Then §21.5 identifies whether §21.6 (guest ZRAM), §21.7 (padded cbuf uploads), §21.8 (NVN replay) or §21.9 (guest/IL2CPP) is the next real frame-time win. **Do not adopt glFlush-only submission, 720p rescale, or a different shader TEST stub as an unmeasured shortcut.**
 
 *Scope of this update: repository-source inspection and documentation changes only; no owner device was accessed, no new executable was built, and the 30 FPS target has not been demonstrated.*
+
+
+## 22. HEAD 2be834a: updated post-shader-tail audit and next performance plan (2026-10-20)
+
+> **CURRENT AUTHORITATIVE DELTA, superseding §21's implementation status.** The concurrent source commit [2be834a](https://github.com/ruslan-k/lamentum-portmaster-tsps/commit/2be834adbb0f9f45f5c2bf71fad56c1cf47f4d08) landed after the initial §21 review. Its concrete fixes have been inspected below: **42 total catalogue entries, including 7 TEST-only entries**; program **41** was appended *after* build212/newgame-11 stopped on its hash, so that program still requires its first device replay. The 304/305 control bug, append-only cN bank mapping and basic principal cleanup contract have **now been addressed**. Keep §21 for rationale and unimplemented deeper profiling/optimization ideas, but do not duplicate already committed fixes. No new device run was performed for this documentation update.
+
+### 22.1. Exact state and evidence: what has REALLY been done
+
+| Subsystem / previous task | Committed source and evidence | Status after 2be834a; remaining proof |
+|---|---|---|
+| Proper New Game selection | New shared `tools/lamentum_pad_contract.py` has **Confirm=(EV_KEY,305)**, Back=(EV_KEY,304), game PID/starttime and live KMS receipts. `newgame-09/10/11` contain per-action receipts, screenshots and cleanup reports; old automated navigation now refuses by default | **INPUT CONTRACT FIXED at harness level**. Still agent evdev injection, not a human-controls acceptance test; no actual walking |
+| Harness exit/cleanup | `tools/device_principal_test.py` snapshots MainUI/supervisors/CPU mask, waits for cleanup and returns **3** for cleanup failure, **4** for non-TIME_LIMIT guest STOP, **0** for TIME_LIMIT plus clean state | **BASIC CLEANUP CONTRACT IMPLEMENTED**. Parent scripts must classify an expected shader stop as a **game result**, not an SSH/cleanup failure; deeper run identity/polling improvements remain |
+| Shader catalogue | `runtime/lamentum-shaders-draft.h` currently declares **`ZERO_ZX_SHADER_PACKAGES 42`**. Existing seven TEST-only substitutes remain inside those 42 | **42 entries** is the source count; not 42 validated real gameplay programs |
+| Program 38 | `7a45f946… / 588a3fad…` vertex, c4/UBO1, fixed layout | **Catalogued**, but a correct live draw/pixel check remains open |
+| Program 39 | `e1d6ede5… / 68743131…` fragment; finite read-only float c3 with texture-backed scalar loads, explicit f16 rounding; disabled-probe-volume branch only | **Guarded partial translation**, *not* general sampler3D/volume support. At every draw require UBO0 >=220 B and `c3[8] != 1.0`, otherwise fail closed |
+| Program 40 | `84137e66… / 927f1841…` vertex, c3/UBO0; 51 loads with max word index 59, required source size **240 B** | **Catalogued with minimum-range guard**; draw/pixel proof still needed |
+| Program 41 | `6b33f390… / a2053408…` fragment (256-byte captured code); output normal mapped to 0..1 with alpha zero, no textures or cbuf | **Appended in HEAD** but **not proven on the device**. In newgame-11 the previous binary stopped on this exact pair at frame 514 |
+| Translation reliability | `tools/float_cbuf_contract.py` checks finite, scalar, statically indexed, read-only loads; `append_program.py` now maps source instance cN to NVN slot N−3, fails closed on unknown banks; `tools/append_light_fragment.py` preserves half conversion and guards | **C4 mapping regression fixed for new appends**. Host report: 33 Python tests plus C guard fixture passed. Still require per-stage GLES + actual-pixel verification; do not generalize unsupported dynamic/writable SSBO |
+| Measured performance | Historic cold250 and frame gap reports remain. `evidence/newgame-11/progress.json` adds phase averages, not a controlled A/B | Still **NO gameplay FPS**; neither cbuf subimage, render scaling nor flush-only completion was established as a safe useful speedup |
+
+**Explicit correction to §21:** the earlier "studio splash" was a misread **Loading...** text. `docs/newgame-bringup.md` now identifies the earlier full-log truncation and wrong 304-as-A input as sources of false success. Never use the old build210 275-frame no-STOP excerpt as proof of an entire New Game run. Build212/newgame-11 is the last described device frontier.
+
+**Shader stop sequence with proper selection, not an inferred scene state:**
+
+| Evidence | Build | Last presented frame | Exact next uncatalogued program | Minimum sampled MemAvailable |
+|---|---:|---:|---|---:|
+| `evidence/newgame-09/summary.json` | 210 | 557 | e1d6ede5… fragment (now entry 39) | 70 MiB |
+| `evidence/newgame-10/summary.json` | 211 | 495 | 84137e66… vertex (now entry 40) | 50 MiB |
+| `evidence/newgame-11/summary.json` | 212 | 514 | 6b33f390… fragment (now entry 41) | 56 MiB |
+
+These are separate loading/frontier runs, **not FPS A/B pairs**. Raw owner logs are pinned by SHA-256 in each evidence summary; the published receipts/screenshots establish stronger traceability than the earlier screenshot-free summaries, but original private log bytes remain owner-local.
+
+### 22.2. P0-FRONTIER — Rebuild program 41 and continue the exact shader-tail chain
+
+**Next concrete experiment:** the first on-device run with all **42** catalogue entries (a build after build212), using an exact SHA-pinned ELF built from HEAD. Do not re-translate entries 38–41 unless their own guard/visual parity fails.
+
+1. Verify `sha256sum -c tools/baseline-manifest.sha256` from the 435-file recovered runtime directory; pin Git source, compiler identity, merged owner image, patch, catalogue SHA and new installed ELF. Preserve build212 as rollback. Never commit original shader code/control binaries.
+2. Run host test suites including `tools/test_append_program.py`, `tools/test_float_cbuf_contract.py`, `tools/test_light_fragment.py` and `tools/test_lamentum_pad_contract.py`. Inspect the mandatory runtime guards after applying the patch: index 39 must stop on the enabled probe branch or insufficient UBO0 and index 40 on insufficient UBO0. Check that the intended fallback **does not silently mask those conditions**.
+3. Launch exclusively through Spruce principal flow using the updated owner-local harness. Capture menu *before* Confirm, choose New Game visibly, capture its configuration page, confirm *after* checking the live KMS state, and then sample scene loading with bounded screenshots. Save initial/final process+CPU states. Do not let old `newgame_start.py` assumptions override the new shared helper.
+4. Before proceeding on an unexpected STOP, inspect **the entire run's final log**, not `latest-end.log` or the last 4KB. Archive exact code/control hashes, stage, return status, frame serial, current KMS capture and memory/thermal state.
+5. If the next stop is **another distinct shader**, add it append-only from a verified local dump after checking scalar/dynamic/writable/sampler/image/atomic capabilities. Use the `float_cbuf_contract` path only if its finite read-only/static contract passes. Record required byte extent, bank provenance, varyings, link partner, fragment alpha/depth outputs and GL format. Unknown behavior must fail closed, not become another blank TEST shader.
+6. For **program 39**, collect a bounded **per-draw guard receipt**: resolved UBO0 address/size, c3[8] bits, resulting path and count, shader/fragment partner, attachment format and actual pixel change. An enabled probe-volume branch requires a separate real sampler3D path or a clearly identified unsupported-feature STOP. Do not disable probe lighting unconditionally for performance.
+7. For **program 40**, verify that the runtime reads **at least 240 B** from its actual UBO0 and does not rely on an accidental fallback from another stage/bank. Check the world-to-clip position and actual scene vertices, not just nonblack pixels. For **program 41**, validate the normal-to-color transfer and intentionally zero alpha against the actual blend/attachment state; a visually empty pass could be correct or could be a masked bug.
+8. Stop the frontier loop only at an actual interactive gameplay scene or an explicit unsupported shader capability. Then test movement/inventory/sound/save-load. Record newly reached shader identities separately from per-frame performance work.
+
+**PASS for next build:** program 41 is accepted and physically rendered with correct state, zero new unexpected GL/resource stops, and either a later clearly identified blocker or a correctly controlled game scene. **Important:** clearing a shader stop alone is not evidence of improved FPS.
+
+### 22.3. P0-RECEIPTS — Close the remaining test-infrastructure gaps instead of redoing finished work
+
+Completed in 2be834a: named 305/304 mapping, balanced release, unique live PID and KMS capture receipts, strict basic MainUI/CPU cleanup checks, tests. Remaining **specific** improvements:
+
+1. **tools/perf_sample.py still uses host HZ.** Replace its local `os.sysconf('SC_CLK_TCK')` conversion with the device's HZ recorded by the remote probe. Parse /proc PID/TID stat after the last matching ')' and include PID/TID starttime to handle reused identities. Preserve *all* thread samples, not just top six.
+2. In `tools/device_principal_test.py`, maintain the current fail-closed **no-parallel-game** guard and exit-code meanings. Add a stable run UUID, exact owner ELF hash, expected scene/phase, current log inode + byte offset, and explicit capture of kernel pressure. Avoid repeated full multi-MiB log scans while the game runs; archive the completed log once. A guest `ZERO_SHADER_NOT_PINNED` with **cleanup_errors=[]** is not a healthy game run, but is a valid fail-closed shader-frontier receipt.
+3. Parent tools must not overwrite the last full crash evidence after harness returns 4. Propagate the game stop and harness cleanup status separately and do not interpret a screenshot captured *after* MainUI takes the DRM plane as a game frame.
+4. Improve `tools/analyze_perf.py`: report signed per-frame residuals, duplicate/missing/out-of-order frame IDs, source-order preservation, explicit phase windows, and the number of frames whose `T2P_SLOW_FRAME` records are **not present**. Its current automatic "<1000ms means warmed up" heuristic cannot define gameplay. Do not use incomplete slow-frame samples to certify gameplay P95/FPS.
+5. Unit tests must cover inconsistent target HZ, PID reuse, stat names with spaces/parentheses, log truncation, expected shader STOP vs cleanup failure, source capture identity changes, stage coverage and negative frame residual.
+6. Respect the new synthetic shader tests but add an actual **GLES driver** fixture for cbuf texture lane addressing, f16 conversion, multiple rows and state invalidation. Passing 33 host tests does not validate a Mali fragment output.
+
+**Gate:** independent analysts can reconstruct *which exact build/phase/input* produced each complete presented-frame distribution, and no test falsely reports playable gameplay on a shader STOP.
+
+### 22.4. P1-PROFILE — The largest cost is STILL unoptimized and still needs attribution
+
+**Additional recent on-device phase averages** from `evidence/newgame-11/progress.json`:
+
+| Ending frame, 60-frame interval | Elapsed ms/frame | Replay ms/frame | Present-to-submit gap ms/frame |
+|---|---:|---:|---:|
+| 241 | 633.294 | 264.786 | 348.482 |
+| 301 | 638.289 | 245.525 | 380.177 |
+| 361 | 598.540 | 294.150 | 297.407 |
+| 421 | 563.491 | 262.929 | 293.307 |
+| 481 | **359.921** | **192.932** | **155.721** |
+
+These are **phase averages, not P50/P95 gameplay**, and their drop near frame 481 might reflect loading-phase changes, not a code optimization. They still show **two large CPU/wait/render buckets**, whereas 30 FPS requires a correct frame every 33.33 ms.
+
+**Next profiling PR**, modifying the runtime only after a representative, reproducible scene exists:
+
+- Sample guest PCs and Horizon SVC caller/latency for the present-to-submit gap. Separate guest IL2CPP compute, memory allocation/GC, loader/decompression work, guest-ZRAM faults/restore, IPC, intentional waits and runnable delays with **exclusive elapsed and actual thread CPU**. Correlate with target core MHz/thermal and thread schedstat; a high Linux CPU percentage alone is insufficient causal attribution.
+- Within NVN replay, aggregate counts and exclusive CPU/wall ns for **queue parsing, command callbacks and locks, shader lookup/link, texture resolution/BC materialization, uniform staging/upload, vertex/index conversion, FBO changes, GL state updates, draw and GPU completion waits**. Bucket by shader pair and render-target identity; include the new 39–41 guarded programs only if actually drawn.
+- Use bounded ring-buffer snapshots once every 60 frames, not per-draw printf. Measure ON/OFF observer overhead on the *same binary*. Require >=95% accounted time and <5% overhead before deciding that "cbuf is the bottleneck" or "Unity itself is too slow".
+- Check whether the <33.33 ms target is even theoretically reachable from the **top three measured exclusive hot spots**. If the largest one is small, batch superficial GL tweaks will not yield the required ~10×–20× improvement.
+- Use a complete presentation serial stream to compute throughput and P95; distinguish loading, menu, tutorial, stationary gameplay and moving gameplay.
+
+### 22.5. P1-MEM/REPLAY — Prioritized performance experiments after P0
+
+**Rank 1 — Guest ZRAM thrash.** The cold250 arm still has the strongest *reported* directional improvement. Implement separate wall/CPU timing around compression, restore, locks, scanner, mprotect/madvise and fileback; the current "cpu-...-ms" fields use MONOTONIC elapsed time. Run three matched same-build/scene controls for cold10, cold100, cold250, cold500; then, separately, scanner period/budget changes. Measure frame **P95/P99**, compressor CPU ns, repeated refaults, MemAvailable/CmaFree, swap, order-4 kernel pressure and New Game scene-load correctness. Raise a cold threshold only if RAM headroom survives it; never default to the diagnostic 32 MiB memory floor.
+
+**Rank 2 — Guest gap.** If per-thread profiles identify a large repeatable Horizon/SVC/guest-memory callback, implement a narrow ABI-preserving cache/fast path with exact read/write epochs and negative fixtures. If time is intrinsic Unity simulation or IL2CPP, distinguish repetitive per-frame canvas/mesh/GC work from one-time loading and from paging; test a title-specific quality option only with a verified owner and source identity. Do not edit proprietary game objects indiscriminately.
+
+**Rank 3 — NVN replay.** Select the one **largest measured** class and change only that class. Candidates remain descriptor lookup invalidation, repeat BC atlas refresh, redundant framebuffer/state churn, VBO/index reallocation and glFinish/fence waits. Follow §21.8 for exact invalidation and serial guarantees. The known `LC2_CBUF_SUBIMAGE` arm produced no demonstrated gain: do not redo it. There is a remaining **1024×1 RGBA32F minimum upload (~16 KiB)** for 16–368-byte cbuf contents: if (and only if) real per-frame profiling shows uploads matter, allocate the full logical 1024-wide texture once, update **only dirty RGBA texels**, and explicitly zero stale tail lanes when bound size shrinks; do not blindly change shader row addressing. The static range reports for shaders 39/40 make a finite touched-range experiment feasible, but the runtime must continue honoring the full declared resource and aliasing contract.
+
+**Rank 4 — GPU-bound scenes only.** The earlier generic ZERO_RENDER_SCALE=2 static-menu test was neutral. Do not reattempt it as the first optimization. Once gameplay exists, identify the owner of the 1920×1080 intermediates and profile bloom pairs on Mali; quality reductions require validated GUI and visual outcomes. Changing 720p raster size does not make guest CPU work disappear.
+
+**Rejected shortcuts:** flush-only as a replacement for GPU completion; disabling ZRAM/file backing or system swap under current memory pressure; dropping shader draws/TEST substitution to inflate throughput; bypassing the renderer's GPU budget and minimum-memory admission; copying West of Loathing's Unity field offsets without a Lamentum-specific owner.
+
+### 22.6. Corrected priority table: NEW work, not completed work
+
+| Order | Implementation / experiment | What to produce | Stop/go |
+|---|---|---|---|
+| **0** | **Build/test all 42 entries including program 41** | New full log hash, installed ELF SHA, live New Game KMS sequence, shader-guard receipts | New shader frontier or verified controllable game scene |
+| **1** | **Scene and shader visual parity** for 38–41 | Stage+pair identity, actual bound cbuf lengths, UBO slot, probe guard, blend/alpha, screenshots | Any unknown feature fails closed, no silent TEST rendering |
+| **2** | **Close remaining sampler/observer bugs** | Remote HZ, stable PID/TID, signed frame residuals, full-run provenance and cleanup | No false clean-gameplay report |
+| **3** | **Complete CPU/replay attribution** | Guest gap + replay top-3 exclusive costs, complete frame distributions, <5% overhead | >=95% attributed before performance modifications |
+| **4** | **Re-run ZRAM cold250 safely** | Three A/B pairs; cold100/250/500, New Game load + gameplay, P95 and RAM | Never accept an OOM/memory-floor regression |
+| **5** | **One proven hot-path change** | Before/after profiler bucket, actual full-frame P95, exact KMS/game parity | Effect must exceed noise and be repeatable |
+| **6** | **Conditional cbuf partial updates** | Bytes uploaded, GL call timing and full-frame changes | Only if cbuf bucket genuinely dominates |
+| **7** | **Conditional Mali/720p/GLsync optimization** | Verified owner/gpu-bound cause or correct resource fences | Original visual/sync semantics preserved |
+| **Final** | **Gameplay release acceptance** | Three independent 60 s **correct gameplay** runs, complete P50/P95 <=33.33 ms, P99, power/thermal, audio/save/controller/cleanup | Only then label the port 30 FPS |
+
+**Run acceptance and repository hygiene:** keep code/control shader blobs and original game resources owner-local; publish only independently authored tools, hashes, derived IR access contracts, screenshots/evidence suitable to distribute, and stop reasons. For every PR pin HEAD/ELF/owner image and host compiler commit; preserve old working binaries and use the Spruce principal path. When the source changes during a review, **refresh HEAD first** rather than blindly carrying forward the previous "current" audit.
+
+*This section audits committed code and published test receipts. The editor of this roadmap did not run hardware tests or rebuild the title.*
