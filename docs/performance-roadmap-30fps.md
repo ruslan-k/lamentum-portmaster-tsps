@@ -1394,3 +1394,114 @@ Build a **state-verified input driver** around tools/lamentum_pad_contract.py in
 8. Every run must restore MainUI, original CPU mask and supervisor identity without orphaned game processes. A shader STOP with cleanup_errors=[] passes **cleanup only**, not the game.
 
 **PASS G0:** ≥30 seconds of actual controllable world rendering, visible movement and one interaction. **PASS G1:** audible music/SFX, cold save/load and safe long-run lifecycle. Do not measure title/menu FPS as gameplay FPS.
+
+### 23.4. P0-I0: fix profiling and harness accuracy before any new FPS conclusions
+
+**Code issues confirmed in the repository**, not proposed features that are missing entirely:
+
+1. **tools/perf_sample.py uses the host CPU tick rate.** Its current lines computing cpu_percent and cpu_ms_per_s call the host os.sysconf('SC_CLK_TCK') despite collecting /proc counters from the remote TSPS. Have the remote Python sampler report its own SC_CLK_TCK, boot ID and monotonic time. Convert interval CPU time as **1000 × delta(utime+stime ticks) / target_HZ** and CPU utilization as **100 × delta_ticks / (target_HZ × delta_elapsed_seconds)**. Do not infer 78% core use from the old readings until corrected and measured again.
+2. Parse the remote /proc/PID/stat and /proc/PID/task/TID/stat by splitting at the **last closing parenthesis** of comm, not at arbitrary spaces. Capture starttime (field22), user/system ticks (14/15), process and thread identity and kernel boot ID. Maintain continuity by **boot ID + PID/TID + starttime**, not PID alone. Preserve all threads, not only the most CPU-heavy subset. Add schedstat CPU/runnable delays, page faults, major faults, memory pressure and actual governor/frequencies.
+3. **tools/analyze_perf.py sorts samples by frame serial** and thereby hides out-of-order/duplicated events. Preserve log order, line/byte offset, run UUID and complete presentation ID set. Reject repeated IDs, resets and changes of log inode unless a new run is explicitly declared. Its field parser only accepts unsigned numeric text: accept signed residuals and malformed/missing values explicitly.
+4. **Do not clamp negative accounting errors to zero.** The current parser applies max(0, period minus measured stages), concealing overlaps or erroneous clocks. Report a **signed residual per frame**; distinguish exclusive versus inclusive stage timers and CPU/GPU overlap. Flag impossible sums and exclude such runs from acceptance instead of silently “fixing” them.
+5. The current automatic “first frame whose period is below 1000 ms is warmed up” heuristic is **not a scene detector**. Require an explicitly identified gameplay phase with live on-screen confirmation, exact starting/ending serial, loading markers and independent monotonic timestamps. Slow-frame-only records have **biased sampling** and cannot prove actual P95 or physical presented throughput: report coverage and incomplete samples.
+6. Keep tools/device_principal_test.py **no-parallel-game fail-closed guard and exit contracts (0: clean TIME_LIMIT, 3: cleanup failure, 4: guest STOP)**. Add exact installed ELF/catalogue/owner-image SHA, run UUID, log inode + start byte offset and bounded incremental polling. Retrieve/hash the **final entire log once** rather than repeatedly parsing multi-MiB files. Parent scripts must not overwrite a correct shader STOP and cleanup receipt with a later harness timeout.
+7. Each real KMS image must be tied to **the unique live game PID/starttime before AND after the capture**, present serial and input receipt. Mark a returned MainUI/Recents capture as cleanup_only. Collect memory/PSI, CmaFree and kernel order-4 allocation pressure in bounded windows; back up saves and verify the original CPU online mask after the run.
+8. Add tests for target HZ **100/250/1000**, task comm containing spaces/parentheses, PID reuse, missing TIDs, wrap/reset, negative residual, duplicate/out-of-order serials, 60%-coverage slow-frame logs, STOP with successful cleanup, stale screenshot, log truncation and interrupted SSH. Invalid profiling runs must set **benchmark_valid=false**.
+
+**I0 PASS:** any independent reviewer can reconstruct the exact binary, environment, frame sampling coverage, scene, target CPU units, input sequence and STOP versus cleanup result. A one-off difference of 2–3% in local replay cannot be accepted before this gate.
+
+### 23.5. P1-T1/T2: attribute both large frame phases instead of trying random GL tweaks
+
+From evidence/newgame-11/progress.json, build212 reports **60-frame arithmetic averages during loading**, not gameplay FPS:
+
+| Ending serial | Complete frame interval | NVN replay | Present-to-next-submit gap |
+|---|---:|---:|---:|
+| 241 | 633.294 ms | 264.786 ms | 348.482 ms |
+| 301 | 638.289 ms | 245.525 ms | 380.177 ms |
+| 361 | 598.540 ms | 294.150 ms | 297.407 ms |
+| 421 | 563.491 ms | 262.929 ms | 293.307 ms |
+| 481 | **359.921 ms** | **192.932 ms** | **155.721 ms** |
+
+At the fastest of those listed intervals the total is **~10.8×** the 33.33 ms target. The last interval may simply contain less loading work; it is not proof that a recent change accelerated gameplay. Both **replay** and **guest gap** remain too large, and a small postprocessing/CBUF change alone is insufficient.
+
+**T1: guest/present-to-submit gap**
+
+1. Mark previous present end, next guest frame start, next command-record creation, command publication and replay start using **CLOCK_MONOTONIC_RAW**. Track real host thread **CLOCK_THREAD_CPUTIME_ID** and target per-TID schedstat runnable delay separately from elapsed wall time.
+2. Attribute mutually exclusive elapsed categories: Unity/IL2CPP execution, allocations and GC, initial scene deserialization, Horizon SVC/IPC, guest-memory page restoration/ZRAM faults, file-backed storage I/O, intentional sleeps, locks/queue waits and runnable-but-unscheduled periods. Record guest caller PC and sample rates in a bounded preallocated ring; never log full PC for every instruction/fault.
+3. Map costly guest PCs to **owner-original NSO plus metadata hashes** to determine whether they are scene-load-only routines or repeated Unity PlayerLoop/Canvas/animation/physics paths. If a large gap occurs while a thread is runnable but off-CPU, inspect scheduler/core online state. If guest main is waiting on memory, investigate M1 first; do not just call the residual “Unity CPU”.
+4. Partition >95% of **wall time** using non-overlapping spans. Actual CPU time is a separate measure that may overlap GPU work. Repeat once with instrumentation OFF on the **same executable**, requiring <5% tracing overhead before accepting a causal diagnosis.
+
+**T2: NVN/GL replay**
+
+1. In native/nvn_replay.h, native/nvn_render.h, native/nvn_textures.h, native/nvn_framebuffers.h, native/nvn_queue.h and command/descriptor helpers, aggregate **exclusive CPU and wall nanoseconds** for command decoding, guest-to-host copying, shader lookup/link, texture descriptor resolution, BC materialization, cbuf staging/uploads, vertex/index conversion and allocations, FBO transitions, GL state calls, draw submission, eglMakeCurrent, glFinish and other waits.
+2. Capture invocation counts, bytes copied/uploaded, unique texture/UBO generation, shader pair, target format and size. Separate cold first-use shader/resource costs from recurring steady-state cost. Do not include program42 as a draw hot spot unless a **real draw receipt** has been recorded.
+3. The low present finish-ms historically measured does **not** prove zero GPU wait: GL driver calls may block before the final finish. Use disjoint-checked GPU timer queries only if the real Mali GLES stack supports them; do **not** glFinish after every pass to time the GPU.
+4. Ensure exclusive replay buckets account for >=95% of replay wall duration, with CPU running and waiting separated. Dump one summary every 60 frames rather than megabytes of hot-path printfs. Confirm A/B profiler overhead <=5%.
+5. Perform scene-controlled tests **after real movement works**: stationary world, moving world, dense sprites, UI/inventory, bloom/effects, load transition. Compare actual complete frame **P50/P95/P99 and real present throughput**, not just replay CPU milliseconds.
+
+**T1/T2 decision:** guest fault/compressor work -> §23.6; guest CPU or SVC work -> §23.8; high replay GL CPU -> §23.7; verified GPU-bound intermediate -> title-specific quality preset; new shader STOP -> §23.2. Never trade correctness for a better profiler number.
+
+### 23.6. P1-M1: controlled ZRAM, resident memory and file-backing optimization
+
+The historical **336501 compressions and 274244 faults** signal possible thrashing, but are **counts, not proof of CPU expense**. An earlier cold=10→250ms run suggested a directional effect, **not** a replicated stable-gameplay gain. The build213 minimum **47MiB MemAvailable with a 32MiB diagnostic floor** does not give comfortable memory headroom.
+
+1. Instrument **compress, restore, scanner, page protection, locks, dirty restart and file-backed read** separately using monotonic **wall** and **thread CPU** nanoseconds. Existing labels such as cpu-...-ms may use MONOTONIC wall time; fix naming before interpreting results. Record per guest-page generation: faults, time since prior access, quick recompression/re-faults, original/compressed bytes and owner memory pool.
+2. A/B **cold=10, 100, 250, 500ms** under identical executable, phase, input hold, BC quota/fileback, monitoring, runtime shader and GPU settings. Interleave **at least three** matched pairs and record actual scene/loading status; build211 versus build213 is **not** a valid memory A/B. Only **after** cold is understood vary scanner period/budget in a separate experiment.
+3. Require frame P50/P95/P99, actual thread compressor CPU ns, restore count and stall P95, MemAvailable/CmaFree/PSI minima, major faults, VmRSS/SwapPSS, swap I/O, storage latency, kernel order-4 warnings and GPU residency. A lower scan count but worse frame tails or OOM is **failure**.
+4. If one guest range is refaulting repeatedly, consider a **generation- and owner-pinned do-not-compress policy** for just that proven range, charging all retained bytes against the same memory budget and preserving guest pool alias/invalidation semantics. Validate allocation/release, writes, fileback, CPU read and in-flight GPU ownership.
+5. Retain the existing lossless 8192×4096 BC3 striped upload/deferred loading, file backing, the 420MiB GPU texture cap and system swap. Do not disable global ZRAM or increase a diagnostic floor downward toward zero. A production memory safety policy needs a separate long-run qualification at the default launcher floor of **96MiB**.
+
+**M1 PASS:** repeatable whole-frame or guest CPU savings with healthy memory and no corrupted assets/save, kernel pressure, unexpected page faults or cleanup regression.
+
+### 23.7. P1-R: prioritized NVN/GLES speedups once actual hot spots are measured
+
+**Existing tested approaches to avoid repeating:** glTexSubImage2D replacing repeated full allocation is **already present and default enabled** (LC2_CBUF_SUBIMAGE); it has **no established overall gain**. Generic ZERO_RENDER_SCALE=2 showed period P50 ~579.3→577.7ms with the guest gap unchanged; default remains 0. MOMO_SUBMIT_FINISH=0 or glFlush-only is **not completion**; synchronous ownership remains the correct baseline.
+
+**R1 — CBUF transfer volume:** native/nvn_render.h still uses **1024 RGBA32F texels per row**, so even a one-row 16–368-byte payload can involve a **16KiB GL update**. Instrument active bytes, upload bytes, unique content generations, pair and GL CPU time. Only if the measured bucket dominates, keep the shader's logical texture dimensions while issuing **dirty RGBA texel** glTexSubImage2D rectangles; zero stale tail lanes when a range shrinks. Never change x/y/lane addressing or sample another buffer after source generation changes. Verify 16, 220, 240, 368-byte and multi-row buffers, signed/NaN bit patterns, shrinking ranges, context destruction and GPU in-flight use. Dedupe on **exact bytes+generation**, not hash alone.
+
+**R2 — descriptor/texture resolution cache:** if actual repeated pool lookups dominate, key by pool generation, descriptor index, sampler identity/generation, texture view/mip/format, backing write epoch and EGL context. Invalidate on TextureWriteTexels, backing alias writes, pool re-register, resource destruction, eviction and surface/context recreation. Keep proven reserved-prefix/null-texture semantics; a previously wrong sampler offset generated float-bit-pattern pseudo-handles.
+
+**R3 — redundant GL/FBO state:** first count would-skip for glBindFramebuffer, glUseProgram, glActiveTexture, glTexParameteri, blend/depth/stencil and viewport/scissor. Then suppress **one** call family per PR only with context-specific shadow state and invalidation whenever any native present helper changes GL state. Tile discard or glInvalidateFramebuffer is safe **only after the last consumer** of an intermediate bloom attachment. Do not drop UI/stencil draws for speed.
+
+**R4 — vertex/index and command-copy churn:** measure glBufferData/reallocation frequency, memory copies and conversion CPU by shader pair. Consider preallocated/ring staging only if real cost is significant, with correct guest write epochs, resource generations and NVN/GPU serial fences. Extra resident memory may amplify page faults.
+
+**R5 — texture atlas/materialization:** identify unnecessary BC decompression/refresh and repeated glTexImage by texture ID and write epoch. Reuse lossless native 8192×4096 BC3 decoding and 128-row striped upload. An owner-private ASTC side cache or dirty tile upload is conditional on tested device support, alpha/sRGB parity, immutable content proof, disk capacity and exact resource lifetime. Do not replace proprietary source assets in Git.
+
+**R6 — shader lookup/compile:** profile program-link and uniform location misses separately during **loading** and warmed-up gameplay; precompute metadata and cache validated GL program/context generations only when repeated compilation actually occurs.
+
+**R7 — owner-specific 720p/postprocessing:** the physical screen is **already 1280×720**; the internal **1920×1080** resources belong to a separate guest pipeline. First prove which Lamentum IL2CPP/Unity component creates them and map consumers, UI matrices, FBO, bloom pair and input coordinates. Test a reversible 720p intermediate/effects preset only for a **proven GPU-bound gameplay scene**. The prior generic scaler was neutral and cannot remove guest CPU work. Preserve exact graphics and readable UI.
+
+**R8 — GPU async/fences:** keep OFF until GPU wait is specifically proven material. Previous **NVN_COMMAND_REUSE_BEFORE_COMPLETION** and **EGL_BAD_SURFACE** are hard correctness stops. No fake command completion or reuse of unfenced GPU-read memory. Require correct serial ownership, fence and EGL lifetime fixtures before any opt-in A/B; frame P95 and pixels must remain valid.
+
+**Rank by real exclusive cost, not by the conceptual appeal of a trick.** A 2ms CBUF gain has little relevance when the guest gap is ~156ms and replay ~193ms during a comparable interval.
+
+### 23.8. P2-GUEST: Unity-side performance when the guest actually owns the delay
+
+If corrected target-side CPU profiling attributes major recurring cost to **Unity 2019.4 IL2CPP** rather than the adapter, GL-only optimization cannot close the full frame budget.
+
+1. Hash-pin original owner main NSO/metadata, correlate guest PC samples with actual functions: PlayerLoop, script Update, GC/allocations, scene deserialization, sprite batching, UI Canvas rebuild, physics/animation, and Horizon service calls. A loading-phase hotspot is not necessarily a steady-gameplay hotspot.
+2. Try genuine in-game graphics/Noise options first and record which pass or guest component they actually modify. Never invent a Handheld/TV switch or copy West of Loathing title-specific UpRender offsets.
+3. Only if a **Lamentum-owned** quality/RenderTexture/resolution component is proven, use a reversible owner-local and SHA-pinned experiment (no proprietary game edits committed). Verify projection, text, alpha, UI hitboxes, input and graphics parity on actual device.
+4. For a costly adapter-controlled SVC or memory translation path, create a small ABI- and side-effect-equivalent cache/fast path with write-epoch and alias invalidation, negative tests and explicit rollback. Do not patch guest timing or Unity deltaTime merely to inflate a frame count.
+5. Test CPU affinity/governor effects only from target topology/frequency and schedstat evidence with **full CPU online restoration**. No global swapoff, unsafe clock overrides, min_free_kbytes experiments or deletion of the memory cap.
+6. Use **5 →10 →15 →20 →30 FPS** as transparent milestones after G0; continue to define success strictly as complete-frame P95<=33.33ms. If persistent correctly measured hundreds-of-ms guest work cannot be reduced, report 30 FPS as **unproven or infeasible under current runtime**, not as guaranteed.
+
+### 23.9. Updated PR execution order, validation and deliverables
+
+| Order | Task / proposed PR | Concrete deliverable | Gate |
+|---:|---|---|---|
+| **0** | **S42: original shader c1/c3 alias mapping** | Exact stage/resource manifest, host tests, append-only program42, new hashed build and next-stop log | Correct UBO0 binding; original 42 entries unchanged; no silent TEST shader |
+| **1** | **G0: first controllable game scene** | Live New Game→world KMS/PID/input sequence, movement and an interaction | Genuine correctly rendered world, no unsupported-stop during play |
+| **2** | **I0: target-correct performance analyzer** | Remote HZ, PID/TID starttime, signed residuals, presentation coverage and state-aware harness tests | Two independent runs comparable without guessed units or phases |
+| **3** | **T1/T2: guest/replay attribution** | Low-overhead exclusive timed buckets and complete frame ledger | >=95% accounted, <=5% observer overhead |
+| **4** | **M1: ZRAM/fault A/B** | Three interleaved repeats cold10/100/250/500 with memory safety | Whole-frame gain without pressure/OOM/regression |
+| **5** | **R1–R6: the largest real replay cost** | One subsystem patch, before/after log and KMS parity | P95 full-frame improvement greater than noise |
+| **6** | **R7/R8: conditional quality/GPU pipeline** | Exact owner/render target or serial/fence evidence | Correct visuals and GPU completion, measurable frame gain |
+| **7** | **G1: full player/audio/save release gate** | Human controller, audible SFX/music, cold save/load and cleanup receipts | Functional port, with honest measured FPS |
+| **8** | **F30: real stable 30 FPS** | **Three independent warmed-up 60-second gameplay runs**, complete presented serials and scenes | **P50 and P95 <=33.33ms**, P99 target <=50ms, no recurring >100ms stalls, no lost/incorrect frames |
+
+**Next owner run evidence folder:** evidence/newgame-13/ should include exact source/ELF/compiler/owner image identifiers, separate original code/control SHA only (no bytes), old catalogue prefix equality, input phase and EV_KEY 305 receipts, real PID-bound menu/config/controls/loading/world captures, final raw log SHA + byte size, shader guard/draw counts, pressure samples and cleanup.json. A new STOP with cleanup_errors=[] is **good cleanup but FAILED gameplay**, and must be reported as such.
+
+**Safety and reproducibility:** run the baseline SHA-256 manifest check from the separate **recovered GPL source root**; then host unit/C fixtures, full adapter cross-build, install + independent ELF hash, quiet owner-controlled principal launch and cleanup/CPU mask validation. Keep old known-good executable and save backups. The diagnostic **32MiB floor** and AW_RELEASE=0 shader dump are *not* production defaults; production still requires separate validation at the default **96MiB floor**. Do not run scripts with their owner's hardcoded IP/workstation paths against another handheld.
+
+**Hard acceptance separation:** (a) program appended, (b) linked/accepted, (c) actually drawn/pixel-validated, (d) actual controllable world, (e) audible audio/save/reload, (f) complete-frame stable 30 FPS. Passing one does not imply any later milestone. No 30 FPS result is claimed by this review.
