@@ -154,128 +154,140 @@ For **M5**, first establish a read/write and lifetime map of actual guest ranges
 
 **PASS:** lower measured upload/replay times per frame with identical GL output and gameplay state. **STOP:** constant-buffer unit collisions, missing UI, invalid transforms, or undefined resource lifetimes.
 
-## 7. P1-REPLAY — где именно тратятся 97–236 ms replay
+## 7. P1-REPLAY — Identify Where the 97–236 ms of Replay Time Goes
 
-**Место внедрения:** базовые native/nvn_replay.h, native/nvn_render.h, native/nvn_samplers.h, native/nvn_shaders.h, native/nvn_textures.h, native/nvn_framebuffers.h, native/nvn_commands.h, native/nvn_queue.h; изменения — только в runtime/lamentum-adapter.patch. Реальная измеренная цена каждой функции **не известна**. Пример WoL-методики: [roadmap-roundup](https://github.com/ruslan-k/west-of-loathing-portmaster-tsps/blob/main/evidence/roadmap-roundup-20261016/README.md): в **другой** игре разбили replay на first texture resolve, state changes, memory transfers и shader cost. Переносить можно **метод**, а не ms или конкретный patch.
+**Implementation locations:** baseline native/nvn_replay.h, native/nvn_render.h, native/nvn_samplers.h, native/nvn_shaders.h, native/nvn_textures.h, native/nvn_framebuffers.h, native/nvn_commands.h, and native/nvn_queue.h; all changes belong in runtime/lamentum-adapter.patch. The actual costs of these functions in Lamentum **remain unmeasured**. An example of the methodology is the [West of Loathing profiling roundup](https://github.com/ruslan-k/west-of-loathing-portmaster-tsps/blob/main/evidence/roadmap-roundup-20261016/README.md): in that **different** game, replay was split into first texture resolution, state changes, memory transfers, and shader cost. Reuse the **measurement methodology**, not the measured milliseconds or title-specific patches.
 
-### 7.1. Сначала low-overhead profile
+### 7.1. Establish a Low-Overhead Replay Profile First
 
-Добавить LC2_REPLAY_PHASES=1 с per-frame/per-program/per-operation агрегированием, без подробного stdout на каждый GL call. Для каждого command-list и serial зафиксировать следующие exclusive CPU ns и counts:
+Implement LC2_REPLAY_PHASES=1, aggregating per frame, program, and operation type without writing detailed stdout output for every GL call. For each command list and serial, collect the following **exclusive CPU nanoseconds and occurrence counts**:
 
-- queue snapshot/record parsing / guest->host command copy, command count и bytes;
-- draw dispatch до GL: sampling handle decoding / descriptor lookup / texture lifetime; отдельно first-resolve и повторный resolve идентичного ключа;
-- zero_texture_refresh: время BC decode, memory copy, glTexImage/Upload, dirty flags, bytes, allocation and GPU budget;
-- shader lookup (catalogue hash), compile/link и shader switch; program bind, uniform location lookup;
-- cbuf GPU upload (см. §6), sampler state, texture bindings, framebuffer attachment/lookup/rebind, depth+stencil, blend, scissor, viewport;
-- vertex/index: extract guest range, format conversion, malloc/realloc/copy, glBufferData/glBufferSubData, draw GL API call overhead;
-- non-draw records: TextureWriteTexels, clears, render target switches, barriers, buffer copies, command reuse, resource creation/deletion;
-- **все** glFinish/GLsync/eglMakeCurrent, время scheduler wait/CPU thread time отдельно от GL completion.
-  
-В конце окна печатать примерно: frame range, total replay CPU wall, host thread CPU, non-draw / draw, per-op count, bytes and inclusive/exclusive durations; диагностический журнал допускает одну строку каждые 60 кадров плюс on-exit. Подтвердить missing bucket <=5% в пределах replay. Гистограмму не усреднять только по удачным frames: включить P95 и rare >100ms. Фаза shader first-use должна быть отдельной от steady-state.
+- Queue snapshot, command-record parsing, and guest-to-host command copying, together with command count and byte count.
+- Pre-GL draw dispatch: sampler-handle decoding, descriptor lookup, texture lifetime verification; distinguish a first resolve from repeated resolves of the same resource key.
+- zero_texture_refresh: BC decoding, memory copy, glTexImage/upload, dirty-state checks, bytes transferred, GPU allocations and budget changes.
+- Shader catalogue lookup, compilation/linking and shader selection; program binding and uniform-location lookup.
+- Constant-buffer GPU upload (Section 6), sampler state, texture bindings, framebuffer attachment/cache/rebind, depth and stencil, blending, scissor and viewport.
+- Vertex/index processing: guest-range extraction, format conversions, allocation/reallocation/copy, glBufferData/glBufferSubData, and GL draw-call submission overhead.
+- Non-draw commands: TextureWriteTexels, clears, render target changes, barriers, copies, command-buffer reuse, resource creation and deletion.
+- **Every** glFinish, GLsync, and eglMakeCurrent, with scheduler waiting and per-thread CPU time separated from GL completion.
 
-### 7.2. Кандидат A: быстрый повторный sampler/texture resolve
+At the end of a measurement window, emit frame-range identifiers, replay elapsed wall time, actual host thread CPU time, draw/non-draw exclusive buckets, command counts, transferred bytes, and inclusive/exclusive duration distinctions. A single aggregated log entry every 60 frames and a final exit summary are preferable to per-SVC/per-draw logging. Require that unattributed time inside replay is <=5%. Keep first-use shader compilation separate from steady-state work.
 
-Если значительны одинаковые handle resolve, внедрить **bounded** per-context cache с ключом: texture pool ID/generation, descriptor index, sampler ID/generation, view format, mip, layer, swizzle, target type, backing modification generation. Cache hit допускается только при сохранённом guest descriptor и GL texture lifetime. На TextureWriteTexels, texture pool unregister/re-register, free, recreate, framebuffer aliasing и context loss — invalidation. В частности нельзя reuse old texture после write в тот же memory pool по одному совпадению handle.
+### 7.2. Candidate A: Avoid Expensive Repeated Sampler/Texture Resolution
 
-Проверить на первом/втором resolve одного handle, затем на полном кадре. Output: hit/miss, invalidations, correctness, CPU p50/p95, GL allocations. В WoL first per-frame resolve оказался дорогим, но **нет доказательства** такой же причины в Lamentum. Не внедрять cache вслепую.
+If repeated resolution of identical handles is expensive, implement a **bounded per-context resource cache** keyed by texture pool ID and generation, descriptor index, sampler ID and generation, view format, mip level, layer, swizzle, target type, and backing modification generation. A cache hit is only valid if the guest descriptor and GL texture lifetime remain valid.
 
-### 7.3. Кандидат B: GL state shadowing
+Invalidate on TextureWriteTexels, texture pool unregister/re-register, resource free/recreate, framebuffer aliasing, and context loss. Identical handle bits alone do not prove that the same content remains after a write to the underlying pool.
 
-Добавить точную per-EGL-context shadow state таблицу для текущих shader/program, active texture unit, GL texture bindings на каждом unit/target, GL FBO, GL array/element buffers, blend/scissor/depth/stencil, viewport. Перед вызовом проверять identity+generation, но **действительное состояние** между guest shader passes может меняться в native present, diagnostic draw и FBO helpers. Каждый неучтённый внешний GL entry должен инвалидировать соответствующую часть кэша, иначе будет графическая регрессия.
+Measure first and second resolution of the same handle before profiling the entire frame. Report hit/miss counts, invalidations, correctness, CPU P50/P95, and GL allocations. West of Loathing exhibited an expensive first per-frame texture resolve, but **there is no evidence yet that Lamentum shares this bottleneck**. Do not add the cache blindly.
 
-Сначала только telemetry «would_skip_calls» без изменения поведения; затем оптимизировать **один** вызов/семейство. Сравнивать GLenum errors, real KMS captures, guest state parity и whole-frame latency. glGetIntegerv/glCheckFramebufferStatus нужны для bounded diagnostic, но не должны стать частью нового hot path.
+### 7.3. Candidate B: GL State Shadowing
 
-### 7.4. Кандидат C: buffers и per-draw allocations
+Create an accurate **per-EGL-context shadow state table** covering current shader/program, active texture unit, texture bindings for each unit and target, framebuffer, array/element buffers, blend/scissor/depth/stencil state, and viewport. Before suppressing a redundant GL call, verify matching object identity and generation.
 
-Собрать live counts realloc/malloc/free, glBufferData vs glBufferSubData, amount of vertex/index copying и сколько раз identical guest byte range преобразуется повторно. Если churn действительно велик — persistent VBO/IBO ring / preallocated scratch и cache conversions с identity, source write epoch и proper GL in-flight fence. Для динамического UI/stencil/particle geometry не считать одинаковый адрес guest memory неизменными данными. Мерить RAM delta: оптимизация CPU не должна удвоить resident memory и спровоцировать ZRAM faults.
+Actual GL state can also be changed by native presentation, diagnostic rendering, and framebuffer helpers between guest draw calls. Any untracked GL entry point must invalidate the affected cached state; otherwise shadowing will introduce subtle graphics regressions.
 
-### 7.5. Кандидат D: framebuffer/pipeline transitions
+First instrument **would_skip_calls** without changing any behavior. Next, optimize exactly one GL call or call family at a time. Compare GLenum error records, actual KMS captures, guest pipeline-state parity, and whole-frame latency. glGetIntegerv and glCheckFramebufferStatus may be used for bounded verification, but must not become permanent hot-path checks.
 
-Проверить per-frame FBO cache hits/misses/rebinds, RT attachment validity, render-pass boundaries, repeated glCheckFramebufferStatus and glGetError; отделить **diagnostic** проверки от обязательной validation. Tile-based Mali может выигрывать от уменьшения render-target switches и лишних stores, но любой glInvalidateFramebuffer допустим только после последнего чтения attachment; иначе разрушится bloom/UI/final composite. Включить preserve/restore текущего FBO после readback diagnostic.
+### 7.4. Candidate C: Buffer Churn and Per-Draw Allocations
 
-### 7.6. Batching и ограничения
+Collect live counts of malloc/free/realloc and glBufferData vs glBufferSubData, the volume of vertex/index copies, and the number of times an identical guest data range is converted again.
 
-Объединять draw commands можно лишь при **доказанном** совпадении target, ordering, texture/UBO, blend, viewport/scissor, alpha, depth/stencil, fragment side effects и no memory barrier. Пара 12/14 может рисовать 9 отдельных UI объектов на кадр — нельзя объединять просто по имени program. Сначала census потенциально совместимых consecutive draws с сохранением guest order и per-frame visual diff; далее experimental batch в opt-in branch.
+Only if churn is substantial should the runtime consider preallocated scratch memory, a persistent VBO/IBO ring, or a vertex-format conversion cache keyed by source identity, source-write epoch, and format. Protect any in-flight GPU reader with correct fences. For dynamic UI, particle, and stencil geometry, a repeated guest pointer does **not** imply unchanged contents.
 
-**PASS:** уменьшение **общего** period P95 (а не только replay CPU, который может перейти в GPU finish); KMS/GL parity, no resource-generation races, одинаковые saves. **STOP:** новая строка STOP, wrong stencil/UI, shader remap или неизвестное владение объектами.
+Measure resident RAM as well as CPU time: an optimization that doubles residency can cause more guest-ZRAM faults and degrade frame time.
 
-## 8. P1-720 — определить владельца внутреннего 1920×1080 и тестировать 720p
+### 7.5. Candidate D: Framebuffer and Render-Pass Transitions
 
-**Факт:** на физическом 1280×720 panel встречаются NVN draw targets **1920×1080** (например UI 12/14 и pair 11/9). В 1920×1080 ~2.25 раза больше pixels, чем в 1280×720. Потенциальное сокращение raster/workload ≠ автоматически 2.25× FPS. При диагностических 400 ms вне replay внутреннее разрешение может быть второстепенным.
+Profile framebuffer cache hit/miss/rebind counts, render-target attachment validity, render-pass boundaries, repeated glCheckFramebufferStatus and glGetError, and attachment load/store patterns. Separate **diagnostic** checks from mandatory validation.
 
-### 8.1. Найти источник размера, а не угадать
+A tile-based Mali GPU may benefit from fewer render-target switches and unnecessary memory stores. However, glInvalidateFramebuffer may be used only after the attachment's **last consumer**, and never for an intermediate bloom image before the final composite reads it. Restore the original framebuffer after any diagnostic readback.
 
-1. В low-overhead trace выделить resource IDs для всех 1920×1080 RT, initial NVN TextureBuilder, memory pool owner, target flags/format/MSAA, attach/reuse/readback, number of draws/frames, framebuffer and sampler consumers; отдельно отметить конечный 1280×720 screen и postprocess.
-2. Read-only анализ оригинальных IL2CPP metadata + main NSO в owner workspace: поиск сериализованных component fields/MonoBehaviour и native call-sites (Unity Screen.SetResolution, RenderTexture.GetTemporary, new RenderTexture, CanvasScaler, player graphics settings). Это **список для поиска**, не утверждение, что названные API вызываются этой игрой.
-3. Сопоставить события и значения **1920, 1080**, возможные reference resolution / render scale / dynamic resolution, последние изменения UI projection. Изучить Options (в build202 экран виден) на реальные настройки resolution/effects. Не считать handheld/TV request источником внутренних размеров без trace.
-4. Сформировать original->candidate матрицу: размер RT, viewport/scissor, matrices/UBO, sample UV, text/UI point size, input hitboxes, LOD and postprocess dependency. При mode change запрашивать полную reallocation resource family, не изменять размер объекта под старой descriptor identity.
-5. Если найден **owner-specific** компонент, внедрить *guarded* optional override его значения на 1280×720/scale 2/3 только для Lamentum с точным main NSO/metadata SHA. Изменять owner file в публичном репозитории нельзя; adapter должен либо корректно и проверяемо менять временную копию state, либо описать owner-local patch workflow.
-6. Если owner component не найден, рассмотреть backend virtual resolution translator (logical 1920x1080 -> physical 1280x720) только с полным преобразованием FBO sizes, render/copy subrectangles, texel offsets, shader sampling LOD, viewport/scissor, clipping, UI pixel snapping, pointer coordinates и all render-target consumers. **Это дорогой/high-risk вариант**, не первая попытка.
-7. А/B: original 1080 -> 720, затем отдельный 960×540/640×360 quality preset только при приемлемом UI. Желательно оставить UI native-res, менять лишь scene/lighting intermediates и применять upscaler после verify.
-8. Проверить actual KMS frames из title, main menu, Options, inventory, moving scene, bloom/highlights, text readability, clip/stencil; сравнить actual GPU memory and GPU query time, CPU replay, P95 period, startup memory.
-9. При повторной сборке shader catalogue **не** возвращать build201 c4 binding0. Учитывать уже выведенную projection UI ~2/1920,2/1080 в 160-byte UBO1: простое resize RT при неизменённой matrix может скрыть текст.
+### 7.6. Batching and Its Restrictions
 
-**Сравнение с WoL:** там конкретный owner Unity UpRender (которого существование в Lamentum НЕ установлено) позволил улучшить measured FPS от ~24 до ~33–34 в одной сцене. Нельзя переносить field offsets, title hashes и выводы о docked mode из [WoL roadmap](https://github.com/ruslan-k/west-of-loathing-portmaster-tsps/blob/main/docs/optimization-roadmap.md). Измерить источник **самой Lamentum**.
+Combining draw commands requires proven equivalence of target, ordering, texture/UBO bindings, blend mode, viewport/scissor, alpha, depth/stencil behavior, fragment side effects, and memory barriers.
 
-**PASS:** owner-visible pixel/interaction correct, repeatable whole-frame gain при одинаковой scene+clocks и memory safety. **STOP:** смазанный текст, screen/input misalignment, неправильная альфа или unresolved resource alias.
+Pair 12/14 may render nine separate UI objects per frame; sharing one shader is not enough to combine their draws safely. First count **consecutive** genuinely compatible draws while preserving guest order and capturing per-frame visual diffs. Only then test batching behind an opt-in flag.
 
-## 9. P1-POST — bloom/noise/post-processing на Mali
+**PASS:** complete frame-period P95 improves, not merely replay CPU time shifted into GPU finish; preserve KMS/GL correctness, resource generations, and game state. **STOP:** a new STOP status, broken stencil/UI, incorrect shader mapping, or unknown resource ownership.
 
-**Точки:** NVN pair17/4 -> 10-level downsample targets, 11/9 composite/near-composite и final present; нужны actual pass dependencies. Опциональная UI настройка Noise effect уже доступна; **не утверждать**, что она отключает bloom.
+## 8. P1-720 — Identify the Owner of the Internal 1920×1080 Targets and Test 720p
 
-**Методы в порядке цены/риска:**
+**Observed fact:** NVN draws target **1920×1080** resources (including UI pair 12/14 and pair 11/9), even though the physical display is 1280×720. At 1920×1080 the affected render target has ~2.25 times the pixel count of a 720p target. Reducing a target's pixel workload **does not imply 2.25× overall FPS**. If the ~400 ms outside replay persists in quiet runs, render resolution may be a secondary issue.
 
-1. Создать граф per-pass: input texture IDs, output RT/format/size, draw count, shader pair, clear/load/store, following users, aspect ratio; пометить lifetime каждого промежуточного attachment.
-2. Измерить cost каждого pass CPU и GPU, если Mali/EGL поддерживает EXT_disjoint_timer_query (иначе report not available). GPU timestamp профилировать редко и проверять disjoint; glFinish после каждого pass исказит результат.
-3. Сначала встроенная настройка Noise effect On/Off и, если существует, brightness/shadow/effects presets — одна настройка на run, same scene; оценить actual frame delta и KMS quality. Изменение noise ≠ автоматическое отключение blur/lighting.
-4. Если дорог **именно** bloom: quality tier через строго установленные guest shader uniforms/source-provenance, уменьшить число уровней downsample (напр., 10->6 только когда final consumers перестают ссылаться на хвост), sample taps/radius или resolution **без изменения оригинального mode**. Следить за alpha, color space/sRGB, temporal effects.
-5. Если дорог FBO change: grouping безопасных последовательных pass, reuse FBO objects, remove redundant state binds. Mali tile discard/invalidate только после последнего reader; no blind glInvalidateFramebuffer. Не вводить искусственное выключение glBlend/glDepth/glStencil.
-6. Компонентные тесты shader: exact code+control hash; mat/UV/texelFetch coordinates, shader literal bank и sampler metadata остаются pinned. Снять изображения для темных/светлых сцен и меню, а не только pixel count.
-7. Продвинуть quality option Original/Performance **только если** эффект на реальном игровом профиле заметен и качество согласовано; по умолчанию оставить original until accepted.
+### 8.1. Find the Owner of the Resolution Instead of Guessing
 
-**PASS:** корректный performance preset с измеренной экономией GPU/frame-time и обратимостью. **STOP:** едва видимый интерфейс или эффект иного цвета/сломан bloom, выигрыш <= noise.
+1. In a low-overhead trace, identify **all** 1920×1080 resource IDs: initial NVN TextureBuilder calls, owning memory pool, format/MSAA/target flags, attachments, reuses, samplers and readbacks, draw counts, and frame frequency. Distinguish those offscreen resources from the final 1280×720 panel surface.
+2. In the owner's local image workspace, perform **read-only analysis** of original IL2CPP metadata and main NSO: locate serialized MonoBehaviour/component fields and native call sites potentially involving Unity Screen.SetResolution, RenderTexture.GetTemporary, creation of RenderTextures, CanvasScaler, or graphics preference components. These are **search candidates**, not claims that the game calls those APIs.
+3. Correlate runtime creation and values of **1920 and 1080** with reference resolution, internal render scale, dynamic resolution, and UI projection constants. Inspect the actual Options menu exposed by build202 for available graphics/effects controls. Do **not** assume that a Handheld/TV setting controls these render targets without a traced consumer.
+4. Build an original-to-candidate dependency matrix for render-target dimensions, viewport/scissor, matrices/UBO, sampled UV coordinates, UI text size, input hitboxes, level of detail, and postprocessing. A mode change must reallocate every affected resource family correctly; do not resize one object while keeping stale descriptor identities and bounds.
+5. If an **owner-specific** graphics component is found, implement an optional, identity-guarded override of its value to 1280×720 or a 2/3 scale **only for Lamentum**, pinned to the exact main NSO and metadata SHA-256. Do not commit patched original game files; use a verifiable temporary state override or document an owner-local patching procedure.
+6. If no owner component can be established, consider a backend virtual-resolution translator (logical 1920×1080 -> physical 1280×720) **only with complete handling** of FBO dimensions, render/copy rectangles, texel offsets, shader sampling and LOD, viewport/scissor, clipping, UI pixel alignment, pointer coordinates, and downstream render-target consumers. This is a **high-risk, expensive fallback**, not the first experiment.
+7. Run a controlled sequence: original 1080 -> 720; later, separate 960×540 and 640×360 experiments only as explicitly labeled quality presets. Prefer native-resolution UI and text, possibly reducing only carefully identified scene/lighting intermediates before upscaling.
+8. Compare **real KMS screenshots** of title, main menu, Options, inventory, moving gameplay, bloom/highlights, readable text, clipping and stencil. Collect actual GPU timing, memory residency, CPU replay, frame P95, and startup pressure for the same scene and clocks.
+9. Do **not** undo build202's shader mapping correction while rebuilding. The established UI projection values include scales of approximately 2/1920 and 2/1080 in the 160-byte UBO1. Simply resizing an FBO while retaining an old matrix may move or hide UI elements.
 
-## 10. P2-GPU-MEM — оптимизация BC atlas, GPU residency и загрузки
+**Comparison with West of Loathing:** in that port, an owner-specific Unity UpRender component (whose existence in **Lamentum has not been established**) produced a measured change from about 24 to 33–34 frames/s in one scene. Do not transfer its field offsets, title hashes, or conclusions about docked mode from the [WoL roadmap](https://github.com/ruslan-k/west-of-loathing-portmaster-tsps/blob/main/docs/optimization-roadmap.md). Determine the source in **Lamentum itself**.
 
-**Подтверждённые существующие решения, которые не надо заново «изобретать»:** BC3 atlas 8192×4096, 128-row stripes вместо полного 128 MiB RGBA transient, deferred BC upload, lossless file backing после полного write, bounded GPU texture budget **420 MiB**, earlier load floor experiments (см. [loading-memory](loading-memory.md), [loading-memory-170-174](loading-memory-170-174.md)). Компрессор guest pages и file-backed bytes нельзя просто складывать.
+**PASS:** player-visible rendering and interaction remain correct with repeatable whole-frame gains at the same scene, clocks, and memory-safety level. **STOP:** blurred UI, screen/input misalignment, incorrect alpha, or unresolved render-target aliasing.
 
-1. Новая telemetry таблица resource ID -> guest pool alias and write epoch -> decoded/resident GL texture and format/mips -> actual last use/first use, create/destroy timestamps. Считать unique guest backing ranges по **union**, не по сумме virtual spans; GPU committed bytes не приравнивать к process RSS/PSS.
-2. Профилировать именно повторную zero_texture_refresh / LC2_BC_MATERIALIZED и TextureWriteTexels: allocation, BC3 decompression, GPU upload, driver CPU time, stalls, pages read from backing. При повторной materialization искать invalidation loop / dirty range. Exact write-range epochs плюс generation IDs для проверки skip reupload.
-3. Оптимизировать полноразмерные uploads только при строгом immutable-content proof. Если атлас часто меняется, partial dirty region upload через glTexSubImage2D вместо полного, с проверкой BC tiled decode, aligned compression blocks, surface pitch/stride, mip and swizzle.
-4. Проверить natively supported compressed texture formats **на устройстве**: GLES extensions и независимый pbuffer upload/readback. Возможность ASTC на другом порте West of Loathing не гарантирует BC3->ASTC поддержку/качество и библиотеку на Lamentum.
-5. Если supported, owner-local **content-addressed** ASTC side-cache для небольшого allowlist неизменных atlases: source SHA, exact dimensions/mip/format/color space, deterministic encoding quality, correct alpha, room on SD, fallback to existing lossless BC path. Не публиковать proprietary texture/payload; при mismatch never cache hit. ASTC может быть **lossy**, это отдельный quality gate.
-6. Для inactive textures: не делать eviction/decommit guest bytes из pagemap zeros или таймера. Требуется реально доказанный owner lifetime + reconstruction path + no in-flight framebuffer/sampler readers, новый generation and fence. 420 MiB GPU cap не отключать.
-7. I/O traces: SD/UDISK fileback cap/latency, statvfs disk free reserve, blocked pread, page faults, deferred upload. Стратегия background prefetch допустима только если guest dependency/barrier и RAM safety установлены.
-8. Сравнить menu->New game transition, one interior and combat/effects phase, not raw count textures initialized; memory floor=32MiB не становится автоматически default.
+## 9. P1-POST — Optimize Bloom, Noise, and Other Postprocessing on Mali
 
-**PASS:** меньший P95 stalls/real GPU residency при корректной scene/texture colour и сохранённом headroom. **STOP:** memory floor, corrupted texture, aliases, long disk stalls, GPU OOM. Не заставлять устройство swapoff.
+**Candidate points:** NVN pair 17/4 and its ten-level downsample chain, pair 11/9 and the near/final composite stages. Exact pass dependencies must be established. An in-game **Noise effect** setting is visible in Options; **do not assume it disables bloom**.
 
-## 11. P2-SYNC — NVN queue / GPU pipeline без небезопасного early completion
+**Methods in increasing order of risk:**
 
-**Исходно:** COTM_ASYNC_QUEUE=0 и T2_GPU_PIPELINE=0 — измеренный стабильный синхронный путь. Ранее был NVN_COMMAND_REUSE_BEFORE_COMPLETION; SDL/KMSDRM recreates EGL surface after first fullscreen swap, что уже обрабатывается [loading-memory](loading-memory.md). COTM_FB_PRESENT=0, strict GL errors; без новой работы не переключать на framebuffer-copy путь.
+1. Reconstruct a **per-pass dependency graph**: source texture IDs, output target/format/size, draw counts, shader pairs, clear/load/store behavior, subsequent readers, aspect ratio, and resource lifetime.
+2. Measure CPU and GPU cost for each pass. Use EXT_disjoint_timer_query only if the actual Mali/EGL stack supports it, with sparse sampling and disjoint checks. Calling glFinish after every pass would distort the workload; otherwise report that GPU query timing is unavailable.
+3. Start with supported in-game settings: compare Noise effect On/Off and any actual brightness, shadow, or effects presets independently in the same scene. Confirm which stage the setting affects. Changing noise is **not automatically** equivalent to eliminating blur or lighting.
+4. Only if **bloom specifically** is expensive, add a quality tier using proven guest shader uniform/source provenance. Candidates include fewer downsample levels (for example 10 -> 6 **only when no downstream consumer references removed levels**), fewer sampling taps/smaller radius, or lower offscreen resolution while preserving the original mode. Verify alpha blending, color space/sRGB, and temporal behavior.
+5. If framebuffer changes dominate, optimize grouping of safely adjacent passes, reuse complete FBO objects, and remove redundant state binds. On Mali, tile discard/invalidate is safe only after the **last attachment reader**; never blindly invalidate inputs to the final composite. Do not disable glBlend/glDepth/glStencil globally.
+6. Keep shader code+control identities exact and validate matrices, UV/texelFetch addressing, embedded literal banks, and sampler metadata. Review screenshots in dark scenes, bright scenes, and menus; a nonblack-pixel count alone is not sufficient.
+7. Offer an explicit, reversible **Original / Performance** quality setting only if real-game profiling shows a meaningful benefit and its visual cost has been reviewed. Preserve the original renderer as default until accepted.
 
-1. После §4/§7 получить **все** GPU waits, resource producer/consumer and command serial; выяснить, есть ли >значимый CPU idle, когда GPU занят, и достаточно ли резерва RAM на async queue.
-2. Для каждой command list: generation, writer publication, reader replay start/end, resources touched, GPU submission completion, first allowed recycle. Составить serial ownership contract; тест на повторное использование арен до fence, stale pointer, context loss и wraparound.
-3. GLsync/fences: проверка GLES3/extension support, insert fence **после** producer commands, glFlush as needed, explicit client wait/complete event, never mark completed simply because producer thread dispatched. Fence object lifetime and GL context ownership должны быть проверены.
-4. Сначала separate opt-in experiments COTM_ASYNC_QUEUE=1 vs 0, затем T2_GPU_PIPELINE=1 vs 0, а потом 1/1 при прошедших independent tests. Для каждого variant backed-up binary and known-good revert, test idle/UI/moving and scene transition.
-5. Track output full-frame and P95, not short local replay ns; если stalls переедут в glFinish или возникнут lost/black frames, это не улучшение.
-6. GL state per context must be explicitly invalidated on surface recreate, render/present context handoff, shader resource recycle; не игнорировать EGL_BAD_SURFACE, не подменять GPU completion timestamp CPU time.
-7. Если стоимость sync мала, оставить верный synchronous path и закрыть пункт OFF: не тратить время на параллелизм ради потенциальных +0–1ms.
+**PASS:** an accurately described, reversible performance preset with measured GPU/whole-frame savings. **STOP:** invisible/incorrect interface elements, wrong effect colors, broken bloom, or a gain within measurement noise.
 
-**Hard STOP:** NVN_COMMAND_REUSE_BEFORE_COMPLETION, NVN_QUEUE_CONTEXT, NVN_PRESENT_CONTEXT, EGL_BAD_SURFACE, black/tearing, stale uniforms or command memory reuse.
+## 10. P2-GPU-MEM — BC Atlases, GPU Residency, and Loading
 
-## 12. P2-CPU — scheduling/affinity, Unity и compiler flags
+**Existing functionality that must not be reinvented or broken:** an 8192×4096 BC3 atlas, 128-row striped decoding instead of a full 128 MiB RGBA temporary buffer, deferred BC uploads, lossless file backing after complete writes, a bounded **420 MiB** GPU texture budget, and historical memory-floor experiments. See [loading-memory](loading-memory.md) and [builds 170–174](loading-memory-170-174.md). Do not add guest-compressor savings and file-backed byte counts as though they were independent savings.
 
-**Реальные наблюдения:** HOST_CPU_AFFINITY guest-main cpus=0; runtime launcher временно включает CPU0–3 и восстанавливает их на EXIT. Нельзя предполагать «core0 медленный» без системных данных. Spruce/OS может иметь свою раскладку CPU, thermals and governor.
+1. Build a **resource-ID ledger** mapping each texture to its guest pool alias, write epoch, decoded/resident GL texture, format/mips, actual first/last use, creation/destruction timestamps, and in-flight readers. Union overlapping guest backing ranges before computing accounting totals. Do not equate GPU committed bytes with process RSS/PSS.
+2. Specifically profile **repeated** zero_texture_refresh, LC2_BC_MATERIALIZED, and TextureWriteTexels operations: allocation, BC3 decompression, GPU upload, driver CPU time, stalls, backing-file reads, and faulted pages. If the same texture repeatedly materializes, investigate an invalidation/dirty-generation loop. Only an exact write-range epoch and resource generation can justify skipping updates.
+3. Optimize full-resolution uploads only with strict proof of immutable content. For frequently modified atlases, test partial dirty-region upload using glTexSubImage2D, retaining BC tiled-block alignment, source pitch/stride, swizzle, levels, and the original graphics interpretation.
+4. Probe **real device support** for compressed formats: GLES extensions and an independent pbuffer upload/readback test. ASTC support or a narrow working path in **West of Loathing** does not automatically prove that BC3-to-ASTC conversion, quality, or the required library will work correctly for Lamentum.
+5. If supported, prototype an **owner-local, content-addressed ASTC side cache** for a small allowlist of immutable atlases. Pin source SHA-256, exact dimensions/mips/format/color space, encoding quality, alpha representation, and free SD storage. Provide a fail-closed fallback to the existing lossless BC path. Never commit proprietary assets or binaries. ASTC conversion may be **lossy** and requires a separate visual-quality acceptance gate.
+6. Do not evict/decommit inactive guest bytes based merely on pagemap zeros or inactivity timers. A real owner lifetime, exact reconstruction path, and the absence of GPU framebuffer/sampler readers must be established. Keep valid resource generations and fences; do not disable the 420 MiB cap.
+7. Trace SD/UDISK backing latency, disk-capacity reserve, blocking pread, guest page faults, and deferred uploads. Background prefetch is acceptable only with proven dependencies, barriers, and RAM safety.
+8. Include menu -> New Game, an interior, and a gameplay/effects scene in A/B testing. The number of successfully initialized textures alone is not FPS evidence, and the **32 MiB diagnostic floor** is not a production default.
 
-1. Снять /sys/devices/system/cpu/{online,cpufreq/*}, доступные per-core freq, topology, /proc/TID schedstat, thermal and throttling while running. Сравнить guest CPU thread time vs runnable delay and zram CPU. Сбор извне, не forced clocks.
-2. One-factor A/B affinity: pinned0 vs exact allowed healthy core(s) vs scheduler; **не** менять Horizon guest semantics и приоритеты без trace потока. Сохранять initial online mask и восстанавливать в любых exits/errors; CPU reallocation не должна повреждать input/audio threads.
-3. Sampling native guest PC/callgraph с read-only symbol/IL2CPP lookup (hash-pinned owner image) — only if large guest CPU time. Узкие SVC stubs/TLS/IPC locks/memcpy/allocator paths оптимизировать с ABI parity, property tests и no title patch.
-4. Compiler: проверить actual native/build.sh команду baseline и wrapper tools/cc-lamentum.sh (сейчас вызывает GCC with inherited flags, -DZERO_ZX_GAME=0). После baseline смотреть -O2 vs -O3, LTO, PGO только при отсутствии correctness issues, full source-parity and owner-local representative profile. Сравнить cold compile, binary size, RSS, compile errors, debug metadata, safety checks.
-5. Texture/shader interpretation in guest может быть горячим: hash lookup/format conversions/GLSL compile, только если §7 показывает регулярную нагрузку. При уже pinned static shader literal specialization нет смысла заново делать эту оптимизацию.
-6. Не рекомендовать постоянное изменение CPU governor, разгон, undervolting, min_free_kbytes, swappiness и zram swapoff: hardware, battery/heat, safety и результаты предыдущих неудачных memory probes — отдельные факторы.
+**PASS:** lower P95 stalls or measured GPU/CPU residency without image/color regressions and with safe memory headroom. **STOP:** memory floor, corrupted textures, aliasing errors, long storage stalls, or GPU OOM. Do not turn off system swap.
 
-**PASS:** повторяемые выигрыши full-frame P95 в реальном gameplay, no temperature/sound/input regressions and restored Spruce CPU mask.
+## 11. P2-SYNC — Correct NVN Queue/GPU Pipelining Without Unsafe Early Completion
+
+**Current state:** COTM_ASYNC_QUEUE=0 and T2_GPU_PIPELINE=0 form the measured stable synchronous path. A previous version hit NVN_COMMAND_REUSE_BEFORE_COMPLETION. SDL/KMSDRM can recreate its EGL surface on the first fullscreen swap; handling this is covered in [loading-memory](loading-memory.md). COTM_FB_PRESENT=0 and strict GL errors remain defaults. Do not activate the framebuffer-copy path without separate proof.
+
+1. After Sections 4 and 7, enumerate **all** GPU waits, resource producers/consumers, and command serials. Determine whether the CPU actually sits idle while the GPU is doing significant work, and whether available RAM can support additional in-flight frames.
+2. For each command list, track generation, writer publication, replay start/end, touched resources, GPU submission completion, and the **first legal recycling point**. Write a serial-ownership contract and host tests that reject command-arena reuse before fence completion, stale pointers, context loss, and serial wraparound.
+3. For GLsync/fences, verify GLES3/extension support, insert the fence **after** producer commands, flush as needed, and perform explicit client wait/completion handling. Never claim completion merely because the host submission function returned. Validate fence-object lifetime and ownership by the EGL context.
+4. Only after synthetic ownership tests, separately A/B **COTM_ASYNC_QUEUE=1 versus 0** and **T2_GPU_PIPELINE=1 versus 0**; test 1/1 together only once both isolated configurations are correct. Preserve known-good executables and rollback procedures for each variant. Include idle UI, moving gameplay, and scene transitions.
+5. Measure the **whole-frame period and P95**, not just a shorter local replay span. Moving blocked time into glFinish, or introducing dropped/black frames, is not a performance improvement.
+6. Explicitly invalidate GL state on each context after surface recreation, render/present context handoff, and shader resource recycling. Do not ignore EGL_BAD_SURFACE or mistake CPU timestamps for GPU completion.
+7. If synchronization cost is small, retain the correct synchronous path and close the experiment as **OFF**. Adding concurrency for hypothetical 0–1 ms savings is not justified.
+
+**HARD STOP:** NVN_COMMAND_REUSE_BEFORE_COMPLETION, NVN_QUEUE_CONTEXT, NVN_PRESENT_CONTEXT, EGL_BAD_SURFACE, black/tearing frames, stale uniforms, or premature reuse of command memory.
+
+## 12. P2-CPU — Scheduling/Affinity, Unity Hot Spots, and Compiler Flags
+
+**Observed behavior:** HOST_CPU_AFFINITY logs show guest-main pinned to CPU0. The launcher temporarily brings CPUs 0–3 online and restores their previous online state on exit. Do **not** assume that core 0 is slow without real board measurements. SpruceOS may choose its own CPU layout, governor, and thermal policy.
+
+1. Inspect /sys/devices/system/cpu/{online,cpufreq/*}, available per-core clock frequencies, actual topology, /proc/TID/schedstat, thermal zones, and throttling **while gameplay is active**. Compare actual guest CPU execution, runnable delay, and compression-thread CPU consumption. Collect data externally; do not force clocks.
+2. Run one-factor affinity A/B experiments: current CPU0 pin, a specifically identified available/appropriate core, and scheduler-managed placement. **Do not** change guest Horizon core/priority semantics without tracing the relevant thread. Preserve and restore the original online mask on all normal/error exits; verify input/audio threads remain correct.
+3. Only when guest CPU time is actually large, sample guest PC/call stacks and map them through read-only owner NSO/IL2CPP metadata, pinned to source hashes. Optimize frequent SVC stubs, TLS, IPC locks, copies, or allocator paths with exact ABI and side-effect equivalence, property tests, and no proprietary title patch.
+4. Inspect the actual baseline native/build.sh compiler invocation and tools/cc-lamentum.sh wrapper. The wrapper delegates to GCC with inherited build flags and -DZERO_ZX_GAME=0. Compare -O2 versus -O3, LTO, or PGO **only after** correctness and source parity are established. Train PGO on representative gameplay, not just title/menu or loading. Measure binary size, cold startup, resident memory, thermal impact, and compile/runtime errors.
+5. If Section 7 locates significant steady-state work in shader lookup, conversion, or compilation, optimize a narrow proven path: static shader/program specialization, cached uniform locations, fewer temporary allocations, or precomputed metadata. Embedded literal-bank specialization already exists; do not redo it as if it were missing.
+6. Avoid permanent governor changes, overclocking, undervolting, min_free_kbytes/swappiness adjustments, or disabling swap. These introduce separate device stability, battery, thermal, and safety questions, and historical memory tuning produced no general solution.
+
+**PASS:** repeatable whole-frame P95 gains in real gameplay without thermal, sound, input, or Spruce CPU-restoration regressions.
 
 ## 13. P3 — другие варианты, которые нельзя делать вслепую
 
