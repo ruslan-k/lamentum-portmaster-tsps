@@ -52,3 +52,39 @@ guest-visible edge per tap, so Up moves one entry and A lands inside a sampled f
 Acceptance for the next report is explicit: a capture that is neither the main menu nor a
 loading/slot screen, produced while the game process is alive, with the device restored
 afterwards. Anything less stays a failure in this file.
+
+## New Game failure reproduced: it is a fail-closed stop, not a guest crash
+
+`newgame-crash-01` pressed Accept (A) on the measured default selection and reached the
+level load: frame 174 at 152.8 ms/frame (about 6.5 fps, four times faster than the menu),
+with fresh `ROMFS_READ` traffic for the new scene. The runtime then stopped with
+
+```
+STOP status=ZERO_SHADER_NOT_PINNED pc=main.text.seg+0x542b68 detail=0x3fec0d70
+```
+
+so the "crash" is the adapter refusing to draw a program it has no translation for. The
+kernel `page allocation failure: order:4` in dmesg is memory pressure during the same load,
+not the cause of the exit.
+
+The unrecognised program's identity is printed unconditionally, before the fail-closed exit:
+
+```
+ZERO_SHADER_UNRECOGNIZED code-bytes=1280 control-bytes=2176
+  code-hash=7a45f946fe5f9130ad89877e0862164b805734d9b1739093e3099430ec1bbcb7
+  control-hash=588a3fad7306d848ce2f3d70e85d5608e7973f1c093d3bb62b940c52aa4419e1
+```
+
+This is the same program the earlier `perf-01` and `perf-quiet-b0` runs hit after ~670
+frames: the menu path never needs it, the level load does.
+
+## Fix path (roadmap §2 step 4)
+
+1. Re-run with `LC2_SHADER_DUMP=1` and `AW_RELEASE=0` to write `nvn-lc2-shader-code-*.bin`
+   and `nvn-lc2-shader-control-*.bin` for this exact pair (owner data, stays local).
+2. Translate with the hades-eval compiler (`--es 310 --cbuf-ubo`), apply the known Mali
+   fixes, and record stage, samplers, hardware-bank +3 mapping and NVN binding.
+3. Append it with `tools/append_program.py` — never regenerate the catalogue, which would
+   revert the build202 `c4 -> NVN UBO1` correction and the literal/probe specializations.
+4. Rebuild, redeploy, and repeat the same Accept-at-menu run until the level loads; only
+   then is there a gameplay frame to talk about.
