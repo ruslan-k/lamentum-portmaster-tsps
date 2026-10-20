@@ -123,7 +123,16 @@ def main():
                 break
     if not crashed:
         grab_log('end')
-    harness.wait(timeout=90)
+    # The harness keeps watching for its own full budget; do not let that wait throw away
+    # the crash evidence collected above (it did on newgame-crash-01).
+    try:
+        harness.wait(timeout=120)
+    except subprocess.TimeoutExpired:
+        harness.terminate()
+        try:
+            harness.wait(timeout=60)
+        except subprocess.TimeoutExpired:
+            harness.kill()
     print(json.dumps({'started': started, 'crashed': crashed, 'state': state(),
                       'harness_rc': harness.returncode}))
 
