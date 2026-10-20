@@ -1,0 +1,182 @@
+{
+  "scope": "TSPS helper self-process fixture only; not game CPU/FPS",
+  "samples": [
+    {
+      "boot_id": "aedf014d-52ea-4c4c-8c42-f6650c7f8a91",
+      "pid": 23691,
+      "starttime": 6181504,
+      "running": true,
+      "sample_status": "ok",
+      "target_hz": 100,
+      "monotonic_s": 61815.232981872,
+      "sample_duration_s": 0.0032068880027509294,
+      "collector_cpu_ns": 3205000,
+      "total_cpu_ticks": 17,
+      "minflt": 1953,
+      "majflt": 0,
+      "state": "R",
+      "wchan": "0",
+      "threads": {
+        "23691": {
+          "pid": 23691,
+          "name": "python3",
+          "state": "R",
+          "cpu": 17,
+          "minflt": 1957,
+          "majflt": 0,
+          "starttime": 6181504,
+          "schedstat": null,
+          "wchan": "0"
+        }
+      },
+      "rss_kb": 7964,
+      "swap_kb": 0
+    },
+    {
+      "boot_id": "aedf014d-52ea-4c4c-8c42-f6650c7f8a91",
+      "pid": 23691,
+      "starttime": 6181504,
+      "running": true,
+      "sample_status": "ok",
+      "target_hz": 100,
+      "monotonic_s": 61815.736426067,
+      "sample_duration_s": 0.003213887001038529,
+      "collector_cpu_ns": 3214667,
+      "total_cpu_ticks": 67,
+      "minflt": 1958,
+      "majflt": 0,
+      "state": "R",
+      "wchan": "0",
+      "threads": {
+        "23691": {
+          "pid": 23691,
+          "name": "python3",
+          "state": "R",
+          "cpu": 67,
+          "minflt": 1958,
+          "majflt": 0,
+          "starttime": 6181504,
+          "schedstat": null,
+          "wchan": "0"
+        }
+      },
+      "rss_kb": 7964,
+      "swap_kb": 0
+    },
+    {
+      "boot_id": "aedf014d-52ea-4c4c-8c42-f6650c7f8a91",
+      "pid": 23691,
+      "starttime": 6181504,
+      "running": true,
+      "sample_status": "ok",
+      "target_hz": 100,
+      "monotonic_s": 61816.240395223,
+      "sample_duration_s": 0.0033070959980250336,
+      "collector_cpu_ns": 3307375,
+      "total_cpu_ticks": 68,
+      "minflt": 1959,
+      "majflt": 0,
+      "state": "R",
+      "wchan": "0",
+      "threads": {
+        "23691": {
+          "pid": 23691,
+          "name": "python3",
+          "state": "R",
+          "cpu": 68,
+          "minflt": 1959,
+          "majflt": 0,
+          "starttime": 6181504,
+          "schedstat": null,
+          "wchan": "0"
+        }
+      },
+      "rss_kb": 7964,
+      "swap_kb": 0
+    }
+  ],
+  "stale_result": {
+    "boot_id": "aedf014d-52ea-4c4c-8c42-f6650c7f8a91",
+    "pid": 23691,
+    "starttime": 6181504,
+    "running": false,
+    "sample_status": "identity_mismatch",
+    "target_hz": 100
+  },
+  "runtime_discovery": {
+    "running": false,
+    "sample_status": "absent",
+    "candidates": [],
+    "boot_id": "aedf014d-52ea-4c4c-8c42-f6650c7f8a91",
+    "target_hz": 100
+  },
+  "cpu_deltas": {
+    "busy": {
+      "delta_status": "ok",
+      "elapsed_s": 0.503444194997428,
+      "cpu_percent": 99.316,
+      "minflt_per_s": 9.931587353044252,
+      "majflt_per_s": 0.0,
+      "thread_deltas": [
+        {
+          "tid": "23691",
+          "name": "python3",
+          "starttime": 6181504,
+          "state": "R",
+          "wchan": "0",
+          "cpu_ms_per_s": 993.159,
+          "minflt_delta": 1,
+          "majflt_delta": 0
+        }
+      ],
+      "top_threads": [
+        {
+          "tid": "23691",
+          "name": "python3",
+          "starttime": 6181504,
+          "state": "R",
+          "wchan": "0",
+          "cpu_ms_per_s": 993.159,
+          "minflt_delta": 1,
+          "majflt_delta": 0
+        }
+      ]
+    },
+    "sleep": {
+      "delta_status": "ok",
+      "elapsed_s": 0.5039691560014035,
+      "cpu_percent": 1.984,
+      "minflt_per_s": 1.984248416974977,
+      "majflt_per_s": 0.0,
+      "thread_deltas": [
+        {
+          "tid": "23691",
+          "name": "python3",
+          "starttime": 6181504,
+          "state": "R",
+          "wchan": "0",
+          "cpu_ms_per_s": 19.842,
+          "minflt_delta": 1,
+          "majflt_delta": 0
+        }
+      ],
+      "top_threads": [
+        {
+          "tid": "23691",
+          "name": "python3",
+          "starttime": 6181504,
+          "state": "R",
+          "wchan": "0",
+          "cpu_ms_per_s": 19.842,
+          "minflt_delta": 1,
+          "majflt_delta": 0
+        }
+      ]
+    }
+  },
+  "executed_source_sha256": "040d4da5e5b0ecfc1d71cc1ca4073b340ec4f60dbbd7f1c82cbf9633238d3c1d",
+  "after": {
+    "helper_pid_present": false,
+    "mainui_count": 1
+  }
+}
