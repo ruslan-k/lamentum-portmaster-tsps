@@ -52,3 +52,20 @@ regenerating the catalogue.
 - Whether any 30 FPS path exists: the biggest known structural candidate (internal
   1920×1080 targets, roadmap §8) has not been attributed to an owner in this title.
 - Gameplay FPS: no New Game run has reached verifiable gameplay yet.
+
+## Two measured arm results on build208 (same binary, same quiet env, frames 250–500)
+
+| Arm | period P50 | replay P50 | unattributed P50 | zram CPU/frame |
+|---|---:|---:|---:|---:|
+| `T2_GZRAM_COLD_MS=10` (diagnostic default) | 629.0 ms | 297.7 ms | 350.7 ms | 138 ms |
+| `T2_GZRAM_COLD_MS=250` | 579.3 ms | 240.8 ms | 345.4 ms | 59 ms |
+| plus `MOMO_SUBMIT_FINISH=0` (flush, no glFinish) | 557.1 ms | 185.4 ms | 337.9 ms | — |
+
+Reading: raising the cold threshold cut zram CPU from 138 to 59 ms/frame and compressions
+from 566 to 248 per frame; replay fell 19% and the frame period 7.9%. Replacing the
+per-submit `glFinish` with `glFlush` cut replay another 23% and the period 3.8%, which
+also proves the old "glFinish dominates the frame" reading is no longer true on this build.
+
+Neither arm is a fix. The remaining gap to 33.33 ms is ~17x, and after these changes the
+frame is still split roughly replay 185 ms / unattributed 338 ms. The next measurement must
+attribute the 338 ms per thread (guest main loop vs our worker), not another GL tweak.
