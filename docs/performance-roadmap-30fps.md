@@ -1,5 +1,7 @@
 # Lamentum (TrimUI Smart Pro S): Roadmap to Stable 30 FPS
 
+> **Current authoritative worklist: [§21 — build210 and HEAD 2b6b2a1 reassessment](#21-head-2b6b2a1-reassessment--build210-updated-critical-path-2026-10-20).** Earlier numbered sections are retained as historical engineering evidence; §20's shader stop was resolved in the newest source revision.
+
 **Latest decision:** [§20 — b1832de audit and execution plan](#20-head-b1832de-audit--actionable-next-iteration-2026-10-20) supersedes the previous priority order where the new shader blocker, test-harness contradictions and runtime measurements change the next action.
 
 **Initial audit:** 2026-10-20; HEAD 4547117fb7b727bd7b8e12c68a2e3899a872c037; build202. **Latest source/evidence review:** main 964ffe5; see [§19](#19-current-head-reassessment-and-detailed-next-steps-2026-10-20). Sections 0–18 are retained as historical/reference guidance.  
@@ -808,9 +810,9 @@ The most valuable next evidence is a **named CPU/guest call path inside the 316m
 
 ---
 
-## 20. Head b1832de audit — actionable next iteration (2026-10-20)
+## 20. Head b1832de audit — historical snapshot (2026-10-20)
 
-> **Current authoritative section.** This is a source-and-evidence reassessment of main at commit [b1832de](https://github.com/ruslan-k/lamentum-portmaster-tsps/commit/b1832dec48a64f9fcadc50a8010f1ce7910875e6), after the earlier §19 review. Keep §§0–19 as the historical audit trail; **use this section to choose the next implementation**. No new handheld run, build, benchmark, shader translation, or source-code fix is claimed in this document-only revision.
+> **Historical; superseded by §21 at HEAD 2b6b2a1.** This is a source-and-evidence reassessment of main at commit [b1832de](https://github.com/ruslan-k/lamentum-portmaster-tsps/commit/b1832dec48a64f9fcadc50a8010f1ce7910875e6), after the earlier §19 review. Keep §§0–19 as the historical audit trail; **use this section to choose the next implementation**. No new handheld run, build, benchmark, shader translation, or source-code fix is claimed in this document-only revision.
 
 ### 20.1. Executive decision: work done, unresolved issues and the real critical path
 
@@ -1036,3 +1038,196 @@ python3 tools/analyze_perf.py /owner/bench-B/latest.log --from-frame 250 \
 **Final next-action recommendation:** do **not** start a new 720p/Bloom/FBO refactor. First repair the 304/305 test mismatch and harness semantics, then **translate the known shader with a type/stride-correct lowering** and reach real gameplay. Run the guest-gap/replay and cold250 experiments using a corrected observer, and only then implement the top measured performance optimization.
 
 *No source-code changes or device testing are implied by this roadmap update itself.*
+
+
+## 21. HEAD 2b6b2a1 reassessment — build210, updated critical path (2026-10-20)
+
+> **AUTHORITATIVE CURRENT ACTION PLAN.** Source state reviewed: [main at 2b6b2a1](https://github.com/ruslan-k/lamentum-portmaster-tsps/commit/2b6b2a1d35dead6a9aade1e611700cc9b378c0cb), **19 commits after** the English roadmap commit a4d0a2e. Sections 0–20 preserve the original measurements and successive historical recommendations, but §20's statement that the shader 7a45f946… is still blocked is now **obsolete**. Build210 passed that specific stop. No test was run on the actual handheld for this documentation-only reassessment. Where a device run is described below, its source is a committed owner report, not a new independent reproduction.
+
+### 21.1. Source/evidence delta and updated work status
+
+| Area | What was implemented, fixed or measured since a4d0a2e | Current status / what NOT to conclude |
+|---|---|---|
+| New Game shader | [2b6b2a1](https://github.com/ruslan-k/lamentum-portmaster-tsps/commit/2b6b2a1d35dead6a9aade1e611700cc9b378c0cb) appended program **38** to the shader catalogue (now **39 catalogue entries**, plus the previously documented **seven TEST substitutes**); the program is vertex, 1280-byte code and 2176-byte control, with the exact preexisting code/control SHA-256 identity | **BLOCKER RESOLVED for that exact pair**, not a general SSBO or translator fix. Controls/tutorial prompt and splash are now reported. Gameplay still NOT established |
+| Offline translation | Owner-local Hades/spirv-cross step added a documented §`--fix-strides` conversion for `ArrayStride=4` float arrays that spirv-cross refuses under ESSL std140; source now compiles to ESSL 310 and is sampled through the existing cbuf-to-RGBA32F-texture path | Successful compilation does not independently prove the stride rewrite is safe for other shaders. The translator change is owner-local, not tracked in this Git repository |
+| New shader binding | Program 38 required manually correcting generated `c4` metadata from `.binding=0` to `.binding=1` (NVN UBO slot 1; hardware bank 4). This repeats the build202 issue | **GENERATOR BUG STILL OPEN** in `tools/build_lamentum_catalogue.py` / `tools/append_program.py`. Another appended program could silently render incorrectly |
+| New Game result | [docs/newgame-bringup.md](newgame-bringup.md) reports build210/newgame-07 showing controls text "Press any button to continue" and a splash; **275 presented frames, no STOP, zero shader-unrecognized errors, 1108 ROMFS reads** | Not yet a physically controlled walking/inventory scene. Screenshots/raw owner logs are not published alongside these particular summary numbers |
+| Harness/input | New `tools/newgame_crash_repro.py`, `tools/newgame_start.py`, `tools/newgame_probe.py`, `tools/tap_sweep_probe.py`, `tools/test_input_latch.c` and input-latch integration | Repro code still mixes physical button codes and assumptions. `control-actions.json` identified Linux **305 = Confirm**, **304 = Back**, while `newgame_crash_repro.py` and `newgame_start.py` inject 304 as A. Exact button provenance must be fixed before judging next prompt |
+| Frame metrics | `tools/analyze_perf.py`, `tools/perf_sample.py`, `NVN_PROFILE gap-ms` and ZRAM elapsed-path counters landed; `docs/fps-baseline-2026-10-20.md` records new tests | Instrumentation is **partial**, not yet a reproducible, frame-complete CPU/GPU trace. Remote tick/HZ, `/proc/*/stat` parsing, log-window identities and slow-frame sampling need repairs |
+| Cbuf upload | `LC2_CBUF_SUBIMAGE` defaults on and uses `glTexSubImage2D` when dimensions match; original `glTexImage2D` available for A/B | No proven gain; don't reimplement it. Compare exact ELF, scene and raw per-frame traces before optimizing another tiny GL call |
+| ZRAM cold threshold | Reported cold10 -> cold250 in frames 250–500: period P50 **629.0 -> 579.3 ms**, replay **297.7 -> 240.8 ms**, reported compression/restore elapsed path **138 -> 59 ms/frame** | Promising **single A/B**, not production acceptance; "CPU" fields use `CLOCK_MONOTONIC` elapsed time, not execution CPU |
+| Render scaling | `ZERO_RENDER_SCALE=2` with cold250 was tested: full-frame P50 **579.3 -> 577.7 ms**, replay **240.8 -> 226.7 ms** | Not material for the menu workload; leave OFF. Do not repeat without an independently characterized gameplay GPU-bound scene |
+| Queue completion | `MOMO_SUBMIT_FINISH=0` / `glFlush` arm shortened some diagnostic timings | **Not a correct completion guarantee**. Keep `glFinish` production path until serial/fence ownership is validated |
+| General feasibility | One 60-frame `NVN_PROFILE` report: elapsed **572.700 ms/frame**, replay **249.626**, guest present-to-submit gap **316.431**, present **4.725**, readback **2.689** | Phase averages, **not** gameplay frame P95. Guest gap and replay are both major, though those measurements alone do not distinguish useful CPU work from stalls |
+
+**Very important:** historical documents may say "38 translated real shaders" or "New Game blocked"; those statements described build202–209, not HEAD 2b6b2a1. Do not spend another round re-dumping/re-translating the already accepted exact code/control pair. Instead validate the correct pixels and advance past the tutorial.
+
+### 21.2. P0-NG2 — Advance past the tutorial and establish controllable gameplay
+
+**Reason:** current build210's success is an introduction/tutorial frame, not stable gameplay. This is the first practical blocker, ahead of every speculative 720p/Bloom shader optimization.
+
+**Files:** `tools/newgame_crash_repro.py`, `tools/newgame_start.py`, `tools/device_principal_test.py`, `docs/newgame-bringup.md`; likely a new `tools/newgame_continue.py` plus a pure offline controller fixture. Preserve build210's catalogue identity and c4 binding.
+
+1. **Pin identity.** From the owner device read back the *actual* executable SHA-256, patched runtime manifest and shader catalogue hash, merged game-image hash, SpruceOS build and complete effective environment. The build210 SHA beginning `d4f3d1f6` in the bring-up report is not a substitute for the **full** installed binary hash. Copy the known-good build210 ELF and save directory before testing.
+2. **Create a restartable state machine:** WAIT_LIVE_PID -> WAIT_MENU_EVENT -> CONFIRM_VISIBLE_NEW_GAME -> SCENE_LOAD -> WAIT_TUTORIAL_PROMPT -> PRESS_CONTINUE -> WAIT_FIRST_GAMEPLAY -> TEST_MOVEMENT -> INTERACTION -> SAVE_RELOAD -> CLEANUP. Each transition needs a current-run log/guest-state event AND the corresponding real KMS image or other explicit game-state proof. Timeouts should record the last state and reason, never claim success.
+3. **Fix pad semantics first.** Load the real active event source by name/GUID/capabilities; compare `evidence/ui-cbuf-fixed-01/control-actions.json` (304=Back, 305=Confirm) with the current injected `304`. Test 305 against one known, visibly interactive screen and record down/EV_SYN/up/EV_SYN with monotonic timestamps. Do not infer an A press merely because the title advanced once after a longer sequence.
+4. Do not assume the main menu always opens with one fixed highlighted item. The latest crash script explicitly notes remembered selection; the older start script assumes Options. For a correct run, record the initial highlight, use short one-step navigation with a screenshot after each movement, and confirm **only** when New Game is visibly selected. Four Up taps and one Down are a fallback for a verified menu layout, not a reliable universal strategy.
+5. The tutorial may use a different input dispatch than the menu: measure actual guest Npad sampled buttons around the displayed "Press any button to continue" prompt. Start with a bounded 150–300 ms tap; compare `LC2_INPUT_LATCH=0` vs `=1` under an **otherwise identical** ELF and scene state. The current latch has a 120 ms floor and 900 ms ceiling; do not set a forced window so long it creates repeats or multiple menu steps. Verify one guest-visible edge per physical edge and that buttons release on exceptions.
+6. Acquire the **before-prompt**, **after-confirm**, **first-scene**, **first-movement** and **inventory** captures while the owner game PID and DRM plane are alive. Count frames between actual state transitions; do not confuse a static loading splash with a valid game scene. Preserve any unexpected `ZERO_SHADER_NOT_PINNED`, GL error, memory floor or STOP with full identity/hash and run stage.
+7. Once controls work, verify moving sprite, interaction, camera/UI, transparent sprites, shading, inventory and a reversible menu. Require a first audible music/SFX receipt and cold save/quit/load before classifying the port as playable.
+8. Run a separate **minimal-diagnostics** loop after bring-up. Label all New Game transitions/loading phases explicitly; they must not contaminate steady-state gameplay measurements.
+
+**Acceptance:** visually correct, controlled gameplay with current-run input evidence, correct sound/save/load, zero unexpected shader/GL stops and clean frontend/CPU restoration. **Failure classification:** (A) incorrect selection/button, (B) prompt rejects input, (C) new unpinned shader, (D) graphics error, (E) memory floor/kernel stress, (F) guest/service exception, (G) test-harness cleanup failure. Each has a different next owner.
+
+### 21.3. P0-SHADER-META — Eliminate the repeated c4 -> wrong-slot generator regression
+
+**High-confidence source finding:**
+
+- `tools/build_lamentum_catalogue.py::cbuf_blocks_of` extracts `layout(binding=...)` when it exists, **otherwise uses the declaration index**. A shader whose source declares one block instance named `c4` can therefore be emitted with binding=0 even though the captured NVN hardware bank 4 corresponds to **NVN API uniform slot 1** under this SDK's bank=slot+3 convention.
+- `tools/append_program.py::append` serializes that guessed `b['binding']` directly; build210 repaired the new program's metadata **by hand**. Another append could undo the same correction.
+- Program 38's declared `float data[16384]` becomes a 65,536-byte metadata size, but its currently checked-in GLSL contains constant c4 indices **0 through 79**, with no identified dynamic index within that specific generated program. This is a candidate for **later** touched-range instrumentation, not permission to change the generic 64 KiB layout blindly.
+
+**Implementation, in exact order:**
+
+1. Add a **metadata provenance field/sidecar** for every cbuf: original compiler variable name (e.g. `c4`), declaration ordinal, the raw stage-specific SPIR-V DescriptorSet/Binding, captured hardware constant-buffer bank, derived NVN API slot, guest binding range, and verified mapping method. Distinguish an API slot from a GPU hardware-bank number in names and logs.
+2. Use the known SDK rule (hardware-bank = NVN API slot + 3) **only after confirming the source metadata is a hardware-bank ID**. For c4 under the verified build202/build210 contract, emit slot 1. If a source has only ordinal and no validated bank provenance, **fail closed** with `CBUF_BINDING_UNRESOLVED` instead of silently choosing 0 or another occupied slot.
+3. Change `cbuf_blocks_of` to return a resolved semantic descriptor rather than silently defaulting `binding=index`. Make `append_program.py` reject an unverified mapping and keep an explicit owner-local resolution manifest keyed by **both code and control hash**. Do not change the actual shader bytes or weaken catalogue hash matching.
+4. Add host fixtures for: a single c4 hardware bank 4 -> NVN slot 1; one c3 bank -> slot 0 if its provenance supports that rule; two separate cbufs in one stage; absent layout information; unsupported bank; deliberate declaration-order inversion; mismatched control hash; and an existing corrected build202 UI shader. A bad mapping must fail compilation/integration rather than rendering zero transforms.
+5. Snapshot the existing 39 catalogue entries, source/glsl metadata, seven TEST substitutes and program 12/38 bindings. Append a **synthetic self-authored** program in a temporary file, verify existing entries byte-identical and catalogue count increment exactly once; never bulk regenerate the production catalogue.
+6. Keep the owner-local offline `--fix-strides` translation step in an independently version-pinned script with a SPIR-V decoration/memory-access equivalence report: for program 38, float array stride 4 in the source is represented via correct indexed RGBA texture lanes; changing stride 16 only permits ESSL emission, it must not change live data address semantics. Test static and dynamic indexing for future programs separately.
+7. Device integration: compare original build210 menu/title/tutorial graphics before/after generator fix. Check sampler-unit isolation, gl_Position, varyings, alpha and any relevant skinning/geometry. Shader compilation/link success alone is not a sufficient pass.
+
+**PASS:** exact code/control identities, correct slot mapping, byte-identical existing catalogue and device pixel parity; no manual correction required for the next appended shader. **STOP:** ambiguous source bank provenance, wrong UBO slot or incorrect shader data layout.
+
+### 21.4. P0-HARNESS — Repair input automation, cleanup and benchmark identities
+
+**Source finding:** `tools/device_principal_test.py` currently returns **0** after printing process/MainUI/CPU state, even if it has not established correct restoration. `tools/perf_sample.py` reads remote `/proc/PID/stat` with plain `split()`, identifies processes by name only, converts guest CPU ticks using the **controller host** `os.sysconf('SC_CLK_TCK')`, and tails the last 3000 log bytes for frame identity. These are real correctness flaws that can mislead performance decisions. New Game tools duplicate SSH and input/cleanup logic.
+
+1. Extract a single owner-local test transport with explicit device identity, SSH timeout, qualified active event provider, and a dry-run/read-only preflight. Parameterize repo path, port location, device SSH host and /dev/input node; **do not remove idle-device checks or launch beside another game**.
+2. Introduce a **run UUID and monotonic launch generation**: pin PID + `/proc/PID/stat` starttime and log inode plus incremental byte offset. Write identity, exact effective environment and installed ELF hash before any input is issued. Reject events from an old log after rotation/truncation. For each failed SSH call, preserve return code, stderr and partial evidence.
+3. Replace direct `press(1,304,...)` calls with the verified named mapping from §21.2 and a balanced press/release helper. Capture UI selection before and after; an injected pad write is not proof that the guest sampled the intended button.
+4. Snapshot MainUI's **PID/starttime**, principal process state, game PID identity and CPU online mask before launching. In a `try/finally` and signal-safe outer cleanup path, restore CPU state and frontend only when owned by this run. Verify postconditions and return a **nonzero harness status** for any mismatch, independent of expected guest STOP or TIME_LIMIT. Do not kill unrelated user applications. Preserve abnormal-exit logs before invoking cleanup.
+5. Parse `/proc/.../stat` using the numeric PID, the final closing parenthesis and remaining fields; support spaces/parentheses in comm. Collect target device `SC_CLK_TCK` remotely and persist it, not from the Mac/Linux workstation. Track threads by (TID, starttime), report missing samples as null/NA, never report negative CPU deltas across PID reuse.
+6. Record running CPU and runnable-delay separately from `/proc/TID/schedstat`, plus TID wchan/switches, min/major faults, and slow external RSS/SwapPSS, MemAvailable/CmaFree/frequency/thermal samples. Include the compressor thread even when it is not in the top six. Do not equate 78% CPU utilization with proof that an entire 316 ms phase executed on CPU.
+7. Refactor `tools/analyze_perf.py` to preserve source frame order, flag missing/duplicate/out-of-order serials, report **signed** residuals rather than `max(0,...)`, and report the fraction of all frames represented by `T2P_SLOW_FRAME`. Its automatic "first frame below 1000 ms" warmup inference is not a scene boundary. A frame-P95 or throughput calculation must use a **complete** presented-frame sequence.
+8. Add pure host fixtures: wrong BTN 304/305, missing Up release, stale `LC2_MENU_EVENT`, PID reuse, parentheses in /proc names, target HZ 100/250, incomplete frame logs, negative residual/overlap, missed frame, bad CPU restore, missing MainUI and kernel OOM. Introduce structured exit codes distinguishing **GAME_STOP_EXPECTED**, **GAME_STOP_UNEXPECTED**, **HARNESS_FAILURE**, **TIME_LIMIT**, and **CLEANUP_FAILURE**.
+
+**Evidence deliverables:** `identity.json`, `input.jsonl`, `process-threads.csv`, `frames.csv`, `cleanup.json`, two live KMS captures and raw log hash per run. After the fixes, older pre-fix distribution JSON remains historical only; do **not** backfill it with invented phase or CPU fields.
+
+### 21.5. P0-PROFILE — Establish complete-frame CPU/wait/GPU ownership in the NEW playable state
+
+The build209 summary provides a useful **inclusive/phase-level** 572.7 ms report, but not detailed exclusive attribution. Keep it as a control and compare build210's **tutorial** with build202's **menu** only as different phases, never as identical A/B cases.
+
+**Required low-overhead timeline events, keyed by frame serial, guest PC/TID, host TID, guest resource generation and monotonic clock:**
+
+1. **Guest present end -> next QueueSubmit:** subdivide guest SVC calls by service and caller PC, Unity/IL2CPP execution, page faults/restores, memory manager scan/codec/locking, IPC waits, runnable-but-unscheduled time, deliberate frame sleeps and frame callback invocation. Where possible use host CLOCK_THREAD_CPUTIME_ID at entry/exit and monotonic RAW elapsed; mutually exclusive spans must attribute >=95% of the gap. Correctly account for nested SVC and background-worker overlap.
+2. **QueueSubmit -> replay end:** aggregate wall and thread-CPU by NVN command record/dispatch, queue lock and command-memory callbacks, descriptor/texture pool lookup, shader cache and GL program use, BC materialization / texture refresh, uniform snapshot/cbuf staging and upload, vertex/index conversion, FBO state and render-pass transitions, GL draw, glFinish/fence waits, and mandatory/optional readback. Attribute to **program pair, GL context generation, render-target ID and resource epoch**.
+3. **System delay:** correlate guest CPU running/runnable delay with Linux per-thread schedstat and /proc faults; collect target CPU MHz and temperature. Use asynchronous sampled counters or preallocated rings; no per-draw printf, no per-frame synchronous SSH, no glFinish around every operation.
+4. **GPU measurement:** probe support for EXT_disjoint_timer_query and other actual device extensions, and use sampled GPU queries only with correct async retrieval and disjoint handling. A driver GL wall time is **not** automatically GPU time. Distinguish GPU idleness, resource waits and CPU bottlenecks.
+5. **Readback:** distinguish mandatory composition from proof-only glReadPixels and `NVN_PRESENT_PIXELS` counters. Under a controlled *debug-only* flag, measure readback ON/OFF while validating physical KMS scanout; do not disable a required copy/ownership fence.
+6. **Use signed whole-frame accounting** and prove that sampled frame count and phase labels match the real presentation sequence. Run profiler OFF/ON at identical scene/ELF: profiler overhead target <5%. Publish raw per-frame wall/CPU and the top three exclusive functions within each ~316 ms gap and ~250 ms replay interval.
+
+**Decision gate:** each dominant interval has >=95% attributed time and at least one measured operation whose removal or reduced frequency could plausibly save tens of milliseconds. Without this, another graphics refactor is speculation, not a validated FPS optimization.
+
+### 21.6. P1-ZRAM — Validate cold250 and attack *measured* repeated fault/compression churn
+
+**Don't misread the counters:** the existing `t2_gz_now_ns()` uses CLOCK_MONOTONIC; rename its output as **wall-codec-time** or instrument executing-thread CPU separately. The published **138 -> 59 ms/frame** result is not CPU execution time. Saved MiB and physical free memory cannot be added without accounting for pinned/file-backed/aliased pages.
+
+1. Implement cumulative, thread-safe counters with distinct buckets for **codec CPU**, codec wall, lock wait, scanner cost, mprotect/madvise, fault restore, copy and file-backed pread. Correctly count nested faults and contention; report bytes/sec and effective saved memory.
+2. Add a small bounded page-block table/histogram: compress generation, last touch, next fault, hotness, time-to-refault and compress->restore->recompress cycles. Do not record game page contents or proprietary data. Set a memory ceiling for profiling metadata and sample the hottest blocks rather than full tracing.
+3. Use **one-change-per-arm** paired experiments: Z0 cold10; Z1 cold100; Z2 cold250; Z3 cold500. For the chosen safe cold value, separately test scan period 20/50/100 ms, budget 32/16/8 MiB and (only if justified) block 16/4 KiB. Alternate control/test order and repeat **three matched pairs**. Keep guest virtual quota, BC backing, memory floor, full ELF, scene state and clocks fixed.
+4. Monitor actual minimum MemAvailable and CmaFree, PSS/SwapPSS, compressor task CPU, major faults, swap I/O, kernel `page allocation failure: order:4` messages and runtime memory floor stops. New Game scene loading deserves its own stress arm; a menu win that fails on scene transition is a loss.
+5. If Z2 retains headroom and the histogram proves rapid refault, prototype a **bounded adaptive cooldown**: after restoring a hot block, defer only that block's recompression for a capped interval; re-evaluate coldness under free-memory pressure; preserve eviction ability, alias/write generation and fault-handler reentrancy. Explicitly test repeated guest writers, mprotect state, reclaim and decompression failure injection.
+6. If codec execution CPU (not just elapsed-path latency) is still substantial, benchmark alternative lossless compression strategies on **synthetic self-authored pages** and representative owner-local runtime pages without publishing them. Require correct round-trips, memory bounds, block metadata versioning, and fault-restore atomicity.
+7. **Never promote** cold250 merely from one P50: require whole-frame P95/P99, three matched samples, safe New Game transitions and measured savings relative to comparator. Production 96 MiB floor remains a distinct acceptance gate; 32 MiB is diagnostic, not a safe release recommendation.
+
+**Stop:** degraded P95/P99, OOM/memory floor, stale bytes after alias writes, repeated page faults, kernel distress or broken frontend restoration.
+
+### 21.7. P1-CBUF2 — Optimize the actual padded upload and correct resource lifetimes, ONLY after profiling
+
+The current kind=7 code in `runtime/lamentum-adapter.patch` explicitly sets **`width=1024`**, computes `height=ceil(texels/1024)`, zeroes a static staging buffer and uploads a full **1024×height RGBA32F** texture, even for typical **16–368-byte** live ranges. That means a 1024×1 allocation/update covers **16 KiB** when the useful payload is a few hundred bytes. This is a **potential** CPU copy/driver upload cost, not proof it dominates 250 ms replay. The GLES source itself uses a 1024-texel row addressing contract, so simply changing width to ceil(liveBytes/16) will **break** texelFetch addressing across rows.
+
+**Safe experiment sequence:**
+
+1. Record by (program ID, stage, resolved bank, context generation) every effective `range.size`, `avail`, copied bytes, GL upload width×height, unchanged content bytes, render passes and GPU consumer serial. Split first-use shader 38 from the recurrent UI, rather than blaming its 65,536-byte declaration.
+2. Keep the existing **1024-texel logical stride** and allocate/clear full texture storage **on first use or resize**. On subsequent draws, determine the *actual dirty RGBA texels* including the necessary zero-padding when a former range becomes shorter. Upload **only touched subrectangles** via glTexSubImage2D: for a 368-byte current bank in row0 this can be as few as 23 texels, not 1024. For a multi-row range, calculate exact row spans and copy/update all modified rows.
+3. Compare the active bytes against a per-texture content snapshot keyed by guest binding/resource **generation**, address, size and write epoch; byte comparison prevents hash collisions. If source writes aren't tracked, make a small exact memcpy+memcmp snapshot **per draw** before skipping GL updates. Never reuse data solely because the pointer value is unchanged.
+4. Replace process-static `cbuf_texture[32]` assumptions with clearly documented lifetime and state invalidation on EGL context recreation, texture deletion/name reuse and shader/sampler unit reassignment. Keep the build177 unit allocator/isolation logic. Track `glActiveTexture`/sampler binding ownership per context; use existing GL-error probes only in bounded diagnostics.
+5. Make NVN cbuf range selection **exact**: the current fallback from an empty declared stage/bank to `other=u->binding?0:1` can hide generator errors. Retain the legacy fallback behind a debug-only switch until program12/38 and all earlier UI pairs pass the generated metadata fixture; then fail closed for any unverified bank instead of guessing.
+6. For **program 38 only**, statically audit GLSL accesses to `c4`: the checked-in generated text contains constant indices 0–79; validate that **all** accesses are fixed and that any legal shader variant uses the same access range before considering a bounded upload or per-program specialization. Preserve defined out-of-range/zero reads, 1024-row addressing and resource write epochs. Declared length 16384 floats is **not** proof that 64 KiB needs to be uploaded each frame.
+7. Compare opt-in **C2-full versus C2-partial** with *same* binary and scene, logged uploaded bytes per frame, CPU/driver elapsed, replay P95, whole-frame P95 and exact KMS captures. If measured full-frame improvement is insignificant, keep the simpler existing path and close the hypothesis.
+
+**STOP:** missing UI/sprites, wrong transforms, stale blocks, invalid GL context ownership, increased GPU wait or a gain indistinguishable from measurement noise.
+
+### 21.8. P1-REPLAY2 — Follow measured NVN/GL hot spots, not another blanket optimization list
+
+Once §21.5 names the real hot operations, open **one** separate PR per group:
+
+| Profiled exclusive bottleneck | Exact candidate | Correctness / invalidation |
+|---|---|---|
+| Sampler/descriptors and texture-view resolution | Cache checked texture+sampler resolution by NVN pool/descriptor generation, underlying backing epoch, layer, mip, target, swizzle and EGL context | Invalidate TextureWriteTexels, alias writes, pool replacement and GL context reset |
+| Repeated BC3 atlas materialization, storage reads or glTexImage | Page-aligned/tiled dirty-region refresh, immutable texture residency side cache, owner-local prefetch | Preserve all original 8192×4096 atlas pixels, BC format/sRGB/alpha, 420 MiB GPU cap and safe file-backed lifetime |
+| GL state binds / FBO attachment checks | Shadow per-context program, texture, FBO, viewport, scissor, blend/depth/stencil; skip verified redundant calls | Every unmanaged GL entry point invalidates its changed state; sample KMS pixels plus GPU completion |
+| Vertex/index conversion or buffer reallocations | Bounded scratch/ring VBO, reusable decoded indices, conversion cache keyed by guest-write epoch | Fence all in-flight readers; never assume static source addresses imply static geometry |
+| Command recorder callbacks or queue lock | Reduce allocations and redundant command copies; narrow the expensive lock/callback path | Guest call semantics, command-buffer serial ownership and exact callback ABI |
+| Shader lookup or expensive link on warm frames | Precompute exact (code+control) digest maps, lazily link once per program/context, cache verified uniform locations | Context generation, exact stage/interface and no TEST-stub substitution |
+| GPU completion wait | Diagnose whether a real frame pipeline can legally overlap CPU/GPU with a correct GLsync scheme | Never replace completion with glFlush alone; zero command-reuse stops or stale buffers |
+| Readback/proof-only calls | Restrict optional pixel readback to sampled diagnostic frames | Mandatory presentation and physical scanout remain identical |
+
+**How to choose:** if an operation consumes X exclusive ms/frame, it cannot explain more than X ms/frame of directly eliminated CPU time without secondary effects. Require an operation to be consistently expensive across repeated frames, not just the first shader compile or cold atlas load. Validate new guest gameplay scenes separately from the old static menu.
+
+### 21.9. P2-CPU/GAME — Address the ~316 ms guest gap only after separating actual work and stalls
+
+This part is potentially the hardest remaining obstacle to 30 FPS. **Do not assume every millisecond of the gap is irreducible Unity game logic.** It could contain native Horizon translation, address-space faults, runtime locks, service IPC, guest IL2CPP work or scheduling. The 78%/19% thread snapshots do not supply per-call causality.
+
+1. Instrument guest CPU **PC distribution**, SVC number/caller, guest-memory fault reason, thread context switches and memory copy bandwidth in a *sampled* or ring-buffered manner; correlate each hot PC with hash-pinned owner `main`/`sdk` NSO location without publishing proprietary bytes.
+2. For an expensive **Horizon IPC/SVC stub**, perform ABI-exact fast paths only after a host fixture proves return values, flags, object/event lifecycle, error codes and thread wakeups. Keep the original implementation behind a debug/rollback flag.
+3. For high **guest memory fault / ZRAM** cost, use §21.6 first. If guest page aliasing or repeated PROT_NONE trapping is the hotspot, profile exact mapping/locking overhead and preserve invalidation and dirty-write semantics; no speculative pageout.
+4. For large **IL2CPP CPU** time, identify whether it occurs in cold scene loading/decompression, repetitive UI layout/canvas rebuilds, scripting allocations/GC, per-frame physics/AI, or CPU-side mesh/texture generation. Identify functions only from owner-hash-matched symbols/metadata or sampled PCs, not guesses about Lamentum's Unity components. Require an observed top-three cost and a portable adapter-side mitigation before editing title-specific behavior.
+5. Compare CPU placement only with real core topology, per-core clock, throttling and runnable wait data. The adapter/launcher uses CPU0–3 on a handheld with CPU online-state restoration; a single busy core could be a scheduling or SoC limitation, but an arbitrary affinity move is not proof of a speedup. Never leave altered governors/CPU masks behind.
+6. Consider owner-specific graphics options or actual Unity internal quality modifiers **only** if the guest profile shows corresponding CPU cost or a later gameplay scene becomes GPU-bound. The original `ZERO_RENDER_SCALE=2` static-menu negative result stands; do not claim "720p fixed it" without a different measured workload.
+7. If correct, representative gameplay remains hundreds of milliseconds per frame **after** all identified adapter/memory hot spots are removed, document the hardware feasibility ceiling and a safe lower-FPS goal instead of attempting unsafe shader skips, missing sync or memory-floor bypass.
+
+### 21.10. Revised PR order, exact experiments and acceptance gates
+
+| Sequence | Branch / task | Concrete source to change | Deliverable and go/no-go |
+|---|---|---|---|
+| **P0-1** | `fix/intro-input-receipts` | `tools/newgame_crash_repro.py`, `tools/newgame_start.py`, shared event helper | Linux 305/304 semantics verified; current-run initial selection and tutorial continue screenshot; correct release on exceptions |
+| **P0-2** | `feat/gameplay-state-fsm` | `tools/newgame_continue.py`, `docs/newgame-bringup.md` | First moving scene, inventory, audio and cold save/load, or precisely identified next STOP |
+| **P0-3** | `fix/shader-cbuf-bank-provenance` | `tools/build_lamentum_catalogue.py`, `tools/append_program.py` and host tests | c4 -> slot1 auto-generated for the verified pair; full previous catalogue preserved; future uncertain mappings fail closed |
+| **P0-4** | `fix/observer-and-harness-integrity` | `tools/perf_sample.py`, `tools/analyze_perf.py`, `tools/device_principal_test.py` plus fixtures | Target HZ + PID/TID starttime, complete frame serial, signed residuals, nonzero bad cleanup exit, reproducible A/B evidence |
+| **P0-5** | `feat/guest-gap-replay-exclusives` | `runtime/lamentum-adapter.patch`: native guest/NVN instrumentation | >=95% exclusive attribution for gap and replay with profiler overhead <5% |
+| **P1-1** | `perf/gzram-cold-pairs` | Guest memory counters and controlled harness flags | 10/100/250/500 ms A/B repeated 3×; safe P95, RAM and scene-transition results |
+| **P1-2** | `perf/one-hotspot` | Exactly one measured replay or guest CPU site | 3 A/B pairs showing improved *whole-frame P95* and identical game behavior |
+| **P1-3** | `perf/cbuf-dirty-texels` | kind=7 cbuf branch only if it profiles hot | Compare full 1024-wide uploads vs generation-correct partial data; check UI and GPU fences |
+| **P2-1** | `perf/quality-and-residency` | Owner-specific settings, BC cache or Mali pass graph, conditional | Only for proven GPU/memory bottleneck; preserve exact pixels or label a reviewed quality preset |
+| **P2-2** | `perf/gpu-overlap` | NVN queue + GLsync when proven waiting | Strict ownership, zero stale resources; `glFlush` is not completion |
+| **Final** | `docs/release-benchmark` | Bench docs and packaging | 3 independent correct gameplay runs >=60s, period P50/P95 <=33.33 ms, P99, thermal and no spikes; audio/save/input and cleanup pass |
+
+**Practical owner-workspace commands (examples; do not execute against a busy device):**
+
+~~~sh
+# Verify the pinned 435-file source baseline and current Git identity.
+(cd /owner/recovered-runtime &&
+  sha256sum -c /owner/lamentum-repo/tools/baseline-manifest.sha256)
+git -C /owner/lamentum-repo rev-parse HEAD
+
+# Execute the host-only Python regression suite (currently covers only what exists).
+(cd /owner/lamentum-repo &&
+  python3 -m unittest discover -s tools -p 'test_*.py')
+
+# The actual device test requires an idle Spruce principal flow.
+# Record exact ELF/hash/env and capture a prompt->gameplay state transition;
+# use the input-contract repair before relying on injected button results.
+# Historical parser: smoke-only until P0-4 fixes sampling/completeness.
+python3 /owner/lamentum-repo/tools/analyze_perf.py /owner/bench-A/latest.log \
+  --from-frame 250 --to-frame 500 --json /owner/bench-A/window.json
+python3 /owner/lamentum-repo/tools/analyze_perf.py /owner/bench-B/latest.log \
+  --from-frame 250 --to-frame 500 --json /owner/bench-B/window.json
+~~~
+
+**Per-PR acceptance contract:** exact Git and installed ELF SHA-256, recovered source manifest and owner-image identity; one changed parameter; same scene/phase and effective environment; correct current-run KMS capture; raw event/frame/thread samples plus derived summary; P50/P95/P99 and confidence from 3 paired A/B runs; no input/visual/audio/save regressions; tested fail-closed behavior; RAM/CmaFree/temperature minima; and verified cleanup restoring MainUI/CPU masks. Never commit private NSO, RomFS, original shader dumps, keys or saves.
+
+**Best next execution path from this HEAD:** §21.2 (press through the tutorial and reach real gameplay), §21.3 (remove the generator's repeated wrong-slot regression) and §21.4 (make tests/evidence trustworthy) can be developed as separate small changes. Then §21.5 identifies whether §21.6 (guest ZRAM), §21.7 (padded cbuf uploads), §21.8 (NVN replay) or §21.9 (guest/IL2CPP) is the next real frame-time win. **Do not adopt glFlush-only submission, 720p rescale, or a different shader TEST stub as an unmeasured shortcut.**
+
+*Scope of this update: repository-source inspection and documentation changes only; no owner device was accessed, no new executable was built, and the 30 FPS target has not been demonstrated.*
