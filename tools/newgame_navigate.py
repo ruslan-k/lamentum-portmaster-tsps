@@ -43,6 +43,28 @@ def changed(a, b):
     return sum(abs(i - j) > DIFF_THRESHOLD for i, j in zip(a, b))
 
 
+def cursor_row(png, x0=88, x1=124, y0=200, y1=700, threshold=110):
+    """Measured highlight row: the bright band left of the menu labels, or None.
+
+    Counting presses is not navigation at 1-2 fps (one press can move two rows and the
+    animated background changes the picture), so the cursor band itself is the oracle.
+    """
+    im = Image.open(png).convert('L')
+    px = im.load()
+    rows = [y for y in range(y0, y1) if sum(1 for x in range(x0, x1) if px[x, y] > threshold) >= 2]
+    if not rows:
+        return None
+    bands, current = [], [rows[0], rows[0]]
+    for y in rows[1:]:
+        if y <= current[1] + 3:
+            current[1] = y
+        else:
+            bands.append(tuple(current))
+            current = [y, y]
+    bands.append(tuple(current))
+    return min(bands, key=lambda b: b[0])
+
+
 def rows_to_bottom(moves):
     """moves = per-press change counts; the last press repeated the previous row."""
     moving = 0
