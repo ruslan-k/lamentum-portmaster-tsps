@@ -1,0 +1,101 @@
+{
+  "samples": 98,
+  "usable": 98,
+  "errors": 0,
+  "first": {
+    "MemTotal": 986064,
+    "MemAvailable": 114904,
+    "SwapFree": 1932332,
+    "CmaFree": 88
+  },
+  "last": {
+    "MemTotal": 986064,
+    "MemAvailable": 683096,
+    "SwapFree": 2030856,
+    "CmaFree": 684
+  },
+  "span_s": 548.5,
+  "min_available_kb": 49536,
+  "counter_delta": {
+    "romfs": 316,
+    "textures": 306,
+    "bc_deferred": 271,
+    "bc_fileback": 211,
+    "presents": 473
+  },
+  "frames": {
+    "first": 99,
+    "last": 572
+  },
+  "timeline_minutes": [
+    {
+      "t": 1792512838.4,
+      "available_mb": 112
+    },
+    {
+      "t": 1792512882.9,
+      "available_mb": 102
+    },
+    {
+      "t": 1792512926.0,
+      "available_mb": 164
+    },
+    {
+      "t": 1792512968.2,
+      "available_mb": 154
+    },
+    {
+      "t": 1792513010.6,
+      "available_mb": 146
+    },
+    {
+      "t": 1792513053.9,
+      "available_mb": 72
+    },
+    {
+      "t": 1792513126.9,
+      "available_mb": 661
+    },
+    {
+      "t": 1792513169.3,
+      "available_mb": 667
+    },
+    {
+      "t": 1792513211.8,
+      "available_mb": 667
+    },
+    {
+      "t": 1792513254.2,
+      "available_mb": 667
+    },
+    {
+      "t": 1792513296.7,
+      "available_mb": 668
+    },
+    {
+      "t": 1792513339.1,
+      "available_mb": 667
+    },
+    {
+      "t": 1792513381.6,
+      "available_mb": 667
+    }
+  ],
+  "stops": [],
+  "killed": true,
+  "entry45_links": 1,
+  "unknown_shader_requests": 0,
+  "build": "build218",
+  "arm": "no stack sampler",
+  "exit": "OOM SIGKILL (no STOP line)",
+  "mali_peak_kb": 725992,
+  "textures_at_kill": 588,
+  "gpu_accounting": {
+    "real_textures": 588,
+    "sum_bytes_field_mib": 1801.5,
+    "deferred_entries": 448,
+    "sum_deferred_rgba_mib": 6193.8,
+    "note": "these per-object sums over-count residency: Mali actually held 709 MiB, so the bytes fields are per-object sizes, not live storage"
+  },
+  "conclusion": "the load reached the same Mali wall (725,992 kB) without the stack sampler, so arm 1 PHYSICAL_MEMORY_CONFLICT is not explained by sampling"
+}
