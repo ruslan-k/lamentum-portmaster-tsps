@@ -1,0 +1,6 @@
+{
+  "target_hz": 100,
+  "cutoff_monotonic_s": 45710.29,
+  "dmesg_rc": 0,
+  "relevant_rows": []
+}

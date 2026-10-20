@@ -71,6 +71,21 @@ class AppendProgramTests(unittest.TestCase):
         self.assertIn('.name="c4",.stage=1,.binding=1,', out)
         self.assertNotIn('.name="c4",.stage=1,.binding=0,', out)
 
+    def test_explicit_alias_requires_both_capture_hashes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            workspace = self.workspace(directory)
+            (workspace / 'gamma.glsl').write_text(GLSL.replace('c3;', 'c3_1;').replace('c3.data', 'c3_1.data'))
+            alias = {'c3_1': {'hardware_bank': 3,
+                'code_sha256': hashlib.sha256((workspace / 'gamma.code.bin').read_bytes()).hexdigest(),
+                'control_sha256': hashlib.sha256((workspace / 'gamma.control.bin').read_bytes()).hexdigest()}}
+            with self.assertRaisesRegex(ValueError, 'unproven application'):
+                append(fixture_catalogue(), 'gamma', workspace)
+            out, _, _ = append(fixture_catalogue(), 'gamma', workspace, alias)
+            self.assertIn('.name="c3_1",.stage=1,.binding=0,', out)
+            alias['c3_1']['control_sha256'] = '0' * 64
+            with self.assertRaisesRegex(ValueError, 'identity mismatch'):
+                append(fixture_catalogue(), 'gamma', workspace, alias)
+
     def test_duplicate_identity_refused(self):
         original = fixture_catalogue()
         with tempfile.TemporaryDirectory() as directory:

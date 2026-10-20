@@ -1,0 +1,19 @@
+{
+  "LC2_LIT_VERTEX": [],
+  "LC2_LIGHTPROBE": [],
+  "LC2_SCENE_VERTEX": [],
+  "ZERO_SHADER_UNRECOGNIZED": [
+    "ZERO_SHADER_UNRECOGNIZED code-bytes=2048 control-bytes=2176 code-hash=801b91aed1fb1660a5c1ae9413994c0113547d596e4be5ef5143582addc325d0 control-hash=ada676aaf675d0510aa7fea908d1473518596087a1a9dadf5a0cc43235eee820"
+  ],
+  "STOP status=": [
+    "STOP status=ZERO_SHADER_NOT_PINNED pc=main.text.seg+0x542b68 detail=0x3fe4fa3e0 query_memory_calls=0x170 tls_trap_reads=0x0"
+  ],
+  "NVN_PROGRAM_LINK": [],
+  "T2_MEMWATCH_SAMPLE": [
+    "T2_MEMWATCH_SAMPLE checks=1120 available-MiB=108 swap-free-MiB=1755 swap-total-MiB=2017 vmrss-MiB=659 vmswap-MiB=219 level=0",
+    "T2_MEMWATCH_SAMPLE checks=1160 available-MiB=105 swap-free-MiB=1755 swap-total-MiB=2017 vmrss-MiB=663 vmswap-MiB=219 level=0",
+    "T2_MEMWATCH_SAMPLE checks=1200 available-MiB=74 swap-free-MiB=1737 swap-total-MiB=2017 vmrss-MiB=708 vmswap-MiB=236 level=1",
+    "T2_MEMWATCH_SAMPLE checks=1240 available-MiB=43 swap-free-MiB=1694 swap-total-MiB=2017 vmrss-MiB=720 vmswap-MiB=280 level=1",
+    "T2_MEMWATCH_SAMPLE checks=1280 available-MiB=58 swap-free-MiB=1632 swap-total-MiB=2017 vmrss-MiB=720 vmswap-MiB=318 level=1"
+  ]
+}

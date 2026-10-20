@@ -11,10 +11,10 @@ from pathlib import Path
 import re
 
 
-def inspect(source):
+def inspect(source, bank_aliases=None):
     if re.search(r'\b(buffer|atomic\w*|image\w*)\b', source):
         raise ValueError('writable/storage/atomic resource not supported')
-    pattern = r'layout\([^)]*\bscalar\b[^)]*\)\s*uniform\s+(\w+)\s*\{\s*float\s+data\[(\d+)\];\s*\}\s*(c\d+)\s*;'
+    pattern = r'layout\([^)]*\bscalar\b[^)]*\)\s*uniform\s+(\w+)\s*\{\s*float\s+data\[(\d+)\];\s*\}\s*(\w+)\s*;'
     matches = list(re.finditer(pattern, source))
     if not matches:
         raise ValueError('no scalar finite float block')
@@ -43,8 +43,9 @@ def inspect(source):
         remainder = re.sub(r'\b' + instance + r'\.data\[\d+u?\]', '', remainder)
         if re.search(r'\b' + instance + r'\b', remainder):
             raise ValueError('unhandled block use')
-        bank = int(instance[1:])
-        if not 3 <= bank <= 18:
+        match = re.fullmatch(r'c(\d+)', instance)
+        bank = int(match[1]) if match else (bank_aliases or {}).get(instance)
+        if bank is None or not 3 <= bank <= 18:
             raise ValueError('not an application cbuf bank')
         report.append({'instance': instance, 'block': m[1], 'count': count,
                        'original_stride_bytes': 4, 'nvn_slot': bank - 3,
@@ -60,8 +61,8 @@ def inspect(source):
     return report
 
 
-def without_scalar_extension(source):
-    inspect(source)
+def without_scalar_extension(source, bank_aliases=None):
+    inspect(source, bank_aliases)
     return re.sub(r'^\s*#extension GL_EXT_scalar_block_layout\s*:\s*require\s*$', '', source, flags=re.M)
 
 

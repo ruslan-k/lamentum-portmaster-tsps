@@ -1,3 +1,4 @@
+#define LC2_LIT_VERTEX_INDEX 42
 #define LC2_SCENE_VERTEX_INDEX 40
 #define LC2_LIGHTPROBE_SPECIALIZED_INDEX 39
 #define LC2_PROBE_SPECIALIZED_INDEX 19
@@ -7,7 +8,7 @@
  * NOT translated and the runtime stops on them by design. */
 #include <stddef.h>
 #include <stdint.h>
-#define ZERO_ZX_SHADER_PACKAGES 42
+#define ZERO_ZX_SHADER_PACKAGES 44
 #define ZERO_SHADER_VARYING_SLOTS 8
 #ifndef MOMO_SHADERS
 #define MOMO_SHADERS 1
@@ -1295,6 +1296,115 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "    frag_color0.w = 0.0;\n"
 	 "}\n"
 	 "", 1},
+	/* 42 literal-vertex vertex */
+	{"", "\n"
+	 "#version 310 es\n"
+	 "precision highp int;\n"
+	 "precision highp float;\n"
+	 "#define fma(a, b, c) ((a) * (b) + (c))\n"
+	 "uniform highp sampler2D c3_1;\n"
+	 "\n"
+	 "layout(location = 0) in vec4 in_attr0;\n"
+	 "layout(location = 1) in vec4 in_attr1;\n"
+	 "layout(location = 2) in vec4 in_attr2;\n"
+	 "layout(location = 3) in vec4 in_attr3;\n"
+	 "out vec4 varying_0;\n"
+	 "out vec4 varying_1;\n"
+	 "out vec4 varying_2;\n"
+	 "out vec4 varying_3;\n"
+	 "out vec4 varying_4;\n"
+	 "out vec4 varying_5;\n"
+	 "\n"
+	 "void main()\n"
+	 "{\n"
+	 "    gl_Position = vec4(0.0, 0.0, 0.0, 1.0);\n"
+	 "    varying_0 = vec4(0.0, 0.0, 0.0, 1.0);\n"
+	 "    varying_1 = vec4(0.0, 0.0, 0.0, 1.0);\n"
+	 "    varying_2 = vec4(0.0, 0.0, 0.0, 1.0);\n"
+	 "    varying_3 = vec4(0.0, 0.0, 0.0, 1.0);\n"
+	 "    varying_4 = vec4(0.0, 0.0, 0.0, 1.0);\n"
+	 "    varying_5 = vec4(0.0, 0.0, 0.0, 1.0);\n"
+	 "    float _93 = fma(in_attr1.z, texelFetch(c3_1, ivec2((int(50u) >> 2) & 1023, int(50u) >> 12), 0)[int(50u) & 3], fma(in_attr1.y, texelFetch(c3_1, ivec2((int(49u) >> 2) & 1023, int(49u) >> 12), 0)[int(49u) & 3], in_attr1.x * texelFetch(c3_1, ivec2((int(48u) >> 2) & 1023, int(48u) >> 12), 0)[int(48u) & 3]));\n"
+	 "    float _101 = in_attr0.y * texelFetch(c3_1, ivec2((int(85u) >> 2) & 1023, int(85u) >> 12), 0)[int(85u) & 3];\n"
+	 "    float _105 = fma(in_attr1.z, texelFetch(c3_1, ivec2((int(54u) >> 2) & 1023, int(54u) >> 12), 0)[int(54u) & 3], fma(in_attr1.y, texelFetch(c3_1, ivec2((int(53u) >> 2) & 1023, int(53u) >> 12), 0)[int(53u) & 3], in_attr1.x * texelFetch(c3_1, ivec2((int(52u) >> 2) & 1023, int(52u) >> 12), 0)[int(52u) & 3]));\n"
+	 "    float _110 = fma(in_attr1.z, texelFetch(c3_1, ivec2((int(58u) >> 2) & 1023, int(58u) >> 12), 0)[int(58u) & 3], fma(in_attr1.y, texelFetch(c3_1, ivec2((int(57u) >> 2) & 1023, int(57u) >> 12), 0)[int(57u) & 3], in_attr1.x * texelFetch(c3_1, ivec2((int(56u) >> 2) & 1023, int(56u) >> 12), 0)[int(56u) & 3]));\n"
+	 "    float _130 = in_attr0.x * texelFetch(c3_1, ivec2((int(84u) >> 2) & 1023, int(84u) >> 12), 0)[int(84u) & 3];\n"
+	 "    float _132 = inversesqrt(fma(_110, _110, fma(_105, _105, _93 * _93)));\n"
+	 "    float _156 = _93 * _132;\n"
+	 "    float _157 = _105 * _132;\n"
+	 "    float _162 = _110 * _132;\n"
+	 "    float _177 = _156 * _157;\n"
+	 "    float _182 = _157 * _162;\n"
+	 "    float _188 = _162 * _162;\n"
+	 "    float _214 = fma(in_attr0.z, texelFetch(c3_1, ivec2((int(41u) >> 2) & 1023, int(41u) >> 12), 0)[int(41u) & 3], fma(_130, texelFetch(c3_1, ivec2((int(33u) >> 2) & 1023, int(33u) >> 12), 0)[int(33u) & 3], _101 * texelFetch(c3_1, ivec2((int(37u) >> 2) & 1023, int(37u) >> 12), 0)[int(37u) & 3])) + texelFetch(c3_1, ivec2((int(45u) >> 2) & 1023, int(45u) >> 12), 0)[int(45u) & 3];\n"
+	 "    float _230 = fma(_156, _156, -(_157 * _157));\n"
+	 "    float _231 = _156 * _162;\n"
+	 "    varying_0.x = fma(in_attr3.x, texelFetch(c3_1, ivec2((int(92u) >> 2) & 1023, int(92u) >> 12), 0)[int(92u) & 3], texelFetch(c3_1, ivec2((int(94u) >> 2) & 1023, int(94u) >> 12), 0)[int(94u) & 3]);\n"
+	 "    varying_0.y = fma(in_attr3.y, texelFetch(c3_1, ivec2((int(93u) >> 2) & 1023, int(93u) >> 12), 0)[int(93u) & 3], texelFetch(c3_1, ivec2((int(95u) >> 2) & 1023, int(95u) >> 12), 0)[int(95u) & 3]);\n"
+	 "    varying_1.y = _214;\n"
+	 "    varying_4.w = 0.0;\n"
+	 "    float _318 = fma(in_attr0.z, texelFetch(c3_1, ivec2((int(40u) >> 2) & 1023, int(40u) >> 12), 0)[int(40u) & 3], fma(_130, texelFetch(c3_1, ivec2((int(32u) >> 2) & 1023, int(32u) >> 12), 0)[int(32u) & 3], _101 * texelFetch(c3_1, ivec2((int(36u) >> 2) & 1023, int(36u) >> 12), 0)[int(36u) & 3])) + texelFetch(c3_1, ivec2((int(44u) >> 2) & 1023, int(44u) >> 12), 0)[int(44u) & 3];\n"
+	 "    varying_1.x = _318;\n"
+	 "    float _344 = fma(in_attr0.z, texelFetch(c3_1, ivec2((int(42u) >> 2) & 1023, int(42u) >> 12), 0)[int(42u) & 3], fma(_130, texelFetch(c3_1, ivec2((int(34u) >> 2) & 1023, int(34u) >> 12), 0)[int(34u) & 3], _101 * texelFetch(c3_1, ivec2((int(38u) >> 2) & 1023, int(38u) >> 12), 0)[int(38u) & 3])) + texelFetch(c3_1, ivec2((int(46u) >> 2) & 1023, int(46u) >> 12), 0)[int(46u) & 3];\n"
+	 "    varying_1.z = _344;\n"
+	 "    varying_2.x = (in_attr2.x * texelFetch(c3_1, ivec2((int(88u) >> 2) & 1023, int(88u) >> 12), 0)[int(88u) & 3]) * texelFetch(c3_1, ivec2((int(80u) >> 2) & 1023, int(80u) >> 12), 0)[int(80u) & 3];\n"
+	 "    varying_2.z = (in_attr2.z * texelFetch(c3_1, ivec2((int(90u) >> 2) & 1023, int(90u) >> 12), 0)[int(90u) & 3]) * texelFetch(c3_1, ivec2((int(82u) >> 2) & 1023, int(82u) >> 12), 0)[int(82u) & 3];\n"
+	 "    varying_2.w = (in_attr2.w * texelFetch(c3_1, ivec2((int(91u) >> 2) & 1023, int(91u) >> 12), 0)[int(91u) & 3]) * texelFetch(c3_1, ivec2((int(83u) >> 2) & 1023, int(83u) >> 12), 0)[int(83u) & 3];\n"
+	 "    float _393 = fma(in_attr0.z, texelFetch(c3_1, ivec2((int(43u) >> 2) & 1023, int(43u) >> 12), 0)[int(43u) & 3], fma(_130, texelFetch(c3_1, ivec2((int(35u) >> 2) & 1023, int(35u) >> 12), 0)[int(35u) & 3], _101 * texelFetch(c3_1, ivec2((int(39u) >> 2) & 1023, int(39u) >> 12), 0)[int(39u) & 3])) + texelFetch(c3_1, ivec2((int(47u) >> 2) & 1023, int(47u) >> 12), 0)[int(47u) & 3];\n"
+	 "    float _414 = fma(_393, texelFetch(c3_1, ivec2((int(78u) >> 2) & 1023, int(78u) >> 12), 0)[int(78u) & 3], fma(_344, texelFetch(c3_1, ivec2((int(74u) >> 2) & 1023, int(74u) >> 12), 0)[int(74u) & 3], fma(_318, texelFetch(c3_1, ivec2((int(66u) >> 2) & 1023, int(66u) >> 12), 0)[int(66u) & 3], _214 * texelFetch(c3_1, ivec2((int(70u) >> 2) & 1023, int(70u) >> 12), 0)[int(70u) & 3])));\n"
+	 "    gl_Position.z = _414;\n"
+	 "    varying_3.z = _414;\n"
+	 "    varying_2.y = (in_attr2.y * texelFetch(c3_1, ivec2((int(89u) >> 2) & 1023, int(89u) >> 12), 0)[int(89u) & 3]) * texelFetch(c3_1, ivec2((int(81u) >> 2) & 1023, int(81u) >> 12), 0)[int(81u) & 3];\n"
+	 "    float _433 = fma(_393, texelFetch(c3_1, ivec2((int(79u) >> 2) & 1023, int(79u) >> 12), 0)[int(79u) & 3], fma(_344, texelFetch(c3_1, ivec2((int(75u) >> 2) & 1023, int(75u) >> 12), 0)[int(75u) & 3], fma(_318, texelFetch(c3_1, ivec2((int(67u) >> 2) & 1023, int(67u) >> 12), 0)[int(67u) & 3], _214 * texelFetch(c3_1, ivec2((int(71u) >> 2) & 1023, int(71u) >> 12), 0)[int(71u) & 3])));\n"
+	 "    float _437 = fma(_393, texelFetch(c3_1, ivec2((int(76u) >> 2) & 1023, int(76u) >> 12), 0)[int(76u) & 3], fma(_344, texelFetch(c3_1, ivec2((int(72u) >> 2) & 1023, int(72u) >> 12), 0)[int(72u) & 3], fma(_318, texelFetch(c3_1, ivec2((int(64u) >> 2) & 1023, int(64u) >> 12), 0)[int(64u) & 3], _214 * texelFetch(c3_1, ivec2((int(68u) >> 2) & 1023, int(68u) >> 12), 0)[int(68u) & 3])));\n"
+	 "    gl_Position.w = _433;\n"
+	 "    float _442 = fma(_393, texelFetch(c3_1, ivec2((int(77u) >> 2) & 1023, int(77u) >> 12), 0)[int(77u) & 3], fma(_344, texelFetch(c3_1, ivec2((int(73u) >> 2) & 1023, int(73u) >> 12), 0)[int(73u) & 3], fma(_318, texelFetch(c3_1, ivec2((int(65u) >> 2) & 1023, int(65u) >> 12), 0)[int(65u) & 3], _214 * texelFetch(c3_1, ivec2((int(69u) >> 2) & 1023, int(69u) >> 12), 0)[int(69u) & 3])));\n"
+	 "    varying_3.w = _433;\n"
+	 "    gl_Position.y = _442;\n"
+	 "    gl_Position.x = _437;\n"
+	 "    float _450 = _433 * 0.5;\n"
+	 "    varying_3.x = fma(_437, 0.5, _450);\n"
+	 "    varying_3.y = fma(_442 * texelFetch(c3_1, ivec2((int(0u) >> 2) & 1023, int(0u) >> 12), 0)[int(0u) & 3], 0.5, _450);\n"
+	 "    varying_5.x = max(0.0, fma(exp2(log2(max(0.0, fma(_230, texelFetch(c3_1, ivec2((int(28u) >> 2) & 1023, int(28u) >> 12), 0)[int(28u) & 3], fma(_231, texelFetch(c3_1, ivec2((int(19u) >> 2) & 1023, int(19u) >> 12), 0)[int(19u) & 3], fma(_188, texelFetch(c3_1, ivec2((int(18u) >> 2) & 1023, int(18u) >> 12), 0)[int(18u) & 3], fma(_182, texelFetch(c3_1, ivec2((int(17u) >> 2) & 1023, int(17u) >> 12), 0)[int(17u) & 3], _177 * texelFetch(c3_1, ivec2((int(16u) >> 2) & 1023, int(16u) >> 12), 0)[int(16u) & 3])))) + (fma(_162, texelFetch(c3_1, ivec2((int(6u) >> 2) & 1023, int(6u) >> 12), 0)[int(6u) & 3], fma(_157, texelFetch(c3_1, ivec2((int(5u) >> 2) & 1023, int(5u) >> 12), 0)[int(5u) & 3], _156 * texelFetch(c3_1, ivec2((int(4u) >> 2) & 1023, int(4u) >> 12), 0)[int(4u) & 3])) + texelFetch(c3_1, ivec2((int(7u) >> 2) & 1023, int(7u) >> 12), 0)[int(7u) & 3]))) * 0.4166666567325592041015625), uintBitsToFloat(0x3f870a3du), -0.054999999701976776123046875));\n"
+	 "    varying_5.y = max(0.0, fma(exp2(log2(max(0.0, fma(_230, texelFetch(c3_1, ivec2((int(29u) >> 2) & 1023, int(29u) >> 12), 0)[int(29u) & 3], fma(_231, texelFetch(c3_1, ivec2((int(23u) >> 2) & 1023, int(23u) >> 12), 0)[int(23u) & 3], fma(_188, texelFetch(c3_1, ivec2((int(22u) >> 2) & 1023, int(22u) >> 12), 0)[int(22u) & 3], fma(_182, texelFetch(c3_1, ivec2((int(21u) >> 2) & 1023, int(21u) >> 12), 0)[int(21u) & 3], _177 * texelFetch(c3_1, ivec2((int(20u) >> 2) & 1023, int(20u) >> 12), 0)[int(20u) & 3])))) + (fma(_162, texelFetch(c3_1, ivec2((int(10u) >> 2) & 1023, int(10u) >> 12), 0)[int(10u) & 3], fma(_157, texelFetch(c3_1, ivec2((int(9u) >> 2) & 1023, int(9u) >> 12), 0)[int(9u) & 3], _156 * texelFetch(c3_1, ivec2((int(8u) >> 2) & 1023, int(8u) >> 12), 0)[int(8u) & 3])) + texelFetch(c3_1, ivec2((int(11u) >> 2) & 1023, int(11u) >> 12), 0)[int(11u) & 3]))) * 0.4166666567325592041015625), uintBitsToFloat(0x3f870a3du), -0.054999999701976776123046875));\n"
+	 "    varying_5.z = max(0.0, fma(exp2(log2(max(0.0, fma(_230, texelFetch(c3_1, ivec2((int(30u) >> 2) & 1023, int(30u) >> 12), 0)[int(30u) & 3], fma(_231, texelFetch(c3_1, ivec2((int(27u) >> 2) & 1023, int(27u) >> 12), 0)[int(27u) & 3], fma(_188, texelFetch(c3_1, ivec2((int(26u) >> 2) & 1023, int(26u) >> 12), 0)[int(26u) & 3], fma(_182, texelFetch(c3_1, ivec2((int(25u) >> 2) & 1023, int(25u) >> 12), 0)[int(25u) & 3], _177 * texelFetch(c3_1, ivec2((int(24u) >> 2) & 1023, int(24u) >> 12), 0)[int(24u) & 3])))) + (fma(_162, texelFetch(c3_1, ivec2((int(14u) >> 2) & 1023, int(14u) >> 12), 0)[int(14u) & 3], fma(_157, texelFetch(c3_1, ivec2((int(13u) >> 2) & 1023, int(13u) >> 12), 0)[int(13u) & 3], _156 * texelFetch(c3_1, ivec2((int(12u) >> 2) & 1023, int(12u) >> 12), 0)[int(12u) & 3])) + texelFetch(c3_1, ivec2((int(15u) >> 2) & 1023, int(15u) >> 12), 0)[int(15u) & 3]))) * 0.4166666567325592041015625), uintBitsToFloat(0x3f870a3du), -0.054999999701976776123046875));\n"
+	 "}\n"
+	 "", 0},
+	/* 43 half-color fragment */
+	{"", "\n"
+	 "#version 310 es\n"
+	 "precision highp int;\n"
+	 "precision highp float;\n"
+	 "#define unpackFloat2x16(a) unpackHalf2x16(a)\n"
+	 "#define packFloat2x16(a) packHalf2x16(a)\n"
+	 "#define lc2_half(a) unpackHalf2x16(packHalf2x16(vec2(float(a), 0.0))).x\n"
+	 "\n"
+	 "uniform sampler2D fs_tex0_20;\n"
+	 "uniform sampler2D fs_tex0_28;\n"
+	 "\n"
+	 "in vec4 varying_0;\n"
+	 "in vec4 varying_2;\n"
+	 "in vec4 varying_3;\n"
+	 "in vec4 varying_5;\n"
+	 "layout(location = 0) out vec4 frag_color0;\n"
+	 "\n"
+	 "void main()\n"
+	 "{\n"
+	 "    float _58 = 1.0 / varying_3.w;\n"
+	 "    vec4 _63 = texture(fs_tex0_28, vec2(varying_3.x * _58, varying_3.y * _58));\n"
+	 "    mediump vec4 _69 = texture(fs_tex0_20, vec2(varying_0.x, varying_0.y));\n"
+	 "    uint _76 = packHalf2x16(vec2(_69.xy));\n"
+	 "    uint _78 = packHalf2x16(vec2(_69.zw));\n"
+	 "    float _101 = lc2_half(float(unpackFloat2x16(_76).x) * varying_2.x);\n"
+	 "    vec2 _103 = unpackFloat2x16(_76);\n"
+	 "    _103.x = _101;\n"
+	 "    float _109 = float(lc2_half(float(unpackFloat2x16(_78).y) * varying_2.w));\n"
+	 "    frag_color0.x = float(lc2_half(_109 * float(_101))) * (varying_5.x + (-log2(_63.x)));\n"
+	 "    frag_color0.y = float(lc2_half(_109 * float(lc2_half(float(_103.y) * varying_2.y)))) * (varying_5.y + (-log2(_63.y)));\n"
+	 "    frag_color0.z = float(lc2_half(_109 * float(lc2_half(float(unpackFloat2x16(_78).x) * varying_2.z)))) * (varying_5.z + (-log2(_63.z)));\n"
+	 "    frag_color0.w = _109;\n"
+	 "}\n"
+	 "", 1},
 };
 
 struct mm_shader_uniform {const char *name;unsigned stage,binding,offset,size,components,word_boolean,word_int,word_array;};
@@ -1602,4 +1712,18 @@ static const struct mm_shader_binding nvn_megaman_shader_bindings[]={
   .code_hash={0x6b,0x33,0xf3,0x90,0x05,0xc6,0x4c,0x58,0xff,0xf9,0x68,0x9e,0xa7,0xc0,0xfe,0xf9,0x03,0xf7,0x53,0x3f,0xe7,0x6a,0xf1,0xdc,0xac,0xc3,0x0f,0xc8,0xcb,0x26,0xae,0xd9},.control_hash={0xa2,0x05,0x34,0x08,0x0b,0x72,0xd8,0xc5,0x0f,0x41,0xba,0xcb,0xf0,0x7b,0xfc,0x9e,0x37,0xd0,0xe6,0x55,0xfe,0xc1,0xac,0x34,0x23,0x7a,0x7b,0x73,0x76,0xe0,0x0c,0x45},
   .samplers={},
   .attributes={{.name="in_attr0",.location=0,.kind=0}}},
+ /* 42 literal-vertex vertex */
+ {.sha256="301af8ced90e7e506eb4d5ace0dfabd6",.error=NULL,.control_size=2176,.code_size=2304,.sampler_count=0,.attribute_count=4,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
+  .uniform_count=1,.uniforms={{.name="c3_1",.stage=0,.binding=0,.offset=0,.size=65536,.components=4,.word_boolean=0,.word_int=0,.word_array=4096}},
+  .varying_read_masks={7,7,15,3,0,0,0,0},.varying_write_masks={3,7,15,15,0,7,0,0},
+  .code_hash={0x30,0x1a,0xf8,0xce,0xd9,0x0e,0x7e,0x50,0x6e,0xb4,0xd5,0xac,0xe0,0xdf,0xab,0xd6,0x54,0x53,0x55,0x7b,0xac,0x79,0xa7,0x4d,0xfe,0xba,0xce,0xf7,0x39,0x6b,0x30,0x98},.control_hash={0x13,0x07,0x78,0x97,0x91,0x80,0x8c,0x82,0xc0,0xb5,0xc7,0xa1,0x41,0xf3,0x4e,0xf4,0x78,0x0a,0x3e,0xc4,0x30,0x63,0x0b,0x15,0x88,0xb0,0x80,0x3e,0x4f,0xfb,0xa4,0xfe},
+  .samplers={},
+  .attributes={{.name="in_attr0",.location=0,.kind=0},{.name="in_attr1",.location=1,.kind=0},{.name="in_attr2",.location=2,.kind=0},{.name="in_attr3",.location=3,.kind=0}}},
+ /* 43 half-color fragment */
+ {.sha256="5ff482d48c9426db3f69965a3a6f96a3",.error=NULL,.control_size=2176,.code_size=768,.sampler_count=2,.attribute_count=4,.color_write_mask=15,.requires_fragment_highp=1,.requires_fragment_mediump=0,.wave_contract=0,
+  .uniform_count=0,.uniforms={},
+  .varying_read_masks={15,0,15,15,0,15,0,0},.varying_write_masks={15,0,0,0,0,0,0,0},
+  .code_hash={0x5f,0xf4,0x82,0xd4,0x8c,0x94,0x26,0xdb,0x3f,0x69,0x96,0x5a,0x3a,0x6f,0x96,0xa3,0xfe,0x2e,0x99,0x4f,0x30,0x91,0x35,0xdd,0xf7,0x1c,0xda,0x1a,0x5f,0x18,0x4c,0x8a},.control_hash={0xcc,0xd3,0xfc,0xac,0xba,0x18,0x00,0x42,0xa8,0xfe,0x9c,0x99,0x1e,0x70,0x44,0x15,0x79,0x58,0xaa,0x0b,0x54,0xfa,0x58,0x2d,0x4f,0x8b,0xc2,0xeb,0x12,0x00,0xab,0x00},
+  .samplers={{.name="fs_tex0_20",.stage=1,.binding=14,.offset=0,.size_query=1,.texel_fetch_bits=0,.cpu_view=0},{.name="fs_tex0_28",.stage=1,.binding=14,.offset=8,.size_query=1,.texel_fetch_bits=0,.cpu_view=0}},
+  .attributes={{.name="in_attr0",.location=0,.kind=0},{.name="in_attr2",.location=2,.kind=0},{.name="in_attr3",.location=3,.kind=0},{.name="in_attr5",.location=5,.kind=0}}},
 };

@@ -1,0 +1,67 @@
+{
+  "cleanup_errors": [],
+  "before": {
+    "processes": {
+      "runtime.sh": [
+        {
+          "pid": 1228,
+          "starttime": 637
+        }
+      ],
+      "principal.sh": [
+        {
+          "pid": 2190,
+          "starttime": 1019
+        }
+      ],
+      "MainUI": [
+        {
+          "pid": 3705,
+          "starttime": 4438766
+        }
+      ]
+    },
+    "game": [],
+    "online": "0-7",
+    "frame": 516,
+    "menu_events": 5,
+    "stops": [
+      "STOP status=ZERO_SHADER_NOT_PINNED"
+    ],
+    "log_inode": 6652
+  },
+  "after": {
+    "processes": {
+      "runtime.sh": [
+        {
+          "pid": 1228,
+          "starttime": 637
+        }
+      ],
+      "principal.sh": [
+        {
+          "pid": 2190,
+          "starttime": 1019
+        }
+      ],
+      "MainUI": [
+        {
+          "pid": 6298,
+          "starttime": 4522542
+        }
+      ]
+    },
+    "game": [],
+    "online": "0-7",
+    "frame": 496,
+    "menu_events": 5,
+    "stops": [
+      "STOP status=ZERO_SHADER_NOT_PINNED"
+    ],
+    "log_inode": 6652
+  },
+  "stops": [
+    "ZERO_SHADER_NOT_PINNED"
+  ],
+  "runtime_ok": false
+}

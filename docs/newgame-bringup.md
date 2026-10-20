@@ -1,6 +1,25 @@
 # New Game bring-up: attempts and what each one proved
 
-## Current verification protocol (supersedes historical automatic-navigation claims)
+## Current status: build215, still a shader-tail frontier
+
+Build215 is installed and independently hash-verified:
+19329da2cc00adebe9dcd9668344f0ea5865f13da93f6086c11e2d9662cfc828.
+The original previous executable is retained as lamentum-nextos.before-215.
+Entries 42 (literal-backed c3_1 vertex) and 43 (half-conversion color fragment) are
+admitted in newgame-14, but the run stops on a NEW vertex before draw validation:
+801b91aed1fb1660a5c1ae9413994c0113547d596e4be5ef5143582addc325d0 /
+ada676aaf675d0510aa7fea908d1473518596087a1a9dadf5a0cc43235eee820
+(code 2048 bytes, control2176). That next pair is captured and produces Vulkan GLSL,
+but is not appended yet. Last present520, sampled MemAvailable minimum43 MiB;
+cleanup passes and the real Spruce Recents menu is captured. No gameplay/FPS claim.
+
+See [build214/215 bank and driver validation](shader-tail-214-215.md) and
+[evidence/newgame-14](../evidence/newgame-14). Forty Python host tests pass.
+A separate self-authored GBM/surfaceless Mali-G57 GLES fixture passes ten numerical
+draw/readback checks for cbuf addressing, scalar half conversion, update and rebinding.
+That limited driver check does not establish game pixels or production GPU lifetimes.
+
+## Verification protocol and earlier run history
 
 Follow roadmap §20.2–20.3: launch with `device_principal_test.py`, then use
 `lamentum_pad_contract.py capture/confirm/up/down/stick_down`. Inspect the live KMS
@@ -20,10 +39,10 @@ screen and the control screen, then hits the fragment e1d6ede5/68743131.
 (code 2304 bytes, control 2176). This next blob is saved and translates to Vulkan
 GLSL: literal c1 plus application c3, emitted as `c3_1` by SPIRV-Cross to avoid a
 name collision. Raw SPIR-V OpName identifies it as c3; the suffix must not be
-confused with NVN slot 1. It is NOT yet appended or device-tested. Existing
-literal-bank specialization and exact alias provenance are the next shader task.
+confused with NVN slot 1. This was subsequently appended as entry42 and admitted
+by build214; see the current status above for the later, distinct shader frontier.
 
-Build213 remains installed: SHA-256
+Historical build213 identity: SHA-256
 7c5c8e85e55d9b95782900af267787a50b885bfe6290d379dc49814b65eebaca;
 previous executable is retained as `lamentum-nextos.before-213`.
 newgame-12's final serial is 516, sampled MemAvailable minimum 47 MiB; this is a

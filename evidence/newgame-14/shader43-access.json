@@ -1,0 +1,25 @@
+{
+  "index": 43,
+  "code_sha256": "5ff482d48c9426db3f69965a3a6f96a3fe2e994f309135ddf71cda1a5f184c8a",
+  "control_sha256": "ccd3fcacba180042a8fe9c991e7044157958aa0b54fa582d4f8bc2eb1200ab00",
+  "samplers": [
+    {
+      "binding": 14,
+      "type": "sampler2D",
+      "name": "fs_tex0_20",
+      "stage": 1,
+      "offset": 0
+    },
+    {
+      "binding": 14,
+      "type": "sampler2D",
+      "name": "fs_tex0_28",
+      "stage": 1,
+      "offset": 8
+    }
+  ],
+  "cbufs": [],
+  "half_rounding": "#define lc2_half(a) unpackHalf2x16(packHalf2x16(vec2(float(a), 0.0))).x",
+  "execution_model": "fragment",
+  "non_half_arithmetic": "highp float"
+}

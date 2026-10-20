@@ -1,0 +1,5 @@
+{
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "Traceback (most recent call last):\n  File \"/mnt/SDCARD/Roms/PORTS/lamentum-switch/logs/gles-cbuf-fixture.py\", line 144, in <module>\n    main()\n  File \"/mnt/SDCARD/Roms/PORTS/lamentum-switch/logs/gles-cbuf-fixture.py\", line 67, in main\n    assert display and initialize(display, C.byref(major), C.byref(minor)), 'eglInitialize failed'\nAssertionError: eglInitialize failed\n"
+}

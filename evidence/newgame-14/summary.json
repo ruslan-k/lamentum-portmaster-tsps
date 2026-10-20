@@ -1,0 +1,16 @@
+{
+  "raw_log_sha256": "b07a49c72a53ed61c1a571930b3733716bb8b89131ea68675ad0b8c5498091ea",
+  "phase": "visually-confirmed New Game loading; not gameplay",
+  "last_present": 520,
+  "stop": [
+    "ZERO_SHADER_NOT_PINNED"
+  ],
+  "cleanup_errors": [],
+  "decisive_rows": [
+    "NVN_LC2_PROGRAM_STAGES object=0x3e90eec00 id=839 mask=1 sources=42/0 code-control-source=byte-exact link=on-native-pair-draw",
+    "NVN_LC2_PROGRAM_STAGES object=0x3e90ed1c0 id=841 mask=2 sources=0/43 code-control-source=byte-exact link=on-native-pair-draw",
+    "ZERO_SHADER_UNRECOGNIZED code-bytes=2048 control-bytes=2176 code-hash=801b91aed1fb1660a5c1ae9413994c0113547d596e4be5ef5143582addc325d0 control-hash=ada676aaf675d0510aa7fea908d1473518596087a1a9dadf5a0cc43235eee820",
+    "STOP status=ZERO_SHADER_NOT_PINNED pc=main.text.seg+0x542b68 detail=0x3fe4fa3e0 query_memory_calls=0x170 tls_trap_reads=0x0"
+  ],
+  "sampled_memory_min_MiB": 43
+}
