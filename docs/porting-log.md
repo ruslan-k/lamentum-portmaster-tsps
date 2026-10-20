@@ -1153,3 +1153,23 @@ So the fix is not decoding: index < 256 must mean "no texture bound" (skip the l
 alone or point it at a 1x1 placeholder) instead of stopping. That is the next change, and it is small; what
 matters is that it was measured rather than assumed, and that the zero-based flag is now known to be wrong
 for this title.
+
+## Null texture handles accepted; the next stop is a handle whose low word is 1.0f
+
+Two changes this round:
+
+- `nvn_render_descriptor()` returns an empty descriptor for slot indices inside the reserved prefix, so a
+  "no texture" handle is no longer a fatal error (logged once as `NVN_DESCRIPTOR_NULL_ACCEPTED`);
+- `nvn_render_sampler_prepare_mode()` binds a 1x1 transparent placeholder for such handles
+  (`NVN_SAMPLER_NULL_PLACEHOLDER`), because GL still needs something bound and the existing fallback path
+  otherwise stopped the replay with `NVN_RENDER_TEXTURE_LIFETIME_FEEDBACK`.
+
+The replay now stops one layer further:
+
+```
+STOP status=NVN_RENDER_DESCRIPTOR_INVALID pc=main.text.seg+0x52d294 detail=0x3f800000
+```
+
+`0x3f800000` is the bit pattern of the float `1.0f`, so the value reaching the descriptor lookup is not a
+slot index at all - the sampler bind path is decoding the wrong word for this title's handle. That is the
+next measurement: the handle encoding at that call site, not the descriptor table.
