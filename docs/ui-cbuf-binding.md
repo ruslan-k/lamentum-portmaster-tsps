@@ -49,8 +49,18 @@ alpha is1. This is only a replay of captured positions, not pixel proof.
 Only one catalogue field changes: entry12, uniform c4, binding0 -> binding1.
 Shader source, code/control identities, sampler lookup, texture dimensions,
 other entries and runtime behaviour remain unchanged. No full regeneration.
-Build201 was a redundant diagnostic build and was not deployed; build202
-contains the one-field correction over the installed build200 source.
+
+Build201 is NOT an equivalent build and was never deployed. It was compiled
+from the pre-correction catalogue: its embedded `shaders/nvn_shader_sources.h`
+still carries `.name="c4",.stage=0,.binding=0,…` (header SHA-256
+`4bcc233c2c0dea35feb5c5dea37c86f1e39dc852cf8b75008910c25448ee84ab`) and its
+binary still contains the removed `LC2_UI_TRACE_AFTER` diagnostic, SHA-256
+`3a7f04d0509e49cec5b128676aa0d08c57497b5419a8d3ff1e7796a3dab45310`. It is a
+concurrent pre-edit snapshot: launched before both edits landed. Its existence
+does not validate the correction. Build202's header
+(`7cfa998886333aafd0c8ea3f84918dfcbca80a24add11527bd4421265891b719`) carries
+`binding=1` and no trace string, and build202 is the only binary carrying the
+correction. Both builds completed with zero `error:` lines.
 
 Build202 SHA-256, independently read from the device:
 `ff4454232247b935748db7a76b05a7af27e62f2a189d199b49d7d6d93f9d1fd2`.
