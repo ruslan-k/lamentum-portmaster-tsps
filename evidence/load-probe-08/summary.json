@@ -1,0 +1,289 @@
+{
+  "samples": 32,
+  "usable": 32,
+  "errors": 0,
+  "first": {
+    "MemTotal": 986064,
+    "MemAvailable": 104748,
+    "SwapFree": 1883124,
+    "CmaFree": 7836
+  },
+  "last": {
+    "MemTotal": 986064,
+    "MemAvailable": 692888,
+    "SwapFree": 2028620,
+    "CmaFree": 117224
+  },
+  "span_s": 203.9,
+  "min_available_kb": 57496,
+  "counter_delta": {
+    "romfs": 238,
+    "textures": 288,
+    "bc_deferred": 255,
+    "bc_fileback": 36,
+    "presents": 364
+  },
+  "frames": {
+    "first": 97,
+    "last": 461
+  },
+  "timeline_minutes": [
+    {
+      "t": 1792517345.9,
+      "available_mb": 102
+    },
+    {
+      "t": 1792517358.7,
+      "available_mb": 56
+    },
+    {
+      "t": 1792517371.6,
+      "available_mb": 60
+    },
+    {
+      "t": 1792517395.6,
+      "available_mb": 73
+    },
+    {
+      "t": 1792517419.1,
+      "available_mb": 71
+    },
+    {
+      "t": 1792517431.9,
+      "available_mb": 104
+    },
+    {
+      "t": 1792517442.4,
+      "available_mb": 120
+    },
+    {
+      "t": 1792517453.0,
+      "available_mb": 109
+    },
+    {
+      "t": 1792517463.5,
+      "available_mb": 110
+    },
+    {
+      "t": 1792517474.1,
+      "available_mb": 103
+    },
+    {
+      "t": 1792517484.8,
+      "available_mb": 99
+    },
+    {
+      "t": 1792517495.4,
+      "available_mb": 93
+    },
+    {
+      "t": 1792517506.1,
+      "available_mb": 82
+    },
+    {
+      "t": 1792517517.4,
+      "available_mb": 77
+    },
+    {
+      "t": 1792517530.1,
+      "available_mb": 58
+    },
+    {
+      "t": 1792517544.4,
+      "available_mb": 81
+    }
+  ],
+  "stops": [
+    "STOP status=T2_TEXTURE_BUDGET"
+  ],
+  "killed": false,
+  "entry45_links": 1,
+  "unknown_shader_requests": 0,
+  "guest_samples": {
+    "samples": 400,
+    "in_kernel": 387,
+    "threads": {
+      "0x0": 13,
+      "0x1": 13,
+      "0x2": 13,
+      "0x3": 13,
+      "0x4": 13,
+      "0x5": 13,
+      "0x6": 13,
+      "0x7": 13,
+      "0x8": 13,
+      "0x9": 13,
+      "0xa": 13,
+      "0xb": 13,
+      "0xc": 13,
+      "0xd": 13,
+      "0xe": 13,
+      "0xf": 13,
+      "0x10": 12,
+      "0x11": 12,
+      "0x12": 12,
+      "0x13": 12,
+      "0x14": 12,
+      "0x15": 12,
+      "0x16": 12,
+      "0x17": 12,
+      "0x18": 12,
+      "0x19": 12,
+      "0x1a": 12,
+      "0x1b": 12,
+      "0x1c": 12,
+      "0x1d": 12,
+      "0x1e": 12,
+      "0x1f": 12
+    },
+    "top_pc": [
+      {
+        "pc": "0x7fa15b0bd4",
+        "n": 299,
+        "share": 0.7475
+      },
+      {
+        "pc": "0x7fa15b0bd8",
+        "n": 38,
+        "share": 0.095
+      },
+      {
+        "pc": "0x7fa15ad9ec",
+        "n": 26,
+        "share": 0.065
+      },
+      {
+        "pc": "0x7fa14c5220",
+        "n": 24,
+        "share": 0.06
+      },
+      {
+        "pc": "0x7fa15ad9f0",
+        "n": 9,
+        "share": 0.0225
+      },
+      {
+        "pc": "0x7fa15a7560",
+        "n": 2,
+        "share": 0.005
+      },
+      {
+        "pc": "main.text.seg+0x1157f70",
+        "n": 1,
+        "share": 0.0025
+      },
+      {
+        "pc": "0x558a7f8b70",
+        "n": 1,
+        "share": 0.0025
+      }
+    ],
+    "top_frames": [
+      {
+        "location": "0x7fa15b0bd4",
+        "n": 299
+      },
+      {
+        "location": "0x7fa15b0bd8",
+        "n": 38
+      },
+      {
+        "location": "0x7fa15ad9ec",
+        "n": 26
+      },
+      {
+        "location": "0x7fa14c5220",
+        "n": 24
+      },
+      {
+        "location": "0x7fa15ad9f0",
+        "n": 9
+      },
+      {
+        "location": "0x7fa15a7560",
+        "n": 2
+      },
+      {
+        "location": "main.text.seg+0x1157f70",
+        "n": 1
+      },
+      {
+        "location": "0x558a7f8b70",
+        "n": 1
+      }
+    ]
+  },
+  "roadmap_section": "\u00a725.3-25.4 C0 bounded guest CPU profile",
+  "svc": {
+    "total": 12940,
+    "top": [
+      [
+        "1a",
+        5506
+      ],
+      [
+        "1b",
+        5389
+      ],
+      [
+        "2c",
+        1080
+      ],
+      [
+        "1c",
+        171
+      ],
+      [
+        "1d",
+        142
+      ],
+      [
+        "21",
+        107
+      ],
+      [
+        "b",
+        107
+      ],
+      [
+        "32",
+        58
+      ]
+    ],
+    "pair_0x1a_0x1b_share": 0.842
+  },
+  "ipc": {
+    "total": 41862,
+    "top": [
+      [
+        "ep0x40 type0x6 cmd0x8",
+        29140
+      ],
+      [
+        "ep0x40 type0x6 cmd0x7",
+        10376
+      ],
+      [
+        "ep0x1d type0x6 cmd0x0",
+        1099
+      ],
+      [
+        "ep0x1d type0x6 cmd0x4",
+        1093
+      ],
+      [
+        "ep0x1 type0x6 cmd0x1",
+        22
+      ],
+      [
+        "ep0x2c type0x7 cmd0x2",
+        13
+      ]
+    ]
+  },
+  "conclusion": "96.75% of bounded samples are in-kernel; 84.1% of SVCs are the 0x1a/0x1b pair and 94.4% of IPC is one endpoint/command pair, so the loading cost is the adapter bridge + one polling service, not Unity arithmetic",
+  "device_after": {
+    "game": false,
+    "restored": "verified by the harness cleanup of this arm"
+  }
+}
