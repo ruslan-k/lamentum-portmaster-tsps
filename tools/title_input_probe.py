@@ -8,7 +8,7 @@ import sys
 import time
 
 REPO = pathlib.Path('/home/ruslan/lamentum-work/repo')
-OUT = REPO / 'evidence' / 'title-input-01'
+OUT = REPO / 'evidence' / 'title-input-02'
 PORT = '/mnt/SDCARD/Roms/PORTS/lamentum-switch'
 HOST = 'root@192.168.50.135'
 ENV = json.loads((REPO / 'evidence/lowfloor-32-01/env.json').read_text())
@@ -58,14 +58,15 @@ def main():
         frames = [int(x) for x in __import__('re').findall(r'NVN_PRESENT_PIXELS frame=(\d+)', log)]
         if not pressed and frames and frames[-1] >= 400:
             shot('at-title')
-            r = subprocess.run(['ssh', '-o', 'BatchMode=yes', HOST, 'python3 -'],
-                               input=PRESS.encode(), capture_output=True, timeout=40)
-            (OUT / 'press.txt').write_text(f'rc={r.returncode} {r.stderr.decode(errors="replace")}\n')
+            for code,label in ((0x130,'a-south'),(0x13b,'start')):
+                script=PRESS.replace('315',str(code))
+                r = subprocess.run(['ssh', '-o', 'BatchMode=yes', HOST, 'python3 -'],
+                                   input=script.encode(), capture_output=True, timeout=40)
+                with (OUT / 'press.txt').open('a') as f:
+                    f.write(f'{label} rc={r.returncode} {r.stdout.decode(errors="replace").strip()} {r.stderr.decode(errors="replace").strip()}\n')
+                time.sleep(6)
+                shot('after-' + label)
             pressed = True
-            time.sleep(6)
-            shot('after-start')
-            time.sleep(10)
-            shot('after-start-16s')
         if 'STOP status=' in log:
             break
     harness.wait(timeout=60)

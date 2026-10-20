@@ -38,16 +38,40 @@ Log receipts show the input stack is present and measured, not stubbed:
 `HID_FACE_POSITION … path=/dev/input/event4`, `HID_NPAD_STYLE player=0 style=1
 provider=physical connected=1`.
 
-Injection attempt during a live run (Start, `BTN_START` 0x13b on `/dev/input/event4`,
-140 ms hold, `../evidence/title-input-01/post-start-*.png`): the screen did NOT
-change away from the title. Two A/B/Y presses attempted afterwards are INVALID as
-evidence — the port had already exited by then, so those captures show the Spruce
-menu, not the game.
+### What was measured (`../evidence/title-input-02/`)
 
-So the honest statement is: a physical Start press produced no visible change, and
-it is not yet proven whether the guest received the event. The next measurement is
-a HID-side receipt in the same window (what the adapter's shared-memory pad state
-and the guest's read of it look like at press time), not more screenshots.
+Two injections during a LIVE title screen, each verified in the adapter's own pad
+receipt (`HID_SAMPLE … player=0`):
+
+| physical button | host code | guest mask seen by the adapter | screen reaction |
+|---|---|---:|---|
+| A (south) | 0x130 | `0x2` | none |
+| Start | 0x13b | `0x400` | none |
+
+So the host path works end to end inside the adapter: the press is read from
+`/dev/input/event4` and published as the guest's button mask. It is NOT yet proven
+that the guest consumes that state.
+
+Pixel measurement between the title capture and both post-press captures:
+mean luminance 3.68 → 3.76 → 3.74, 5272 changed pixels with max delta 63 spread
+across the whole frame (animated embers/rain), and the centre-left band stays at
+1.4–1.8 mean with no text-shaped region. A zoomed crop shows no legible glyphs.
+A first visual read of the same image suggested a "Continue / New Game / Options"
+menu; the numbers and the crop do not support it, so that reading is withdrawn.
+
+The earlier press in `../evidence/title-input-01/` is weaker evidence: the harness
+bug (`python3 -c -`) meant no event was actually delivered there, and the later
+A/B/Y attempts ran after the port had exited.
+
+### Next measurement
+
+Decide whether the guest polls the published pad state at all: log the EP_HID
+command mix the title issues (101/121/200/... ) and derive the SDK 10.9.0.0 shared
+in-memory pad layout from the title's own `sdk` module before touching the
+mapping. Until that receipt exists, "input is broken" and "the title is still
+loading and ignores input" remain equally unproven; the second is supported by the
+fact that texture initialisations plateau at 563–577 rather than completing.
+
 
 ## Device state
 
