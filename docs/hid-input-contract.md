@@ -1,167 +1,109 @@
-# Why the title ignores the pad: measured contract, not a mapping tweak
+# HID input: guest-read evidence and correction of the accessor analysis
 
-Status: input still does not reach the game. This round replaced two guesses with
-measurements and falsified the "it is still loading" and "wrong Npad routing"
-explanations.
+The port has reached the title screen, but gameplay/input is not yet verified.
 
-## 1. Loading has ENDED before the title is shown
+## Correction: the +0x18 pointer table is NOT in shared memory
 
-Bucketing `ROMFS_READ` and `NVN_TEXTURE_REAL` by the presented frame in the
-420-second run (`../evidence/long-budget-420-01/latest.log`):
+The earlier version of this document confused two different objects. Its claims
+that a zero shared-memory head was a defect, that SDK10.9 needed a different
+Npad layout, and that broadcasting had ruled out routing were not justified.
+Those claims are withdrawn. Build196's `LC2_HID_SDK109` experiment did not fix
+input; build199 removes its writes from the publisher.
 
-| frame bucket (50 frames) | 0 | 50 | 100 | 150 | 200+ |
-|---|---:|---:|---:|---:|---:|
-| RomFS reads | 474 | 378 | 226 | 48 | 0 |
-| texture initialisations | 196 | 138 | 162 | 67 | 0 |
+The missing step was the SDK's `NpadSharedMemoryAccessor::Attach` at
+`sdk+0x208370`. It takes `this` in x0 and `SharedMemoryFormat*` in x1, retained
+as x19 and x20. After successful IPC, its stores are:
 
-The run continues to frame 1273 and the title logo is already on screen at frame
-~549. No asset I/O and no texture creation happen after ~frame 200, so the title
-screen is idle, not a loading screen. "The game is still loading and ignores
-input" is therefore refuted for this phase.
+- private accessor `this+0x18+8*i` <- `shared+0x9a00+0x5000*i`, i=0..9;
+- `GetInternalState` indexes that PRIVATE table, not the shared-memory head;
+- FullKey count/tail/first slot are at entry+0x40/+0x38/+0x48;
+- Handheld count/tail/first slot are at entry+0x390/+0x388/+0x398;
+- the existing publisher's ring base entry+0x28, stride0x350, slot stride0x30
+  matches those offsets: the Handheld ring is ring1.
 
-## 2. The title does not poll the pad over IPC
+The table in build196's experiment at `shared+0x18` is therefore unrelated.
+A zero there never established that the guest read a NULL Npad pointer.
 
-`EP_HID` (enum index 45, `endpoint=0x2d`) appears **20 times in the whole run**:
-commands `0x6a`×9, `0xc8`×4, `0x0`, `0x6d`, `0x64`, `0x3`, `0x66`, `0x78`, `0xcb`.
-Those are setup (styles, joy-hold type, vibration info) plus one shared-memory
-handle request. There is no per-frame state query, so the title reads a **shared
-memory** region, as nn::hid normally does.
+Reproduce the ten exact accessor stores (read-only, hash-pinned SDK input):
 
-## 3. What the SDK says that memory looks like
+    python3 tools/inspect_hid109_attach.py OWNER_IMAGE_DIR
 
-`nn::hid::detail::NpadSharedMemoryAccessor::GetInternalState(unsigned)` at
-`sdk.text.seg+0x207ec0`:
+`evidence/hid-watch-region-01/sdk-accessor-contract.json` is the generated
+receipt. It contains offsets and the SDK hash, no game binary or key material.
 
-```
-cmp  w1,#0x10 ; mov w8,#8 ; cinc w8,w8,eq      ; id==0x10 -> 9
-cmp  w1,#8    ; csel w8,w1,w8,lo               ; id<8 -> id, else 8/9
-add  x8,x0,w8,sxtw #3 ; add x8,x8,#0x18 ; ldar x0,[x8]
-```
+## Guest reads are now directly observed
 
-So an npad id indexes a table at **+0x18 with 8-byte entries** (ids 0–7, then 8
-for 0x10 and 9 for 0x20), and the loaded 64-bit value is what the accessor then
-uses. The adapter currently publishes entries at `shared+0x9a00+0x5000*i` with
-rings at `+0x28+0x350*ring` — a layout inherited from a different SDK generation.
-That is not automatically what SDK 10.9.0.0 reads.
+`LC2_HID_WATCH=1` protects the guest's read-only 0x40000 mapping with PROT_NONE.
+The host writes through a different mapping of the shared object, unchanged.
+On first access to a page, the signal handler restores PROT_READ and logs the
+fault address and guest PC. This is diagnostic only; it changes neither game
+instructions nor HID content. Build199 uses a bounded stack log plus write(),
+not stdio in the signal handler, checks restoration failure, and does not
+swallow later faults on an already-restored page.
 
-## 4. Falsified: "the press goes to the wrong Npad"
+Build198, `evidence/hid-watch-region-01/latest.log`, records:
 
-`LC2_HID_BROADCAST=1` (diagnostic A/B, build 194) publishes the same sample into
-**every** npad entry (10) and **every** ring (7), with styles forced to FullKey.
-Measured on the live title (`../evidence/hid-broadcast-01/`), with the press
-confirmed in the adapter's own receipt (`HID_SAMPLE … buttons=0x2`, `0x400`):
+- shared mapping at 0x6710604000, size0x40000;
+- style reads at SDK+0x208814 for all ten canonical entries (including
+  shared+0x9a00 and shared+0x31a00);
+- a read at shared+0x32008, SDK+0x208ce4. Disassembly identifies it as the
+  Handheld reader's slot-sequence load, not FullKey and not the region head.
 
-| capture | mean luminance | band 300–600 rows | changed pixels vs title |
-|---|---:|---:|---:|
-| at-title | 3.72 | 3.30 | — |
-| after A | 3.72 | 3.29 | 3420 (max Δ 83) |
-| after Start | 3.71 | 3.18 | 3702 (max Δ 96) |
+Thus the guest DOES consult the canonical shared-memory entries and the
+Handheld state path. First-page-only watch build197 recorded no fault because
+none of these accesses touches page0. That negative result said nothing about
+the rest of the region.
 
-The differences are ember/rain animation spread over the frame; the region where a
-menu would be drawn does not change. Broadcasting to every entry and ring produced
-no visible change, so the failure is **not** which NpadId/style/ring we address.
-It is the published shape (or the region) itself.
+The watch is first-access-per-page, not a per-frame trace. It does not prove
+that any particular pressed button was consumed, nor whether all state types
+are read later on pages already restored.
 
-## 5. The region head is EMPTY — measured, this is the defect
+## What earlier input tests actually established
 
-`LC2_HID_DUMP=1` (build 195, diagnostic) prints the first 0xA0 bytes of the
-published region on the first press, plus the id-table this SDK's accessor indexes
-(`+0x18 + 8*i` for i = 0..9). Measured on a live run with the press confirmed in
-the same log (`../evidence/hid-dump-01/hid-dump.txt`):
+- The physical SDL provider opens `TRIMUI Player1`, GUID
+  `0300a3845e0400008e02000014010000`, /dev/input/event4.
+- Injecting Linux BTN_SOUTH (0x130) produces guest buttons0x2, i.e. Switch B,
+  not Switch A. BTN_START (0x13b) produces buttons0x400.
+- Earlier 140ms injections produced no demonstrated menu transition. A short
+  press at low frame rate can be missed; host publication is not consumption.
+- `LC2_HID_BROADCAST` forced FullKey style even on the Handheld entry. Its
+  negative visual result did not exclude a style-dependent routing issue.
+- No asset reads or texture initialization after frame~200 in the previous
+  long run supports an idle title scene, but says nothing about menu readiness
+  or the correctness of its input gates.
 
-```
-head:   000=00000000 … 09c=00000000        (every word zero)
-id-table: +018=0000000000000000 … +060=0000000000000000   (all ten zero)
-```
+## Next bounded input measurement
 
-So the accessor at `sdk+0x207ec0` loads zero for every npad id, and no entry we
-write at `+0x9a00` can be seen: the guest never reaches that table. This is the
-first measured defect in the input path, and it explains why the broadcast A/B
-(section 4) changed nothing — the record the title reads was never populated.
+Build199 keeps the canonical publisher, removes the unrelated head-table
+experiment, and can watch the region independently. Compare long (1500ms)
+BTN_EAST/SOUTH/WEST/NORTH/START presses with and without the existing
+`MOMO_NPAD_HANDHELD=1` diagnostic. Require a real in-run DRM capture, numerical
+image comparison and guest/host receipts before claiming a menu transition.
+Do not call diagnostic routing a shipping fix without a matched control.
 
-Two candidate causes remain, and they are distinguishable by one experiment each:
+Completed on the same build199 binary (1500ms holds, five-button sweep):
 
-1. the shared region we publish into is not the one the accessor reads (the title
-   may map a second HID region for the internal-state table), or
-2. this SDK expects the +0x18 table to be FILLED by the platform (8 bytes per npad
-   id, ids 0–7 plus 8 for 0x10 and 9 for 0x20) and our publisher writes only the
-   entry table at +0x9a00, leaving the table the accessor uses at zero.
+| run | final presented frame | stop | mean capture luminance range | visible menu |
+|---|---:|---|---|---|
+| hid-long-fullkey-01 | 681 | TIME_LIMIT | 3.717–3.819 | not demonstrated |
+| hid-long-handheld-clean-01 | 648 | TIME_LIMIT | 3.688–3.738 | not demonstrated |
 
-Next step: decide between them by A/B-ing the +0x18 table (guest address of our
-entry block vs an offset/id), never by touching the entry table again until the
-head is non-zero.
+Both collected device states report runtime=0, MainUI=1, CPU0–7 online.
+The separate `hid-long-handheld-01` is contaminated by debugging: a first GDB
+attach stopped at an unrelated runtime SIGTRAP, not the requested load. A
+second attempt passed an execution-breakpoint trap into the adapter, causing
+UNKNOWN_TRAP at SDK+0x208cf4. Neither GDB dump proves consumption of a button.
+Do not count harness exit0 as a successful game run. The clean repeat above
+contains no debugger and ends at TIME_LIMIT.
 
-## 6. What the title's own reader expects (derived, not borrowed)
+The earlier short button timing is therefore not the whole explanation.
+Direct tracing of menu initialization is documented in `menu-initialization.md`.
 
-Resolving the call chain removes the guesswork:
+## Host regression
 
-- `nn::hid::GetNpadStates(NpadFullKeyState*, int, const uint&)` at `sdk+0x2147b0`
-  is a thin wrapper; it calls through the GOT slot at `0xc62240` (R_AARCH64_ABS64,
-  .dynsym index 18224) to `nn::hid::detail::GetNpadStates(Pi, NpadFullKeyState*, int,
-  const uint&)` at `sdk+0x208a40` — a symbol defined in this same module.
-- That function (`sdk+0x208a40`, disassembled) does:
-  `bl 0x56d4e0` (instance) → `ldr w1,[x24]` (npad id) → `bl 0x56d4f0`
-  (the accessor's `GetInternalState`) → **treats the returned value as a POINTER**,
-  then reads `[x0+0x40]` (count) and `[x0+0x38]` (ring counter) and walks records at
-  `x0 + index*0x30`, copying 0x28 bytes from `[rec+0x50..0x70]` into the caller's
-  state struct, with a sequence re-check through `[rec+0x48]`.
+    cc -Wall -Wextra -Werror -I ADAPTER/native tools/test_hid_watch.c -o TEST
+    TEST
 
-So for this SDK the platform must publish a **table of pointers at `+0x18`**
-(8 bytes per npad id: ids 0–7, 8 for 0x10, 9 for 0x20), each pointing at a
-per-npad block whose ring records have a **0x30-byte stride**, a sequence word at
-`+0x48`, counters at `+0x38`/`+0x40`, and the state payload at `+0x50`–`+0x70`.
-
-The adapter instead writes an entry table at `+0x9a00` with 0x5000-byte entries and
-0x350-byte rings — a different SDK generation's shape. Combined with section 5
-(the table is zero), that is why every press is invisible: the title's reader
-dereferences zero before it ever looks at our entry table.
-
-## 7. Consequences
-
-- Do not retry `LC2_HID_BROADCAST` or Npad-id A/Bs; that axis is measured and dead.
-- Next: extend the publisher for SDK 10.9.0.0 — fill the `+0x18` pointer table and
-  emit 0x30-stride ring records per npad, keeping the existing 0x9a00 entry layout
-  untouched until the new path is measured to move the menu.
-- The run still ends on `TIME_LIMIT` with 563 textures and no defect stop, so the
-  graphics side is stable while input is worked on.
-
-## 6. Device state
-
-Build 194 installed (`lamentum-nextos.before-194` keeps build 193), SHA-256
-`4c467c366b340362c8b7251d6801aaccd09e56d1ff44e652ad4127ed6149c197`, read back on
-the device. After the probe: no port process, MainUI=1, principal=1, runtime=1;
-the restored Spruce menu is in `../evidence/hid-broadcast-01/clean-menu.png`.
-`LC2_HID_BROADCAST` is off unless explicitly set to `1`.
-
-## 8. First implementation of that shape — still no menu (measured)
-
-Build 196 implements the derived contract behind `LC2_HID_SDK109=1`
-(`lc2_hid109.h` + `docs` section 6): the pointer table at `+0x18` is filled with
-the guest address of each block, and every publish advances a 17-slot ring of
-`{u64 sequence; 0x28-byte sample}` at `block+0x48`, with the tail at `+0x38` and
-the count at `+0x40`. Host test `tools/test_hid109.c` checks slot layout, wrap at
-17, count saturation and block bounds (`0x1000 + 0x400*i`, last block inside
-`0x9a00`).
-
-Live receipt (`../evidence/hid-sdk109-01/latest.log`):
-`LC2_HID_SDK109 enabled=1 …`, `LC2_HID_SDK109_PUBLISH guest=0x100ce04000
-block0=0x100ce05000 sample=1..4`, and the press registered as
-`HID_SAMPLE … buttons=0x2`. Physical result: no change again —
-
-| capture | mean luminance | band 300–600 | vs title |
-|---|---:|---:|---:|
-| at-title | 3.69 | — | — |
-| after A | 3.72 | 3.27 | 4062 px >10, max Δ 103 |
-| after Start | 3.74 | — | ember-level |
-
-So filling the correct-looking table did not move the picture either. What is now
-ruled out: routing (broadcast), the zero head (table filled), and the record shape
-as derived from `GetNpadStates(NpadFullKeyState)`. What is NOT yet known: whether
-the title calls that reader at all on its title screen — it may poll a different
-state type (Handheld/JoyDual), or gate input on a style/assignment answer it gets
-from the service at startup.
-
-Next measurement must observe the GUEST's access, not our writes: protect the
-shared region so a guest read faults (unprotecting only around our own writes) and
-log whether the title ever touches it, and from which call site. That distinguishes
-"never reads" from "reads and rejects" without another blind A/B.
+This actually triggers SIGSEGVs on three mmap pages, checks first access,
+repeat reads, bounds rejection and that a later fault on a restored page is
+not swallowed. A passing test proves watch mechanics, not game input.

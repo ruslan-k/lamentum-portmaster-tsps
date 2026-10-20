@@ -13,9 +13,16 @@ PORT = '/mnt/SDCARD/Roms/PORTS/lamentum-switch'
 HOST = 'root@192.168.50.135'
 ENV = json.loads(pathlib.Path(sys.argv[1] if len(sys.argv) > 1
                              else REPO / 'evidence/lowfloor-32-01/env.json').read_text())
-BUDGET = 520
+BUDGET = int(os.environ.get('LAMENTUM_INPUT_BUDGET', '520'))
 PRESS_AFTER = 330          # measured: title logo present by ~300 s of runtime
-KEY_MS = 140
+KEY_MS = int(os.environ.get('LAMENTUM_INPUT_HOLD_MS', '140'))
+# Optional diagnostic sweep; Linux evdev codes, not Switch button bits.
+KEY_SEQUENCE = [(0x130, 'a-south'), (0x13b, 'start')]
+if os.environ.get('LAMENTUM_INPUT_SWEEP') == '1':
+    KEY_SEQUENCE = [(0x131, 'b-east'), (0x130, 'a-south'),
+                    (0x133, 'btn-north'), (0x134, 'btn-west'), (0x13b, 'start')]
+if not 1 <= KEY_MS <= 2000:
+    raise ValueError('diagnostic hold must be 1..2000 milliseconds')
 
 
 def ssh(cmd, timeout=40):
@@ -59,7 +66,7 @@ def main():
         frames = [int(x) for x in __import__('re').findall(r'NVN_PRESENT_PIXELS frame=(\d+)', log)]
         if not pressed and frames and frames[-1] >= 400:
             shot('at-title')
-            for code,label in ((0x130,'a-south'),(0x13b,'start')):
+            for code,label in KEY_SEQUENCE:
                 script=PRESS.replace('315',str(code))
                 r = subprocess.run(['ssh', '-o', 'BatchMode=yes', HOST, 'python3 -'],
                                    input=script.encode(), capture_output=True, timeout=40)

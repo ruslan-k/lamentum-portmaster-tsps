@@ -1,0 +1,41 @@
+{
+  "reference": "at-title.png",
+  "comparison": "PIL grayscale, absolute luminance delta",
+  "note": "Metrics do not identify text, menu ownership, or gameplay.",
+  "captures": [
+    {
+      "capture": "at-title.png",
+      "mean_luminance": 3.713330078125,
+      "band_300_600_mean": 3.33815625,
+      "changed_pixels_gt10": 0,
+      "max_delta": 0,
+      "changed_bbox_xyxy": null
+    },
+    {
+      "capture": "after-a-south.png",
+      "mean_luminance": 3.7451204427083336,
+      "band_300_600_mean": 3.3584765625,
+      "changed_pixels_gt10": 2127,
+      "max_delta": 96,
+      "changed_bbox_xyxy": [
+        0,
+        0,
+        1162,
+        666
+      ]
+    },
+    {
+      "capture": "after-start.png",
+      "mean_luminance": 3.7323697916666667,
+      "band_300_600_mean": 3.3643020833333335,
+      "changed_pixels_gt10": 2132,
+      "max_delta": 59,
+      "changed_bbox_xyxy": [
+        0,
+        0,
+        1168,
+        667
+      ]
+    }
+  ]
+}

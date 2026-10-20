@@ -1,0 +1,6 @@
+LC2_MENU_TRACE enabled=1 sites=5 scope=diagnostic-original-prologue-replay
+LC2_MENU_EVENT name=ManagerMenuPrincipal.Start caller=main.text.seg+0x7bb54 x0=0x340de9900 x1=0x3419df0a0
+LC2_MENU_EVENT name=ManagerMenuPrincipal.GetResolutions caller=main.text.seg+0x16cb624 x0=0x340dc9600 x1=0x0
+LC2_MENU_EVENT name=GameObject.SetActive caller=main.text.seg+0x16cba70 x0=0x3e9e4ca20 x1=0x1
+LC2_MENU_EVENT name=GameObject.SetActive caller=main.text.seg+0x16cba84 x0=0x3e9e4c920 x1=0x1
+STOP status=TIME_LIMIT pc=0x7f9412bbd8 detail=0x0 query_memory_calls=0xff tls_trap_reads=0x0

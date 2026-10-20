@@ -2,14 +2,14 @@
 
 **Status: not playable. Build 193 reaches the game's own title screen ("Lamentum"
 logo on physical scanout) and a 420-second run ends on time rather than on a defect.
-The menu list, input actions, audio, saves and gameplay remain unverified:
-pressing A/Start reaches the adapter but the title does not react — measured, the
-published HID shared region's head (including the +0x18 npad table this SDK reads)
-is entirely zero, so the guest loads no pad state at all.**
+The menu list, input actions, audio, saves and gameplay remain unverified.
+A whole-region access watch now proves that the guest reads canonical Npad
+entries and the Handheld state. The earlier shared-head/+0x18 diagnosis was
+incorrect: that pointer table belongs to a PRIVATE SDK accessor, not shared memory.**
 
-Latest work: `docs/hid-input-contract.md` (build 194: loading proven finished
-before the title, per-frame IPC polling ruled out, npad-id broadcast falsified,
-SDK shared-memory accessor offsets measured). `docs/title-screen.md` (build 193:
+Latest work: `docs/hid-input-contract.md` (builds 198–199: direct guest-read
+receipts, hash-pinned derivation of accessor Attach, retirement of the unrelated
+head-table experiment, bounded long-press input probes). `docs/title-screen.md` (build 193:
 title screen reached, shader tail closed by appending captured programs).
 `docs/catalogue-tail.md` (build 191: the visible frame uses only real
 programs, the 64-MiB floor was the load wall, and an append-not-regenerate cycle
@@ -28,8 +28,11 @@ original texture resolution and the owner image; the 420 MiB GPU ceiling is unch
 
 The installed launcher keeps experimental memory features off unless explicitly requested;
 it uses strict GL checks, synchronous submission, SDL/KMSDRM and a 96 MiB memory floor.
-The failed pageout experiment remains disabled. The latest binary is build 196, installed
-with a device-side backup and independently verified SHA-256. The temporary watermark
+The failed pageout experiment remains disabled. The latest binary is build 200, installed
+with a device-side backup and independently verified SHA-256. Build 200 adds
+opt-in semantic tracing: `ManagerMenuPrincipal.Start` is reached and calls
+`SetActive(true)` for the principal menu and scene, yet the physical capture
+still has no readable menu choices (`docs/menu-initialization.md`). The temporary watermark
 experiment was restored to its original value and is not a persistent system change.
 
 This repository tracks the attempt to run the owner's Nintendo Switch copy of *Lamentum*

@@ -68,18 +68,18 @@ index f85a59d..13390cf 100644
          /* sub sp,sp,#imm12 */
          ctx->uc_mcontext.sp-=(instruction>>10)&0xfff;
 diff --git a/native/input_host.h b/native/input_host.h
-index cdecae8..f5f0ae0 100644
+index cdecae8..81965df 100644
 --- a/native/input_host.h
 +++ b/native/input_host.h
 @@ -6,6 +6,7 @@
  #include <sys/un.h>
  #include <math.h>
  #include "input_ring.h"
-+#include "lc2_hid109.h"
++#include "lc2_hid_watch.h"
  #include "input_gptk.h"
  #include "input_c6.h"
  #include "t2_face_position.h"
-@@ -238,16 +239,51 @@ static void hid_publish(struct hid_sample sample,unsigned connected) {
+@@ -238,16 +239,36 @@ static void hid_publish(struct hid_sample sample,unsigned connected) {
      static int hh_cfg;static unsigned handheld;
      if(!hh_cfg){const char *o=getenv("MOMO_NPAD_HANDHELD");handheld=!o||strcmp(o,"0");hh_cfg=1;
          if(handheld)printf("MOMO_NPAD_HANDHELD enabled=1 entry=8 style-bit=1 scope=diagnostic\n");}
@@ -90,32 +90,17 @@ index cdecae8..f5f0ae0 100644
 +    static int bc_cfg;static unsigned broadcast;
 +    if(!bc_cfg){const char *o=getenv("LC2_HID_BROADCAST");broadcast=o&&!strcmp(o,"1");bc_cfg=1;
 +        if(broadcast)printf("LC2_HID_BROADCAST enabled=1 entries=10 rings=7 scope=diagnostic\n");}
-+    /* LC2_HID_SDK109=1 (diagnostic): publish the record shape this SDK's own reader
-+     * uses — pointer table at +0x18 into per-npad blocks whose ring is 17 slots of
-+     * {u64 sequence; 0x28-byte sample} at +0x48 (derived from sdk+0x208a40). */
-+    static int s109_cfg;static unsigned s109;
-+    if(!s109_cfg){const char *o=getenv("LC2_HID_SDK109");s109=o&&!strcmp(o,"1");s109_cfg=1;
-+        if(s109)printf("LC2_HID_SDK109 enabled=1 table=+0x18 block=0x1000+0x400*i slots=17 stride=0x30 scope=diagnostic\n");}
-+    if(s109) {
-+        uint64_t guest=shared_regions[hid_state.shared_plus_one-1].guest;
-+        static unsigned told;
-+        if(!guest) {if(!told++)printf("LC2_HID_SDK109_NO_GUEST_MAP note=region-not-mapped-yet\n");}
-+        else {
-+            uint8_t payload[LC2_HID109_SAMPLE];memset(payload,0,sizeof payload);
-+            memcpy(payload,&sample.number,8);memcpy(payload+8,&sample.buttons,8);
-+            memcpy(payload+16,&sample.lx,4);memcpy(payload+20,&sample.ly,4);
-+            memcpy(payload+24,&sample.rx,4);memcpy(payload+28,&sample.ry,4);
-+            memcpy(payload+32,&sample.attributes,4);memcpy(payload+36,&sample.reserved,4);
-+            for(unsigned i=0;i<10;i++) {
-+                uint32_t offset=lc2_hid109_block_offset(i);
-+                uint64_t pointer=guest+offset;
-+                memcpy(shared+LC2_HID109_TABLE+8*i,&pointer,8);
-+                lc2_hid109_publish(shared+offset,sample.number,payload,sizeof payload);
-+            }
-+            static unsigned reported;
-+            if(reported++<4)printf("LC2_HID_SDK109_PUBLISH guest=0x%"PRIx64" block0=0x%"PRIx64" sample=%"PRIu64" buttons=0x%"PRIx64"\n",
-+                guest,guest+lc2_hid109_block_offset(0),sample.number,sample.buttons);
-+        }
++    /* Diagnostic only: watch guest accesses without modifying shared-memory content.
++     * SDK Attach(+0x208370) builds its +0x18 pointer table in a PRIVATE accessor;
++     * it points at shared+0x9a00+0x5000*i. The old SDK109 head-table experiment
++     * confused those address spaces and is retired. */
++    static int w_cfg;static unsigned watch;
++    if(!w_cfg){const char *o=getenv("LC2_HID_WATCH");watch=o&&!strcmp(o,"1");w_cfg=1;}
++    if(watch && !lc2_hid_watch_armed) {
++        struct shared_region *region=&shared_regions[hid_state.shared_plus_one-1];
++        if(region->guest && lc2_hid_watch_arm(region->guest,region->size))
++            printf("LC2_HID_WATCH_ARMED guest=0x%"PRIx64" size=0x%zx pages=%zu scope=diagnostic-first-access-per-page\n",
++                region->guest,(size_t)region->size,region->size/lc2_hid_watch_page());
 +    }
      for(unsigned i=0;i<10;i++) {
          uint8_t *entry=shared+0x9a00+0x5000*i;
@@ -134,7 +119,7 @@ index cdecae8..f5f0ae0 100644
              struct hid_sample value=live?actual:(struct hid_sample){.number=sample.number};
              hid_ring_publish((struct hid_ring *)(entry+0x28+ring*0x350),value);
          }
-@@ -263,6 +299,18 @@ static void hid_publish(struct hid_sample sample,unsigned connected) {
+@@ -263,6 +284,18 @@ static void hid_publish(struct hid_sample sample,unsigned connected) {
      if(sample.buttons!=hid_host.last_buttons) {
          printf("HID_SAMPLE number=%"PRIu64" buttons=0x%"PRIx64" player=%u\n",sample.number,sample.buttons,target);
          hid_host.last_buttons=sample.buttons;
@@ -374,6 +359,151 @@ index 0000000..ddc43c2
 +    return (unsigned)tail;
 +}
 +#endif
+diff --git a/native/lc2_hid_watch.h b/native/lc2_hid_watch.h
+new file mode 100644
+index 0000000..1bde144
+--- /dev/null
++++ b/native/lc2_hid_watch.h
+@@ -0,0 +1,54 @@
++/* Diagnostic first-access watch on the guest's read-only HID mapping.
++ * The writer alias stays writable. No HID content or guest code is changed.
++ * Each page is restored once. A later fault on it is NOT swallowed (e.g. writes).
++ */
++#ifndef LC2_HID_WATCH_H
++#define LC2_HID_WATCH_H
++#include <stdint.h>
++#include <sys/mman.h>
++#include <unistd.h>
++
++static uintptr_t lc2_hid_watch_guest;
++static size_t lc2_hid_watch_size,lc2_hid_watch_page_size;
++static unsigned lc2_hid_watch_armed,lc2_hid_watch_hits;
++static uint64_t lc2_hid_watch_restored[16]; /* at most 1024 pages */
++static inline size_t lc2_hid_watch_page(void) { return (size_t)sysconf(_SC_PAGESIZE); }
++static inline int lc2_hid_watch_arm(uint64_t guest,size_t size) {
++    size_t page=lc2_hid_watch_page();
++    if(!guest || guest%page || !size || size%page || size>(4U<<20) || size/page>1024)return 0;
++    lc2_hid_watch_guest=(uintptr_t)guest;lc2_hid_watch_size=size;lc2_hid_watch_page_size=page;
++    for(unsigned i=0;i<16;i++)__atomic_store_n(&lc2_hid_watch_restored[i],0,__ATOMIC_RELAXED);
++    __atomic_store_n(&lc2_hid_watch_armed,1,__ATOMIC_RELEASE);
++    if(mprotect((void *)(uintptr_t)guest,size,PROT_NONE)) {
++        __atomic_store_n(&lc2_hid_watch_armed,0,__ATOMIC_RELEASE);return 0;
++    }
++    return 1;
++}
++static inline char *lc2_hid_watch_text(char *p,const char *s) { while(*s)*p++=*s++;return p; }
++static inline char *lc2_hid_watch_hex(char *p,uint64_t n) {
++    char digits[16];unsigned count=0;
++    do {digits[count++]="0123456789abcdef"[n&15];n>>=4;}while(n);
++    while(count)*p++=digits[--count];
++    return p;
++}
++static inline int lc2_hid_watch_fault(uintptr_t address,uintptr_t pc) {
++    if(!__atomic_load_n(&lc2_hid_watch_armed,__ATOMIC_ACQUIRE))return 0;
++    if(address<lc2_hid_watch_guest || address-lc2_hid_watch_guest>=lc2_hid_watch_size)return 0;
++    size_t page=lc2_hid_watch_page_size,index=(address-lc2_hid_watch_guest)/page;
++    uint64_t mask=UINT64_C(1)<<(index%64);
++    if(__atomic_load_n(&lc2_hid_watch_restored[index/64],__ATOMIC_ACQUIRE)&mask)return 0;
++    uintptr_t base=lc2_hid_watch_guest+index*page;
++    if(mprotect((void *)base,page,PROT_READ))return 0;
++    uint64_t old=__atomic_fetch_or(&lc2_hid_watch_restored[index/64],mask,__ATOMIC_ACQ_REL);
++    if(!(old&mask)) {
++        __atomic_add_fetch(&lc2_hid_watch_hits,1,__ATOMIC_RELAXED);
++        /* write is async-signal-safe; no stdio or allocation in this handler. */
++        char line[192],*p=line;
++        p=lc2_hid_watch_text(p,"LC2_HID_WATCH_READ offset=0x");p=lc2_hid_watch_hex(p,base-lc2_hid_watch_guest);
++        p=lc2_hid_watch_text(p," address=0x");p=lc2_hid_watch_hex(p,address);
++        p=lc2_hid_watch_text(p," pc=0x");p=lc2_hid_watch_hex(p,pc);*p++='\n';
++        ssize_t written=write(STDOUT_FILENO,line,(size_t)(p-line));(void)written;
++    }
++    return 1;
++}
++#endif
+diff --git a/native/lc2_menu_trace.h b/native/lc2_menu_trace.h
+new file mode 100644
+index 0000000..b39d919
+--- /dev/null
++++ b/native/lc2_menu_trace.h
+@@ -0,0 +1,79 @@
++/* Diagnostic semantic tracing of the owner's hash-pinned Lamentum main.
++ * Changes only the adapter's private executable mapping, never image files.
++ * Replays the exact original entry instruction; no API result/state is replaced.
++ */
++#ifndef LC2_MENU_TRACE_H
++#define LC2_MENU_TRACE_H
++static unsigned lc2_menu_trace_enabled;
++static const struct {uint32_t offset,opcode;const char *name;} lc2_menu_sites[]={
++    {0x16cb4c0,0xd10203ff,"ManagerMenuPrincipal.Start"},
++    {0x16cbb00,0xd102c3ff,"ManagerMenuPrincipal.GetResolutions"},
++    {0x1a6af50,0xf81d0ff5,"GameObject.SetActive"},
++    {0x1d6770,0xa9bf7bfd,"il2cpp-null-check-helper"},
++    {0x1d66c0,0xa9bf7bfd,"il2cpp-raise-helper"}
++};
++static void lc2_menu_trace_configure(void) {
++    const char *v=getenv("LC2_MENU_TRACE");lc2_menu_trace_enabled=v&&!strcmp(v,"1");
++    if(lc2_menu_trace_enabled)printf("LC2_MENU_TRACE enabled=1 sites=5 scope=diagnostic-original-prologue-replay\n");
++}
++static int lc2_menu_site(uint64_t pc) {
++    if(!lc2_menu_trace_enabled || pc<LC2_MAIN_BASE)return -1;
++    uint64_t offset=pc-LC2_MAIN_BASE;
++    for(unsigned i=0;i<sizeof(lc2_menu_sites)/sizeof(lc2_menu_sites[0]);i++)
++        if(offset==lc2_menu_sites[i].offset)return (int)i;
++    return -1;
++}
++static unsigned lc2_menu_trace_entry(uint64_t pc,uint32_t opcode) {
++    int i=lc2_menu_site(pc);if(i<0)return 0;
++    if(opcode!=lc2_menu_sites[i].opcode)stop("LC2_MENU_TRACE_IDENTITY",pc,opcode,24);
++    return 1;
++}
++static void lc2_menu_trace_string(struct line *log,uint64_t address) {
++    for(unsigned i=0;i<80;i++) {
++        if(!accessible(address+i,1,PROT_READ)){text(log,"<unreadable>");return;}
++        unsigned char c=*(const unsigned char *)(uintptr_t)(address+i);
++        if(!c)return;
++        if(c<32 || c>126){text(log,"<non-ascii>");return;}
++        char word[2]={(char)c,0};text(log,word);
++    }
++}
++static unsigned lc2_menu_trace_handle(uint64_t pc,uint32_t opcode,ucontext_t *ctx) {
++    int index=lc2_menu_site(pc);if(index<0)return 0;
++    if(opcode!=lc2_menu_sites[index].opcode)stop("LC2_MENU_TRACE_IDENTITY",pc,opcode,24);
++    uint64_t caller=ctx->uc_mcontext.regs[30];
++    static unsigned counts[5];
++    unsigned relevant=index!=2 || (caller>=LC2_MAIN_BASE+0x16cb4c0 && caller<LC2_MAIN_BASE+0x16cbaa0);
++    if(relevant && __atomic_fetch_add(&counts[index],1,__ATOMIC_RELAXED)<32) {
++        struct line log={0};text(&log,"LC2_MENU_EVENT name=");text(&log,lc2_menu_sites[index].name);
++        text(&log," caller=");location(&log,caller);
++        text(&log," x0=");hex(&log,ctx->uc_mcontext.regs[0]);
++        text(&log," x1=");hex(&log,ctx->uc_mcontext.regs[1]);
++        if(index==4) {
++            uint64_t object=ctx->uc_mcontext.regs[0],klass=0,name=0;
++            if(accessible(object,8,PROT_READ))memcpy(&klass,(void *)(uintptr_t)object,8);
++            if(klass && accessible(klass+16,8,PROT_READ))memcpy(&name,(void *)(uintptr_t)(klass+16),8);
++            text(&log," exception-type=");if(name)lc2_menu_trace_string(&log,name);else text(&log,"unresolved");
++        }
++        emit(&log);
++        if(index>=3)trace_frames(ctx);
++    }
++    /* Exact AArch64 prologue replay; same forms as graphics_trace.h. */
++    if((opcode&0xffc003ffU)==0xd10003ffU) {
++        ctx->uc_mcontext.sp-=(opcode>>10)&0xfff;
++    } else if((opcode&0xffc00000U)==0xa9800000U) {
++        int64_t delta=(int64_t)((int32_t)(((opcode>>15)&0x7f)<<25)>>25)*8;
++        unsigned a=opcode&31,b=(opcode>>10)&31;
++        uint64_t sp=ctx->uc_mcontext.sp+delta;
++        if(!accessible(sp,16,PROT_WRITE))stop("LC2_MENU_TRACE_STACK",pc,sp,24);
++        uint64_t pair[2]={a<31?ctx->uc_mcontext.regs[a]:0,b<31?ctx->uc_mcontext.regs[b]:0};
++        memcpy((void *)(uintptr_t)sp,pair,16);ctx->uc_mcontext.sp=sp;
++    } else if((opcode&0xffe00c00U)==0xf8000c00U) {
++        int64_t delta=(int64_t)((int32_t)((opcode>>12)&0x1ff)<<23)>>23;
++        unsigned reg=opcode&31;uint64_t sp=ctx->uc_mcontext.sp+delta;
++        uint64_t value=reg<31?ctx->uc_mcontext.regs[reg]:0;
++        if(!accessible(sp,8,PROT_WRITE))stop("LC2_MENU_TRACE_STACK",pc,sp,24);
++        memcpy((void *)(uintptr_t)sp,&value,8);ctx->uc_mcontext.sp=sp;
++    } else stop("LC2_MENU_TRACE_PROLOGUE",pc,opcode,24);
++    ctx->uc_mcontext.pc+=4;return 1;
++}
++#endif
 diff --git a/native/lc2_probe_guard.h b/native/lc2_probe_guard.h
 new file mode 100644
 index 0000000..ff9ab3b
@@ -391,7 +521,7 @@ index 0000000..ff9ab3b
 +}
 +#endif
 diff --git a/native/loader.c b/native/loader.c
-index 8018af5..7a90c9d 100644
+index 8018af5..91280ac 100644
 --- a/native/loader.c
 +++ b/native/loader.c
 @@ -30,7 +30,9 @@
@@ -405,7 +535,7 @@ index 8018af5..7a90c9d 100644
  #define HOST_ADDRESS_LIMIT (8192ULL << 20)
  #define HEAP_BASE 0x1000000000ULL
  #define HEAP_LIMIT MEMORY_BUDGET
-@@ -184,6 +186,7 @@ static void trace_frames(ucontext_t *ctx) {
+@@ -184,15 +186,18 @@ static void trace_frames(ucontext_t *ctx) {
      emit(&b);
  }
  static void t2_gzram_touch(uint64_t,uint64_t); /* Frente J: guest zram, t2_guest_memory.h */
@@ -413,7 +543,35 @@ index 8018af5..7a90c9d 100644
  static void t2_stack_alias_copy(void *,uint64_t,uint64_t);static void t2_stack_alias_release_source(uint64_t,uint64_t); /* Frente J */
  #include "memory.h"
  #include "t2_memwatch.h"
-@@ -723,6 +726,9 @@ int main(int argc,char **argv) {
+ #include "normal_cpu.h"
+ #include "ipc.h"
++#include "lc2_hid_watch.h"
+ #include "nvn_bridge.h"
+ #include "t2_guest_memory.h" /* Frente J */
+ #include "t2_lazy_mesh.h" /* Frente L */
+ #include "graphics_trace.h"
++#include "lc2_menu_trace.h"
+ #include "megaman_movie.h"
+ #include "megaman_memory.h"
+ #include "megaman_heap_mapping.h"
+@@ -302,6 +307,7 @@ static void signal_dispatch(int sig,siginfo_t *info,void *opaque) {
+     uint32_t instruction=bridge_instruction(pc);
+     if(!instruction || *(const uint32_t *)(uintptr_t)pc!=TRAP_OPCODE)stop("UNKNOWN_TRAP",pc,0,23);
+     if(graphics_trace_entry(pc,instruction,ctx))return;
++    if(lc2_menu_trace_handle(pc,instruction,ctx))return;
+     if(megaman_movie_handle(pc,instruction,ctx))return;
+     if(megaman_memory_handle(pc,instruction,ctx))return;
+     if(local_register_trap(ctx,instruction))return;
+@@ -626,6 +632,8 @@ static void signal_handler(int sig,siginfo_t *info,void *opaque) {
+         return;
+     }
+     if(sig==SIGSEGV && t2_gzram_fault(info,opaque))return; /* Frente J: compressed guest block, restored; retry */
++    /* Diagnostic: the watched HID page was read by the guest; repaired, retry the load. */
++    if(sig==SIGSEGV && lc2_hid_watch_fault((uintptr_t)info->si_addr,(uintptr_t)((ucontext_t *)opaque)->uc_mcontext.pc))return;
+     ucontext_t *previous=current_guest_context;
+     signal_handler_depth++;
+     if(sig!=SIGTRAP){signal_dispatch(sig,info,opaque);return;}
+@@ -723,6 +731,9 @@ int main(int argc,char **argv) {
          if(dladdr((void *)(uintptr_t)main,&info) && info.dli_fbase)
              printf("HOST_BASE address=%p file=%s\n",info.dli_fbase,info.dli_fname?info.dli_fname:"");
      }
@@ -423,7 +581,7 @@ index 8018af5..7a90c9d 100644
      struct rlimit no_core={0,0};setrlimit(RLIMIT_CORE,&no_core);
      struct rlimit address_limit={HOST_ADDRESS_LIMIT,HOST_ADDRESS_LIMIT};
      if(setrlimit(RLIMIT_AS,&address_limit)){perror("diagnostic memory quota");return 1;}
-@@ -741,6 +747,7 @@ int main(int argc,char **argv) {
+@@ -741,6 +752,7 @@ int main(int argc,char **argv) {
      }
      t2_lazy_mesh_apply(images,sizeof(images)/sizeof(images[0])); /* Frente L: lazy quad meshes, T2_LAZY_MESH=0 disables */
      t2_image_file_map_report();
@@ -431,6 +589,23 @@ index 8018af5..7a90c9d 100644
      /* Build and staging pin the original main NSO and segment hashes. The
       * optional movie handler also checks each relevant native instruction. */
      /* Historical LC2 hooks stay off: their code and object layouts are not
+@@ -756,6 +768,7 @@ int main(int argc,char **argv) {
+      * until the hook is re-pinned for 19.3.9. Off by default. */
+     megaman_memory_configure(LC2_SDK_BASE,LC2_SDK_SHA256,LC2_RTLD_BASE,LC2_RTLD_SHA256);
+     tls_stubs_initialize();
++    lc2_menu_trace_configure();
+     aw_prof_thread=0;aw_prof_start();
+     int tls_fast=tls_stubs_install(images,sizeof(images)/sizeof(images[0]));
+     printf("TLS_READ_STUBS sites=%zu bytes=%zu offsets=0x%"PRIx64",0x%"PRIx64" fallback=%s; tls_trap_reads counts only remaining traps\n",
+@@ -769,7 +782,7 @@ int main(int argc,char **argv) {
+                 if(v!=graphics_entries[j].opcode)stop("GRAPHICS_IMAGE_IDENTITY",s->base+off,v,24);
+                 graphics_entry=1;
+             }
+-            if(graphics_entry || megaman_movie_entry(s->base+off,v) ||
++            if(graphics_entry || lc2_menu_trace_entry(s->base+off,v) || megaman_movie_entry(s->base+off,v) ||
+                megaman_memory_entry(s->base+off,v) ||
+                (v&0xffe0001fU)==0xd4000001U || (v&0xffffffe0U)==0xd53bd060U ||
+                (v&0xffffffe0U)==0xd53bd040U || (v&0xffffffe0U)==0xd51bd040U ||
 diff --git a/native/megaman_texture_view.h b/native/megaman_texture_view.h
 index 90cb048..a1ba190 100644
 --- a/native/megaman_texture_view.h

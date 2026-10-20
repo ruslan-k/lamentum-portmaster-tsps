@@ -1,0 +1,16 @@
+LC2_HID_WATCH_ARMED guest=0x6710604000 size=0x40000 pages=64 note=every-guest-read-of-this-region-faults
+LC2_HID_WATCH_READ offset=0x31000 address=0x6710635a00 pc=0xb9ec814 page-hit=1
+LC2_HID_WATCH_READ offset=0x9000 address=0x671060da00 pc=0xb9ec814 page-hit=2
+LC2_HID_WATCH_READ offset=0x32000 address=0x6710636008 pc=0xb9ecce4 page-hit=3
+LC2_HID_WATCH_READ offset=0xe000 address=0x6710612a00 pc=0xb9ec814 page-hit=4
+LC2_HID_WATCH_READ offset=0x13000 address=0x6710617a00 pc=0xb9ec814 page-hit=5
+LC2_HID_WATCH_READ offset=0x18000 address=0x671061ca00 pc=0xb9ec814 page-hit=6
+LC2_HID_WATCH_READ offset=0x1d000 address=0x6710621a00 pc=0xb9ec814 page-hit=7
+LC2_HID_WATCH_READ offset=0x22000 address=0x6710626a00 pc=0xb9ec814 page-hit=8
+LC2_HID_WATCH_READ offset=0x27000 address=0x671062ba00 pc=0xb9ec814 page-hit=9
+LC2_HID_WATCH_READ offset=0x2c000 address=0x6710630a00 pc=0xb9ec814 page-hit=10
+HID_SAMPLE number=35636 buttons=0x2 player=0
+HID_SAMPLE number=35653 buttons=0x0 player=0
+HID_SAMPLE number=36459 buttons=0x400 player=0
+HID_SAMPLE number=36476 buttons=0x0 player=0
+STOP status=TIME_LIMIT pc=0x7f8c9d6bd8 detail=0x0 query_memory_calls=0x101 tls_trap_reads=0x0

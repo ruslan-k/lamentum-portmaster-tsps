@@ -1,0 +1,80 @@
+{
+  "reference": "at-title.png",
+  "comparison": "PIL grayscale, absolute luminance delta",
+  "note": "Metrics do not identify text, menu ownership, or gameplay.",
+  "captures": [
+    {
+      "capture": "at-title.png",
+      "mean_luminance": 3.755324435763889,
+      "band_300_600_mean": 3.3157239583333333,
+      "changed_pixels_gt10": 0,
+      "max_delta": 0,
+      "changed_bbox_xyxy": null
+    },
+    {
+      "capture": "after-a-south.png",
+      "mean_luminance": 3.7499110243055553,
+      "band_300_600_mean": 3.4081953125,
+      "changed_pixels_gt10": 3781,
+      "max_delta": 68,
+      "changed_bbox_xyxy": [
+        0,
+        0,
+        1166,
+        632
+      ]
+    },
+    {
+      "capture": "after-b-east.png",
+      "mean_luminance": 3.8194867621527777,
+      "band_300_600_mean": 3.4790078125,
+      "changed_pixels_gt10": 4957,
+      "max_delta": 69,
+      "changed_bbox_xyxy": [
+        0,
+        0,
+        1166,
+        674
+      ]
+    },
+    {
+      "capture": "after-start.png",
+      "mean_luminance": 3.7336295572916667,
+      "band_300_600_mean": 3.34490625,
+      "changed_pixels_gt10": 3689,
+      "max_delta": 66,
+      "changed_bbox_xyxy": [
+        0,
+        0,
+        1166,
+        602
+      ]
+    },
+    {
+      "capture": "after-x-west.png",
+      "mean_luminance": 3.7169563802083334,
+      "band_300_600_mean": 3.2938098958333333,
+      "changed_pixels_gt10": 4424,
+      "max_delta": 102,
+      "changed_bbox_xyxy": [
+        0,
+        0,
+        1168,
+        672
+      ]
+    },
+    {
+      "capture": "after-y-north.png",
+      "mean_luminance": 3.7708192274305556,
+      "band_300_600_mean": 3.3936041666666665,
+      "changed_pixels_gt10": 4436,
+      "max_delta": 66,
+      "changed_bbox_xyxy": [
+        0,
+        0,
+        1213,
+        673
+      ]
+    }
+  ]
+}

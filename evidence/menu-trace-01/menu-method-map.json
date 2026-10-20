@@ -1,0 +1,663 @@
+{
+  "metadata_sha256": "1d2e552090312a6e17b95a41c3f04ef11547c09a38ec0a4fc98c0e3950e774ad",
+  "main_nso_sha256": "880dee71cacc42d9d40fdcfb201fd4e89278f1381aafbfff58259aa28878017a",
+  "type": "ManagerMenuPrincipal",
+  "type_definition_index": 4687,
+  "assembly": "Assembly-CSharp.dll",
+  "codegen_module_main_offset": "0x2cb29d8",
+  "method_pointer_count": 4976,
+  "fields": [
+    "_InterfazLoad",
+    "CanvasMenuInicialIdioma",
+    "CanvasMenuInicialBrillo",
+    "CanvasMenuPrincipal",
+    "CanvasOpciones",
+    "CanvasBrillo",
+    "CanvasCreditos",
+    "CanvasPanelAyuda",
+    "CanvasPanelAyudaNewGame",
+    "PanelCornerUI",
+    "CanvasMenuNuevaPartida",
+    "EscenaPrincipal",
+    "EscenaVacia",
+    "EscenaBrillo",
+    "EscenaCargar",
+    "PosiblesIdiomas",
+    "txtIdiomaSeleccionado",
+    "txtRuidoSelecionado",
+    "txtVelocidadLecturaSelecionado",
+    "txtVibracionSelecionado",
+    "txtSaveInfinitoSeleccionado",
+    "txtExplicacionSave",
+    "txtDificultadSeleccionado",
+    "SlideAudioSFX",
+    "SlideAudioBGM",
+    "_AudioMixerSFX",
+    "_AudioMixerBGM",
+    "SlideBrillo",
+    "SlideBrilloInicial",
+    "BotonesIdiomaInicial",
+    "BotonAceptarIdiomaInicial",
+    "PrimerBotonMenuPrincipal",
+    "PrimerBotonOpciones",
+    "PrimerBotonNuevaPartida",
+    "PrimerBotonCreditos",
+    "AudioSnapshotOff",
+    "EscenaJuego",
+    "TestMenuInicial",
+    "FM",
+    "LM",
+    "IdIdiomaSeleccionado",
+    "PosiblesResoluciones",
+    "IdResolucionSeleccionado",
+    "IsFullScreen",
+    "IsRuido",
+    "IsVibracion",
+    "IsSaveLimitado",
+    "Dificultad",
+    "VelocidadLectura",
+    "IdVelocidadLectura",
+    "lamentumControls",
+    "IsOpciones",
+    "IsBrillo",
+    "IsCreditos",
+    "IsChange"
+  ],
+  "field_offsets_table_main_offset": "0x2cc4508",
+  "field_offsets_pointer_main_offset": "0x24a9d64",
+  "field_offsets": [
+    {
+      "name": "_InterfazLoad",
+      "offset": "0x18"
+    },
+    {
+      "name": "CanvasMenuInicialIdioma",
+      "offset": "0x20"
+    },
+    {
+      "name": "CanvasMenuInicialBrillo",
+      "offset": "0x28"
+    },
+    {
+      "name": "CanvasMenuPrincipal",
+      "offset": "0x30"
+    },
+    {
+      "name": "CanvasOpciones",
+      "offset": "0x38"
+    },
+    {
+      "name": "CanvasBrillo",
+      "offset": "0x40"
+    },
+    {
+      "name": "CanvasCreditos",
+      "offset": "0x48"
+    },
+    {
+      "name": "CanvasPanelAyuda",
+      "offset": "0x50"
+    },
+    {
+      "name": "CanvasPanelAyudaNewGame",
+      "offset": "0x58"
+    },
+    {
+      "name": "PanelCornerUI",
+      "offset": "0x60"
+    },
+    {
+      "name": "CanvasMenuNuevaPartida",
+      "offset": "0x68"
+    },
+    {
+      "name": "EscenaPrincipal",
+      "offset": "0x70"
+    },
+    {
+      "name": "EscenaVacia",
+      "offset": "0x78"
+    },
+    {
+      "name": "EscenaBrillo",
+      "offset": "0x80"
+    },
+    {
+      "name": "EscenaCargar",
+      "offset": "0x88"
+    },
+    {
+      "name": "PosiblesIdiomas",
+      "offset": "0x90"
+    },
+    {
+      "name": "txtIdiomaSeleccionado",
+      "offset": "0x98"
+    },
+    {
+      "name": "txtRuidoSelecionado",
+      "offset": "0xa0"
+    },
+    {
+      "name": "txtVelocidadLecturaSelecionado",
+      "offset": "0xa8"
+    },
+    {
+      "name": "txtVibracionSelecionado",
+      "offset": "0xb0"
+    },
+    {
+      "name": "txtSaveInfinitoSeleccionado",
+      "offset": "0xb8"
+    },
+    {
+      "name": "txtExplicacionSave",
+      "offset": "0xc0"
+    },
+    {
+      "name": "txtDificultadSeleccionado",
+      "offset": "0xc8"
+    },
+    {
+      "name": "SlideAudioSFX",
+      "offset": "0xd0"
+    },
+    {
+      "name": "SlideAudioBGM",
+      "offset": "0xd8"
+    },
+    {
+      "name": "_AudioMixerSFX",
+      "offset": "0xe0"
+    },
+    {
+      "name": "_AudioMixerBGM",
+      "offset": "0xe8"
+    },
+    {
+      "name": "SlideBrillo",
+      "offset": "0xf0"
+    },
+    {
+      "name": "SlideBrilloInicial",
+      "offset": "0xf8"
+    },
+    {
+      "name": "BotonesIdiomaInicial",
+      "offset": "0x100"
+    },
+    {
+      "name": "BotonAceptarIdiomaInicial",
+      "offset": "0x108"
+    },
+    {
+      "name": "PrimerBotonMenuPrincipal",
+      "offset": "0x110"
+    },
+    {
+      "name": "PrimerBotonOpciones",
+      "offset": "0x118"
+    },
+    {
+      "name": "PrimerBotonNuevaPartida",
+      "offset": "0x120"
+    },
+    {
+      "name": "PrimerBotonCreditos",
+      "offset": "0x128"
+    },
+    {
+      "name": "AudioSnapshotOff",
+      "offset": "0x130"
+    },
+    {
+      "name": "EscenaJuego",
+      "offset": "0x138"
+    },
+    {
+      "name": "TestMenuInicial",
+      "offset": "0x140"
+    },
+    {
+      "name": "FM",
+      "offset": "0x148"
+    },
+    {
+      "name": "LM",
+      "offset": "0x150"
+    },
+    {
+      "name": "IdIdiomaSeleccionado",
+      "offset": "0x158"
+    },
+    {
+      "name": "PosiblesResoluciones",
+      "offset": "0x160"
+    },
+    {
+      "name": "IdResolucionSeleccionado",
+      "offset": "0x168"
+    },
+    {
+      "name": "IsFullScreen",
+      "offset": "0x16c"
+    },
+    {
+      "name": "IsRuido",
+      "offset": "0x16d"
+    },
+    {
+      "name": "IsVibracion",
+      "offset": "0x16e"
+    },
+    {
+      "name": "IsSaveLimitado",
+      "offset": "0x16f"
+    },
+    {
+      "name": "Dificultad",
+      "offset": "0x170"
+    },
+    {
+      "name": "VelocidadLectura",
+      "offset": "0x174"
+    },
+    {
+      "name": "IdVelocidadLectura",
+      "offset": "0x178"
+    },
+    {
+      "name": "lamentumControls",
+      "offset": "0x180"
+    },
+    {
+      "name": "IsOpciones",
+      "offset": "0x188"
+    },
+    {
+      "name": "IsBrillo",
+      "offset": "0x189"
+    },
+    {
+      "name": "IsCreditos",
+      "offset": "0x18a"
+    },
+    {
+      "name": "IsChange",
+      "offset": "0x18b"
+    }
+  ],
+  "limitations": "Static call mapping only. Does not prove live execution or an exception.",
+  "start": {
+    "name": "Start",
+    "token": "0x6000441",
+    "main_offset": "0x16cb4c0",
+    "direct_calls": [
+      {
+        "site": "0x16cb4f4",
+        "target": "0x1d65d0",
+        "names": []
+      },
+      {
+        "site": "0x16cb53c",
+        "target": "0x1d66e0",
+        "names": []
+      },
+      {
+        "site": "0x16cb54c",
+        "target": "0x1a42e60",
+        "names": [
+          "Object.op_Inequality"
+        ]
+      },
+      {
+        "site": "0x16cb570",
+        "target": "0x1d66e0",
+        "names": []
+      },
+      {
+        "site": "0x16cb584",
+        "target": "0x1a63830",
+        "names": [
+          "Debug.Log"
+        ]
+      },
+      {
+        "site": "0x16cb5a0",
+        "target": "0x1d65d0",
+        "names": []
+      },
+      {
+        "site": "0x16cb5b8",
+        "target": "0x1d6750",
+        "names": []
+      },
+      {
+        "site": "0x16cb5c4",
+        "target": "0x1aa3f00",
+        "names": [
+          "Object..ctor"
+        ]
+      },
+      {
+        "site": "0x16cb5d8",
+        "target": "0x1a3e580",
+        "names": [
+          "MonoBehaviour.StartCoroutine"
+        ]
+      },
+      {
+        "site": "0x16cb5f8",
+        "target": "0x1d66e0",
+        "names": []
+      },
+      {
+        "site": "0x16cb600",
+        "target": "0x14dad40",
+        "names": [
+          "LanguageManager.get_Instance"
+        ]
+      },
+      {
+        "site": "0x16cb620",
+        "target": "0x16cbb00",
+        "names": [
+          "ManagerMenuPrincipal.GetResolutions"
+        ]
+      },
+      {
+        "site": "0x16cb634",
+        "target": "0x1c45a50",
+        "names": []
+      },
+      {
+        "site": "0x16cb64c",
+        "target": "0x1a457e0",
+        "names": [
+          "PlayerPrefs.HasKey"
+        ]
+      },
+      {
+        "site": "0x16cb66c",
+        "target": "0x1a6af50",
+        "names": [
+          "GameObject.SetActive"
+        ]
+      },
+      {
+        "site": "0x16cb680",
+        "target": "0x1a6af50",
+        "names": [
+          "GameObject.SetActive"
+        ]
+      },
+      {
+        "site": "0x16cb6a8",
+        "target": "0x1336750",
+        "names": []
+      },
+      {
+        "site": "0x16cb6d0",
+        "target": "0x1a457e0",
+        "names": [
+          "PlayerPrefs.HasKey"
+        ]
+      },
+      {
+        "site": "0x16cb6e0",
+        "target": "0x1a455f0",
+        "names": [
+          "PlayerPrefs.GetFloat"
+        ]
+      },
+      {
+        "site": "0x16cb6f0",
+        "target": "0x1a455f0",
+        "names": [
+          "PlayerPrefs.GetFloat"
+        ]
+      },
+      {
+        "site": "0x16cb700",
+        "target": "0x1a455f0",
+        "names": [
+          "PlayerPrefs.GetFloat"
+        ]
+      },
+      {
+        "site": "0x16cb74c",
+        "target": "0x1a600e0",
+        "names": []
+      },
+      {
+        "site": "0x16cb75c",
+        "target": "0x1a455f0",
+        "names": [
+          "PlayerPrefs.GetFloat"
+        ]
+      },
+      {
+        "site": "0x16cb784",
+        "target": "0x1a4a5c0",
+        "names": [
+          "RenderSettings.set_ambientLight"
+        ]
+      },
+      {
+        "site": "0x16cb7b4",
+        "target": "0x1d6720",
+        "names": []
+      },
+      {
+        "site": "0x16cb7cc",
+        "target": "0x17bf670",
+        "names": [
+          "String.Concat"
+        ]
+      },
+      {
+        "site": "0x16cb7f0",
+        "target": "0x1d66e0",
+        "names": []
+      },
+      {
+        "site": "0x16cb7fc",
+        "target": "0x1a63830",
+        "names": [
+          "Debug.Log"
+        ]
+      },
+      {
+        "site": "0x16cb818",
+        "target": "0x1d6720",
+        "names": []
+      },
+      {
+        "site": "0x16cb830",
+        "target": "0x17bf670",
+        "names": [
+          "String.Concat"
+        ]
+      },
+      {
+        "site": "0x16cb838",
+        "target": "0x1a63830",
+        "names": [
+          "Debug.Log"
+        ]
+      },
+      {
+        "site": "0x16cb84c",
+        "target": "0x1a457e0",
+        "names": [
+          "PlayerPrefs.HasKey"
+        ]
+      },
+      {
+        "site": "0x16cb868",
+        "target": "0x1a45480",
+        "names": [
+          "PlayerPrefs.GetInt"
+        ]
+      },
+      {
+        "site": "0x16cb880",
+        "target": "0x1a45480",
+        "names": [
+          "PlayerPrefs.GetInt"
+        ]
+      },
+      {
+        "site": "0x16cb898",
+        "target": "0x1a45480",
+        "names": [
+          "PlayerPrefs.GetInt"
+        ]
+      },
+      {
+        "site": "0x16cb8ac",
+        "target": "0x1a515f0",
+        "names": [
+          "Screen.SetResolution"
+        ]
+      },
+      {
+        "site": "0x16cb8b8",
+        "target": "0x1a513f0",
+        "names": [
+          "Screen.get_currentResolution"
+        ]
+      },
+      {
+        "site": "0x16cb8cc",
+        "target": "0x1a506b0",
+        "names": []
+      },
+      {
+        "site": "0x16cb8dc",
+        "target": "0x1a452e0",
+        "names": [
+          "PlayerPrefs.SetInt"
+        ]
+      },
+      {
+        "site": "0x16cb8e8",
+        "target": "0x1a506d0",
+        "names": []
+      },
+      {
+        "site": "0x16cb900",
+        "target": "0x1a452e0",
+        "names": [
+          "PlayerPrefs.SetInt"
+        ]
+      },
+      {
+        "site": "0x16cb908",
+        "target": "0x1a514a0",
+        "names": [
+          "Screen.get_fullScreen"
+        ]
+      },
+      {
+        "site": "0x16cb930",
+        "target": "0x1a452e0",
+        "names": [
+          "PlayerPrefs.SetInt"
+        ]
+      },
+      {
+        "site": "0x16cb94c",
+        "target": "0x1a457e0",
+        "names": [
+          "PlayerPrefs.HasKey"
+        ]
+      },
+      {
+        "site": "0x16cb960",
+        "target": "0x1a455f0",
+        "names": [
+          "PlayerPrefs.GetFloat"
+        ]
+      },
+      {
+        "site": "0x16cb990",
+        "target": "0x1a455f0",
+        "names": [
+          "PlayerPrefs.GetFloat"
+        ]
+      },
+      {
+        "site": "0x16cb9ac",
+        "target": "0x1a454d0",
+        "names": [
+          "PlayerPrefs.SetFloat"
+        ]
+      },
+      {
+        "site": "0x16cb9c4",
+        "target": "0x1a454d0",
+        "names": [
+          "PlayerPrefs.SetFloat"
+        ]
+      },
+      {
+        "site": "0x16cb9dc",
+        "target": "0x1a455f0",
+        "names": [
+          "PlayerPrefs.GetFloat"
+        ]
+      },
+      {
+        "site": "0x16cba04",
+        "target": "0x1a455f0",
+        "names": [
+          "PlayerPrefs.GetFloat"
+        ]
+      },
+      {
+        "site": "0x16cba44",
+        "target": "0x1a45760",
+        "names": [
+          "PlayerPrefs.GetString"
+        ]
+      },
+      {
+        "site": "0x16cba58",
+        "target": "0x14e42d0",
+        "names": [
+          "LanguageManager.ChangeLanguage"
+        ]
+      },
+      {
+        "site": "0x16cba6c",
+        "target": "0x1a6af50",
+        "names": [
+          "GameObject.SetActive"
+        ]
+      },
+      {
+        "site": "0x16cba80",
+        "target": "0x1a6af50",
+        "names": [
+          "GameObject.SetActive"
+        ]
+      },
+      {
+        "site": "0x16cba8c",
+        "target": "0x1d6770",
+        "names": []
+      },
+      {
+        "site": "0x16cba90",
+        "target": "0x1d67e0",
+        "names": []
+      },
+      {
+        "site": "0x16cba98",
+        "target": "0x1d66c0",
+        "names": []
+      }
+    ]
+  }
+}

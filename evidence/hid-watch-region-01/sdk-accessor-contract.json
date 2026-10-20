@@ -1,0 +1,57 @@
+{
+  "sdk_text_sha256": "ff614dae42158f50ffd1e8c28f268fcf85a56dcc8a97c020d960ce2f6ea9d421",
+  "attach_sdk_offset": "0x208370",
+  "pointer_table_owner": "private SDK accessor, NOT HID shared-memory head",
+  "stores": [
+    {
+      "sdk_pc": "0x208404",
+      "private_accessor_offset": "0x18",
+      "shared_memory_offset": "0x9a00"
+    },
+    {
+      "sdk_pc": "0x208414",
+      "private_accessor_offset": "0x20",
+      "shared_memory_offset": "0xea00"
+    },
+    {
+      "sdk_pc": "0x208428",
+      "private_accessor_offset": "0x28",
+      "shared_memory_offset": "0x13a00"
+    },
+    {
+      "sdk_pc": "0x20843c",
+      "private_accessor_offset": "0x30",
+      "shared_memory_offset": "0x18a00"
+    },
+    {
+      "sdk_pc": "0x208450",
+      "private_accessor_offset": "0x38",
+      "shared_memory_offset": "0x1da00"
+    },
+    {
+      "sdk_pc": "0x208464",
+      "private_accessor_offset": "0x40",
+      "shared_memory_offset": "0x22a00"
+    },
+    {
+      "sdk_pc": "0x208478",
+      "private_accessor_offset": "0x48",
+      "shared_memory_offset": "0x27a00"
+    },
+    {
+      "sdk_pc": "0x20848c",
+      "private_accessor_offset": "0x50",
+      "shared_memory_offset": "0x2ca00"
+    },
+    {
+      "sdk_pc": "0x2084a0",
+      "private_accessor_offset": "0x58",
+      "shared_memory_offset": "0x31a00"
+    },
+    {
+      "sdk_pc": "0x2084b8",
+      "private_accessor_offset": "0x60",
+      "shared_memory_offset": "0x36a00"
+    }
+  ]
+}

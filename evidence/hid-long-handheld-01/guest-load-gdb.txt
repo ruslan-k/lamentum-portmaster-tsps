@@ -1,0 +1,78 @@
+[New LWP 2850]
+[New LWP 2851]
+[New LWP 2852]
+[New LWP 2853]
+[New LWP 2854]
+[New LWP 2855]
+[New LWP 2856]
+[New LWP 2857]
+[New LWP 2858]
+[New LWP 2859]
+[New LWP 2860]
+[New LWP 2861]
+[New LWP 2862]
+[New LWP 2863]
+[New LWP 2864]
+[New LWP 2865]
+[New LWP 2866]
+[New LWP 2867]
+[New LWP 2868]
+[New LWP 2869]
+[New LWP 2870]
+[New LWP 2871]
+[New LWP 2872]
+[New LWP 2873]
+[New LWP 2874]
+[New LWP 2875]
+[New LWP 2876]
+[New LWP 2877]
+[New LWP 2879]
+[New LWP 2880]
+[New LWP 2881]
+[New LWP 2882]
+[New LWP 2883]
+[New LWP 2884]
+[New LWP 2885]
+[New LWP 2886]
+[New LWP 2887]
+[New LWP 2888]
+[New LWP 2889]
+[New LWP 2890]
+[New LWP 2891]
+[New LWP 2892]
+[New LWP 2893]
+[New LWP 2894]
+[New LWP 2895]
+[New LWP 2896]
+[New LWP 2900]
+[New LWP 2929]
+[New LWP 2957]
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/libthread_db.so.1".
+0x0000007fa3cc5bd4 in __futex_abstimed_wait_cancelable64 () from /lib/libpthread.so.0
+warning: File "/usr/lib/libstdc++.so.6.0.28-gdb.py" auto-loading has been declined by your `auto-load safe-path' set to "$debugdir:$datadir/auto-load".
+To enable execution of this file add
+	add-auto-load-safe-path /usr/lib/libstdc++.so.6.0.28-gdb.py
+line to your configuration file "/root/.gdbinit".
+To completely disable this security protection add
+	set auto-load safe-path /
+line to your configuration file "/root/.gdbinit".
+For more information about this security protection see the
+"Auto-loading safe path" section in the GDB manual.  E.g., run from the shell:
+	info "(gdb)Auto-loading safe path"
+Hardware assisted breakpoint 1 at 0xb9eccf4
+
+Thread 49 "terminator2d-ne" received signal SIGTRAP, Trace/breakpoint trap.
+[Switching to Thread 0x7f9003d860 (LWP 2929)]
+0x000000000bb208e0 in ?? ()
+pc             0xbb208e0           0xbb208e0
+x0             0xfbf7e8            16513000
+x2             0x4                 4
+x17            0xbb208e0           196217056
+x21            0x340732080         13966188672
+0x340732080:	0x0000000000000000	0x0000000000000000
+0x340732090:	0x0000000000000000	0x0000000000000000
+0x3407320a0:	0x0000000000000000	0x0000000000000000
+[Inferior 1 (process 2849) detached]
+
+GDB_EXIT 0
