@@ -4,20 +4,24 @@
 physical scanout now shows a partial rainy scene rather than the white field.
 Complete rendering, the game menu, input and gameplay remain unverified.**
 
-Latest work: `docs/probe-disabled-fragment.md` (build 180: one guarded real
-fragment translation, TEST substitutes 8 → 7). `docs/shader-literal-bank.md`
+Latest work: `docs/catalogue-tail.md` (build 191: the visible frame uses only real
+programs, the 64-MiB floor was the load wall, and an append-not-regenerate cycle
+closes the remaining shader tail; catalogue 34 → 37 programs).
+`docs/probe-disabled-fragment.md` records the guarded real fragment translation
+(TEST substitutes 8 → 7). `docs/shader-literal-bank.md`
 records build 178's capture-validated literal specialization, and
 `docs/cbuf-unit-isolation.md` the preceding same-binary A/B: 37 colliding
 audit records versus zero, with physical captures. Memory history remains in
 `docs/loading-memory-170-174.md`, `docs/loading-memory.md` and `docs/porting-log.md`.
 The historical best loading probe initialized 522 textures before its physical-memory
 floor; the new short rendering A/B does not establish an improvement to that limit.
-Eight TEST shader substitutes remain. Lossless backing/deferred uploads preserve
+Seven TEST shader substitutes remain; measured, none of them is drawn in the
+current frame, so they are not on the critical path to a first menu. Lossless backing/deferred uploads preserve
 original texture resolution and the owner image; the 420 MiB GPU ceiling is unchanged.
 
 The installed launcher keeps experimental memory features off unless explicitly requested;
 it uses strict GL checks, synchronous submission, SDL/KMSDRM and a 96 MiB memory floor.
-The failed pageout experiment remains disabled. The latest binary is build 180, installed
+The failed pageout experiment remains disabled. The latest binary is build 191, installed
 with a device-side backup and independently verified SHA-256. The temporary watermark
 experiment was restored to its original value and is not a persistent system change.
 
@@ -60,6 +64,7 @@ keys, no saves. Only our own tooling, the adapter patch and measured evidence ar
 
 ## Not done yet
 
+- Close the remaining shader tail (each run still stops on an uncatalogued program).
 - Resolve the incomplete scene rendering and the scene-loading memory wall.
 - Replace TEST shader substitutes with validated translations.
 - Validate input actions, audible sound, saves and sustained gameplay/performance.

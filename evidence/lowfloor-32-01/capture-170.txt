@@ -1,0 +1,5 @@
+mainui=port=26773
+MemTotal:         986064 kB
+MemFree:           22020 kB
+MemAvailable:      80204 kB
+Screenshot saved to /mnt/SDCARD/Roms/PORTS/lamentum-switch/lowfloor-170.png (FB ID: 161, 1280x720)

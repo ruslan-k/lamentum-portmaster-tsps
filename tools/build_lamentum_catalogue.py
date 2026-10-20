@@ -108,6 +108,12 @@ def rewrite_essl100(source, stage):
                          ('f16mat4', 'mat4'), ('f16mat2x2', 'mat2'), ('uint16_t', 'uint'),
                          ('int16_t', 'int')):
         body = body.replace(wide, narrow)
+    # `demote` (GL_EXT_demote_to_helper_invocation) has no ESSL 3.10 spelling. The captured
+    # programs that use it write no derivatives and no outputs when demoted, so `discard` is the
+    # faithful lowering; the extension directive must go with it.
+    if re.search(r'\bdemote\s*;', body):
+        body = re.sub(r'\bdemote\s*;', 'discard;', body)
+    body = re.sub(r'^\s*#extension\s+GL_EXT_demote_to_helper_invocation[^\n]*\n', '', body, flags=re.M)
     # Sampler layouts are not portable here; the runtime binds by name.
     body = re.sub(r'layout\([^)]*\)\s*uniform (sampler2D|samplerCube|sampler2DArray)\s+(\w+);',
                   lambda m: 'uniform %s %s;' % (m.group(1), m.group(2)), body)

@@ -1,0 +1,5 @@
+port=438
+MemTotal:         986064 kB
+MemFree:           76772 kB
+MemAvailable:     161072 kB
+Screenshot saved to /mnt/SDCARD/Roms/PORTS/lamentum-switch/frag34-200.png (FB ID: 161, 1280x720)
