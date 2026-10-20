@@ -12,7 +12,7 @@
 static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sources[]={
 	/* 0 dump-128077a9 fragment */
 	{"", "\n"
-	 "#version 300 es\n"
+	 "#version 310 es\n"
 	 "precision mediump float;\n"
 	 "#if defined(GL_AMD_gpu_shader_half_float)\n"
 	 "#elif defined(GL_EXT_shader_explicit_arithmetic_types_float16)\n"
@@ -42,7 +42,7 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "", 1},
 	/* 1 dump-12e9d131 fragment */
 	{"", "\n"
-	 "#version 300 es\n"
+	 "#version 310 es\n"
 	 "precision mediump float;\n"
 	 "uniform highp sampler2D c3;\n"
 	 "\n"
@@ -63,7 +63,7 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "", 1},
 	/* 2 dump-14196b8e vertex */
 	{"", "\n"
-	 "#version 300 es\n"
+	 "#version 310 es\n"
 	 "precision highp float;\n"
 	 "#define fma(a, b, c) ((a) * (b) + (c))\n"
 	 "uniform highp sampler2D c3;\n"
@@ -97,7 +97,7 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "", 0},
 	/* 3 dump-1792425422-0 fragment */
 	{"", "\n"
-	 "#version 300 es\n"
+	 "#version 310 es\n"
 	 "precision mediump float;\n"
 	 "#define unpackFloat2x16(a) unpackHalf2x16(a)\n"
 	 "#define packFloat2x16(a) packHalf2x16(a)\n"
@@ -130,7 +130,7 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "", 1},
 	/* 4 dump-2991ad4b fragment */
 	{"", "\n"
-	 "#version 300 es\n"
+	 "#version 310 es\n"
 	 "precision mediump float;\n"
 	 "uniform sampler2D fs_tex0_20;\n"
 	 "\n"
@@ -154,7 +154,7 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "", 1},
 	/* 5 dump-29d0db82 vertex */
 	{"", "\n"
-	 "#version 300 es\n"
+	 "#version 310 es\n"
 	 "precision highp float;\n"
 	 "/* TEST-ONLY substitute: NOT a translation of the title's program. Written so the\n"
 	 " * replay can exercise draws/present while the real program is untranslated; the\n"
@@ -168,17 +168,50 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "", 0},
 	/* 6 dump-33650b4b fragment */
 	{"", "\n"
-	 "#version 300 es\n"
+	 "#version 310 es\n"
+	 "precision highp int;\n"
 	 "precision mediump float;\n"
-	 "out vec4 frag_color0;\n"
-	 "/* TEST-ONLY substitute: NOT a translation (see the vertex stage note). */\n"
-	 "uniform sampler2D fs_tex0_20;\n"
-	 "in vec4 varying_1;\n"
-	 "void main() { frag_color0 = texture(fs_tex0_20, varying_1.xy); }\n"
+	 "#define unpackFloat2x16(a) unpackHalf2x16(a)\n"
+	 "#define packFloat2x16(a) packHalf2x16(a)\n"
+	 "#define fma(a, b, c) ((a) * (b) + (c))\n"
+	 "#if defined(GL_AMD_gpu_shader_half_float)\n"
+	 "#elif defined(GL_EXT_shader_explicit_arithmetic_types_float16)\n"
+	 "#else\n"
+	 "\n"
+	 "#endif\n"
+	 "\n"
+	 " uniform highp sampler2D c1;\n"
+	 "\n"
+	 " uniform highp sampler2D c3_1;\n"
+	 "\n"
+	 " uniform sampler2D fs_tex0_20;\n"
+	 " uniform sampler2D fs_tex0_28;\n"
+	 "\n"
+	 "in vec4 varying_0;\n"
+	 "layout(location = 0) out vec4 frag_color0;\n"
+	 "\n"
+	 "void main()\n"
+	 "{\n"
+	 "    float _61 = fma(varying_0.x, texelFetch(c3_1, ivec2((int(4u) >> 2) & 1023, int(4u) >> 12), 0)[int(4u) & 3], texelFetch(c3_1, ivec2((int(6u) >> 2) & 1023, int(6u) >> 12), 0)[int(6u) & 3]);\n"
+	 "    float _68 = fma(varying_0.y, texelFetch(c3_1, ivec2((int(5u) >> 2) & 1023, int(5u) >> 12), 0)[int(5u) & 3], texelFetch(c3_1, ivec2((int(7u) >> 2) & 1023, int(7u) >> 12), 0)[int(7u) & 3]);\n"
+	 "    uint _75 = packHalf2x16(vec2(texture(fs_tex0_28, vec2(_61, _68)).xy));\n"
+	 "    vec4 _78 = texture(fs_tex0_20, vec2(_61, _68));\n"
+	 "    float _79 = _78.x;\n"
+	 "    float _80 = _78.y;\n"
+	 "    float _97 = float(float((-_79) + float(unpackFloat2x16(_75).x))) * texelFetch(c3_1, ivec2((int(0u) >> 2) & 1023, int(0u) >> 12), 0)[int(0u) & 3];\n"
+	 "    float _100 = float(float((-_80) + float(unpackFloat2x16(_75).y))) * texelFetch(c3_1, ivec2((int(0u) >> 2) & 1023, int(0u) >> 12), 0)[int(0u) & 3];\n"
+	 "    float _142 = max(fma(max(abs(_97), texelFetch(c1, ivec2((int(0u) >> 2) & 1023, int(0u) >> 12), 0)[int(0u) & 3]), float(int(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int((_97 > 0.0) ? 4294967295u : 0u), int(0u), int(32u)))))), int(0u), int(32u)) + (-bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int((_97 < 0.0) ? 4294967295u : 0u), int(0u), int(32u)))))), int(0u), int(32u))))), _79), texelFetch(c3_1, ivec2((int(2u) >> 2) & 1023, int(2u) >> 12), 0)[int(2u) & 3]);\n"
+	 "    float _145 = min(fma(max(abs(_100), texelFetch(c1, ivec2((int(0u) >> 2) & 1023, int(0u) >> 12), 0)[int(0u) & 3]), float(int(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int((_100 > 0.0) ? 4294967295u : 0u), int(0u), int(32u)))))), int(0u), int(32u)) + (-bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int((_100 < 0.0) ? 4294967295u : 0u), int(0u), int(32u)))))), int(0u), int(32u))))), _80), texelFetch(c3_1, ivec2((int(1u) >> 2) & 1023, int(1u) >> 12), 0)[int(1u) & 3]);\n"
+	 "    float _149 = (_142 + (-_145)) + 0.00999999977648258209228515625;\n"
+	 "    frag_color0.x = _142;\n"
+	 "    frag_color0.y = _145;\n"
+	 "    frag_color0.z = _149;\n"
+	 "    frag_color0.w = _145 * (1.0 / _149);\n"
+	 "}\n"
 	 "", 1},
 	/* 7 dump-3a41323d vertex */
 	{"", "\n"
-	 "#version 300 es\n"
+	 "#version 310 es\n"
 	 "precision highp float;\n"
 	 "#define fma(a, b, c) ((a) * (b) + (c))\n"
 	 "uniform highp sampler2D c4;\n"
@@ -217,7 +250,7 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "", 0},
 	/* 8 dump-3a75a7d0 vertex */
 	{"", "\n"
-	 "#version 300 es\n"
+	 "#version 310 es\n"
 	 "precision highp float;\n"
 	 "#define fma(a, b, c) ((a) * (b) + (c))\n"
 	 "uniform highp sampler2D c3;\n"
@@ -239,7 +272,7 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "", 0},
 	/* 9 dump-4b551bd7 fragment */
 	{"", "\n"
-	 "#version 300 es\n"
+	 "#version 310 es\n"
 	 "precision mediump float;\n"
 	 "#define fma(a, b, c) ((a) * (b) + (c))\n"
 	 "uniform sampler2D fs_tex0_20;\n"
@@ -263,7 +296,7 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "", 1},
 	/* 10 dump-56844c6b vertex */
 	{"", "\n"
-	 "#version 300 es\n"
+	 "#version 310 es\n"
 	 "precision highp float;\n"
 	 "#define fma(a, b, c) ((a) * (b) + (c))\n"
 	 "uniform highp sampler2D c3;\n"
@@ -299,7 +332,7 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "", 0},
 	/* 11 dump-6054acba vertex */
 	{"", "\n"
-	 "#version 300 es\n"
+	 "#version 310 es\n"
 	 "precision highp float;\n"
 	 "#define fma(a, b, c) ((a) * (b) + (c))\n"
 	 "uniform highp sampler2D c4;\n"
@@ -326,7 +359,7 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "", 0},
 	/* 12 dump-6a930d0e vertex */
 	{"", "\n"
-	 "#version 300 es\n"
+	 "#version 310 es\n"
 	 "precision highp float;\n"
 	 "#define fma(a, b, c) ((a) * (b) + (c))\n"
 	 "uniform highp sampler2D c4;\n"
@@ -366,17 +399,41 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "", 0},
 	/* 13 dump-7227c812 fragment */
 	{"", "\n"
-	 "#version 300 es\n"
+	 "#version 310 es\n"
+	 "precision highp int;\n"
 	 "precision mediump float;\n"
-	 "out vec4 frag_color0;\n"
-	 "/* TEST-ONLY substitute: NOT a translation (see the vertex stage note). */\n"
-	 "uniform sampler2D fs_tex0_20;\n"
+	 "#define unpackFloat2x16(a) unpackHalf2x16(a)\n"
+	 "#define packFloat2x16(a) packHalf2x16(a)\n"
+	 "#if defined(GL_AMD_gpu_shader_half_float)\n"
+	 "#elif defined(GL_EXT_shader_explicit_arithmetic_types_float16)\n"
+	 "#else\n"
+	 "\n"
+	 "#endif\n"
+	 "\n"
+	 " uniform sampler2D fs_tex0_20;\n"
+	 "\n"
+	 "in vec4 varying_0;\n"
 	 "in vec4 varying_1;\n"
-	 "void main() { frag_color0 = texture(fs_tex0_20, varying_1.xy); }\n"
+	 "layout(location = 0) out vec4 frag_color0;\n"
+	 "\n"
+	 "void main()\n"
+	 "{\n"
+	 "    mediump vec4 _49 = texture(fs_tex0_20, vec2(varying_1.x, varying_1.y));\n"
+	 "    uint _56 = packHalf2x16(vec2(_49.xy));\n"
+	 "    uint _58 = packHalf2x16(vec2(_49.zw));\n"
+	 "    float _73 = float(float(unpackFloat2x16(_56).x) * varying_0.x);\n"
+	 "    vec2 _75 = unpackFloat2x16(_56);\n"
+	 "    _75.x = _73;\n"
+	 "    float _81 = float(float(float(unpackFloat2x16(_58).y) * varying_0.w));\n"
+	 "    frag_color0.x = float(float(_81 * float(_73)));\n"
+	 "    frag_color0.y = float(float(_81 * float(float(float(_75.y) * varying_0.y))));\n"
+	 "    frag_color0.z = float(float(_81 * float(float(float(unpackFloat2x16(_58).x) * varying_0.z))));\n"
+	 "    frag_color0.w = _81;\n"
+	 "}\n"
 	 "", 1},
 	/* 14 dump-800121db fragment */
 	{"", "\n"
-	 "#version 300 es\n"
+	 "#version 310 es\n"
 	 "precision mediump float;\n"
 	 "uniform highp sampler2D c3;\n"
 	 "\n"
@@ -397,7 +454,7 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "", 1},
 	/* 15 dump-815bc387 fragment */
 	{"", "\n"
-	 "#version 300 es\n"
+	 "#version 310 es\n"
 	 "precision mediump float;\n"
 	 "layout(location = 0) out vec4 frag_color0;\n"
 	 "\n"
@@ -411,7 +468,7 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "", 1},
 	/* 16 dump-8af77a17 vertex */
 	{"", "\n"
-	 "#version 300 es\n"
+	 "#version 310 es\n"
 	 "precision highp float;\n"
 	 "#define fma(a, b, c) ((a) * (b) + (c))\n"
 	 "uniform highp sampler2D c1;\n"
@@ -480,7 +537,7 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "", 0},
 	/* 17 dump-b5d846ce vertex */
 	{"", "\n"
-	 "#version 300 es\n"
+	 "#version 310 es\n"
 	 "precision highp float;\n"
 	 "#define unpackFloat2x16(a) unpackHalf2x16(a)\n"
 	 "#define packFloat2x16(a) packHalf2x16(a)\n"
@@ -529,7 +586,7 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "", 0},
 	/* 18 dump-b894e79b vertex */
 	{"", "\n"
-	 "#version 300 es\n"
+	 "#version 310 es\n"
 	 "precision highp float;\n"
 	 "#define fma(a, b, c) ((a) * (b) + (c))\n"
 	 "uniform highp sampler2D c4;\n"
@@ -563,7 +620,7 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "", 0},
 	/* 19 dump-c523448a fragment */
 	{"", "\n"
-	 "#version 300 es\n"
+	 "#version 310 es\n"
 	 "precision mediump float;\n"
 	 "out vec4 frag_color0;\n"
 	 "/* TEST-ONLY substitute: NOT a translation (see the vertex stage note). */\n"
@@ -573,7 +630,7 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "", 1},
 	/* 20 dump-d032944a fragment */
 	{"", "\n"
-	 "#version 300 es\n"
+	 "#version 310 es\n"
 	 "precision mediump float;\n"
 	 "#define unpackFloat2x16(a) unpackHalf2x16(a)\n"
 	 "#define packFloat2x16(a) packHalf2x16(a)\n"
@@ -606,17 +663,39 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "", 1},
 	/* 21 dump-e4fb4243 fragment */
 	{"", "\n"
-	 "#version 300 es\n"
+	 "#version 310 es\n"
+	 "precision highp int;\n"
 	 "precision mediump float;\n"
-	 "out vec4 frag_color0;\n"
-	 "/* TEST-ONLY substitute: NOT a translation (see the vertex stage note). */\n"
-	 "uniform sampler2D fs_tex0_20;\n"
+	 "#define unpackFloat2x16(a) unpackHalf2x16(a)\n"
+	 "#define packFloat2x16(a) packHalf2x16(a)\n"
+	 "#if defined(GL_AMD_gpu_shader_half_float)\n"
+	 "#elif defined(GL_EXT_shader_explicit_arithmetic_types_float16)\n"
+	 "#else\n"
+	 "\n"
+	 "#endif\n"
+	 "\n"
+	 " uniform highp sampler2D c3;\n"
+	 "\n"
+	 " uniform sampler2D fs_tex0_20;\n"
+	 "\n"
+	 "in vec4 varying_0;\n"
 	 "in vec4 varying_1;\n"
-	 "void main() { frag_color0 = texture(fs_tex0_20, varying_1.xy); }\n"
+	 "layout(location = 0) out vec4 frag_color0;\n"
+	 "\n"
+	 "void main()\n"
+	 "{\n"
+	 "    mediump vec4 _55 = texture(fs_tex0_20, vec2(varying_1.x, varying_1.y));\n"
+	 "    uint _62 = packHalf2x16(vec2(_55.xy));\n"
+	 "    uint _64 = packHalf2x16(vec2(_55.zw));\n"
+	 "    frag_color0.x = float(float((float(float(varying_0.x * float(unpackFloat2x16(1073758208u).x))) * texelFetch(c3, ivec2((int(0u) >> 2) & 1023, int(0u) >> 12), 0)[int(0u) & 3]) * float(unpackFloat2x16(_62).x)));\n"
+	 "    frag_color0.y = float(float((float(float(varying_0.y * float(unpackFloat2x16(1073758208u).x))) * texelFetch(c3, ivec2((int(1u) >> 2) & 1023, int(1u) >> 12), 0)[int(1u) & 3]) * float(unpackFloat2x16(_62).y)));\n"
+	 "    frag_color0.z = float(float((float(float(varying_0.z * float(unpackFloat2x16(1073758208u).x))) * texelFetch(c3, ivec2((int(2u) >> 2) & 1023, int(2u) >> 12), 0)[int(2u) & 3]) * float(unpackFloat2x16(_64).x)));\n"
+	 "    frag_color0.w = float(float(clamp((float(float(varying_0.w * float(unpackFloat2x16(1073758208u).x))) * texelFetch(c3, ivec2((int(3u) >> 2) & 1023, int(3u) >> 12), 0)[int(3u) & 3]) * float(unpackFloat2x16(_64).y), 0.0, 1.0)));\n"
+	 "}\n"
 	 "", 1},
 	/* 22 dump-e6091e72 fragment */
 	{"", "\n"
-	 "#version 300 es\n"
+	 "#version 310 es\n"
 	 "precision mediump float;\n"
 	 "#define unpackFloat2x16(a) unpackHalf2x16(a)\n"
 	 "#define packFloat2x16(a) packHalf2x16(a)\n"
@@ -650,7 +729,7 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "", 1},
 	/* 23 dump-f3327347 fragment */
 	{"", "\n"
-	 "#version 300 es\n"
+	 "#version 310 es\n"
 	 "precision mediump float;\n"
 	 "uniform sampler2D fs_tex0_20;\n"
 	 "\n"
@@ -669,7 +748,7 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "", 1},
 	/* 24 main-86cac8 vertex */
 	{"", "\n"
-	 "#version 300 es\n"
+	 "#version 310 es\n"
 	 "precision highp float;\n"
 	 "layout(location = 0) in vec4 in_attr0;\n"
 	 "layout(location = 1) in vec4 in_attr1;\n"
@@ -687,7 +766,7 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "", 0},
 	/* 25 main-86d688 vertex */
 	{"", "\n"
-	 "#version 300 es\n"
+	 "#version 310 es\n"
 	 "precision highp float;\n"
 	 "layout(location = 0) in vec4 in_attr0;\n"
 	 "layout(location = 1) in vec4 in_attr1;\n"
@@ -706,7 +785,7 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "", 0},
 	/* 26 main-86e248 fragment */
 	{"", "\n"
-	 "#version 300 es\n"
+	 "#version 310 es\n"
 	 "precision mediump float;\n"
 	 "out vec4 frag_color0;\n"
 	 "/* TEST-ONLY substitute: NOT a translation (see the vertex stage note). */\n"
@@ -716,7 +795,7 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "", 1},
 	/* 27 main-86ef08 fragment */
 	{"", "\n"
-	 "#version 300 es\n"
+	 "#version 310 es\n"
 	 "precision mediump float;\n"
 	 "out vec4 frag_color0;\n"
 	 "/* TEST-ONLY substitute: NOT a translation (see the vertex stage note). */\n"
@@ -726,7 +805,7 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "", 1},
 	/* 28 main-86fcc8 fragment */
 	{"", "\n"
-	 "#version 300 es\n"
+	 "#version 310 es\n"
 	 "precision mediump float;\n"
 	 "out vec4 frag_color0;\n"
 	 "/* TEST-ONLY substitute: NOT a translation (see the vertex stage note). */\n"
@@ -736,7 +815,7 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "", 1},
 	/* 29 main-870b88 fragment */
 	{"", "\n"
-	 "#version 300 es\n"
+	 "#version 310 es\n"
 	 "precision mediump float;\n"
 	 "out vec4 frag_color0;\n"
 	 "/* TEST-ONLY substitute: NOT a translation (see the vertex stage note). */\n"
@@ -746,7 +825,7 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "", 1},
 	/* 30 main-871848 fragment */
 	{"", "\n"
-	 "#version 300 es\n"
+	 "#version 310 es\n"
 	 "precision mediump float;\n"
 	 "out vec4 frag_color0;\n"
 	 "/* TEST-ONLY substitute: NOT a translation (see the vertex stage note). */\n"
@@ -756,7 +835,7 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "", 1},
 	/* 31 main-872608 fragment */
 	{"", "\n"
-	 "#version 300 es\n"
+	 "#version 310 es\n"
 	 "precision mediump float;\n"
 	 "out vec4 frag_color0;\n"
 	 "/* TEST-ONLY substitute: NOT a translation (see the vertex stage note). */\n"
@@ -766,7 +845,7 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "", 1},
 	/* 32 main-8734c8 vertex */
 	{"", "\n"
-	 "#version 300 es\n"
+	 "#version 310 es\n"
 	 "precision highp float;\n"
 	 "layout(location = 0) in vec4 in_attr0;\n"
 	 "layout(location = 1) in vec4 in_attr1;\n"
@@ -784,7 +863,7 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "", 0},
 	/* 33 main-874088 fragment */
 	{"", "\n"
-	 "#version 300 es\n"
+	 "#version 310 es\n"
 	 "precision mediump float;\n"
 	 "uniform sampler2D fs_tex0_20;\n"
 	 "\n"
@@ -859,7 +938,7 @@ static const struct mm_shader_binding nvn_megaman_shader_bindings[]={
  /* 6 dump-33650b4b fragment */
  {.sha256="33650b4b250293b5c244b5b33e62a77c",.error=NULL,.control_size=2176,.code_size=1024,.sampler_count=2,.attribute_count=1,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
   .uniform_count=2,.uniforms={{.name="c1",.stage=1,.binding=0,.offset=0,.size=65536,.components=4,.word_boolean=0,.word_int=0,.word_array=4096},{.name="c3_1",.stage=1,.binding=1,.offset=0,.size=65536,.components=4,.word_boolean=0,.word_int=0,.word_array=4096}},
-  .varying_read_masks={0,15,0,0,0,0,0,0},.varying_write_masks={15,0,0,0,0,0,0,0},
+  .varying_read_masks={15,0,0,0,0,0,0,0},.varying_write_masks={15,0,0,0,0,0,0,0},
   .code_hash={0x33,0x65,0x0b,0x4b,0x25,0x02,0x93,0xb5,0xc2,0x44,0xb5,0xb3,0x3e,0x62,0xa7,0x7c,0x1f,0x03,0xed,0x85,0x71,0xac,0x3f,0xfd,0xda,0x93,0x68,0x34,0x7b,0xdc,0x61,0x66},.control_hash={0x7a,0x38,0xf8,0xcc,0x64,0x64,0xed,0xcb,0x26,0x5c,0x68,0x22,0x70,0x57,0x7a,0x3a,0x9b,0x46,0x68,0xac,0xf4,0x9d,0x26,0xee,0x9c,0x38,0x8b,0xdd,0x25,0x7b,0xbc,0x01},
   .samplers={{.name="fs_tex0_20",.stage=1,.binding=14,.offset=0,.size_query=1,.texel_fetch_bits=0,.cpu_view=0},{.name="fs_tex0_28",.stage=1,.binding=14,.offset=8,.size_query=1,.texel_fetch_bits=0,.cpu_view=0}},
   .attributes={{.name="in_attr0",.location=0,.kind=0}}},
@@ -908,7 +987,7 @@ static const struct mm_shader_binding nvn_megaman_shader_bindings[]={
  /* 13 dump-7227c812 fragment */
  {.sha256="7227c812dba30ea82b90fc43945f4156",.error=NULL,.control_size=2176,.code_size=512,.sampler_count=1,.attribute_count=2,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
   .uniform_count=0,.uniforms={},
-  .varying_read_masks={0,15,0,0,0,0,0,0},.varying_write_masks={15,0,0,0,0,0,0,0},
+  .varying_read_masks={15,15,0,0,0,0,0,0},.varying_write_masks={15,0,0,0,0,0,0,0},
   .code_hash={0x72,0x27,0xc8,0x12,0xdb,0xa3,0x0e,0xa8,0x2b,0x90,0xfc,0x43,0x94,0x5f,0x41,0x56,0xfe,0xa1,0xc4,0xef,0xaf,0x44,0x67,0xda,0x8c,0x5f,0x10,0x2b,0x30,0xf2,0x15,0x88},.control_hash={0x73,0x82,0xe6,0x2c,0x83,0x56,0xa7,0xb0,0x25,0x44,0xd9,0xc5,0x79,0x02,0x4b,0x5e,0x8d,0xc4,0xc8,0x8b,0xa5,0xc8,0x28,0xda,0x0a,0x9b,0xfb,0x70,0xfc,0xb1,0x2b,0x32},
   .samplers={{.name="fs_tex0_20",.stage=1,.binding=14,.offset=0,.size_query=1,.texel_fetch_bits=0,.cpu_view=0}},
   .attributes={{.name="in_attr0",.location=0,.kind=0},{.name="in_attr1",.location=1,.kind=0}}},
@@ -964,7 +1043,7 @@ static const struct mm_shader_binding nvn_megaman_shader_bindings[]={
  /* 21 dump-e4fb4243 fragment */
  {.sha256="e4fb424329549ccd60aad17d772a2487",.error=NULL,.control_size=2176,.code_size=512,.sampler_count=1,.attribute_count=2,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
   .uniform_count=1,.uniforms={{.name="c3",.stage=1,.binding=0,.offset=0,.size=65536,.components=4,.word_boolean=0,.word_int=0,.word_array=4096}},
-  .varying_read_masks={0,15,0,0,0,0,0,0},.varying_write_masks={15,0,0,0,0,0,0,0},
+  .varying_read_masks={15,15,0,0,0,0,0,0},.varying_write_masks={15,0,0,0,0,0,0,0},
   .code_hash={0xe4,0xfb,0x42,0x43,0x29,0x54,0x9c,0xcd,0x60,0xaa,0xd1,0x7d,0x77,0x2a,0x24,0x87,0xb4,0xe7,0x63,0x45,0x5f,0xc2,0x74,0xe7,0xe8,0x77,0x8b,0x66,0x9d,0x21,0xd8,0x61},.control_hash={0xb3,0x14,0x37,0x34,0x54,0x45,0x6f,0x87,0x73,0xf7,0xcf,0xfe,0x48,0x1e,0xa8,0x0b,0xd1,0xd9,0x84,0x17,0x4a,0x44,0x08,0xe3,0x56,0x27,0xad,0x90,0x19,0x5b,0x7d,0x62},
   .samplers={{.name="fs_tex0_20",.stage=1,.binding=14,.offset=0,.size_query=1,.texel_fetch_bits=0,.cpu_view=0}},
   .attributes={{.name="in_attr0",.location=0,.kind=0},{.name="in_attr1",.location=1,.kind=0}}},

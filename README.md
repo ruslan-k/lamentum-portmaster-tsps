@@ -1,17 +1,19 @@
 # Lamentum — experimental Switch-to-Linux-ARM64 port (TSPS / SpruceOS)
 
-**Status: not playable. The user confirms physical splash screens, followed by a black
-screen. SDL/KMSDRM surface lifetime, bound-sampler metadata and cbuf addressing have been
-corrected; the scene-loading transition still fails under memory pressure.**
+**Status: not playable. Physical splash screens were seen during bring-up; menu,
+input, audio and gameplay remain unverified. The latest bounded run progresses beyond
+the former scene-load guards, then faults at `main.text.seg+0x1177010` (NULL base + `0x9d30`).**
 
-Latest work: `docs/porting-log.md` (builds 151–155). A synchronous queue passes command-list
-reuse checks; the real SDL page-flip path survives more than one swap. An 8192×4096 BC3 atlas
-uploads at full resolution using stripe staging. TEST shader substitutes remain in the
-catalogue: successful compilation or nonblack readback is not evidence of correct gameplay.
+Latest work: `docs/loading-memory.md` (builds 156–169), following `docs/porting-log.md`.
+Large BC textures retain their original resolution. Their CPU backing can be snapshotted
+losslessly after a complete texel write; deferred textures consume GPU budget only upon
+materialization. The 420 MiB GPU budget is unchanged. Eight TEST shader substitutes remain:
+a successful draw, presentation count or white screen is not a correct game frame.
 
-The last opt-in texture-pageout experiment lost device connectivity after further loading.
-The exact cause is unconfirmed; final process/menu cleanup could not be verified for that
-run. A physical device restart is required before further testing.
+The installed launcher keeps experimental memory features off unless explicitly requested;
+it uses strict GL checks, synchronous submission, SDL/KMSDRM and a 96 MiB memory floor.
+The failed pageout experiment remains disabled. The latest binary is build 169, installed
+with a device-side backup and independently verified SHA-256.
 
 This repository tracks the attempt to run the owner's Nintendo Switch copy of *Lamentum*
 (Unity 2019.4.4f1, IL2CPP, ARM64) natively on a TrimUI Smart Pro S class handheld through a
@@ -55,7 +57,7 @@ keys, no saves. Only our own tooling, the adapter patch and measured evidence ar
 - Resolve the black screen after physical splash screens and the scene-loading memory wall.
 - Replace TEST shader substitutes with validated translations.
 - Validate input actions, audible sound, saves and sustained gameplay/performance.
-- Recover the device from the last failed experiment and verify the menu/process state.
+- Resolve scene-load memory pressure and validate the transition beyond splash screens.
 
 ## Build your own copy
 

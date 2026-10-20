@@ -56,11 +56,11 @@ def rewrite_cbuf_blocks(body, blocks):
     return body
 
 def rewrite_essl100(source, stage):
-    """Rewrite the compiler output into one ESSL 3.00 dialect for every program.
+    """Rewrite the compiler output into one ESSL 3.10 dialect for every program.
 
     Both stages of a program must use the same GLSL version: Mali answers `L0001 Shader languages do not
-    match` when a `#version 300 es` vertex is linked with a `#version 100` fragment. The builder sees one
-    file at a time and cannot know its partner, so every entry is emitted as ESSL 3.00: interface blocks
+    match` when a `#version 310 es` vertex is linked with a `#version 100` fragment. The builder sees one
+    file at a time and cannot know its partner, so every entry is emitted as ESSL 3.10: interface blocks
     survive, `attribute`/`varying` become `in`/`out`, and fragments write a declared output instead of
     `gl_FragColor`.
     """
@@ -68,7 +68,7 @@ def rewrite_essl100(source, stage):
     blocks = cbuf_blocks_of(body)
     if blocks:
         body = rewrite_cbuf_blocks(body, blocks)
-    prelude = ['#version 300 es',
+    prelude = ['#version 310 es', 'precision highp int;',
                'precision highp float;' if stage == 'vertex' else 'precision mediump float;']
     # Buffer textures are not available in the producer context on this driver
     # ("P0003: Extension 'GL_EXT_texture_buffer' not supported"), so a cbuf is a plain RGBA32F texture
@@ -148,7 +148,7 @@ def filter_rewrite(source, sampler_names):
     if not varying:
         return None
     uv = varying.group(1)
-    return ('#version 300 es\n'
+    return ('#version 310 es\n'
             'precision mediump float;\n'
             'out vec4 frag_color0;\n'
             'uniform sampler2D %s;\n'
@@ -161,7 +161,7 @@ def filter_rewrite(source, sampler_names):
             '}\n' % (main, main, uv, FILTER_NOTE, uv, main, main, main))
 
 
-PLACEHOLDER_VERTEX = ('#version 300 es\n'
+PLACEHOLDER_VERTEX = ('#version 310 es\n'
                      'precision highp float;\n'
                      '/* TEST-ONLY substitute: NOT a translation of the title\'s program. Written so the\n'
                      ' * replay can exercise draws/present while the real program is untranslated; the\n'
@@ -183,7 +183,7 @@ def placeholder_fragment(sampler_names):
                 'void main() { frag_color0 = texture(%s, varying_1.xy); }\n' % (sampler_names[0], sampler_names[0]))
     else:
         body = 'in vec4 varying_1;\nvoid main() { frag_color0 = vec4(0.5, 0.5, 0.5, 1.0); }\n'
-    return ('#version 300 es\nprecision mediump float;\nout vec4 frag_color0;\n'
+    return ('#version 310 es\nprecision mediump float;\nout vec4 frag_color0;\n'
             '/* TEST-ONLY substitute: NOT a translation (see the vertex stage note). */\n' + body)
 
 
@@ -302,7 +302,7 @@ def main():
         needs_fetch = 'texelFetch' in source or 'textureSize' in source or 'textureQueryLevels' in source
         filter = filter_rewrite(source, [s['name'] for s in samplers]) if (stage == 'fragment' and needs_fetch) else None
         placeholder = None
-        if a.placeholder and (needs_fetch or 'ssbo' in source or 'uint ' in source):
+        if a.placeholder and (needs_fetch or 'ssbo' in source or 'sampler3D' in source):
             placeholder = PLACEHOLDER_VERTEX if stage == 'vertex' else placeholder_fragment([s['name'] for s in samplers])
         if placeholder:
             translated, needs_fetch = placeholder, False

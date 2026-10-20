@@ -1,3 +1,40 @@
+diff --git a/native/filesystem.h b/native/filesystem.h
+index c34b6af..ba389b5 100644
+--- a/native/filesystem.h
++++ b/native/filesystem.h
+@@ -74,8 +74,23 @@ static int filesystem_dispatch(uint8_t *buffer,struct session *s,struct ipc_requ
+         if(offset>romfs_size || size>romfs_size-offset || size>(64ULL<<20) ||
+            (size && (req->num_outputs!=1 || size>req->outputs[0].size)))stop("INVALID_ROMFS_READ_RANGE",pc,offset,24);
+         struct line b={0};text(&b,"ROMFS_READ offset=");hex(&b,offset);text(&b," size=");hex(&b,size);emit(&b);
++        /* Optional pacing experiment: give texture consumers time to drain
++         * the loader queue before another read. Changes latency, never bytes. */
++        const char *pressure=getenv("LC2_ROMFS_BACKPRESSURE_MIB");
++        if(pressure && size) {
++            unsigned long threshold=strtoul(pressure,NULL,10)*1024UL;
++            unsigned waited=0;struct t2_meminfo memory;
++            while(waited<500 && !t2_meminfo_read(&memory) && memory.available_kib<threshold) {
++                struct timespec delay={0,50000000};nanosleep(&delay,NULL);waited+=50;
++            }
++            if(waited) {
++                static uint64_t total_ms,calls;
++                uint64_t total=__atomic_add_fetch(&total_ms,waited,__ATOMIC_RELAXED),count=__atomic_add_fetch(&calls,1,__ATOMIC_RELAXED);
++                if(count<=4 || !(count%32))printf("LC2_ROMFS_BACKPRESSURE wait-ms=%u total-ms=%"PRIu64" calls=%"PRIu64" threshold-MiB=%lu\n",waited,total,count,threshold/1024);
++            }
++        }
+         uint64_t done=0;uint8_t *dest=size?(uint8_t *)(uintptr_t)req->outputs[0].address:NULL;
+-        t2_gzram_touch((uintptr_t)dest,size); /* Frente J: pread would EFAULT on a compressed block */
++        lc2_gzram_io_pin((uintptr_t)dest,size,1); /* lifetime pin, not an expiring cold-time hint */
+         while(done<size) {
+             ssize_t got=pread(romfs_fd,dest+done,size-done,ROMFS_OFFSET+offset+done);
+             if(got<0 && errno==EINTR)continue;
+@@ -83,6 +98,7 @@ static int filesystem_dispatch(uint8_t *buffer,struct session *s,struct ipc_requ
+             done+=(uint64_t)got;
+         }
+         romfs_overlay_apply(dest,offset,size);
++        lc2_gzram_io_pin((uintptr_t)dest,size,0);
+         ipc_reply(buffer,req->token,0,NULL,0,0,req->domain);return 1;
+     }
+     return 0;
 diff --git a/native/graphics_trace.h b/native/graphics_trace.h
 index f85a59d..13390cf 100644
 --- a/native/graphics_trace.h
@@ -103,11 +140,79 @@ index 7389a4e..59df724 100644
      if(endpoint==EP_AW_STUB) {
          struct line stub={0};text(&stub,"AW_STUB_SERVICE command=");hex(&stub,req.command);text(&stub," data=");hex(&stub,req.data_size);emit(&stub);
          if(req.command==0){ipc_child(buffer,s,&req,EP_AW_STUB,pc);return;}
+diff --git a/native/lc2_fileback.h b/native/lc2_fileback.h
+new file mode 100644
+index 0000000..099c7d0
+--- /dev/null
++++ b/native/lc2_fileback.h
+@@ -0,0 +1,54 @@
++/* Lossless, private file backing for immutable-at-publication CPU ranges.
++ * Caller owns an existing RW, private mapping and excludes concurrent writers.
++ * Full pages only; writes remain private COW. File must stay immutable afterward.
++ * The caller must not use the anonymous-only guest compressor on these pages. */
++#ifndef LC2_FILEBACK_H
++#define LC2_FILEBACK_H
++#include <stdint.h>
++#include <stddef.h>
++#include <unistd.h>
++#include <sys/mman.h>
++#include <errno.h>
++#include <string.h>
++/* Snapshots are serialized by the caller. Publish permanent exclusions for
++ * anonymous-only compactors, even after a texture pool has been finalized. */
++#define LC2_FILEBACK_MAX_RANGES 4096
++static struct {uintptr_t start,end;} lc2_fileback_ranges[LC2_FILEBACK_MAX_RANGES];
++static unsigned lc2_fileback_range_count;
++static inline unsigned lc2_fileback_overlaps(uint64_t address,uint64_t size) {
++    unsigned count=__atomic_load_n(&lc2_fileback_range_count,__ATOMIC_ACQUIRE);
++    for(unsigned i=0;i<count;i++)if(address<lc2_fileback_ranges[i].end && lc2_fileback_ranges[i].start<address+size)return 1;
++    return 0;
++}
++static ssize_t lc2_fileback_snapshot(int fd,uint64_t *cursor,void *address,size_t size,uint64_t cap) {
++    uintptr_t begin=(uintptr_t)address;
++    if(!cursor || begin>UINTPTR_MAX-size || begin>UINTPTR_MAX-4095 || *cursor%4096){errno=EINVAL;return -1;}
++    uintptr_t first=(begin+4095)&~(uintptr_t)4095,end=(begin+size)&~(uintptr_t)4095;
++    size_t total=0;
++    while(first<end && *cursor<cap) {
++        unsigned slot=__atomic_load_n(&lc2_fileback_range_count,__ATOMIC_RELAXED);
++        if(slot>=LC2_FILEBACK_MAX_RANGES){errno=ENOSPC;return -1;}
++        size_t bytes=end-first;if(bytes>(1U<<20))bytes=1U<<20;
++        if(bytes>cap-*cursor)bytes=(size_t)(cap-*cursor)&~(size_t)4095;
++        if(!bytes)break;
++        size_t done=0;
++        while(done<bytes) {
++            ssize_t n=pwrite(fd,(void *)(first+done),bytes-done,(off_t)(*cursor+done));
++            if(n<0 && errno==EINTR)continue;
++            if(n<=0)return -1;
++            done+=(size_t)n;
++        }
++        if(fdatasync(fd))return -1;
++        void *probe=mmap(NULL,bytes,PROT_READ|PROT_WRITE,MAP_PRIVATE,fd,(off_t)*cursor);
++        if(probe==MAP_FAILED)return -1;
++        if(memcmp(probe,(void *)first,bytes)){munmap(probe,bytes);errno=EBUSY;return -1;}
++        void *mapped=mmap((void *)first,bytes,PROT_READ|PROT_WRITE,MAP_PRIVATE|MAP_FIXED,fd,(off_t)*cursor);
++        int error=errno;munmap(probe,bytes);
++        if(mapped==MAP_FAILED){errno=error;return -1;}
++        lc2_fileback_ranges[slot].start=first;lc2_fileback_ranges[slot].end=first+bytes;
++        __atomic_store_n(&lc2_fileback_range_count,slot+1,__ATOMIC_RELEASE);
++        *cursor+=bytes;first+=bytes;total+=bytes;
++    }
++    return (ssize_t)total;
++}
++#endif
 diff --git a/native/loader.c b/native/loader.c
-index 8018af5..21c9362 100644
+index 8018af5..5b8ac62 100644
 --- a/native/loader.c
 +++ b/native/loader.c
-@@ -741,6 +741,7 @@ int main(int argc,char **argv) {
+@@ -184,6 +184,7 @@ static void trace_frames(ucontext_t *ctx) {
+     emit(&b);
+ }
+ static void t2_gzram_touch(uint64_t,uint64_t); /* Frente J: guest zram, t2_guest_memory.h */
++static void lc2_gzram_io_pin(uint64_t,uint64_t,unsigned);
+ static void t2_stack_alias_copy(void *,uint64_t,uint64_t);static void t2_stack_alias_release_source(uint64_t,uint64_t); /* Frente J */
+ #include "memory.h"
+ #include "t2_memwatch.h"
+@@ -741,6 +742,7 @@ int main(int argc,char **argv) {
      }
      t2_lazy_mesh_apply(images,sizeof(images)/sizeof(images[0])); /* Frente L: lazy quad meshes, T2_LAZY_MESH=0 disables */
      t2_image_file_map_report();
@@ -924,7 +1029,7 @@ index 0545586..ac198d5 100644
      nvn_gl_completion.real_waits++;
  }
 diff --git a/native/nvn_render.h b/native/nvn_render.h
-index 543b4b5..d6282e8 100644
+index 543b4b5..b3098cc 100644
 --- a/native/nvn_render.h
 +++ b/native/nvn_render.h
 @@ -234,11 +234,51 @@ static void nvn_render_stencil(void) {
@@ -1098,7 +1203,7 @@ index 543b4b5..d6282e8 100644
          {   /* MOMO_UNIFORM_DUMP=<draw>: the whole constant bank bound for that draw, so a shader whose
               * values look shifted can be checked against the raw buffer instead of guessed. */
              static int cfg;static unsigned wanted;static unsigned done;
-@@ -1267,7 +1387,12 @@ static void nvn_render_draw_inner(struct nvn_record *r) {
+@@ -1267,10 +1387,36 @@ static void nvn_render_draw_inner(struct nvn_record *r) {
          if(stream>=nvn_render.stream_count||stream>=16||nvn_render.streams[stream][1])stop("NVN_VERTEX_STREAM_REQUIRED",nvn_caller,stream,20);
          struct nvn_vertex_format vf=nvn_vertex_format_decode(format);
          unsigned components=vf.components;
@@ -1111,8 +1216,33 @@ index 543b4b5..d6282e8 100644
 +        }
          unsigned element=vf.bytes,stride=nvn_render.streams[stream][0];struct nvn_range range=nvn_render.vertex[stream];
          uint64_t start=base*stride+offset,extent=maximum*stride+element;
-         if(!stride||start>range.size||extent>range.size-start)stop("NVN_VERTEX_FETCH_RANGE",nvn_caller,start+extent,24);
-@@ -1449,6 +1574,71 @@ static void nvn_render_draw_inner(struct nvn_record *r) {
+-        if(!stride||start>range.size||extent>range.size-start)stop("NVN_VERTEX_FETCH_RANGE",nvn_caller,start+extent,24);
++        if(start>range.size||extent>range.size-start) {
++            printf("LC2_VERTEX_RANGE pair=%u/%u draw=%u attrib=%u stream=%u stride=%u offset=%u element=%u base=%"PRIu64" maximum=%"PRIu64" address=0x%"PRIx64" size=%"PRIu64"\n",p->sources[0],p->sources[1],nvn_replay.draws,i,stream,stride,offset,element,base,maximum,range.address,range.size);
++            stop("NVN_VERTEX_FETCH_RANGE",nvn_caller,start+extent,24);
++        }
++        if(!stride) {
++            /* NVN stride zero repeats one element; GL's pointer stride zero
++             * instead advances tightly packed elements. Use a generic constant
++             * attribute for the measured floating/UNORM formats. */
++            if(vf.kind)stop("LC2_CONSTANT_INTEGER_ATTRIBUTE",nvn_caller,format,20);
++            const uint8_t *constant=nvn_gpu_pointer(range.address+offset,element,PROT_READ);
++            GLfloat values[4]={0,0,0,1};
++            for(unsigned k=0;k<components;k++) {
++                if(vf.type==GL_FLOAT)memcpy(values+k,constant+k*4,4);
++                else if(vf.type==GL_UNSIGNED_BYTE && vf.normalized)values[k]=constant[k]/255.0f;
++                else if(vf.type==GL_UNSIGNED_SHORT && vf.normalized){uint16_t value;memcpy(&value,constant+k*2,2);values[k]=value/65535.0f;}
++                else stop("LC2_CONSTANT_ATTRIBUTE_FORMAT",nvn_caller,format,20);
++            }
++            nvn_render_attrib_enable(i,0);glVertexAttrib4fv(i,values);
++            static unsigned logged;
++            if(logged++<8)printf("LC2_CONSTANT_ATTRIBUTE pair=%u/%u slot=%u format=0x%x value=%g,%g,%g,%g\n",p->sources[0],p->sources[1],i,format,values[0],values[1],values[2],values[3]);
++            continue;
++        }
+         void *data=nvn_gpu_pointer(range.address+start,extent,PROT_READ);nvn_render_attrib_enable(i,1);
+         if(megaman_frame_cadence_enabled() && p->sources[0]==8 && p->sources[1]==7 && i==0 &&
+            vf.type==GL_FLOAT && components==2 && !vf.normalized && maximum==2 && count==3) {
+@@ -1449,6 +1595,71 @@ static void nvn_render_draw_inner(struct nvn_record *r) {
      }
      if(preserve)momo_stencil_probe(nvn_replay.draws+1,p->sources[0],p->sources[1]);
      momo_window_draws_census(nvn_render.target,nvn_replay.last_frame,nvn_replay.draws+1,p->sources[0],p->sources[1]);
@@ -1184,7 +1314,7 @@ index 543b4b5..d6282e8 100644
      nvn_replay.draws++;nvn_render.target->draws++;
      struct nvn_texture *target_storage=zero_texture_storage_state(nvn_render.target);
      if(target_storage!=nvn_render.target)target_storage->draws++;
-@@ -1589,6 +1779,22 @@ static unsigned nvn_render_record(struct nvn_record *r) {
+@@ -1589,6 +1800,22 @@ static unsigned nvn_render_record(struct nvn_record *r) {
          static unsigned reported;if(!reported++)printf("NVN_LC2_SHADER_SCRATCH pool=0x%"PRIx64" offset=0x%"PRIx64" bytes=0x%"PRIx64" backend=GLES-driver-owned\n",a[0],a[1],size);
          return 1;
      }
@@ -1207,7 +1337,7 @@ index 543b4b5..d6282e8 100644
      case NI_nvnCommandBufferBindColorState:memcpy(&nvn_render.color,r->payload,4);return 1;
      case NI_nvnCommandBufferBindBlendState:memcpy(nvn_render.blend,r->payload,8);return 1;
      case NI_nvnCommandBufferBindDepthStencilState:memcpy(nvn_render.depth_state,r->payload,8);return 1;
-@@ -1621,6 +1827,14 @@ static unsigned nvn_render_record(struct nvn_record *r) {
+@@ -1621,6 +1848,14 @@ static unsigned nvn_render_record(struct nvn_record *r) {
      case NI_nvnCommandBufferBindVertexBuffers:memcpy(nvn_render.vertex+a[0],r->payload,a[1]*16);return 1;
      case NI_nvnCommandBufferBindUniformBuffer:
          if(a[0]>1||a[1]>=16)stop("NVN_UNIFORM_BINDING",nvn_caller,a[1],24);
@@ -1222,7 +1352,7 @@ index 543b4b5..d6282e8 100644
          nvn_render.uniform[a[0]][a[1]]=(struct nvn_range){a[2],a[3]};return 1;
      case NI_nvnCommandBufferBindUniformBuffersDeferred: {
          /* The ranges live in guest memory and are read now, at execution, which is the deferred contract. */
-@@ -1643,7 +1857,18 @@ static unsigned nvn_render_record(struct nvn_record *r) {
+@@ -1643,7 +1878,18 @@ static unsigned nvn_render_record(struct nvn_record *r) {
          }
          return 1;
      case NI_nvnCommandBufferBindTexture:
@@ -1349,7 +1479,7 @@ index 90771fd..cd8e278 100644
          unsigned slot=4096;
          for(unsigned i=0;i<4096;i++) {
 diff --git a/native/nvn_shaders.h b/native/nvn_shaders.h
-index 0fb14ec..f67a08a 100644
+index 0fb14ec..9e2ccfc 100644
 --- a/native/nvn_shaders.h
 +++ b/native/nvn_shaders.h
 @@ -24,6 +24,103 @@ struct nvn_uniform {char name[64];uint32_t stage,binding,offset,size,kind,texel_
@@ -1447,7 +1577,7 @@ index 0fb14ec..f67a08a 100644
 +        if(clean){free(out);out=clean;hused=strlen(out)-strlen(strstr(out,rest[0]?rest:"")?rest:"");}
 +        /* a Vulkan-GLSL block body needs ES3 blocks: force the version line */
 +        char *v=strstr(out,"#version");
-+        if(v){char *nl=strchr(v,'\n');if(nl)memcpy(v,"#version 300 es",15);}
++        if(v){char *nl=strchr(v,'\n');if(nl && strtoul(v+8,NULL,10)<300)memcpy(v,"#version 300 es",15);}
 +        else {char *with=malloc(strlen(out)+16);if(with){strcpy(with,"#version 300 es\n");strcat(with,out);free(out);out=with;}}
 +    }
 +    free(work);free(head);
@@ -1552,9 +1682,18 @@ index 0fb14ec..f67a08a 100644
              free(premul);free(probe);free(sprite);free(flat);free(scaled);free(awf);free(mipped);free(r8);free(advent);free(lowered);free(wrapped);free(interface_source);
              if(!status){char log[2048]={0};glGetShaderInfoLog(shaders[i],sizeof(log),NULL,log);printf("NVN_SHADER_COMPILE_ERROR %s\n",log);stop("NVN_SHADER_COMPILE_FAILED",nvn_caller,p->sources[i],21);}
 diff --git a/native/nvn_textures.h b/native/nvn_textures.h
-index 0feaef1..5e44457 100644
+index 0feaef1..db819a7 100644
 --- a/native/nvn_textures.h
 +++ b/native/nvn_textures.h
+@@ -23,7 +23,7 @@ struct nvn_texture {
+     unsigned depth_constant_known,depth_discarded;GLfloat depth_constant_value; unsigned host_half;
+     unsigned composition_initial_uniform,composition_target_seen,composition_other_target;
+     unsigned host_scaled,host_width,host_height,host_scaled_sampled,host_scaled_bound,host_scaled_drawn;
+-    unsigned zero_cpu_dirty,zero_backend_deferred,aw_float_kind,aw_native_format;
++    unsigned zero_cpu_dirty,zero_backend_deferred,aw_float_kind,aw_native_format,lc2_bc_pending;
+     unsigned aw_clear_valid,aw_clear_mask,aw_clear_known,aw_draws_since_clear,aw_caustic_half;float aw_clear_color[4];GLint aw_clear_scissor[4];
+     GLuint zero_mip_masks[2];unsigned zero_mip_tail;unsigned momo_scale_alias_checked,momo_scale_alias_free;
+     unsigned zero_depth_valid,zero_stencil_value,zero_depth_discarded;float zero_depth_value;
 @@ -135,7 +135,10 @@ static uint64_t nvn_texture_layout(uint64_t address,struct nvn_texture_builder *
              unsigned bc=zero_bc_bytes(b->format);uint64_t face=0;
              for(unsigned i=0;i<b->levels;i++) {
@@ -1596,7 +1735,52 @@ index 0feaef1..5e44457 100644
  static void zero_record_target_view(uint64_t object,const uint8_t *view,unsigned attachment) {
      struct nvn_texture *t=object?nvn_texture_find(object):NULL;
  #ifdef MOMO_SHADERS
-@@ -485,6 +492,38 @@ static void zero_texture_bc_pixels(struct nvn_texture *t,unsigned level,const ui
+@@ -463,6 +470,44 @@ static void zero_cube_initialize(struct nvn_texture *t) {
+     GLenum error=glGetError();if(error)stop("ZERO_CUBE_UPLOAD",nvn_caller,error,21);
+     printf("ZERO_CUBE_REAL faces=6 size=%u levels=%u format=0x%x payload=%"PRIu64" per-face=%"PRIu64"\n",t->b.width,t->b.levels,t->b.format,t->size,t->size/6);
+ }
++#include "lc2_fileback.h"
++#include <sys/statvfs.h>
++static unsigned lc2_bc_lazy_eligible(const struct nvn_texture_builder *b) {
++    const char *option=getenv("LC2_BC_LAZY_UPLOAD");
++    return option && !strcmp(option,"1") && zero_bc_bytes(b->format) && b->target==1 && b->levels==1 && b->width>=1024 && b->height>=1024;
++}
++static void lc2_bc_fileback(struct nvn_texture *t) {
++    const char *directory=getenv("LC2_BC_FILE_BACKING");
++    if(!directory || !*directory || !zero_bc_bytes(t->b.format) || t->b.target!=1 || t->size<(1U<<20))return;
++    const char *gz=getenv("T2_GUEST_ZRAM"),*pools=getenv("T2_GZRAM_POOLS");
++    if(gz && !strcmp(gz,"1") && pools && !strcmp(pools,"1"))stop("LC2_FILEBACK_GZRAM_POOLS_CONFLICT",nvn_caller,t->id,24);
++    static pthread_mutex_t lock=PTHREAD_MUTEX_INITIALIZER;
++    pthread_mutex_lock(&lock);
++    static int fd=-1;static uint64_t cursor;
++    const char *cap_option=getenv("LC2_BC_FILE_CAP_MIB");
++    unsigned long cap_mib=cap_option?strtoul(cap_option,NULL,10):384;
++    if(!cap_mib || cap_mib>1536)stop("LC2_FILEBACK_CAP_RANGE",nvn_caller,cap_mib,24);
++    const uint64_t cap=(uint64_t)cap_mib<<20;
++    if(fd<0) {
++        char path[512];int n=snprintf(path,sizeof path,"%s/lamentum-cpu-XXXXXX",directory);
++        if(n<0 || (size_t)n>=sizeof path)stop("LC2_FILEBACK_PATH",nvn_caller,0,24);
++        fd=mkstemp(path);
++        if(fd<0)stop("LC2_FILEBACK_OPEN",nvn_caller,errno,21);
++        unlink(path); /* kernel releases storage after the final mapping/process exits */
++        struct statvfs space;
++        if(fstatvfs(fd,&space) || (uint64_t)space.f_bavail*space.f_frsize<cap+(128ULL<<20))
++            stop("LC2_FILEBACK_DISK_RESERVE",nvn_caller,0,24);
++    }
++    if(cursor>=cap){pthread_mutex_unlock(&lock);return;}
++    uint64_t address=t->pool->address+t->b.offset;
++    if(address<ALIAS_BASE || address>=ALIAS_BASE+ALIAS_SIZE || t->size>ALIAS_BASE+ALIAS_SIZE-address)
++        stop("LC2_FILEBACK_ALIAS_REQUIRED",nvn_caller,address,24);
++    void *source=nvn_pointer(address,t->size,PROT_READ|PROT_WRITE);
++    ssize_t bytes=lc2_fileback_snapshot(fd,&cursor,source,t->size,cap);
++    if(bytes<0)stop("LC2_FILEBACK_FAILED",nvn_caller,errno,21);
++    printf("LC2_BC_FILEBACK id=%"PRIu64" address=%p bytes=%zd file-total=%"PRIu64" exact=memcmp-verified writes=private-COW diagnostic=1\n",t->id,source,bytes,cursor);
++    pthread_mutex_unlock(&lock);
++}
+ static void zero_texture_pool_flushed(struct nvn_pool *pool,uint64_t offset,uint64_t bytes) {
+     if(!bytes)return;
+     for(unsigned i=0;i<4096;i++) {
+@@ -485,6 +530,38 @@ static void zero_texture_bc_pixels(struct nvn_texture *t,unsigned level,const ui
          stop("ZERO_BC_TILED_DECODE",nvn_caller,t->id,24);
      free(linear);
  }
@@ -1635,12 +1819,19 @@ index 0feaef1..5e44457 100644
  static void zero_texture_refresh(struct nvn_texture *t) {
      t=zero_texture_storage_state(t);
      if(!__atomic_exchange_n(&t->zero_cpu_dirty,0,__ATOMIC_ACQ_REL))return;
-@@ -496,6 +535,12 @@ static void zero_texture_refresh(struct nvn_texture *t) {
+@@ -494,8 +571,19 @@ static void zero_texture_refresh(struct nvn_texture *t) {
+         stop("ZERO_TEXTURE_CPU_GPU_COHERENCE_REQUIRED",nvn_caller,t->id,20);
+     unsigned width=t->b.width,height=t->b.height,bc=zero_bc_bytes(t->b.format);
      unsigned type=nvn_cpu_image_upload_type(t),output_bpp=nvn_texture_upload_bytes(type);
++    if(t->lc2_bc_pending && !t->t2_budget_bytes) {
++        uint64_t bytes=(uint64_t)width*height*output_bpp;
++        t2_texture_budget_add(bytes,nvn_caller);t->t2_budget_bytes=bytes;
++        printf("LC2_BC_GPU_RESERVE id=%"PRIu64" bytes=%"PRIu64" materialization=first-use\n",t->id,bytes);
++    }
      glBindTexture(GL_TEXTURE_2D,t->name);GLint alignment;glGetIntegerv(GL_UNPACK_ALIGNMENT,&alignment);glPixelStorei(GL_UNPACK_ALIGNMENT,1);
      for(unsigned level=0;level<t->b.levels;level++) {
 +        if(bc && width>4096 && !t->host_scaled) {
-+            lc2_bc_upload_stripes(t,level,width,height,0);
++            lc2_bc_upload_stripes(t,level,width,height,t->lc2_bc_pending);
 +            if(width>1)width>>=1;
 +            if(height>1)height>>=1;
 +            continue;
@@ -1648,10 +1839,47 @@ index 0feaef1..5e44457 100644
          uint64_t row=bc?(uint64_t)((width+3)/4)*bc:(uint64_t)width*nvn_texture_format_bytes(t->b.format);
          uint64_t stride=t->b.flags&0x50?t->b.stride:row;
          unsigned rows=bc?(height+3)/4:height;
-@@ -675,6 +720,13 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -507,12 +595,16 @@ static void zero_texture_refresh(struct nvn_texture *t) {
+             zero_texture_bc_pixels(t,level,NULL,pixels,bytes);
+         } else for(unsigned y=0;y<height;y++)if(!nvn_texture_decode_upload(t->b.format,t->b.swizzle,type,pixels+(size_t)y*width*output_bpp,source+y*stride,width))
+             stop("ZERO_TEXTURE_REFRESH_FORMAT",nvn_caller,t->b.format,20);
+-        glTexSubImage2D(GL_TEXTURE_2D,level,0,0,width,height,zero_bc_srgb(t->b.format)?0x8c42U:GL_RGBA,type,pixels);free(pixels);
++        if(t->lc2_bc_pending)glTexImage2D(GL_TEXTURE_2D,level,zero_bc_srgb(t->b.format)?0x8c42U:GL_RGBA,width,height,0,zero_bc_srgb(t->b.format)?0x8c42U:GL_RGBA,type,pixels);
++        else glTexSubImage2D(GL_TEXTURE_2D,level,0,0,width,height,zero_bc_srgb(t->b.format)?0x8c42U:GL_RGBA,type,pixels);
++        free(pixels);
+         if(width>1)width>>=1;
+         if(height>1)height>>=1;
+     }
+     glPixelStorei(GL_UNPACK_ALIGNMENT,alignment);
+     GLenum error=glGetError();if(error)stop("ZERO_TEXTURE_REFRESH_GL",nvn_caller,error,21);
++    if(t->lc2_bc_pending)printf("LC2_BC_MATERIALIZED id=%"PRIu64" size=%ux%u reason=first-use\n",t->id,t->b.width,t->b.height);
++    t->lc2_bc_pending=0;
+     printf("ZERO_TEXTURE_FLUSH_UPLOADED id=%"PRIu64" format=0x%x native-cpu-bytes=preserved before-sampler\n",t->id,t->b.format);
+ }
+ #include "zero_texture_writes.h"
+@@ -605,7 +697,8 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+         /* Frente F: an eligible page gets no GL storage now (the pool holds nothing yet, MEDIDO pc-008: the
+          * copy arrives later) and no budget; the copy decides between the palettized form and RGBA8. */
+         t->t2_page.deferred=t2_page_eligible(&b);
+-        t->t2_budget_bytes=t->t2_page.deferred?0:size;
++        t->lc2_bc_pending=lc2_bc_lazy_eligible(&b);
++        t->t2_budget_bytes=(t->t2_page.deferred||t->lc2_bc_pending)?0:size;
+         if(t->t2_budget_bytes)t2_texture_budget_add(size,nvn_caller);
+         else if(t2_pages.deferred_logged++<4)printf("T2_PAGE_DEFERRED id=%"PRIu64" size=%ux%u rgba8-bytes=%"PRIu64" pool-flags=0x%x storage=none-until-copy\n",t->id,b.width,b.height,size,pool->flags);
+ #ifdef MOMO_SHADERS
+@@ -673,8 +766,21 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+                 glTexParameteri(GL_TEXTURE_2D,0x813d,b.levels-1);
+ #endif
              unsigned width=b.width,height=b.height;
++            if(t->lc2_bc_pending) {
++                if(t->host_half || t->host_scaled || t->packaged_lazy || t->t2_page.deferred)
++                    stop("LC2_BC_DEFER_CONFLICT",nvn_caller,t->id,24);
++                __atomic_store_n(&t->zero_cpu_dirty,1,__ATOMIC_RELEASE);
++                printf("LC2_BC_DEFERRED id=%"PRIu64" size=%ux%u rgba-bytes=%"PRIu64" source=retained-guest-pool diagnostic=1\n",t->id,width,height,(uint64_t)width*height*4);
++            }
              if(t->host_half){glPixelStorei(GL_UNPACK_ALIGNMENT,1);glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,width/2,height/2,0,GL_RGBA,GL_UNSIGNED_BYTE,NULL);}
-             for(unsigned i=0;i<b.levels&&!t->host_half&&!t->packaged_lazy&&!t->t2_page.deferred;i++) {
+-            for(unsigned i=0;i<b.levels&&!t->host_half&&!t->packaged_lazy&&!t->t2_page.deferred;i++) {
++            for(unsigned i=0;i<b.levels&&!t->host_half&&!t->packaged_lazy&&!t->t2_page.deferred&&!t->lc2_bc_pending;i++) {
 +                if(zero_bc_bytes(b.format) && width>4096 && !t->host_scaled) {
 +                    glPixelStorei(GL_UNPACK_ALIGNMENT,1);
 +                    lc2_bc_upload_stripes(t,i,width,height,1);
@@ -1662,7 +1890,7 @@ index 0feaef1..5e44457 100644
                  unsigned upload_type=nvn_cpu_image_upload_type(t),upload_bpp=nvn_texture_upload_bytes(upload_type);
                  size_t bytes=(size_t)width*height*upload_bpp;uint8_t *rgba=malloc(bytes);
                  if(!rgba)stop("NVN_TEXTURE_INITIAL_DATA_MEMORY",nvn_caller,bytes,21);
-@@ -749,7 +801,9 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -749,7 +855,9 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
      if(id==NI_nvnTexturePoolRegisterTexture) {
          struct nvn_descriptor_pool *d=NULL;
          for(unsigned i=0;i<32;i++)if(nvn_descriptor_pools[i].live&&nvn_descriptor_pools[i].object==a[0]&&nvn_descriptor_pools[i].type==1)d=&nvn_descriptor_pools[i];
@@ -1748,6 +1976,62 @@ index 9ab8126..1db3c58 100644
      return bytes(output), dict(schema='t2-shader-diagnostic-sanitization/1',
                                 input_sha256=sha(data), output_sha256=sha(output),
                                 size=len(data), changed_bytes=len(differences), changes=changes,
+diff --git a/native/t2_guest_memory.h b/native/t2_guest_memory.h
+index 81f1ea1..8657c0d 100644
+--- a/native/t2_guest_memory.h
++++ b/native/t2_guest_memory.h
+@@ -125,7 +125,7 @@ static void t2_stack_alias_release_source(uint64_t source,uint64_t size) {
+     if(t2_stack_sparse_enabled())madvise((void *)(uintptr_t)source,size,MADV_DONTNEED);
+ }
+ /* ---- block table ---- */
+-struct t2_gz_block {uint8_t *data;uint32_t clen,ready_ms;uint8_t state,restores,resident;};
++struct t2_gz_block {uint8_t *data;uint32_t clen,ready_ms,io_pins;uint8_t state,restores,resident;};
+ enum {T2_GZ_NORMAL=0,T2_GZ_COMPRESSED=1};
+ static struct {
+     unsigned enabled,shift,cold_ms,period_ms,max_permille,stats_ms,pools,trace_left;uint64_t block,nblocks,budget,target_kib;
+@@ -226,6 +226,26 @@ static void t2_gzram_touch(uint64_t address,uint64_t size) {
+     }
+     pthread_mutex_unlock(&t2_gz.mutex);
+ }
++/* A cold-time deadline is not an I/O lifetime: slow pread can outlive it.
++ * Pin overlapping blocks under the same lock as restore/compaction. */
++static void lc2_gzram_io_pin(uint64_t address,uint64_t size,unsigned pin) {
++    if(!t2_gz.enabled || !size || address>UINT64_MAX-size || address>=ALIAS_BASE+ALIAS_SIZE || address+size<=ALIAS_BASE)return;
++    uint64_t first=(address<ALIAS_BASE?0:address-ALIAS_BASE)>>t2_gz.shift;
++    uint64_t end=address+size>ALIAS_BASE+ALIAS_SIZE?ALIAS_SIZE:address+size-ALIAS_BASE;
++    uint64_t last=(end-1)>>t2_gz.shift;
++    pthread_mutex_lock(&t2_gz.mutex);
++    for(uint64_t i=first;i<=last;i++) {
++        struct t2_gz_block *b=&t2_gz.blocks[i];
++        if(pin) {
++            if(b->state==T2_GZ_COMPRESSED){t2_gz_restore_locked(i);t2_gz.touched++;}
++            b->io_pins++;
++        } else {
++            if(!b->io_pins)stop("LC2_GZRAM_IO_UNBALANCED",0,i,24);
++            b->io_pins--;
++        }
++    }
++    pthread_mutex_unlock(&t2_gz.mutex);
++}
+ /* Before svcUnmapPhysicalMemory: blocks fully inside the range are dropped, partial ones restored. */
+ static void t2_gzram_forget(uint64_t address,uint64_t size) {
+     if(!t2_gz.enabled || !size)return;
+@@ -244,6 +264,7 @@ static void t2_gzram_forget(uint64_t address,uint64_t size) {
+     pthread_mutex_unlock(&t2_gz.mutex);
+ }
+ static int t2_gz_pool_overlap(uint64_t address,uint64_t size) {
++    if(lc2_fileback_overlaps(address,size))return 1;
+     if(t2_gz.pools)return 0;
+     for(unsigned i=0;i<256;i++) {
+         const struct nvn_pool *p=&nvn_pools[i];
+@@ -254,6 +275,7 @@ static int t2_gz_pool_overlap(uint64_t address,uint64_t size) {
+ /* regions_mutex and t2_gz.mutex held; the block is eligible. */
+ static void t2_gz_compact_locked(uint64_t index,uint32_t now) {
+     struct t2_gz_block *b=&t2_gz.blocks[index];
++    if(b->io_pins)return;
+     uint64_t address=ALIAS_BASE+(index<<t2_gz.shift),size=t2_gz.block;
+     if(mprotect((void *)(uintptr_t)address,size,PROT_NONE)){t2_gz.protect_fail++;b->ready_ms=now+t2_gz.cold_ms*8;return;}
+     if(!t2_gz_io(0,t2_gz.raw,size,address)) {
 diff --git a/native/zero_bc.h b/native/zero_bc.h
 index f9e31ec..a1e6b35 100644
 --- a/native/zero_bc.h
@@ -1778,7 +2062,7 @@ index 71d584f..4058493 100644
      for(unsigned i=0;;i++) {
          unsigned nx=(width+3)/4,ny=(height+3)/4,h=base_h;
 diff --git a/native/zero_texture_writes.h b/native/zero_texture_writes.h
-index 3d23814..2b4ce9b 100644
+index 3d23814..0eb0690 100644
 --- a/native/zero_texture_writes.h
 +++ b/native/zero_texture_writes.h
 @@ -5,7 +5,7 @@ static void zero_texture_write(struct nvn_frame *f,unsigned flush) {
@@ -1840,3 +2124,20 @@ index 3d23814..2b4ce9b 100644
  #else
      if(view[0]&~3U || view[3])stop("ZERO_TEXEL_VIEW_REQUIRED",nvn_caller,view[0],20);
      if(view[0]&1){level=view[1];if(view[2]!=1)stop("ZERO_TEXEL_LEVEL_COUNT",nvn_caller,view[2],20);}
+@@ -76,6 +119,8 @@ static void zero_texture_write(struct nvn_frame *f,unsigned flush) {
+         /* Cached pools publish by FlushTexels/FlushMappedRange. Uncached
+          * explicit writes are uploaded before their next native sampler. */
+         if((t->pool->flags&7)==2)__atomic_store_n(&t->zero_cpu_dirty,1,__ATOMIC_RELEASE);
++        if(bc && !level && t->b.levels==1 && !box[0] && !box[1] && box[3]==width && box[4]==height)
++            lc2_bc_fileback(t);
+         printf("ZERO_TEXEL_WRITE id=%"PRIu64" level=%u layer=%u region=%u,%u,%u,%u native-bytes=%"PRIu64" CPU-storage-updated\n",
+                t->id,level,layer,box[0],box[1],box[3],box[4],row*rows);return;
+     }
+@@ -94,6 +139,7 @@ static void zero_texture_write(struct nvn_frame *f,unsigned flush) {
+     } else for(unsigned y=0;y<box[4];y++)if(!nvn_texture_decode_upload(t->b.format,t->b.swizzle,type,pixels+(size_t)y*box[3]*pixel_bytes,source+y*stride,box[3]))
+         stop("ZERO_TEXEL_DECODE",nvn_caller,t->id,24);
+     nvn_gl_acquire();
++    if(zero_texture_storage_state(t)->lc2_bc_pending)zero_texture_refresh(t);
+     normal_guard_require_clear(t->pool->address+t->b.offset,t->size,nvn_caller);
+     __atomic_thread_fence(__ATOMIC_SEQ_CST);
+     GLenum binding=t->b.target==8?GL_TEXTURE_CUBE_MAP:GL_TEXTURE_2D;

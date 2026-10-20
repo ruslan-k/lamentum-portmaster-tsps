@@ -6,7 +6,7 @@ cd "$GAMEDIR" || exit 1
 mkdir -p logs save-laboratory
 LOG="$GAMEDIR/logs/latest.log"
 exec >"$LOG" 2>&1
-printf 'LAMENTUM_LAUNCH native-horizon budget=%ss shader-catalogue=absent\n' "${LAMENTUM_PROBE_SECONDS:-0}"
+printf 'LAMENTUM_LAUNCH native-horizon budget=%ss shader-catalogue=draft-with-TEST-substitutes\n' "${LAMENTUM_PROBE_SECONDS:-120}"
 printf 'LAMENTUM_BUILD_ID sha256=%s\n' "$(sha256sum ./lamentum-nextos 2>/dev/null | cut -d ' ' -f1)"
 
 # The recovered runtime pins its threads to cores 0-3, which Spruce keeps offline.
@@ -41,8 +41,18 @@ export COTM_RUN_ID=$(date +%s)
 # and text SHA-256 pins); on this title it fail-closes as T2_LAZY_MESH_SEGMENT. It is a load-time
 # optimisation only, so it stays off here.
 export T2_LAZY_MESH="${T2_LAZY_MESH:-0}"
-# Bounded diagnostic budget; 0 = no alarm (ordinary play).
-export MEGAMAN_PROBE_SECONDS="${LAMENTUM_PROBE_SECONDS:-0}"
+# Bounded bring-up only: no playable launch is claimed. Explicit 0 disables the timer.
+export MEGAMAN_PROBE_SECONDS="${LAMENTUM_PROBE_SECONDS:-120}"
 export AW_RELEASE="${AW_RELEASE:-1}"
+export LC2_GLES3="${LC2_GLES3:-1}"
+# Synchronous completion and SDL/KMSDRM swaps are the measured path.
+export COTM_ASYNC_QUEUE="${COTM_ASYNC_QUEUE:-0}" T2_GPU_PIPELINE="${T2_GPU_PIPELINE:-0}"
+export COTM_FB_PRESENT="${COTM_FB_PRESENT:-0}" COTM_GL_ERROR_IGNORE="${COTM_GL_ERROR_IGNORE:-0}"
+# Keep the failed pageout experiment off and stop early under scene-load pressure.
+export LC2_TEXTURE_PAGEOUT="${LC2_TEXTURE_PAGEOUT:-0}"
+export T2_MEMORY_FLOOR_MIB="${T2_MEMORY_FLOOR_MIB:-96}"
 
-exec ./lamentum-nextos
+# Do not exec: replacing this shell prevents its EXIT trap from restoring CPU state.
+./lamentum-nextos
+status=$?
+exit "$status"

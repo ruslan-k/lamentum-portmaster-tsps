@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Regression tests for guest sampler identities, independent of GL bindings."""
 import unittest
+import pathlib
+import subprocess
+import tempfile
 from build_lamentum_catalogue import samplers_of, rewrite_cbuf_blocks, component_masks
 
 class SamplerMetadata(unittest.TestCase):
@@ -27,6 +30,22 @@ class SamplerMetadata(unittest.TestCase):
             self.assertEqual((y * 1024 + x) * 4 + lane, index)
     def test_test_fragment_interface(self):
         self.assertEqual(component_masks('in vec4 varying_1;', 'in'), {1: 15})
+
+    def test_uint_fragment_not_placeholder(self):
+        with tempfile.TemporaryDirectory(prefix='lamentum-shader-test-') as temp:
+            root = pathlib.Path(temp)
+            (root / 'fixture.glsl').write_text('#version 450\nlayout(location = 0) out vec4 frag_color0;\n'
+                'void main() { uint value = 1u; frag_color0 = vec4(float(value)); }\n')
+            # Synthetic identity bytes exercise generator routing, not game shader execution.
+            (root / 'fixture.code.bin').write_bytes(bytes(16))
+            (root / 'fixture.control.bin').write_bytes(bytes(16))
+            result = root / 'out.h'
+            subprocess.run(['python3', str(pathlib.Path(__file__).with_name('build_lamentum_catalogue.py')),
+                            str(root), str(result), '--placeholder'], check=True, capture_output=True)
+            generated = result.read_text()
+            self.assertNotIn('TEST-ONLY substitute', generated)
+            self.assertIn('uint value = 1u', generated)
+            self.assertIn('#version 310 es', generated)
 
 if __name__ == '__main__':
     unittest.main()

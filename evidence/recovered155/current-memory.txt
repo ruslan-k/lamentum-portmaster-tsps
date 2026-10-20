@@ -1,0 +1,44 @@
+MemTotal:         986064 kB
+MemFree:          528676 kB
+MemAvailable:     712580 kB
+Buffers:           20008 kB
+Cached:           134124 kB
+SwapCached:            0 kB
+Active:            36560 kB
+Inactive:         200340 kB
+Active(anon):        684 kB
+Inactive(anon):    83324 kB
+Active(file):      35876 kB
+Inactive(file):   117016 kB
+Unevictable:           0 kB
+Mlocked:               0 kB
+SwapTotal:       2065884 kB
+SwapFree:        2065884 kB
+Dirty:                44 kB
+Writeback:             0 kB
+AnonPages:         82908 kB
+Mapped:            55300 kB
+Shmem:              1240 kB
+KReclaimable:      46856 kB
+Slab:             143384 kB
+SReclaimable:      46856 kB
+SUnreclaim:        96528 kB
+KernelStack:        3660 kB
+PageTables:         2164 kB
+NFS_Unstable:          0 kB
+Bounce:                0 kB
+WritebackTmp:          0 kB
+CommitLimit:     2558916 kB
+Committed_AS:     342400 kB
+VmallocTotal:   259653632 kB
+VmallocUsed:        9568 kB
+VmallocChunk:          0 kB
+Percpu:             1152 kB
+CmaTotal:         131072 kB
+CmaFree:          130412 kB
+Filename				Type		Size		Used		Priority
+/mnt/UDISK/swapfile                     file		1048572		0		-2
+/mnt/sdcard/mmcblk1p1/cachefile         file		524284		0		40
+/dev/zram0                              partition	493028		0		-3
+45.28 164.33
+3967
