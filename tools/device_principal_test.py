@@ -16,6 +16,11 @@ HOST = 'root@192.168.50.135'
 HARD_STOP_GRACE_S = 120
 
 
+def is_killed_without_stop(log, stops):
+    """A SIGKILL with no STOP line is the kernel OOM path, not a fail-closed runtime stop."""
+    return not stops and bool(re.search(r'\bKilled\b|exit status 137', log))
+
+
 def should_hard_stop(now, hard_deadline, game_pids):
     """Terminate only a still-running game, never the supervisors or the menu."""
     return bool(hard_deadline) and now > hard_deadline and bool(game_pids)
@@ -46,6 +51,9 @@ def main():
         print('device state check failed', file=sys.stderr)
         return 2
 
+    # Truncate FIRST: the snapshot reads the whole log, so a previous run's stop would otherwise
+    # be reported as this run's state (measured: a stale T2_MEMORY_FLOOR in before.stops).
+    ssh('truncate -s 0 %s/logs/latest.log' % PORT_DIR).check_returncode()
     before = snapshot()
     if before['game'] or len(before['processes'].get('MainUI', [])) != 1:
         print('device not idle; refusing launch', file=sys.stderr)
@@ -53,7 +61,6 @@ def main():
     if a.evidence:
         a.evidence.mkdir(parents=True, exist_ok=True)
         (a.evidence / 'before.json').write_text(json.dumps(before, indent=2) + '\n')
-    ssh('truncate -s 0 %s/logs/latest.log' % PORT_DIR).check_returncode()
     for e in a.env:
         if not re.fullmatch(r'[A-Z][A-Z_0-9]*=.*', e):
             raise ValueError('invalid env assignment')
@@ -106,7 +113,9 @@ def main():
     print('cleanup', json.dumps({'state': after, 'errors': errors}))
     log = ssh('cat %s/logs/latest.log' % PORT_DIR).stdout
     stops = re.findall(r'STOP status=(\S+)', log)
+    killed_without_stop = is_killed_without_stop(log, stops)
     result = {'cleanup_errors': errors, 'before': before, 'after': after, 'host_terminated': host_terminated,
+              'killed_without_stop': killed_without_stop,
               'stops': stops, 'runtime_ok': bool(stops) and all(x == 'TIME_LIMIT' for x in stops),
               'config_rejected': any(x.startswith('INVALID_') for x in stops)}
     if a.evidence:
@@ -121,6 +130,8 @@ def main():
         return 5
     if host_terminated:
         return 6      # bounded run ended by the harness, not by the title's own governor
+    if result['killed_without_stop']:
+        return 7      # SIGKILL with no STOP line: kernel OOM path, not a fail-closed runtime stop
     return 0 if result['runtime_ok'] else 4
 
 

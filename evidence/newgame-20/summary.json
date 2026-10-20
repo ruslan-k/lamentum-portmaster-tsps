@@ -32,5 +32,11 @@
     "menu_capture_nonblack": 102480,
     "note": "the first post-run capture (clean-menu.png) was a blanked panel, 1769 non-black; a D-pad wake was required"
   },
-  "inputs": "agent evdev injection, not physical human input"
+  "inputs": "agent evdev injection, not physical human input",
+  "harness_classification": {
+    "exit_code": 4,
+    "reason": "no STOP line at all => runtime_ok false; the run was SIGKILLed by the kernel OOM path",
+    "fix": "harness now returns 7 for a kill without STOP and truncates the log before the before-snapshot so a previous run stop cannot be re-reported",
+    "stale_before_stop": "before.stops contained the previous stray run T2_MEMORY_FLOOR because the snapshot read the untruncated log"
+  }
 }
