@@ -1,10 +1,12 @@
 # Lamentum — experimental Switch-to-Linux-ARM64 port (TSPS / SpruceOS)
 
-**Status: not playable. Build 177 fixes a proven cbuf texture-unit collision:
-physical scanout now shows a partial rainy scene rather than the white field.
-Complete rendering, the game menu, input and gameplay remain unverified.**
+**Status: not playable. Build 193 reaches the game's own title screen ("Lamentum"
+logo on physical scanout) and a 420-second run ends on time rather than on a defect.
+The menu list, input actions, audio, saves and gameplay remain unverified.**
 
-Latest work: `docs/catalogue-tail.md` (build 191: the visible frame uses only real
+Latest work: `docs/title-screen.md` (build 193: title screen reached, shader tail
+closed by appending captured programs, input now the measured frontier).
+`docs/catalogue-tail.md` (build 191: the visible frame uses only real
 programs, the 64-MiB floor was the load wall, and an append-not-regenerate cycle
 closes the remaining shader tail; catalogue 34 → 37 programs).
 `docs/probe-disabled-fragment.md` records the guarded real fragment translation
@@ -21,7 +23,7 @@ original texture resolution and the owner image; the 420 MiB GPU ceiling is unch
 
 The installed launcher keeps experimental memory features off unless explicitly requested;
 it uses strict GL checks, synchronous submission, SDL/KMSDRM and a 96 MiB memory floor.
-The failed pageout experiment remains disabled. The latest binary is build 191, installed
+The failed pageout experiment remains disabled. The latest binary is build 193, installed
 with a device-side backup and independently verified SHA-256. The temporary watermark
 experiment was restored to its original value and is not a persistent system change.
 
