@@ -1727,6 +1727,8 @@ Even an ideal compressed atlas might not be sufficient if non-texture storage re
 
 ## 27. Build219 reassessment: code-audited action plan for first gameplay and FPS (2026-10-20)
 
+> **T0 subsequent source update:** commits [e6cc966](https://github.com/ruslan-k/lamentum-portmaster-tsps/commit/e6cc9668f73217ca2e2fd19e2a61eafd04287bcd) and [e19a9b9](https://github.com/ruslan-k/lamentum-portmaster-tsps/commit/e19a9b97f1bd58642e7d3ae6b6cb002b0c30e3e3) have **already fixed** target-side CPU tick units, proc-stat/process-thread generation, unknown-SIGKILL vs kernel-confirmed OOM and probe return status. Read [the action-plan T0 progress note](build219-gameplay-performance-action-plan.md#2-critical-path-priorities-and-non-negotiable-safety) and [exit taxonomy](../evidence/exit-taxonomy/README.md). T1 is **partially implemented**, not a request to redo those completed changes; still needs owned-run integration and a scene oracle. No new gameplay run was performed for these fixes.
+
 > **Current implementation instructions:** [Build219 Gameplay Bring-up and Performance Action Plan](build219-gameplay-performance-action-plan.md), audited against main commit [19dc046](https://github.com/ruslan-k/lamentum-portmaster-tsps/commit/19dc04644d6381dd9c4921500116c21333914295). This section supersedes the current-status priorities in §§0–26. Earlier experiments remain as measured history. **No new device run, ELF build, gameplay confirmation or FPS measurement was performed in this documentation audit.**
 
 ### 27.1. What was completed and what was corrected
@@ -1734,14 +1736,14 @@ Even an ideal compressed atlas might not be sufficient if non-texture storage re
 - **build219** adds a texture-charge snapshot beside RSS, VmSwap and MemAvailable; [load-probe-10](../evidence/load-probe-10/summary.json) measured **126 MiB texture live** while VmSwap reached **~870 MiB**, but this was an **earlier Loading phase** terminated by operator TERM. It does **not** prove a guest-heap leak or remove the later id=295 **256 MiB RGBA** first-use threat. The resource/GL owner ledger is still incomplete.
 - **load-probe-08** reached a clean texture-budget stop under 300 MiB and recorded **5,506 SVC 0x1A**, **5,389 SVC 0x1B** and **39,516** IPC calls on endpoint0x40 commands 8/7 combined. Those calls suggest a precise **mutex/IPC bridge** investigation. The sampled native PCs and endpoint service owner have not been resolved.
 - The 400 MOMO samples were spread approximately evenly across **32 guest threads**. Thus 387 in-kernel samples **cannot be equated to 96.75% of executing CPU time**. Obtain a same-run native mappings receipt and correctly CPU-weighted per-thread samples before claiming a percentage.
-- **load_metrics.py byte framing and opened-file identity were already fixed** by the audited main HEAD and tested against incomplete events and UTF-8. Reuse them. By contrast, **perf_sample.py still calculates device ticks using host SC_CLK_TCK and splits /proc/PID/stat naively**: fix this real defect before further CPU percentage claims.
+- **load_metrics.py byte framing was already fixed.** Since the initial audit snapshot, **proc_metrics.py / perf_sample.py target-HZ and proc identity were also fixed**, with target HZ=100 verified on TSPS, and exit_outcome.py now requires a kernel victim receipt before classifying OOM. Continue with run-wide source/ELF/asset identity, navigation and real-game validation; do not redo completed source fixes.
 - The 300 MiB guarded texture budget converted previous Mali OOM runs into clean **T2_TEXTURE_BUDGET** stops, but the game **still has no verified world, physical movement, sound, save/load or gameplay FPS**. A linked fragment45 is not proof of four correct MRT outputs.
 
 ### 27.2. Next implementation order
 
 | Priority | Change | Evidence and stop gate |
 |---:|---|---|
-| **P0-1** | **T1:** repair target CPU tick units, PID/TID starttime identity, complete run/log identity, semantically verify New Game configuration navigation; retain fixed incremental byte parser | Executable host tests and one safe owned-PID probe; no false STOP/OOM attribution |
+| **P0-1** | **T1 (partially done):** target CPU tick units and PID/TID starttime identity, exit taxonomy and byte framing **completed**; finish complete run/log identity, scene-specific New Game navigation and real-game acceptance | Executable host tests and one safe owned-PID probe; no false STOP/OOM attribution |
 | **P0-2A** | **C1:** profile the real cost and semantics of svcArbitrateLock (0x1A), svcArbitrateUnlock (0x1B), and endpoint0x40 IPC 7/8; symbolize same-run native PCs | CPU/wall timing, request/return/wake and actual service identity; no skipped locks |
 | **P0-2B** | **G1:** map original id=295 plus **all live** GL textures, color MRT, depth/stencil, EGL and buffers with generation/alias/fence identity | Reconcile actual owners of texture-charged versus still-unattributed Mali memory under safe 300 MiB cap |
 | **P1-3A** | **C2:** narrow, semantics-preserving IPC/SVC fast path or service fix only if profiling proves the cost | Decreased **CPU per actual scene milestone**, not spinner FPS; no lost wakeups |
