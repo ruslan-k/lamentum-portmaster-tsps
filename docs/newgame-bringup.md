@@ -131,3 +131,33 @@ skinning programs already covered by TEST substitutes.
 
 Nothing here is a 30 FPS result: the port still cannot reach gameplay, and the measured
 gap (replay 250 ms + guest 316 ms per frame) is unchanged.
+
+## Fixed: New Game now passes the blocker (build210)
+
+The failing program was a **vertex** shader whose single uniform block is
+`{ float data[16384]; } c4` with `ArrayStride = 4`. ESSL only has std140, where that array
+needs stride 16, so spirv-cross refused the whole module — this is a *layout* refusal, not
+a missing `Block` decoration (`--block-decorate` changed 0 decorations).
+
+Fix, in the offline translator only (the runtime is untouched):
+
+1. `--fix-strides` raises a block array stride to the std140 minimum before cross-compiling.
+   The element indices the shader uses are unchanged, and the catalogue serves this block
+   from an RGBA32F texture through `texelFetch`, so the declared stride no longer decides
+   the values — it only has to let spirv-cross emit the module.
+2. The program was translated to `#version 310 es` and appended with
+   `tools/append_program.py` as entry 38 (`dump-588a3fad vertex`, code 1280 B, control
+   2176 B, hashes `7a45f946…` / `588a3fad…`).
+3. The generator again emitted `.name="c4",.stage=0,.binding=0` for a hardware bank 4. That is
+   the build202 defect: it was corrected by hand to `.binding=1` (NVN slot 1), exactly like
+   program 12, and must keep being corrected until the generator derives banks from
+   compiler instance names.
+
+Result on the device (`newgame-07`, build210 `d4f3d1f6…`): after Accept the run presents 275
+frames with **no STOP and zero `ZERO_SHADER_UNRECOGNIZED`**, 1108 `ROMFS_READ`s, and the
+panel shows the game's own **controls/tutorial screen with "Press any button to continue"**,
+followed by the studio splash. That is the first time a New Game start progressed past the
+previous fail-closed exit.
+
+Not yet: advancing from that screen into the first playable scene. The run's budget ended
+at the prompt, so gameplay pixels are still unproven and no FPS claim applies.

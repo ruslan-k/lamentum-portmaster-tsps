@@ -26,6 +26,7 @@ HOST = 'root@192.168.50.135'
 ENV = json.loads(pathlib.Path(sys.argv[1]).read_text())
 BUDGET = int(os.environ.get('LAMENTUM_CRASH_BUDGET', '420'))
 CONFIRM_MS = int(os.environ.get('LAMENTUM_CONFIRM_MS', '700'))
+NAV_MS = int(os.environ.get('LAMENTUM_NAV_MS', '700'))
 
 
 def ssh(cmd, timeout=60, data=None):
@@ -105,6 +106,17 @@ def main():
         s = state()
         if not started and s['menu'] > 0:
             shot('menu')
+            # The title remembers the last highlighted entry across runs, so the cursor is not
+            # reliably on New game. Walk to the top of the list, then one step down:
+            # Up saturates on the first entry, so this is deterministic without reading pixels.
+            for step in os.environ.get('LAMENTUM_NAV_SEQUENCE', 'up,up,up,up,down').split(','):
+                step = step.strip()
+                if step == 'up':
+                    press(3, 17, -1, NAV_MS, 'nav-up')
+                elif step == 'down':
+                    press(3, 17, 1, NAV_MS, 'nav-down')
+                time.sleep(1.5)
+            shot('menu-after-nav')
             press(1, 304, 1, CONFIRM_MS, 'accept-new-game')
             started = True
             time.sleep(6)
