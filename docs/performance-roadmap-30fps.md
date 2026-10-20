@@ -1,6 +1,6 @@
 # Lamentum (TrimUI Smart Pro S): Roadmap to Stable 30 FPS
 
-> **LATEST STATUS:** Start with [§26 — current load-probe GPU/CPU and gameplay priorities](#26-load-probe-0307-reassessment-gpu-atlas-residency-first-gameplay-and-cpu-performance-2026-10-20). Older §§0–25 document previous attempts; some of their TODOs are now done or superseded. **The game is still not playable.**
+> **LATEST STATUS — build219 / [main 19dc046](https://github.com/ruslan-k/lamentum-portmaster-tsps/commit/19dc04644d6381dd9c4921500116c21333914295), 2026-10-20:** Read [§27 — current reassessment and execution queue](#27-build219-reassessment-code-audited-action-plan-for-first-gameplay-and-fps-2026-10-20) and the [detailed build219 action plan](build219-gameplay-performance-action-plan.md) first. §§0–26 document older experiments; their current priorities may have been superseded. **NOT PLAYABLE:** no verified world, player input, audible sound, cold saves or gameplay FPS.
 
 > **CURRENT AUTHORITATIVE STATUS — build218 / newgame-20, source reviewed through [b35f21e](https://github.com/ruslan-k/lamentum-portmaster-tsps/commit/b35f21e14662e681e27de9c78cc91ea250f0d4be) on 2026-10-20.** Read **[§25 below](#25-build218-post-oom-audit-and-next-steps-2026-10-20)** for the latest priority summary and **[the living Gameplay Bring-up and Performance Plan §§13–20](current-gameplay-performance-plan.md#13-build218--newgame-20-reassessment)** for implementation-grade steps, test cases, safe A/B methodology and stop criteria. The prior build216 plan in §§0–24 is preserved as history and is no longer the current status. **This port is not playable and 30 FPS is not demonstrated.**
 
@@ -1722,3 +1722,33 @@ Even an ideal compressed atlas might not be sufficient if non-texture storage re
 **Do not repeat already completed milestones:** cbuf TexSubImage implementation, build218 shader45 generation, measured New Game menu band, simple log-distribution parser, hard host-side timeout, or the newly committed synthetic incremental-metrics payload execution fixture. Extend/correct them based on fresh evidence instead.
 
 **Conclusion:** the next important performance fix is likely not another draw-call micro-optimization; it is **safe GPU residency for a demonstrably expensive 8192² texture**, followed by attribution of the independent **0.836-second main-thread Loading CPU cost**. The port cannot be called playable until a real world scene, controls, audio and saves work, and 30 FPS remains unmeasured.
+
+---
+
+## 27. Build219 reassessment: code-audited action plan for first gameplay and FPS (2026-10-20)
+
+> **T0 subsequent source update:** commits [e6cc966](https://github.com/ruslan-k/lamentum-portmaster-tsps/commit/e6cc9668f73217ca2e2fd19e2a61eafd04287bcd) and [e19a9b9](https://github.com/ruslan-k/lamentum-portmaster-tsps/commit/e19a9b97f1bd58642e7d3ae6b6cb002b0c30e3e3) have **already fixed** target-side CPU tick units, proc-stat/process-thread generation, unknown-SIGKILL vs kernel-confirmed OOM and probe return status. Read [the action-plan T0 progress note](build219-gameplay-performance-action-plan.md#2-critical-path-priorities-and-non-negotiable-safety) and [exit taxonomy](../evidence/exit-taxonomy/README.md). T1 is **partially implemented**, not a request to redo those completed changes; still needs owned-run integration and a scene oracle. No new gameplay run was performed for these fixes.
+
+> **Current implementation instructions:** [Build219 Gameplay Bring-up and Performance Action Plan](build219-gameplay-performance-action-plan.md), audited against main commit [19dc046](https://github.com/ruslan-k/lamentum-portmaster-tsps/commit/19dc04644d6381dd9c4921500116c21333914295). This section supersedes the current-status priorities in §§0–26. Earlier experiments remain as measured history. **No new device run, ELF build, gameplay confirmation or FPS measurement was performed in this documentation audit.**
+
+### 27.1. What was completed and what was corrected
+
+- **build219** adds a texture-charge snapshot beside RSS, VmSwap and MemAvailable; [load-probe-10](../evidence/load-probe-10/summary.json) measured **126 MiB texture live** while VmSwap reached **~870 MiB**, but this was an **earlier Loading phase** terminated by operator TERM. It does **not** prove a guest-heap leak or remove the later id=295 **256 MiB RGBA** first-use threat. The resource/GL owner ledger is still incomplete.
+- **load-probe-08** reached a clean texture-budget stop under 300 MiB and recorded **5,506 SVC 0x1A**, **5,389 SVC 0x1B** and **39,516** IPC calls on endpoint0x40 commands 8/7 combined. Those calls suggest a precise **mutex/IPC bridge** investigation. The sampled native PCs and endpoint service owner have not been resolved.
+- The 400 MOMO samples were spread approximately evenly across **32 guest threads**. Thus 387 in-kernel samples **cannot be equated to 96.75% of executing CPU time**. Obtain a same-run native mappings receipt and correctly CPU-weighted per-thread samples before claiming a percentage.
+- **load_metrics.py byte framing was already fixed.** Since the initial audit snapshot, **proc_metrics.py / perf_sample.py target-HZ and proc identity were also fixed**, with target HZ=100 verified on TSPS, and exit_outcome.py now requires a kernel victim receipt before classifying OOM. Continue with run-wide source/ELF/asset identity, navigation and real-game validation; do not redo completed source fixes.
+- The 300 MiB guarded texture budget converted previous Mali OOM runs into clean **T2_TEXTURE_BUDGET** stops, but the game **still has no verified world, physical movement, sound, save/load or gameplay FPS**. A linked fragment45 is not proof of four correct MRT outputs.
+
+### 27.2. Next implementation order
+
+| Priority | Change | Evidence and stop gate |
+|---:|---|---|
+| **P0-1** | **T1 (partially done):** target CPU tick units and PID/TID starttime identity, exit taxonomy and byte framing **completed**; finish complete run/log identity, scene-specific New Game navigation and real-game acceptance | Executable host tests and one safe owned-PID probe; no false STOP/OOM attribution |
+| **P0-2A** | **C1:** profile the real cost and semantics of svcArbitrateLock (0x1A), svcArbitrateUnlock (0x1B), and endpoint0x40 IPC 7/8; symbolize same-run native PCs | CPU/wall timing, request/return/wake and actual service identity; no skipped locks |
+| **P0-2B** | **G1:** map original id=295 plus **all live** GL textures, color MRT, depth/stencil, EGL and buffers with generation/alias/fence identity | Reconcile actual owners of texture-charged versus still-unattributed Mali memory under safe 300 MiB cap |
+| **P1-3A** | **C2:** narrow, semantics-preserving IPC/SVC fast path or service fix only if profiling proves the cost | Decreased **CPU per actual scene milestone**, not spinner FPS; no lost wakeups |
+| **P1-3B** | **G2:** test owner-local offline BC3->ETC2/EAC (then optional supported ASTC) compressed GL storage for **one immutable** atlas | Real Mali memory reduction; safe progress past original 8192x8192 first-use event; image quality reviewed |
+| **P0-4** | **W1/W2:** identify Unity scene activation, validate all four fragment45 MRT targets, shader TEST use, proper KMS/world rendering, actual controls, audio and cold saves | Real playable scene and clean Spruce MainUI/CPU restoration |
+| **P1-5** | **F1:** profile real gameplay, then target the measured SVC, texture, replay or driver bottleneck | Three independently measured >=60s gameplay runs, complete-frame P50/P95 <=33.33 ms plus visual/audio/memory correctness |
+
+**Implementation-level recipes, source paths, fixtures, rollback and alternatives:** [build219-gameplay-performance-action-plan.md](build219-gameplay-performance-action-plan.md). The two P0 investigation lanes may be developed in parallel off-device; **never run two principal-flow probes on the handheld concurrently**. Do not raise memory caps, remove NVN synchronization, bypass a shader, or call a Loading animation "gameplay".
