@@ -1,0 +1,13 @@
+{
+  "proc_exe": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/lamentum-nextos",
+  "expected_resolved": "/mnt/sdcard/mmcblk1p1/Roms/PORTS/lamentum-switch/lamentum-nextos",
+  "samefile": true,
+  "proc_dev_inode": [
+    45833,
+    1419037
+  ],
+  "expected_dev_inode": [
+    45833,
+    1419037
+  ]
+}

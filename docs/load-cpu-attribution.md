@@ -1,4 +1,9 @@
-# Loading CPU attribution: the hot loop is our own SVC/kernel path
+# Loading samples and SVC/IPC counts: CPU ownership remains unresolved
+
+> Correction following roadmap §27 / the build219 action plan: the 400 MOMO samples were spread
+> approximately round-robin over 32 threads. Sample fractions are **not executing CPU-time shares**.
+> Earlier claims below identifying the dominant CPU owner from those fractions are withdrawn.
+> See [the current profiling requirements](build219-gameplay-performance-action-plan.md#4-pr-c1--identify-svc-0x1a0x1b-and-actual-endpoint0x40-owner).
 
 Roadmap §25.3–25.4 (C0, bounded guest CPU profile) — measured on build218, arm `load-probe-08`.
 No runtime change; the sampler is the existing `MOMO_STACK_SAMPLE_*` instrument.
@@ -13,12 +18,11 @@ Same environment as the reproducible budget arm (`T2_TEXTURE_BUDGET_MIB=300`,
 
 ## What the samples say
 
-- **400 samples, 387 of them `in-kernel=0x1` (96.75%).** The interrupted thread was inside the
-  adapter's SVC/kernel emulation, not inside guest game code.
-- Interrupted PCs are native addresses (`0x7fa15b0bd4` = 299 samples, 74.75%; `0x7fa15b0bd8`
-  = 9.5%), i.e. the adapter's own trap handler body rather than `main.text.seg`/`sdk.text.seg`.
-  Naming them needs a process-map capture in the same run; the raw addresses are preserved here
-  instead of being guessed into symbols.
+- **400 samples, 387 flagged `in-kernel=0x1` (96.75% of samples, not CPU time).**
+  Thread selection was not CPU-weighted; this cannot distinguish a blocked thread from an on-CPU hot path.
+- Native PC `0x7fa15b0bd4` occurred in 299 samples (74.75% of samples), and `0x7fa15b0bd8`
+  in 9.5%. Without same-run process maps/ELF load offsets their routine/module attribution remains
+  unresolved. The in-kernel flag alone does not symbolize an address.
 - 32 probe samples over the run: frames 97 → 461, min `MemAvailable` 57 496 kB, 288 new textures,
   255 new BC deferrals, one entry-45 link, no unknown shader, ends with the clean budget stop.
 
@@ -47,26 +51,18 @@ Two commands on **one** endpoint are 94.4 % of all IPC traffic.
 
 ## Interpretation (kept separate from the numbers)
 
-The 0.836 s/present main-thread cost measured earlier is not Unity/IL2CPP arithmetic: 96.75 % of
-bounded samples land inside the adapter's own kernel emulation, and the syscall mix is a lock/wait
-pair plus one IPC service pair. That is consistent with a spin/wait loop whose every iteration pays
-our SIGTRAP bridge cost.
+The earlier 0.836 CPU s/present interval was a different build/phase. These round-robin samples
+cannot attribute that cost or exclude Unity/IL2CPP work, compression/restoration, blocking,
+scheduler delay or driver work. SVC 0x1A/0x1B and endpoint0x40 commands 7/8 are specific candidates
+for direct investigation, not proven CPU bottlenecks. Measure exclusive CLOCK_THREAD_CPUTIME_ID
+and wall intervals per handler/class, identify the actual IPC service and resolve PCs using
+same-run mappings before choosing a semantics-preserving optimization.
 
-Two concrete, competing candidates — to be separated by measurement, not by preference:
-
-1. **Bridge cost per SVC**: the 84 % `0x1a`/`0x1b` pair may be optimizable with a fast path that
-   preserves semantics (no fake completion, no changed return values).
-2. **A guest-side wait that never satisfies**: the `ep 0x40` command pair at 94 % of IPC may be a
-   service answer the title is polling, which would make the loop a stall rather than useful work.
-
-Roadmap §25.4 C1 asks for exactly one of these, chosen by data, with an A/B on the same scene
-phase.
-
-## First discriminator already measured: the keys change
+## Observed argument diversity (ABI roles still need verification)
 
 Every `0x1a`/`0x1b` line already carries its arguments. Over the 10 895 pair calls in this run:
 
-| `arg0x1` (wait/arbitrate key) | Count |
+| `arg0x1` (raw logged argument word, not a proven wait key) | Count |
 |---|---:|
 | `0x34073d08c` | 2 759 |
 | `0xffffffff` | 1 493 |
@@ -74,11 +70,7 @@ Every `0x1a`/`0x1b` line already carries its arguments. Over the 10 895 pair cal
 | `0xb0b40e0` | 1 030 |
 | `0x34073d090` | 787 |
 
-1 011 distinct keys with a small hot set: this is not one stuck key being re-polled forever, it is
-fine-grained synchronization traffic across several objects (≈35 SVCs per presented frame).
-
-So the "guest spins on a wait that is never satisfied" hypothesis is weakened for these keys, and
-the remaining candidate is the **per-SVC bridge cost**: 35 bridge round-trips per frame at a
-33 ms budget allows under ~1 ms per call in total. The next measurement is therefore the cost of
-one `0x1a`/`0x1b` bridge round-trip (bounded timing of the existing handler, no semantic change),
-followed by — only if it is material — a fast path that preserves return values and wake ordering.
+There are 1,011 distinct logged values. Their diversity alone neither excludes a stalled wait
+elsewhere nor establishes per-SVC bridge cost as the remaining cause. Verify register/ABI roles
+for each opcode separately (including `0xffffffff`) and tie lock ownership/wake results to actual
+scene work. Do not combine different builds/phases to manufacture per-call latency or CPU share.

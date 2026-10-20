@@ -1,0 +1,33 @@
+{
+  "runtime_sha256": "b8407822b205b0012401ed327a82f9ae94e31344a0bfc1d77ccdc1f7b798df4a",
+  "termination": {
+    "kind": "runtime_timeout",
+    "stops": [
+      "TIME_LIMIT"
+    ],
+    "oom_evidence": []
+  },
+  "harness_rc": 0,
+  "process_identity": {
+    "boot_id": "aedf014d-52ea-4c4c-8c42-f6650c7f8a91",
+    "pid": 26581,
+    "starttime": 6286020
+  },
+  "cleanup_errors": [],
+  "final_frame": 136,
+  "presents": 136,
+  "cpu_online_before": "0-7",
+  "cpu_online_after": "0-7",
+  "stage": "visually verified Lamentum main menu; no New Game or gameplay",
+  "discovery_fixed": true,
+  "live_bracketed_samples": 12,
+  "minimum_live_MemAvailable_kib": 61740,
+  "after_integrity_matches": true,
+  "note": "Memory values include only samples bracketed by live reads of the same PID/starttime; final unavailable sample excluded. These are diagnostic menu samples, not FPS acceptance.",
+  "private_artifact_sha256": {
+    "latest.log": "2235e2777bbf3c4f72c0b9340ed2fa9be3123f24ef959927ab884ff2794f7a05",
+    "harness.log": "140bdfa0b22ed24eaf1e4cec3fb312279579bfe541542f3237b29aadc0708150",
+    "kernel-before.json": "820c3242ccc81c77bdd0c3ab2ac5efb5bad246a4e4275a219ae605475b6d5eac",
+    "kernel-after.json": "737a4f8c978667df6ec2dfdd5a7047fc578ac219df1c40cc25ec9e864ed85ed0"
+  }
+}

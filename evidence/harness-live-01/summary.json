@@ -1,0 +1,25 @@
+{
+  "runtime_sha256": "b8407822b205b0012401ed327a82f9ae94e31344a0bfc1d77ccdc1f7b798df4a",
+  "termination": {
+    "kind": "runtime_timeout",
+    "stops": [
+      "TIME_LIMIT"
+    ],
+    "oom_evidence": []
+  },
+  "harness_rc": 0,
+  "process_identity": null,
+  "cleanup_errors": [],
+  "final_frame": 143,
+  "presents": 143,
+  "cpu_online_before": "0-7",
+  "cpu_online_after": "0-7",
+  "stage": "visually verified Lamentum main menu; no New Game or gameplay",
+  "discovery_fixed": false,
+  "private_artifact_sha256": {
+    "latest.log": "d0996dc8622fccacb26ce614759769823433f7f2960be60a480e8b135efd93d0",
+    "harness.log": "484864aa8d3126a611f5661178109199c3381a27d8683437ad5c0db1d8bb2d06",
+    "kernel-before.json": "ebc0820f7cc972fac903a6748c8d8136aeb332a9251a2ae5c1842391110feb45",
+    "kernel-after.json": "05cfa905505857b53a56714cbb4e7e533ad8a80ee9c254f6252ddb72b64c5e3d"
+  }
+}

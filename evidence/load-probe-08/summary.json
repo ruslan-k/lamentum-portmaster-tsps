@@ -281,7 +281,7 @@
       ]
     ]
   },
-  "conclusion": "96.75% of bounded samples are in-kernel; 84.1% of SVCs are the 0x1a/0x1b pair and 94.4% of IPC is one endpoint/command pair, so the loading cost is the adapter bridge + one polling service, not Unity arithmetic",
+  "conclusion": "387/400 round-robin samples were flagged in-kernel; this is not executing CPU-time share. The SVC/IPC event counts nominate specific paths for investigation but do not attribute the Loading CPU cost or exclude Unity work. Native PCs, endpoint service owner and exclusive handler CPU costs remain unresolved; see roadmap section 27.",
   "device_after": {
     "game": false,
     "restored": "verified by the harness cleanup of this arm"

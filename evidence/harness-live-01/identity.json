@@ -1,0 +1,71 @@
+{
+  "files": {
+    "lamentum-nextos": {
+      "bytes": 2121776,
+      "sha256": "b8407822b205b0012401ed327a82f9ae94e31344a0bfc1d77ccdc1f7b798df4a"
+    },
+    "lamentum-romfs.section": {
+      "bytes": 1832060032,
+      "sha256": "80ad4427164a0b7ad61c3a3fcd955bd158635aac1ee42ebb67d01dfae279b893"
+    },
+    "Lamentum.sh": {
+      "bytes": 2936,
+      "sha256": "ae7622b858c1481ca73bfc6026b2dc317255d8f8d947373d0692297a531f978d"
+    },
+    "main.data.seg": {
+      "bytes": 2607168,
+      "sha256": "b76ccdfa0c815f9aca163481c1fd6926cda7afb9ae8e245ae17cc8c9a961cc2a"
+    },
+    "main.rodata.seg": {
+      "bytes": 14494212,
+      "sha256": "be72c2c3c6775e7db8b3cad8d21aefebce3d187ec2e1ead4fc5fa79393edaa4c"
+    },
+    "main.text.seg": {
+      "bytes": 30853272,
+      "sha256": "a1372eb2e1866303406ec83e845bcf39712e3d1a3d09ba491c2fa6812bf5312d"
+    },
+    "rtld.data.seg": {
+      "bytes": 664,
+      "sha256": "9d714505014b02f57fa2d8c1a95d0965f7c8921b045ea6a6a8d3700a00cedc53"
+    },
+    "rtld.rodata.seg": {
+      "bytes": 3384,
+      "sha256": "23a719fc09894d325314f7f921d2bea764645d4f11b1d38640bd4525dd1c5d2d"
+    },
+    "rtld.text.seg": {
+      "bytes": 6304,
+      "sha256": "6334f5805c37797dc857fdb74417dd468ce2228b5f2161fb05f736a46f1714b8"
+    },
+    "sdk.data.seg": {
+      "bytes": 403976,
+      "sha256": "9700fad75cb7a7a1c14ec134f6f628fb7ee51cd3011f965fab8bf958159b815f"
+    },
+    "sdk.rodata.seg": {
+      "bytes": 6854016,
+      "sha256": "27308530e3cfb886f5cff492b99ee93cd356183ff745b514654b2d9c483ad6d1"
+    },
+    "sdk.text.seg": {
+      "bytes": 5777024,
+      "sha256": "ff614dae42158f50ffd1e8c28f268fcf85a56dcc8a97c020d960ce2f6ea9d421"
+    },
+    "subsdk0.data.seg": {
+      "bytes": 198416,
+      "sha256": "205f163e69e8361bfdd9825f83628c2ed767df4192dba75bdde3293ba4bea618"
+    },
+    "subsdk0.rodata.seg": {
+      "bytes": 2159740,
+      "sha256": "72d6f9a729a102231ec87ddb1d5f45f473e2d94cbf6a9d98c5fd2d5fc9d48cc7"
+    },
+    "subsdk0.text.seg": {
+      "bytes": 3492064,
+      "sha256": "0d5b9f5cca055ef7e24d0b23f99f526f332ac54218605d92a1eb73eacbdf8dc9"
+    }
+  },
+  "sd_free_bytes": 1453162496,
+  "saves": {
+    "PlayerPrefs.dat": "fe0f7f227336a30fd67f96c29536a5206abd89774b42b8fce62f4cc974743caa"
+  },
+  "source_commit": "e19a9b97f1bd58642e7d3ae6b6cb002b0c30e3e3",
+  "catalogue_sha256": "1ad4baeb4c73675f002e96d29360877ea4d1e44972e691f5ed1ffb7ca63ebdc9",
+  "backup_verified": true
+}

@@ -1,0 +1,37 @@
+{
+  "processes": {
+    "runtime.sh": [
+      {
+        "pid": 1228,
+        "starttime": 637
+      }
+    ],
+    "principal.sh": [
+      {
+        "pid": 2190,
+        "starttime": 1019
+      },
+      {
+        "pid": 24914,
+        "starttime": 6258314
+      }
+    ],
+    "terminator2d-ne": [
+      {
+        "pid": 25030,
+        "starttime": 6258404
+      }
+    ]
+  },
+  "game": [
+    {
+      "pid": 25030,
+      "starttime": 6258404
+    }
+  ],
+  "online": "0-7",
+  "frame": 38,
+  "menu_events": 4,
+  "stops": [],
+  "log_inode": 6652
+}
