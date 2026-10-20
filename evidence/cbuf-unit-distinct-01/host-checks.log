@@ -1,0 +1,33 @@
+$ python3 tools/test_sampler_metadata.py
+.......
+----------------------------------------------------------------------
+Ran 7 tests in 0.087s
+
+OK
+
+$ python3 tools/test_launcher.py
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.036s
+
+OK
+
+$ cc -O2 -Wall -Wextra -Werror -I /home/ruslan/lamentum-work/adapter-src/native tools/test_cbuf_units.c -o /home/ruslan/.hermes/cache/scratch/lamentum-test-cbuf_units
+
+$ /home/ruslan/.hermes/cache/scratch/lamentum-test-cbuf_units
+cbuf units: distinct buffers, low/high reservations and exhaustion OK
+
+$ cc -O2 -Wall -Wextra -Werror -I /home/ruslan/lamentum-work/adapter-src/native tools/test_guest_quota.c -o /home/ruslan/.hermes/cache/scratch/lamentum-test-guest_quota
+
+$ /home/ruslan/.hermes/cache/scratch/lamentum-test-guest_quota
+guest quota: default, bounded virtual budgets and invalid inputs OK
+
+$ cc -O2 -Wall -Wextra -Werror -I /home/ruslan/lamentum-work/adapter-src/native tools/test_fileback.c -o /home/ruslan/.hermes/cache/scratch/lamentum-test-fileback
+
+$ /home/ruslan/.hermes/cache/scratch/lamentum-test-fileback
+fileback: exact bytes, unaligned tails, COW independence and capacity guard OK
+
+$ cc -O2 -Wall -Wextra -Werror -I /home/ruslan/lamentum-work/adapter-src/native tools/test_bc_layout.c -o /home/ruslan/.hermes/cache/scratch/lamentum-test-bc_layout
+
+$ /home/ruslan/.hermes/cache/scratch/lamentum-test-bc_layout
+BC3 8192x4096: 2097152 unique in-range blocks; mip13, guards and stripe equivalence OK
