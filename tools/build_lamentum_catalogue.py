@@ -188,10 +188,24 @@ def placeholder_fragment(sampler_names):
 
 
 def samplers_of(source):
+    """Sampler uniforms with their binding.
+
+    The layouts are not always present: the ESSL conversion strips `layout(set = …, binding = …)` from the
+    working tree, and then this function found no samplers at all - every program shipped
+    `.samplers={}`, so the runtime bound no texture to any fragment shader and the frame stayed black.
+    Accept both shapes and number the bare declarations in order.
+    """
     out = []
     for m in re.finditer(r'layout\(set = \d+, binding = (\d+)\) uniform (sampler2D|sampler2DArray|samplerCube)\s+(\w+);', source):
         out.append({'binding': int(m.group(1)), 'type': m.group(2), 'name': m.group(3)})
-    return out
+    taken = {s['binding'] for s in out}
+    for m in re.finditer(r'^\s*uniform\s+(sampler2D|sampler2DArray|samplerCube)\s+(\w+)\s*;', source, re.M):
+        if any(s['name'] == m.group(2) for s in out):
+            continue
+        binding = next(i for i in range(16) if i not in taken)
+        taken.add(binding)
+        out.append({'binding': binding, 'type': m.group(1), 'name': m.group(2)})
+    return sorted(out, key=lambda s: s['binding'])
 
 
 def attributes_of(glsl):

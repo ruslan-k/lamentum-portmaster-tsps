@@ -172,8 +172,9 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "precision mediump float;\n"
 	 "out vec4 frag_color0;\n"
 	 "/* TEST-ONLY substitute: NOT a translation (see the vertex stage note). */\n"
+	 "uniform sampler2D fs_tex0_20;\n"
 	 "in vec4 varying_1;\n"
-	 "void main() { frag_color0 = vec4(0.5, 0.5, 0.5, 1.0); }\n"
+	 "void main() { frag_color0 = texture(fs_tex0_20, varying_1.xy); }\n"
 	 "", 1},
 	/* 7 dump-3a41323d vertex */
 	{"", "\n"
@@ -369,8 +370,9 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "precision mediump float;\n"
 	 "out vec4 frag_color0;\n"
 	 "/* TEST-ONLY substitute: NOT a translation (see the vertex stage note). */\n"
+	 "uniform sampler2D fs_tex0_20;\n"
 	 "in vec4 varying_1;\n"
-	 "void main() { frag_color0 = vec4(0.5, 0.5, 0.5, 1.0); }\n"
+	 "void main() { frag_color0 = texture(fs_tex0_20, varying_1.xy); }\n"
 	 "", 1},
 	/* 14 dump-800121db fragment */
 	{"", "\n"
@@ -565,8 +567,9 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "precision mediump float;\n"
 	 "out vec4 frag_color0;\n"
 	 "/* TEST-ONLY substitute: NOT a translation (see the vertex stage note). */\n"
+	 "uniform sampler2D fs_tex0_20;\n"
 	 "in vec4 varying_1;\n"
-	 "void main() { frag_color0 = vec4(0.5, 0.5, 0.5, 1.0); }\n"
+	 "void main() { frag_color0 = texture(fs_tex0_20, varying_1.xy); }\n"
 	 "", 1},
 	/* 20 dump-d032944a fragment */
 	{"", "\n"
@@ -607,8 +610,9 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "precision mediump float;\n"
 	 "out vec4 frag_color0;\n"
 	 "/* TEST-ONLY substitute: NOT a translation (see the vertex stage note). */\n"
+	 "uniform sampler2D fs_tex0_20;\n"
 	 "in vec4 varying_1;\n"
-	 "void main() { frag_color0 = vec4(0.5, 0.5, 0.5, 1.0); }\n"
+	 "void main() { frag_color0 = texture(fs_tex0_20, varying_1.xy); }\n"
 	 "", 1},
 	/* 22 dump-e6091e72 fragment */
 	{"", "\n"
@@ -706,8 +710,9 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "precision mediump float;\n"
 	 "out vec4 frag_color0;\n"
 	 "/* TEST-ONLY substitute: NOT a translation (see the vertex stage note). */\n"
+	 "uniform sampler2D fs_tex0_20;\n"
 	 "in vec4 varying_1;\n"
-	 "void main() { frag_color0 = vec4(0.5, 0.5, 0.5, 1.0); }\n"
+	 "void main() { frag_color0 = texture(fs_tex0_20, varying_1.xy); }\n"
 	 "", 1},
 	/* 27 main-86ef08 fragment */
 	{"", "\n"
@@ -715,8 +720,9 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "precision mediump float;\n"
 	 "out vec4 frag_color0;\n"
 	 "/* TEST-ONLY substitute: NOT a translation (see the vertex stage note). */\n"
+	 "uniform sampler2D fs_tex0_20;\n"
 	 "in vec4 varying_1;\n"
-	 "void main() { frag_color0 = vec4(0.5, 0.5, 0.5, 1.0); }\n"
+	 "void main() { frag_color0 = texture(fs_tex0_20, varying_1.xy); }\n"
 	 "", 1},
 	/* 28 main-86fcc8 fragment */
 	{"", "\n"
@@ -724,8 +730,9 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "precision mediump float;\n"
 	 "out vec4 frag_color0;\n"
 	 "/* TEST-ONLY substitute: NOT a translation (see the vertex stage note). */\n"
+	 "uniform sampler2D fs_tex0_20;\n"
 	 "in vec4 varying_1;\n"
-	 "void main() { frag_color0 = vec4(0.5, 0.5, 0.5, 1.0); }\n"
+	 "void main() { frag_color0 = texture(fs_tex0_20, varying_1.xy); }\n"
 	 "", 1},
 	/* 29 main-870b88 fragment */
 	{"", "\n"
@@ -733,8 +740,9 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "precision mediump float;\n"
 	 "out vec4 frag_color0;\n"
 	 "/* TEST-ONLY substitute: NOT a translation (see the vertex stage note). */\n"
+	 "uniform sampler2D fs_tex0_20;\n"
 	 "in vec4 varying_1;\n"
-	 "void main() { frag_color0 = vec4(0.5, 0.5, 0.5, 1.0); }\n"
+	 "void main() { frag_color0 = texture(fs_tex0_20, varying_1.xy); }\n"
 	 "", 1},
 	/* 30 main-871848 fragment */
 	{"", "\n"
@@ -742,8 +750,9 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "precision mediump float;\n"
 	 "out vec4 frag_color0;\n"
 	 "/* TEST-ONLY substitute: NOT a translation (see the vertex stage note). */\n"
+	 "uniform sampler2D fs_tex0_20;\n"
 	 "in vec4 varying_1;\n"
-	 "void main() { frag_color0 = vec4(0.5, 0.5, 0.5, 1.0); }\n"
+	 "void main() { frag_color0 = texture(fs_tex0_20, varying_1.xy); }\n"
 	 "", 1},
 	/* 31 main-872608 fragment */
 	{"", "\n"
@@ -751,8 +760,9 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "precision mediump float;\n"
 	 "out vec4 frag_color0;\n"
 	 "/* TEST-ONLY substitute: NOT a translation (see the vertex stage note). */\n"
+	 "uniform sampler2D fs_tex0_20;\n"
 	 "in vec4 varying_1;\n"
-	 "void main() { frag_color0 = vec4(0.5, 0.5, 0.5, 1.0); }\n"
+	 "void main() { frag_color0 = texture(fs_tex0_20, varying_1.xy); }\n"
 	 "", 1},
 	/* 32 main-8734c8 vertex */
 	{"", "\n"
@@ -805,18 +815,18 @@ struct mm_shader_binding {
 };
 static const struct mm_shader_binding nvn_megaman_shader_bindings[]={
  /* 0 dump-128077a9 fragment */
- {.sha256="128077a9d45399940bbcabfdefa45075",.error=NULL,.control_size=2176,.code_size=512,.sampler_count=0,.attribute_count=3,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
+ {.sha256="128077a9d45399940bbcabfdefa45075",.error=NULL,.control_size=2176,.code_size=512,.sampler_count=1,.attribute_count=3,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
   .uniform_count=1,.uniforms={{.name="c3",.stage=1,.binding=0,.offset=0,.size=65536,.components=4,.word_boolean=0,.word_int=0,.word_array=4096}},
   .varying_read_masks={3,1,15,0,0,0,0,0},.varying_write_masks={15,0,0,0,0,0,0,0},
   .code_hash={0x12,0x80,0x77,0xa9,0xd4,0x53,0x99,0x94,0x0b,0xbc,0xab,0xfd,0xef,0xa4,0x50,0x75,0xcc,0x67,0x3f,0x41,0x78,0xbc,0xbc,0x41,0xbb,0xe9,0xd0,0x88,0x36,0x24,0x2c,0x89},.control_hash={0x14,0x1d,0xae,0x07,0x0e,0x83,0xe1,0x98,0x3b,0xdf,0x1f,0xea,0x7b,0xad,0xe8,0x4b,0x31,0x83,0xa1,0x50,0x26,0x4e,0x4d,0xd7,0x1a,0x67,0x4b,0xc1,0x81,0xc1,0xf0,0x73},
-  .samplers={},
+  .samplers={{.name="fs_tex0_20",.stage=1,.binding=0,.offset=0,.size_query=1,.texel_fetch_bits=0,.cpu_view=0}},
   .attributes={{.name="in_attr0",.location=0,.kind=0},{.name="in_attr1",.location=1,.kind=0},{.name="in_attr2",.location=2,.kind=0}}},
  /* 1 dump-12e9d131 fragment */
- {.sha256="12e9d131b44fe77db32ff7aaa723630f",.error=NULL,.control_size=2176,.code_size=512,.sampler_count=0,.attribute_count=2,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
+ {.sha256="12e9d131b44fe77db32ff7aaa723630f",.error=NULL,.control_size=2176,.code_size=512,.sampler_count=1,.attribute_count=2,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
   .uniform_count=1,.uniforms={{.name="c3",.stage=1,.binding=0,.offset=0,.size=65536,.components=4,.word_boolean=0,.word_int=0,.word_array=4096}},
   .varying_read_masks={15,3,0,0,0,0,0,0},.varying_write_masks={15,0,0,0,0,0,0,0},
   .code_hash={0x12,0xe9,0xd1,0x31,0xb4,0x4f,0xe7,0x7d,0xb3,0x2f,0xf7,0xaa,0xa7,0x23,0x63,0x0f,0x8d,0xed,0xb5,0xef,0x56,0x60,0x17,0xba,0x66,0x0c,0xf3,0x23,0x5b,0xc6,0x66,0xd6},.control_hash={0x87,0xe9,0x53,0x50,0xfc,0x67,0x21,0x10,0x6e,0x2b,0x0d,0x4a,0x61,0x63,0xd3,0xfe,0x6b,0x41,0x96,0x66,0xe3,0x94,0x8c,0x1c,0x49,0x23,0x15,0xb1,0xf2,0x0e,0xa4,0xd0},
-  .samplers={},
+  .samplers={{.name="fs_tex0_20",.stage=1,.binding=0,.offset=0,.size_query=1,.texel_fetch_bits=0,.cpu_view=0}},
   .attributes={{.name="in_attr0",.location=0,.kind=0},{.name="in_attr1",.location=1,.kind=0}}},
  /* 2 dump-14196b8e vertex */
  {.sha256="14196b8ee2157ff89e85f75ee57fe690",.error=NULL,.control_size=2176,.code_size=768,.sampler_count=0,.attribute_count=3,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
@@ -826,18 +836,18 @@ static const struct mm_shader_binding nvn_megaman_shader_bindings[]={
   .samplers={},
   .attributes={{.name="in_attr0",.location=0,.kind=0},{.name="in_attr1",.location=1,.kind=0},{.name="in_attr2",.location=2,.kind=0}}},
  /* 3 dump-1792425422-0 fragment */
- {.sha256="d032944a8929b2cc5364e1df7f02f38a",.error=NULL,.control_size=2176,.code_size=768,.sampler_count=0,.attribute_count=2,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
+ {.sha256="d032944a8929b2cc5364e1df7f02f38a",.error=NULL,.control_size=2176,.code_size=768,.sampler_count=1,.attribute_count=2,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
   .uniform_count=1,.uniforms={{.name="c1",.stage=1,.binding=0,.offset=0,.size=65536,.components=4,.word_boolean=0,.word_int=0,.word_array=4096}},
   .varying_read_masks={0,3,0,8,0,0,0,0},.varying_write_masks={0,0,0,0,0,0,0,0},
   .code_hash={0xd0,0x32,0x94,0x4a,0x89,0x29,0xb2,0xcc,0x53,0x64,0xe1,0xdf,0x7f,0x02,0xf3,0x8a,0x7f,0x31,0xd8,0x22,0x5f,0xe0,0x02,0xec,0xad,0x35,0x14,0x8f,0x3c,0xac,0xf9,0x68},.control_hash={0x8c,0x4f,0xe3,0x42,0x81,0xe7,0x46,0x7c,0x72,0x81,0x8a,0x14,0x81,0x90,0x2a,0x58,0x09,0x24,0xda,0x35,0x7e,0x05,0xb6,0x64,0x5b,0x5d,0x70,0x3e,0x3d,0x81,0x23,0xff},
-  .samplers={},
+  .samplers={{.name="fs_tex0_20",.stage=1,.binding=0,.offset=0,.size_query=1,.texel_fetch_bits=0,.cpu_view=0}},
   .attributes={{.name="in_attr1",.location=1,.kind=0},{.name="in_attr3",.location=3,.kind=0}}},
  /* 4 dump-2991ad4b fragment */
- {.sha256="2991ad4bcf25b8351ded83a14cc8c448",.error=NULL,.control_size=2176,.code_size=512,.sampler_count=0,.attribute_count=4,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
+ {.sha256="2991ad4bcf25b8351ded83a14cc8c448",.error=NULL,.control_size=2176,.code_size=512,.sampler_count=1,.attribute_count=4,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
   .uniform_count=0,.uniforms={},
   .varying_read_masks={3,3,3,3,0,0,0,0},.varying_write_masks={15,0,0,0,0,0,0,0},
   .code_hash={0x29,0x91,0xad,0x4b,0xcf,0x25,0xb8,0x35,0x1d,0xed,0x83,0xa1,0x4c,0xc8,0xc4,0x48,0xb1,0xbf,0x2b,0x4a,0xcf,0x86,0x2b,0xf3,0x42,0x44,0x8d,0x1e,0xd3,0x84,0xce,0x50},.control_hash={0x25,0xa3,0x39,0xf6,0x00,0x3d,0x30,0xb4,0xde,0x2f,0x29,0x46,0xd2,0xfc,0xee,0xc7,0x0b,0x06,0x17,0x39,0x12,0xf5,0x63,0x91,0xd0,0x64,0x02,0x85,0xb4,0x07,0x0a,0x2e},
-  .samplers={},
+  .samplers={{.name="fs_tex0_20",.stage=1,.binding=0,.offset=0,.size_query=1,.texel_fetch_bits=0,.cpu_view=0}},
   .attributes={{.name="in_attr0",.location=0,.kind=0},{.name="in_attr1",.location=1,.kind=0},{.name="in_attr2",.location=2,.kind=0},{.name="in_attr3",.location=3,.kind=0}}},
  /* 5 dump-29d0db82 vertex */
  {.sha256="29d0db82b353bb6105f047d41637307f",.error=NULL,.control_size=2176,.code_size=2816,.sampler_count=0,.attribute_count=4,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
@@ -847,11 +857,11 @@ static const struct mm_shader_binding nvn_megaman_shader_bindings[]={
   .samplers={},
   .attributes={{.name="in_attr0",.location=0,.kind=0},{.name="in_attr1",.location=1,.kind=0},{.name="in_attr2",.location=2,.kind=0},{.name="in_attr3",.location=3,.kind=0}}},
  /* 6 dump-33650b4b fragment */
- {.sha256="33650b4b250293b5c244b5b33e62a77c",.error=NULL,.control_size=2176,.code_size=1024,.sampler_count=0,.attribute_count=1,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
+ {.sha256="33650b4b250293b5c244b5b33e62a77c",.error=NULL,.control_size=2176,.code_size=1024,.sampler_count=2,.attribute_count=1,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
   .uniform_count=2,.uniforms={{.name="c1",.stage=1,.binding=0,.offset=0,.size=65536,.components=4,.word_boolean=0,.word_int=0,.word_array=4096},{.name="c3_1",.stage=1,.binding=1,.offset=0,.size=65536,.components=4,.word_boolean=0,.word_int=0,.word_array=4096}},
   .varying_read_masks={3,0,0,0,0,0,0,0},.varying_write_masks={15,0,0,0,0,0,0,0},
   .code_hash={0x33,0x65,0x0b,0x4b,0x25,0x02,0x93,0xb5,0xc2,0x44,0xb5,0xb3,0x3e,0x62,0xa7,0x7c,0x1f,0x03,0xed,0x85,0x71,0xac,0x3f,0xfd,0xda,0x93,0x68,0x34,0x7b,0xdc,0x61,0x66},.control_hash={0x7a,0x38,0xf8,0xcc,0x64,0x64,0xed,0xcb,0x26,0x5c,0x68,0x22,0x70,0x57,0x7a,0x3a,0x9b,0x46,0x68,0xac,0xf4,0x9d,0x26,0xee,0x9c,0x38,0x8b,0xdd,0x25,0x7b,0xbc,0x01},
-  .samplers={},
+  .samplers={{.name="fs_tex0_20",.stage=1,.binding=0,.offset=0,.size_query=1,.texel_fetch_bits=0,.cpu_view=0},{.name="fs_tex0_28",.stage=1,.binding=1,.offset=0,.size_query=1,.texel_fetch_bits=0,.cpu_view=0}},
   .attributes={{.name="in_attr0",.location=0,.kind=0}}},
  /* 7 dump-3a41323d vertex */
  {.sha256="3a41323d0d47e4265c808b26327df78e",.error=NULL,.control_size=2176,.code_size=1024,.sampler_count=0,.attribute_count=3,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
@@ -868,11 +878,11 @@ static const struct mm_shader_binding nvn_megaman_shader_bindings[]={
   .samplers={},
   .attributes={{.name="in_attr0",.location=0,.kind=0}}},
  /* 9 dump-4b551bd7 fragment */
- {.sha256="4b551bd7a7732d410f3634916c38c1a6",.error=NULL,.control_size=2176,.code_size=512,.sampler_count=0,.attribute_count=2,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
+ {.sha256="4b551bd7a7732d410f3634916c38c1a6",.error=NULL,.control_size=2176,.code_size=512,.sampler_count=2,.attribute_count=2,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
   .uniform_count=0,.uniforms={},
   .varying_read_masks={3,3,0,0,0,0,0,0},.varying_write_masks={15,0,0,0,0,0,0,0},
   .code_hash={0x4b,0x55,0x1b,0xd7,0xa7,0x73,0x2d,0x41,0x0f,0x36,0x34,0x91,0x6c,0x38,0xc1,0xa6,0x2d,0x9e,0x87,0x81,0x9c,0x50,0xe5,0x4c,0x9f,0x58,0x60,0x7b,0x46,0x60,0x67,0x84},.control_hash={0x78,0x36,0x9a,0x4e,0x5c,0x8a,0xb4,0x9a,0xa7,0x3a,0xc7,0x00,0xd1,0x35,0x4e,0x8c,0x06,0xa9,0x6b,0xeb,0xc1,0x62,0x66,0x77,0x5b,0x4f,0x9c,0x07,0xcd,0x09,0x8b,0xdd},
-  .samplers={},
+  .samplers={{.name="fs_tex0_20",.stage=1,.binding=0,.offset=0,.size_query=1,.texel_fetch_bits=0,.cpu_view=0},{.name="fs_tex0_28",.stage=1,.binding=1,.offset=0,.size_query=1,.texel_fetch_bits=0,.cpu_view=0}},
   .attributes={{.name="in_attr0",.location=0,.kind=0},{.name="in_attr1",.location=1,.kind=0}}},
  /* 10 dump-56844c6b vertex */
  {.sha256="56844c6ba737e9ef8558ff6f0fb935e8",.error=NULL,.control_size=2176,.code_size=1024,.sampler_count=0,.attribute_count=3,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
@@ -896,18 +906,18 @@ static const struct mm_shader_binding nvn_megaman_shader_bindings[]={
   .samplers={},
   .attributes={{.name="in_attr0",.location=0,.kind=0},{.name="in_attr1",.location=1,.kind=0},{.name="in_attr2",.location=2,.kind=0}}},
  /* 13 dump-7227c812 fragment */
- {.sha256="7227c812dba30ea82b90fc43945f4156",.error=NULL,.control_size=2176,.code_size=512,.sampler_count=0,.attribute_count=2,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
+ {.sha256="7227c812dba30ea82b90fc43945f4156",.error=NULL,.control_size=2176,.code_size=512,.sampler_count=1,.attribute_count=2,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
   .uniform_count=0,.uniforms={},
   .varying_read_masks={15,3,0,0,0,0,0,0},.varying_write_masks={15,0,0,0,0,0,0,0},
   .code_hash={0x72,0x27,0xc8,0x12,0xdb,0xa3,0x0e,0xa8,0x2b,0x90,0xfc,0x43,0x94,0x5f,0x41,0x56,0xfe,0xa1,0xc4,0xef,0xaf,0x44,0x67,0xda,0x8c,0x5f,0x10,0x2b,0x30,0xf2,0x15,0x88},.control_hash={0x73,0x82,0xe6,0x2c,0x83,0x56,0xa7,0xb0,0x25,0x44,0xd9,0xc5,0x79,0x02,0x4b,0x5e,0x8d,0xc4,0xc8,0x8b,0xa5,0xc8,0x28,0xda,0x0a,0x9b,0xfb,0x70,0xfc,0xb1,0x2b,0x32},
-  .samplers={},
+  .samplers={{.name="fs_tex0_20",.stage=1,.binding=0,.offset=0,.size_query=1,.texel_fetch_bits=0,.cpu_view=0}},
   .attributes={{.name="in_attr0",.location=0,.kind=0},{.name="in_attr1",.location=1,.kind=0}}},
  /* 14 dump-800121db fragment */
- {.sha256="800121db9124384d3d3fd2c0452b3311",.error=NULL,.control_size=2176,.code_size=512,.sampler_count=0,.attribute_count=2,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
+ {.sha256="800121db9124384d3d3fd2c0452b3311",.error=NULL,.control_size=2176,.code_size=512,.sampler_count=1,.attribute_count=2,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
   .uniform_count=1,.uniforms={{.name="c3",.stage=1,.binding=0,.offset=0,.size=65536,.components=4,.word_boolean=0,.word_int=0,.word_array=4096}},
   .varying_read_masks={15,0,3,0,0,0,0,0},.varying_write_masks={15,0,0,0,0,0,0,0},
   .code_hash={0x80,0x01,0x21,0xdb,0x91,0x24,0x38,0x4d,0x3d,0x3f,0xd2,0xc0,0x45,0x2b,0x33,0x11,0x16,0x7d,0x25,0x54,0x6e,0xfd,0x1d,0x53,0x81,0x11,0xfa,0xf3,0x55,0xdf,0x3c,0x1b},.control_hash={0xa9,0xad,0x70,0xc6,0xe7,0x9b,0xfe,0xeb,0x5e,0x23,0x24,0x5b,0x18,0xd1,0x97,0xe5,0x84,0x68,0x94,0x55,0xa9,0xfd,0xd3,0xb1,0x19,0x3a,0x37,0xe3,0x30,0x66,0xd6,0xae},
-  .samplers={},
+  .samplers={{.name="fs_tex0_20",.stage=1,.binding=0,.offset=0,.size_query=1,.texel_fetch_bits=0,.cpu_view=0}},
   .attributes={{.name="in_attr0",.location=0,.kind=0},{.name="in_attr2",.location=2,.kind=0}}},
  /* 15 dump-815bc387 fragment */
  {.sha256="815bc3875d5ebee554109af31f5502e8",.error=NULL,.control_size=2176,.code_size=256,.sampler_count=0,.attribute_count=0,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
@@ -938,39 +948,39 @@ static const struct mm_shader_binding nvn_megaman_shader_bindings[]={
   .samplers={},
   .attributes={{.name="in_attr0",.location=0,.kind=0},{.name="in_attr1",.location=1,.kind=0},{.name="in_attr2",.location=2,.kind=0}}},
  /* 19 dump-c523448a fragment */
- {.sha256="c523448a188e019468627cb25b9a59af",.error=NULL,.control_size=2176,.code_size=1024,.sampler_count=0,.attribute_count=5,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
+ {.sha256="c523448a188e019468627cb25b9a59af",.error=NULL,.control_size=2176,.code_size=1024,.sampler_count=1,.attribute_count=5,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
   .uniform_count=1,.uniforms={{.name="c3",.stage=1,.binding=0,.offset=0,.size=65536,.components=4,.word_boolean=0,.word_int=0,.word_array=4096}},
   .varying_read_masks={3,7,7,15,7,0,0,0},.varying_write_masks={15,0,0,0,0,0,0,0},
   .code_hash={0xc5,0x23,0x44,0x8a,0x18,0x8e,0x01,0x94,0x68,0x62,0x7c,0xb2,0x5b,0x9a,0x59,0xaf,0xc6,0xa9,0x1a,0x94,0x82,0xb5,0x13,0x68,0xc1,0xa1,0x8d,0xa4,0xa6,0x21,0xba,0x1e},.control_hash={0x71,0xbd,0x2d,0x6a,0x9d,0x63,0xd4,0x00,0x31,0x49,0x7b,0x5a,0x4f,0x22,0xd5,0x67,0x10,0x29,0x6e,0x20,0x62,0x23,0xed,0xd4,0x28,0x01,0x94,0xc2,0x0e,0x8f,0x52,0x44},
-  .samplers={},
+  .samplers={{.name="fs_tex0_20",.stage=1,.binding=0,.offset=0,.size_query=1,.texel_fetch_bits=0,.cpu_view=0}},
   .attributes={{.name="in_attr0",.location=0,.kind=0},{.name="in_attr1",.location=1,.kind=0},{.name="in_attr2",.location=2,.kind=0},{.name="in_attr3",.location=3,.kind=0},{.name="in_attr4",.location=4,.kind=0}}},
  /* 20 dump-d032944a fragment */
- {.sha256="d032944a8929b2cc5364e1df7f02f38a",.error=NULL,.control_size=2176,.code_size=768,.sampler_count=0,.attribute_count=2,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
+ {.sha256="d032944a8929b2cc5364e1df7f02f38a",.error=NULL,.control_size=2176,.code_size=768,.sampler_count=1,.attribute_count=2,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
   .uniform_count=1,.uniforms={{.name="c1",.stage=1,.binding=0,.offset=0,.size=65536,.components=4,.word_boolean=0,.word_int=0,.word_array=4096}},
   .varying_read_masks={0,3,0,8,0,0,0,0},.varying_write_masks={0,0,0,0,0,0,0,0},
   .code_hash={0xd0,0x32,0x94,0x4a,0x89,0x29,0xb2,0xcc,0x53,0x64,0xe1,0xdf,0x7f,0x02,0xf3,0x8a,0x7f,0x31,0xd8,0x22,0x5f,0xe0,0x02,0xec,0xad,0x35,0x14,0x8f,0x3c,0xac,0xf9,0x68},.control_hash={0x8c,0x4f,0xe3,0x42,0x81,0xe7,0x46,0x7c,0x72,0x81,0x8a,0x14,0x81,0x90,0x2a,0x58,0x09,0x24,0xda,0x35,0x7e,0x05,0xb6,0x64,0x5b,0x5d,0x70,0x3e,0x3d,0x81,0x23,0xff},
-  .samplers={},
+  .samplers={{.name="fs_tex0_20",.stage=1,.binding=0,.offset=0,.size_query=1,.texel_fetch_bits=0,.cpu_view=0}},
   .attributes={{.name="in_attr1",.location=1,.kind=0},{.name="in_attr3",.location=3,.kind=0}}},
  /* 21 dump-e4fb4243 fragment */
- {.sha256="e4fb424329549ccd60aad17d772a2487",.error=NULL,.control_size=2176,.code_size=512,.sampler_count=0,.attribute_count=2,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
+ {.sha256="e4fb424329549ccd60aad17d772a2487",.error=NULL,.control_size=2176,.code_size=512,.sampler_count=1,.attribute_count=2,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
   .uniform_count=1,.uniforms={{.name="c3",.stage=1,.binding=0,.offset=0,.size=65536,.components=4,.word_boolean=0,.word_int=0,.word_array=4096}},
   .varying_read_masks={15,3,0,0,0,0,0,0},.varying_write_masks={15,0,0,0,0,0,0,0},
   .code_hash={0xe4,0xfb,0x42,0x43,0x29,0x54,0x9c,0xcd,0x60,0xaa,0xd1,0x7d,0x77,0x2a,0x24,0x87,0xb4,0xe7,0x63,0x45,0x5f,0xc2,0x74,0xe7,0xe8,0x77,0x8b,0x66,0x9d,0x21,0xd8,0x61},.control_hash={0xb3,0x14,0x37,0x34,0x54,0x45,0x6f,0x87,0x73,0xf7,0xcf,0xfe,0x48,0x1e,0xa8,0x0b,0xd1,0xd9,0x84,0x17,0x4a,0x44,0x08,0xe3,0x56,0x27,0xad,0x90,0x19,0x5b,0x7d,0x62},
-  .samplers={},
+  .samplers={{.name="fs_tex0_20",.stage=1,.binding=0,.offset=0,.size_query=1,.texel_fetch_bits=0,.cpu_view=0}},
   .attributes={{.name="in_attr0",.location=0,.kind=0},{.name="in_attr1",.location=1,.kind=0}}},
  /* 22 dump-e6091e72 fragment */
- {.sha256="e6091e727431c3272e5d6b9198de23df",.error=NULL,.control_size=2176,.code_size=768,.sampler_count=0,.attribute_count=1,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
+ {.sha256="e6091e727431c3272e5d6b9198de23df",.error=NULL,.control_size=2176,.code_size=768,.sampler_count=1,.attribute_count=1,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
   .uniform_count=2,.uniforms={{.name="c1",.stage=1,.binding=0,.offset=0,.size=65536,.components=4,.word_boolean=0,.word_int=0,.word_array=4096},{.name="c3_1",.stage=1,.binding=1,.offset=0,.size=65536,.components=4,.word_boolean=0,.word_int=0,.word_array=4096}},
   .varying_read_masks={3,0,0,0,0,0,0,0},.varying_write_masks={15,0,0,0,0,0,0,0},
   .code_hash={0xe6,0x09,0x1e,0x72,0x74,0x31,0xc3,0x27,0x2e,0x5d,0x6b,0x91,0x98,0xde,0x23,0xdf,0x1e,0xd2,0xf6,0x61,0xcb,0xe9,0xa7,0x4e,0x4b,0x03,0x5d,0xc6,0xe2,0xaa,0x45,0x93},.control_hash={0x39,0x34,0x06,0x5f,0x96,0x2a,0xf2,0xed,0xe8,0x54,0xb2,0x3c,0xb4,0x5c,0x9f,0x7f,0x7c,0xe4,0x45,0xfb,0xcf,0x92,0xfa,0xbc,0x5c,0xc3,0x4a,0x37,0x5f,0xb3,0x6b,0x2e},
-  .samplers={},
+  .samplers={{.name="fs_tex0_20",.stage=1,.binding=0,.offset=0,.size_query=1,.texel_fetch_bits=0,.cpu_view=0}},
   .attributes={{.name="in_attr0",.location=0,.kind=0}}},
  /* 23 dump-f3327347 fragment */
- {.sha256="f3327347207307f4ac851f8f7cc24dcd",.error=NULL,.control_size=2176,.code_size=512,.sampler_count=0,.attribute_count=2,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
+ {.sha256="f3327347207307f4ac851f8f7cc24dcd",.error=NULL,.control_size=2176,.code_size=512,.sampler_count=1,.attribute_count=2,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
   .uniform_count=0,.uniforms={},
   .varying_read_masks={15,3,0,0,0,0,0,0},.varying_write_masks={15,0,0,0,0,0,0,0},
   .code_hash={0xf3,0x32,0x73,0x47,0x20,0x73,0x07,0xf4,0xac,0x85,0x1f,0x8f,0x7c,0xc2,0x4d,0xcd,0xef,0xd5,0xd8,0x0c,0xda,0x44,0x0d,0x50,0xbd,0x82,0x7e,0x93,0x10,0x6e,0x90,0x1e},.control_hash={0xad,0x1a,0xa1,0x3d,0xa8,0x3c,0xf3,0x6e,0x48,0x9f,0x39,0x81,0x84,0x47,0x36,0x7e,0x6e,0x2f,0x31,0x87,0x72,0x4d,0x1a,0x90,0x16,0xbe,0xd4,0xc2,0x21,0x10,0x68,0xb3},
-  .samplers={},
+  .samplers={{.name="fs_tex0_20",.stage=1,.binding=0,.offset=0,.size_query=1,.texel_fetch_bits=0,.cpu_view=0}},
   .attributes={{.name="in_attr0",.location=0,.kind=0},{.name="in_attr1",.location=1,.kind=0}}},
  /* 24 main-86cac8 vertex */
  {.sha256="b3913c5cf5773c0e3a8d943f162b9d6d",.error=NULL,.control_size=2176,.code_size=256,.sampler_count=0,.attribute_count=2,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
@@ -987,46 +997,46 @@ static const struct mm_shader_binding nvn_megaman_shader_bindings[]={
   .samplers={},
   .attributes={{.name="in_attr0",.location=0,.kind=0},{.name="in_attr1",.location=1,.kind=0}}},
  /* 26 main-86e248 fragment */
- {.sha256="f7d68113daeff747cbbc1d54f1cbb208",.error=NULL,.control_size=2176,.code_size=512,.sampler_count=0,.attribute_count=1,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
+ {.sha256="f7d68113daeff747cbbc1d54f1cbb208",.error=NULL,.control_size=2176,.code_size=512,.sampler_count=1,.attribute_count=1,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
   .uniform_count=0,.uniforms={},
   .varying_read_masks={3,0,0,0,0,0,0,0},.varying_write_masks={15,0,0,0,0,0,0,0},
   .code_hash={0xf7,0xd6,0x81,0x13,0xda,0xef,0xf7,0x47,0xcb,0xbc,0x1d,0x54,0xf1,0xcb,0xb2,0x08,0x6b,0xca,0xf9,0x64,0x2c,0x65,0x66,0x0e,0xb2,0xab,0x27,0x5f,0x52,0x6e,0xb9,0xdd},.control_hash={0x79,0x18,0x8e,0x3c,0xd6,0xde,0x6e,0xe9,0x26,0x8a,0x5e,0x77,0xd7,0xb9,0x65,0xfe,0xca,0xf6,0x85,0xd4,0x90,0xa5,0x78,0xe2,0xa1,0xb7,0xb5,0x24,0x1d,0x68,0x5b,0x10},
-  .samplers={},
+  .samplers={{.name="fs_tex0_20",.stage=1,.binding=0,.offset=0,.size_query=1,.texel_fetch_bits=0,.cpu_view=0}},
   .attributes={{.name="in_attr0",.location=0,.kind=0}}},
  /* 27 main-86ef08 fragment */
- {.sha256="51e9503e3e9e5ffc0c9b19852a5ba042",.error=NULL,.control_size=2176,.code_size=768,.sampler_count=0,.attribute_count=1,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
+ {.sha256="51e9503e3e9e5ffc0c9b19852a5ba042",.error=NULL,.control_size=2176,.code_size=768,.sampler_count=1,.attribute_count=1,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
   .uniform_count=0,.uniforms={},
   .varying_read_masks={3,0,0,0,0,0,0,0},.varying_write_masks={15,0,0,0,0,0,0,0},
   .code_hash={0x51,0xe9,0x50,0x3e,0x3e,0x9e,0x5f,0xfc,0x0c,0x9b,0x19,0x85,0x2a,0x5b,0xa0,0x42,0xaf,0x6e,0xe6,0x1f,0x3d,0x63,0xef,0x5b,0x78,0x66,0x6f,0x35,0xd4,0xf0,0xcb,0x57},.control_hash={0x54,0xae,0xa6,0x5a,0xae,0xad,0x02,0x95,0xb2,0x4c,0x41,0x82,0x9d,0x9a,0x47,0xf5,0x41,0x19,0xb3,0xfd,0x9c,0x7a,0xd9,0x59,0x29,0x7c,0x27,0x36,0x4d,0x86,0x1a,0x94},
-  .samplers={},
+  .samplers={{.name="fs_tex0_20",.stage=1,.binding=0,.offset=0,.size_query=1,.texel_fetch_bits=0,.cpu_view=0}},
   .attributes={{.name="in_attr0",.location=0,.kind=0}}},
  /* 28 main-86fcc8 fragment */
- {.sha256="283a226c935b89dff3ba47a0dfe2b811",.error=NULL,.control_size=2176,.code_size=1024,.sampler_count=0,.attribute_count=1,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
+ {.sha256="283a226c935b89dff3ba47a0dfe2b811",.error=NULL,.control_size=2176,.code_size=1024,.sampler_count=1,.attribute_count=1,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
   .uniform_count=0,.uniforms={},
   .varying_read_masks={3,0,0,0,0,0,0,0},.varying_write_masks={15,0,0,0,0,0,0,0},
   .code_hash={0x28,0x3a,0x22,0x6c,0x93,0x5b,0x89,0xdf,0xf3,0xba,0x47,0xa0,0xdf,0xe2,0xb8,0x11,0xde,0xfb,0xde,0x50,0x9c,0x64,0x63,0x07,0x1f,0xf5,0x01,0x84,0x0f,0x12,0x46,0x3a},.control_hash={0xd1,0x69,0x4f,0xdc,0xe3,0xfe,0x75,0xb4,0xa3,0x3c,0x2e,0x49,0xa1,0xa4,0xbf,0x8d,0xf0,0x7c,0x5c,0x11,0x1e,0xdb,0x89,0xf0,0x87,0x79,0x07,0x33,0x13,0x91,0x05,0x96},
-  .samplers={},
+  .samplers={{.name="fs_tex0_20",.stage=1,.binding=0,.offset=0,.size_query=1,.texel_fetch_bits=0,.cpu_view=0}},
   .attributes={{.name="in_attr0",.location=0,.kind=0}}},
  /* 29 main-870b88 fragment */
- {.sha256="4137e113105451ea591ecc3eed5477e6",.error=NULL,.control_size=2176,.code_size=512,.sampler_count=0,.attribute_count=1,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
+ {.sha256="4137e113105451ea591ecc3eed5477e6",.error=NULL,.control_size=2176,.code_size=512,.sampler_count=2,.attribute_count=1,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
   .uniform_count=0,.uniforms={},
   .varying_read_masks={3,0,0,0,0,0,0,0},.varying_write_masks={15,0,0,0,0,0,0,0},
   .code_hash={0x41,0x37,0xe1,0x13,0x10,0x54,0x51,0xea,0x59,0x1e,0xcc,0x3e,0xed,0x54,0x77,0xe6,0x95,0xdd,0xaf,0xbe,0xef,0x9f,0x8d,0x10,0x9f,0x0f,0xd0,0xfc,0x81,0x5d,0xac,0x08},.control_hash={0x9f,0x90,0x77,0x63,0xe1,0x36,0xc6,0x77,0xab,0x55,0xd7,0xf4,0x0a,0xfd,0xc8,0x0d,0x9b,0x1b,0x07,0x47,0xd7,0xb2,0x6d,0xd9,0x7f,0x65,0x5c,0x50,0xcd,0x9e,0x66,0xd9},
-  .samplers={},
+  .samplers={{.name="fs_tex0_20",.stage=1,.binding=0,.offset=0,.size_query=1,.texel_fetch_bits=0,.cpu_view=0},{.name="fs_tex0_20_1",.stage=1,.binding=1,.offset=0,.size_query=1,.texel_fetch_bits=0,.cpu_view=0}},
   .attributes={{.name="in_attr0",.location=0,.kind=0}}},
  /* 30 main-871848 fragment */
- {.sha256="49351413ea33c9c09fddb670ac293145",.error=NULL,.control_size=2176,.code_size=768,.sampler_count=0,.attribute_count=1,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
+ {.sha256="49351413ea33c9c09fddb670ac293145",.error=NULL,.control_size=2176,.code_size=768,.sampler_count=2,.attribute_count=1,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
   .uniform_count=0,.uniforms={},
   .varying_read_masks={3,0,0,0,0,0,0,0},.varying_write_masks={15,0,0,0,0,0,0,0},
   .code_hash={0x49,0x35,0x14,0x13,0xea,0x33,0xc9,0xc0,0x9f,0xdd,0xb6,0x70,0xac,0x29,0x31,0x45,0xa5,0xa8,0x99,0xbf,0xd0,0x7d,0x77,0x92,0x56,0x37,0xbd,0x0b,0x3e,0x47,0x0f,0x0b},.control_hash={0xb4,0x4a,0x7f,0x2f,0x16,0x3a,0xb2,0x38,0x4f,0xce,0x52,0x4f,0x93,0x1e,0xc5,0x1b,0xca,0x89,0x31,0xb2,0x77,0xdc,0xfb,0xb0,0x13,0xde,0x4e,0x39,0xce,0x96,0xba,0xe3},
-  .samplers={},
+  .samplers={{.name="fs_tex0_20",.stage=1,.binding=0,.offset=0,.size_query=1,.texel_fetch_bits=0,.cpu_view=0},{.name="fs_tex0_20_1",.stage=1,.binding=1,.offset=0,.size_query=1,.texel_fetch_bits=0,.cpu_view=0}},
   .attributes={{.name="in_attr0",.location=0,.kind=0}}},
  /* 31 main-872608 fragment */
- {.sha256="7a92670073b5efd71bc427239f94ac3f",.error=NULL,.control_size=2176,.code_size=1024,.sampler_count=0,.attribute_count=1,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
+ {.sha256="7a92670073b5efd71bc427239f94ac3f",.error=NULL,.control_size=2176,.code_size=1024,.sampler_count=2,.attribute_count=1,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
   .uniform_count=0,.uniforms={},
   .varying_read_masks={3,0,0,0,0,0,0,0},.varying_write_masks={15,0,0,0,0,0,0,0},
   .code_hash={0x7a,0x92,0x67,0x00,0x73,0xb5,0xef,0xd7,0x1b,0xc4,0x27,0x23,0x9f,0x94,0xac,0x3f,0x33,0xec,0xc2,0x53,0x73,0xf6,0x54,0xf0,0x72,0xc7,0xcc,0x86,0xaf,0x3a,0x5e,0x3f},.control_hash={0x6d,0x75,0x97,0x95,0xa4,0xee,0x23,0xf0,0xbf,0xf6,0x83,0x0c,0x40,0xda,0xbf,0xfa,0x89,0x26,0xa9,0x74,0xa2,0x1d,0xb2,0x9b,0x8b,0x99,0x94,0x0c,0xa8,0x99,0xe4,0xed},
-  .samplers={},
+  .samplers={{.name="fs_tex0_20",.stage=1,.binding=0,.offset=0,.size_query=1,.texel_fetch_bits=0,.cpu_view=0},{.name="fs_tex0_20_1",.stage=1,.binding=1,.offset=0,.size_query=1,.texel_fetch_bits=0,.cpu_view=0}},
   .attributes={{.name="in_attr0",.location=0,.kind=0}}},
  /* 32 main-8734c8 vertex */
  {.sha256="b3913c5cf5773c0e3a8d943f162b9d6d",.error=NULL,.control_size=2176,.code_size=256,.sampler_count=0,.attribute_count=2,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
@@ -1036,10 +1046,10 @@ static const struct mm_shader_binding nvn_megaman_shader_bindings[]={
   .samplers={},
   .attributes={{.name="in_attr0",.location=0,.kind=0},{.name="in_attr1",.location=1,.kind=0}}},
  /* 33 main-874088 fragment */
- {.sha256="d97e37b36286e7b9110b2b0a5d85c3b8",.error=NULL,.control_size=2176,.code_size=256,.sampler_count=0,.attribute_count=1,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
+ {.sha256="d97e37b36286e7b9110b2b0a5d85c3b8",.error=NULL,.control_size=2176,.code_size=256,.sampler_count=1,.attribute_count=1,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
   .uniform_count=0,.uniforms={},
   .varying_read_masks={3,0,0,0,0,0,0,0},.varying_write_masks={15,0,0,0,0,0,0,0},
   .code_hash={0xd9,0x7e,0x37,0xb3,0x62,0x86,0xe7,0xb9,0x11,0x0b,0x2b,0x0a,0x5d,0x85,0xc3,0xb8,0x44,0x71,0x68,0xed,0x31,0x5c,0xdc,0x36,0x8f,0x37,0x15,0x0f,0x34,0xc2,0x5b,0x9b},.control_hash={0xea,0xba,0x42,0x33,0xf4,0x38,0xa2,0xc8,0xf1,0x56,0x53,0x7d,0x8a,0xb8,0x60,0x4f,0x7a,0xa9,0xdf,0xb2,0x70,0xa0,0xb4,0x6f,0x7a,0x16,0x0e,0x3c,0x03,0x83,0x76,0x48},
-  .samplers={},
+  .samplers={{.name="fs_tex0_20",.stage=1,.binding=0,.offset=0,.size_query=1,.texel_fetch_bits=0,.cpu_view=0}},
   .attributes={{.name="in_attr0",.location=0,.kind=0}}},
 };

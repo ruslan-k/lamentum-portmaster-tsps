@@ -897,7 +897,7 @@ index 0545586..ac198d5 100644
      nvn_gl_completion.real_waits++;
  }
 diff --git a/native/nvn_render.h b/native/nvn_render.h
-index 543b4b5..fe0d8df 100644
+index 543b4b5..139a430 100644
 --- a/native/nvn_render.h
 +++ b/native/nvn_render.h
 @@ -793,19 +793,74 @@ static void nvn_render_draw_inner(struct nvn_record *r) {
@@ -998,10 +998,48 @@ index 543b4b5..fe0d8df 100644
          unsigned element=vf.bytes,stride=nvn_render.streams[stream][0];struct nvn_range range=nvn_render.vertex[stream];
          uint64_t start=base*stride+offset,extent=maximum*stride+element;
          if(!stride||start>range.size||extent>range.size-start)stop("NVN_VERTEX_FETCH_RANGE",nvn_caller,start+extent,24);
-@@ -1449,6 +1509,33 @@ static void nvn_render_draw_inner(struct nvn_record *r) {
+@@ -1449,6 +1509,71 @@ static void nvn_render_draw_inner(struct nvn_record *r) {
      }
      if(preserve)momo_stencil_probe(nvn_replay.draws+1,p->sources[0],p->sources[1]);
      momo_window_draws_census(nvn_render.target,nvn_replay.last_frame,nvn_replay.draws+1,p->sources[0],p->sources[1]);
++#ifndef GL_TEXTURE_WIDTH
++#define GL_TEXTURE_WIDTH 0x1000
++#define GL_TEXTURE_HEIGHT 0x1001
++#endif
++/* ES 3.0 core call that the GLES2 headers used here do not declare. */
++extern void glGetTexLevelParameteriv(GLenum target,GLint level,GLenum pname,GLint *params);
++    {   /* COTM_TEX_PROBE=<n>: for the first n draws, read the centre texel of every bound sampler input.
++         * A black frame has two very different causes - black inputs (asset upload) or black maths (shader
++         * state) - and this tells them apart without guessing. */
++        static int probe_configured;static unsigned probe_limit,probe_printed;
++        if(!probe_configured){const char *o=getenv("COTM_TEX_PROBE");probe_limit=o?(unsigned)strtoul(o,NULL,0):0;probe_configured=1;}
++        if(probe_printed<probe_limit) {
++            probe_printed++;
++            for(unsigned i=0;i<p->uniform_count;i++) {
++                struct nvn_uniform *u=&p->uniforms[i];
++                if(u->kind!=3 || u->location<0)continue;
++                GLint unit=-1;glGetUniformiv(program,u->location,&unit);
++                if(unit<0 || unit>=(GLint)nvn_device.texture_units)continue;
++                glActiveTexture(GL_TEXTURE0+unit);
++                GLint tex=0;glGetIntegerv(GL_TEXTURE_BINDING_2D,&tex);
++                glActiveTexture(GL_TEXTURE0);
++                if(!tex)continue;
++                GLint width=0,height=0;glBindTexture(GL_TEXTURE_2D,(GLuint)tex);
++                glGetTexLevelParameteriv(GL_TEXTURE_2D,0,GL_TEXTURE_WIDTH,&width);
++                glGetTexLevelParameteriv(GL_TEXTURE_2D,0,GL_TEXTURE_HEIGHT,&height);
++                if(width<=0 || height<=0)continue;
++                GLint previous=0;glGetIntegerv(GL_FRAMEBUFFER_BINDING,&previous);
++                GLuint probe_fbo=0;glGenFramebuffers(1,&probe_fbo);glBindFramebuffer(GL_FRAMEBUFFER,probe_fbo);
++                glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,(GLuint)tex,0);
++                unsigned char px[4]={0,0,0,0};
++                if(glCheckFramebufferStatus(GL_FRAMEBUFFER)==GL_FRAMEBUFFER_COMPLETE)
++                    glReadPixels(width/2,height/2,1,1,GL_RGBA,GL_UNSIGNED_BYTE,px);
++                glBindFramebuffer(GL_FRAMEBUFFER,(GLuint)previous);glDeleteFramebuffers(1,&probe_fbo);
++                printf("NVN_TEX_PROBE program=%u/%u draw=%u name=%s unit=%d texture=%d size=%dx%d centre=%u,%u,%u,%u\n",
++                    p->sources[0],p->sources[1],probe_printed,u->name,unit,tex,width,height,px[0],px[1],px[2],px[3]);
++            }
++        }
++    }
 +    {   /* COTM_DRAW_LOG=<n>: which target and which program each of the first n draws uses. The window
 +         * census only fires on a chosen frame, and the frame counter does not reach 1 in every run. */
 +        static int draw_log_configured;static unsigned draw_log_limit,draw_log_printed;
@@ -1032,7 +1070,7 @@ index 543b4b5..fe0d8df 100644
      nvn_replay.draws++;nvn_render.target->draws++;
      struct nvn_texture *target_storage=zero_texture_storage_state(nvn_render.target);
      if(target_storage!=nvn_render.target)target_storage->draws++;
-@@ -1590,6 +1677,22 @@ static unsigned nvn_render_record(struct nvn_record *r) {
+@@ -1590,6 +1715,22 @@ static unsigned nvn_render_record(struct nvn_record *r) {
          return 1;
      }
      case NI_nvnCommandBufferBindColorState:memcpy(&nvn_render.color,r->payload,4);return 1;
@@ -1055,7 +1093,7 @@ index 543b4b5..fe0d8df 100644
      case NI_nvnCommandBufferBindBlendState:memcpy(nvn_render.blend,r->payload,8);return 1;
      case NI_nvnCommandBufferBindDepthStencilState:memcpy(nvn_render.depth_state,r->payload,8);return 1;
      case NI_nvnCommandBufferBindMultisampleState: {
-@@ -1621,6 +1724,14 @@ static unsigned nvn_render_record(struct nvn_record *r) {
+@@ -1621,6 +1762,14 @@ static unsigned nvn_render_record(struct nvn_record *r) {
      case NI_nvnCommandBufferBindVertexBuffers:memcpy(nvn_render.vertex+a[0],r->payload,a[1]*16);return 1;
      case NI_nvnCommandBufferBindUniformBuffer:
          if(a[0]>1||a[1]>=16)stop("NVN_UNIFORM_BINDING",nvn_caller,a[1],24);

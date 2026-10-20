@@ -1112,3 +1112,25 @@ Six distinct layers of the WoL-derived runtime have been measured and five fixed
 black, and each remaining candidate (this location collision, the attribute layout, the possibility that
 the title is simply still on its loading screen at these frames) is a separate measurement in a chain,
 not a final step.
+
+## The sampler table was empty for every program - textures were never bound
+
+`grep -o '\.samplers={[^}]*}'` on the generated catalogue returned **only empty tables**: all 34 programs
+shipped `.samplers={}`. The cause is `samplers_of()`: it required
+`layout(set = …, binding = …) uniform sampler2D …`, and the ESSL conversion earlier in this session had
+stripped exactly those qualifiers from the working tree. So the runtime had no sampler metadata, bound no
+texture to any fragment shader, and every fragment sampled nothing - a black frame that no amount of
+uniform work could fix.
+
+The detection now accepts bare declarations too (binding assigned in order, the layout form still taking
+precedence). Result: **20 programs carry samplers** (was 0) and the bindings are live.
+
+The run now binds real textures and stops one layer further:
+
+```
+STOP status=NVN_RENDER_DESCRIPTOR_INVALID pc=main.text.seg+0x52d294 detail=0x0
+```
+
+with the sampler objects themselves created and accepted
+(`NVN_SAMPLER_CREATED min=5 mag=1 wrap=7/7/7 lod=0:1000 ...`). So the next step is the texture descriptor
+the runtime refuses - a real guest handle it cannot decode - not a missing table.
