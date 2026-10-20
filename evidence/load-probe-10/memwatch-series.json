@@ -1,0 +1,342 @@
+[
+ {
+  "checks": 40,
+  "available-MiB": 440,
+  "vmrss-MiB": 416,
+  "vmswap-MiB": 0,
+  "level": 0,
+  "texture-live-MiB": 69,
+  "texture-peak-MiB": 69,
+  "texture-charges": 92
+ },
+ {
+  "checks": 80,
+  "available-MiB": 327,
+  "vmrss-MiB": 492,
+  "vmswap-MiB": 0,
+  "level": 0,
+  "texture-live-MiB": 64,
+  "texture-peak-MiB": 72,
+  "texture-charges": 96
+ },
+ {
+  "checks": 120,
+  "available-MiB": 211,
+  "vmrss-MiB": 572,
+  "vmswap-MiB": 0,
+  "level": 0,
+  "texture-live-MiB": 64,
+  "texture-peak-MiB": 72,
+  "texture-charges": 96
+ },
+ {
+  "checks": 160,
+  "available-MiB": 159,
+  "vmrss-MiB": 624,
+  "vmswap-MiB": 0,
+  "level": 0,
+  "texture-live-MiB": 65,
+  "texture-peak-MiB": 72,
+  "texture-charges": 107
+ },
+ {
+  "checks": 200,
+  "available-MiB": 160,
+  "vmrss-MiB": 601,
+  "vmswap-MiB": 19,
+  "level": 1,
+  "texture-live-MiB": 65,
+  "texture-peak-MiB": 72,
+  "texture-charges": 108
+ },
+ {
+  "checks": 240,
+  "available-MiB": 137,
+  "vmrss-MiB": 623,
+  "vmswap-MiB": 28,
+  "level": 0,
+  "texture-live-MiB": 65,
+  "texture-peak-MiB": 72,
+  "texture-charges": 109
+ },
+ {
+  "checks": 280,
+  "available-MiB": 115,
+  "vmrss-MiB": 661,
+  "vmswap-MiB": 45,
+  "level": 0,
+  "texture-live-MiB": 74,
+  "texture-peak-MiB": 74,
+  "texture-charges": 126
+ },
+ {
+  "checks": 320,
+  "available-MiB": 64,
+  "vmrss-MiB": 694,
+  "vmswap-MiB": 151,
+  "level": 1,
+  "texture-live-MiB": 99,
+  "texture-peak-MiB": 99,
+  "texture-charges": 132
+ },
+ {
+  "checks": 360,
+  "available-MiB": 68,
+  "vmrss-MiB": 717,
+  "vmswap-MiB": 261,
+  "level": 1,
+  "texture-live-MiB": 102,
+  "texture-peak-MiB": 102,
+  "texture-charges": 136
+ },
+ {
+  "checks": 400,
+  "available-MiB": 49,
+  "vmrss-MiB": 712,
+  "vmswap-MiB": 406,
+  "level": 1,
+  "texture-live-MiB": 108,
+  "texture-peak-MiB": 108,
+  "texture-charges": 139
+ },
+ {
+  "checks": 440,
+  "available-MiB": 42,
+  "vmrss-MiB": 708,
+  "vmswap-MiB": 559,
+  "level": 1,
+  "texture-live-MiB": 115,
+  "texture-peak-MiB": 115,
+  "texture-charges": 142
+ },
+ {
+  "checks": 480,
+  "available-MiB": 77,
+  "vmrss-MiB": 703,
+  "vmswap-MiB": 601,
+  "level": 1,
+  "texture-live-MiB": 115,
+  "texture-peak-MiB": 115,
+  "texture-charges": 142
+ },
+ {
+  "checks": 520,
+  "available-MiB": 70,
+  "vmrss-MiB": 701,
+  "vmswap-MiB": 725,
+  "level": 1,
+  "texture-live-MiB": 122,
+  "texture-peak-MiB": 122,
+  "texture-charges": 144
+ },
+ {
+  "checks": 560,
+  "available-MiB": 72,
+  "vmrss-MiB": 702,
+  "vmswap-MiB": 817,
+  "level": 1,
+  "texture-live-MiB": 126,
+  "texture-peak-MiB": 126,
+  "texture-charges": 146
+ },
+ {
+  "checks": 600,
+  "available-MiB": 73,
+  "vmrss-MiB": 654,
+  "vmswap-MiB": 883,
+  "level": 1,
+  "texture-live-MiB": 126,
+  "texture-peak-MiB": 126,
+  "texture-charges": 146
+ },
+ {
+  "checks": 640,
+  "available-MiB": 76,
+  "vmrss-MiB": 645,
+  "vmswap-MiB": 878,
+  "level": 1,
+  "texture-live-MiB": 126,
+  "texture-peak-MiB": 126,
+  "texture-charges": 146
+ },
+ {
+  "checks": 680,
+  "available-MiB": 79,
+  "vmrss-MiB": 643,
+  "vmswap-MiB": 874,
+  "level": 1,
+  "texture-live-MiB": 126,
+  "texture-peak-MiB": 126,
+  "texture-charges": 146
+ },
+ {
+  "checks": 720,
+  "available-MiB": 73,
+  "vmrss-MiB": 642,
+  "vmswap-MiB": 873,
+  "level": 1,
+  "texture-live-MiB": 126,
+  "texture-peak-MiB": 126,
+  "texture-charges": 146
+ },
+ {
+  "checks": 760,
+  "available-MiB": 66,
+  "vmrss-MiB": 660,
+  "vmswap-MiB": 870,
+  "level": 1,
+  "texture-live-MiB": 126,
+  "texture-peak-MiB": 126,
+  "texture-charges": 146
+ },
+ {
+  "checks": 800,
+  "available-MiB": 62,
+  "vmrss-MiB": 659,
+  "vmswap-MiB": 866,
+  "level": 1,
+  "texture-live-MiB": 126,
+  "texture-peak-MiB": 126,
+  "texture-charges": 146
+ },
+ {
+  "checks": 840,
+  "available-MiB": 77,
+  "vmrss-MiB": 658,
+  "vmswap-MiB": 865,
+  "level": 1,
+  "texture-live-MiB": 126,
+  "texture-peak-MiB": 126,
+  "texture-charges": 146
+ },
+ {
+  "checks": 880,
+  "available-MiB": 67,
+  "vmrss-MiB": 656,
+  "vmswap-MiB": 864,
+  "level": 1,
+  "texture-live-MiB": 126,
+  "texture-peak-MiB": 126,
+  "texture-charges": 146
+ },
+ {
+  "checks": 920,
+  "available-MiB": 66,
+  "vmrss-MiB": 665,
+  "vmswap-MiB": 862,
+  "level": 1,
+  "texture-live-MiB": 126,
+  "texture-peak-MiB": 126,
+  "texture-charges": 146
+ },
+ {
+  "checks": 960,
+  "available-MiB": 65,
+  "vmrss-MiB": 663,
+  "vmswap-MiB": 861,
+  "level": 1,
+  "texture-live-MiB": 126,
+  "texture-peak-MiB": 126,
+  "texture-charges": 146
+ },
+ {
+  "checks": 1000,
+  "available-MiB": 81,
+  "vmrss-MiB": 662,
+  "vmswap-MiB": 859,
+  "level": 1,
+  "texture-live-MiB": 126,
+  "texture-peak-MiB": 126,
+  "texture-charges": 146
+ },
+ {
+  "checks": 1040,
+  "available-MiB": 67,
+  "vmrss-MiB": 661,
+  "vmswap-MiB": 859,
+  "level": 1,
+  "texture-live-MiB": 126,
+  "texture-peak-MiB": 126,
+  "texture-charges": 146
+ },
+ {
+  "checks": 1080,
+  "available-MiB": 67,
+  "vmrss-MiB": 673,
+  "vmswap-MiB": 859,
+  "level": 1,
+  "texture-live-MiB": 126,
+  "texture-peak-MiB": 126,
+  "texture-charges": 146
+ },
+ {
+  "checks": 1120,
+  "available-MiB": 77,
+  "vmrss-MiB": 666,
+  "vmswap-MiB": 860,
+  "level": 1,
+  "texture-live-MiB": 126,
+  "texture-peak-MiB": 126,
+  "texture-charges": 146
+ },
+ {
+  "checks": 1160,
+  "available-MiB": 67,
+  "vmrss-MiB": 665,
+  "vmswap-MiB": 860,
+  "level": 1,
+  "texture-live-MiB": 126,
+  "texture-peak-MiB": 126,
+  "texture-charges": 146
+ },
+ {
+  "checks": 1200,
+  "available-MiB": 77,
+  "vmrss-MiB": 665,
+  "vmswap-MiB": 861,
+  "level": 1,
+  "texture-live-MiB": 126,
+  "texture-peak-MiB": 126,
+  "texture-charges": 146
+ },
+ {
+  "checks": 1240,
+  "available-MiB": 78,
+  "vmrss-MiB": 666,
+  "vmswap-MiB": 861,
+  "level": 1,
+  "texture-live-MiB": 126,
+  "texture-peak-MiB": 126,
+  "texture-charges": 146
+ },
+ {
+  "checks": 1280,
+  "available-MiB": 78,
+  "vmrss-MiB": 654,
+  "vmswap-MiB": 867,
+  "level": 1,
+  "texture-live-MiB": 126,
+  "texture-peak-MiB": 126,
+  "texture-charges": 146
+ },
+ {
+  "checks": 1320,
+  "available-MiB": 84,
+  "vmrss-MiB": 661,
+  "vmswap-MiB": 867,
+  "level": 1,
+  "texture-live-MiB": 126,
+  "texture-peak-MiB": 126,
+  "texture-charges": 146
+ },
+ {
+  "checks": 1360,
+  "available-MiB": 75,
+  "vmrss-MiB": 655,
+  "vmswap-MiB": 869,
+  "level": 1,
+  "texture-live-MiB": 126,
+  "texture-peak-MiB": 126,
+  "texture-charges": 146
+ }
+]

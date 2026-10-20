@@ -1,0 +1,9 @@
+{
+  "build": "build219",
+  "installed_sha256": "b8407822b205b0012401ed327a82f9ae94e31344a0bfc1d77ccdc1f7b798df4a",
+  "arm": "G0 read-only ledger: texture budget next to system memory, every ~10 s",
+  "finding": "texture-live saturates at 126 MiB of a 300 MiB cap while MemAvailable falls 440->70 MiB and swap-in-use climbs to ~870 MiB; the guest heap, not textures, is the consumer in this phase",
+  "series_file": "memwatch-series.json",
+  "correction": "the earlier \"GPU wall\" label described Mali accounting over shared RAM; texture decode policy is withdrawn as the priority lever",
+  "stage": "loading phase, not gameplay"
+}

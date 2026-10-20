@@ -1,6 +1,6 @@
 {
-  "kmsgrab": "Screenshot saved to /mnt/SDCARD/Roms/PORTS/lamentum-switch/logs/live-receipt.png (FB ID: 163, 1280x720)\n",
-  "sha256": "89641f6553059ff76f3bb867809850be323fbf7c333fd5f276a9c290e05bde80",
+  "kmsgrab": "Screenshot saved to /mnt/SDCARD/Roms/PORTS/lamentum-switch/logs/live-receipt.png (FB ID: 161, 1280x720)\n",
+  "sha256": "61f011b830b194549c921466f439aa94d5c4ce6b6a5e9c4a7cf1c76e65d9d724",
   "before": {
     "processes": {
       "runtime.sh": [
@@ -33,7 +33,7 @@
       }
     ],
     "online": "0-7",
-    "frame": 11,
+    "frame": 28,
     "menu_events": 4,
     "stops": [],
     "log_inode": 6652
@@ -70,7 +70,7 @@
       }
     ],
     "online": "0-7",
-    "frame": 13,
+    "frame": 29,
     "menu_events": 4,
     "stops": [],
     "log_inode": 6652
