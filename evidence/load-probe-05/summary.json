@@ -1,0 +1,11 @@
+{
+  "probe": "load-probe-05",
+  "build": "build218",
+  "result": "fail-closed STOP status=LC2_FILEBACK_DISK_RESERVE at start",
+  "cause": "SD card has 1404 MiB free (99% full, 118416/119821 MiB used); the arm requested LC2_BC_FILE_CAP_MIB=1280 plus reserve",
+  "port_dir_size_mib": 1997,
+  "romfs_section_mib": 1748,
+  "logs_mib": 3,
+  "action": "next arm lowers the file-backing cap to 512 MiB, which is a measurement parameter change and is recorded as such",
+  "cleanup_errors": []
+}

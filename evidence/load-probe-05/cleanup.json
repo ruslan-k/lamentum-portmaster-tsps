@@ -1,0 +1,68 @@
+{
+  "cleanup_errors": [],
+  "before": {
+    "processes": {
+      "runtime.sh": [
+        {
+          "pid": 1228,
+          "starttime": 637
+        }
+      ],
+      "principal.sh": [
+        {
+          "pid": 2190,
+          "starttime": 1019
+        }
+      ],
+      "MainUI": [
+        {
+          "pid": 6936,
+          "starttime": 5617347
+        }
+      ]
+    },
+    "game": [],
+    "online": "0-7",
+    "frame": null,
+    "menu_events": 0,
+    "stops": [],
+    "log_inode": 6652
+  },
+  "after": {
+    "processes": {
+      "runtime.sh": [
+        {
+          "pid": 1228,
+          "starttime": 637
+        }
+      ],
+      "principal.sh": [
+        {
+          "pid": 2190,
+          "starttime": 1019
+        }
+      ],
+      "MainUI": [
+        {
+          "pid": 8824,
+          "starttime": 5663389
+        }
+      ]
+    },
+    "game": [],
+    "online": "0-7",
+    "frame": null,
+    "menu_events": 0,
+    "stops": [
+      "STOP status=LC2_FILEBACK_DISK_RESERVE"
+    ],
+    "log_inode": 6652
+  },
+  "host_terminated": null,
+  "killed_without_stop": false,
+  "stops": [
+    "LC2_FILEBACK_DISK_RESERVE"
+  ],
+  "runtime_ok": false,
+  "config_rejected": false
+}
