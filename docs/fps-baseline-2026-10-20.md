@@ -93,3 +93,34 @@ Consequence for the 30 FPS goal: reaching 33.33 ms requires replay 250 -> ~15 ms
 guest gap 316 -> ~15 ms. The adapter can attack the first; the second is the game's own
 per-frame work on this SoC, so the only levers there are guest-side (resolution, effects,
 quality) or reducing what the guest is asked to redo each frame.
+
+## Render-scale arm (`ZERO_RENDER_SCALE=2`), rejected
+
+The existing adapter path maps the game's logical 1920×1080 windows to 640×360 storage
+while keeping native 1280×720 composition (`ZERO_RENDER_SCALE_WINDOW colors=3
+logical=1920x1080 storage=640x360 output=1280x720`). One arm with it enabled, everything
+else held at the cold250 quiet environment:
+
+| Arm | period P50 | replay P50 | gap P50 |
+|---|---:|---:|---:|
+| cold250 (control) | 579.3 ms | 240.8 ms | ~316 ms |
+| cold250 + `ZERO_RENDER_SCALE=2` | 577.7 ms | 226.7 ms | 312–330 ms |
+
+No frame-time gain, and the guest gap is unchanged — consistent with the CPU-bound
+attribution: shrinking raster storage cannot shorten guest CPU time. The arm is not
+adopted and the default stays 0.
+
+## Alignment with roadmap §18
+
+The roadmap was re-read at `origin/main` after commit `2a14ee8`:
+
+- §18.4 (frame attribution) is satisfied by the `gap-ms` split: 572.7 ms = 249.6 replay
+  + 316.4 gap + 7.4 present/readback, i.e. >99% accounted, with thread CPU in the right
+  units after the `CLK_TCK` fix.
+- §18.5 (zram cold matrix) has one arm measured (10 → 250). The 100/500 arms and the
+  three matched repetitions are still required before any default promotion.
+- §18.6 warns that `MOMO_SUBMIT_FINISH=0` (glFlush) is not completion. It is recorded here
+  as a diagnostic observation only, never as a fix, and the default remains glFinish.
+- §18.7 confirms `LC2_CBUF_SUBIMAGE` is already default-on and measured neutral; the open
+  item is the oversized padded upload (a full 1024×1 RGBA32F row for 16–368 bytes), not
+  the allocation frequency.
