@@ -2907,6 +2907,28 @@ index 81f1ea1..96969a7 100644
      fflush(stdout);
  }
  static void *t2_gz_thread(void *argument) {
+diff --git a/native/t2_memwatch.h b/native/t2_memwatch.h
+index af10ee8..f2fcb5f 100644
+--- a/native/t2_memwatch.h
++++ b/native/t2_memwatch.h
+@@ -117,8 +117,15 @@ static void t2_memwatch_step(const struct t2_meminfo *m) {
+     if(m->swap_total_kib && m->swap_free_kib<t2_memwatch.lowest_swap_kib)t2_memwatch.lowest_swap_kib=m->swap_free_kib;
+     if(!(t2_memwatch.checks%T2_MEMWATCH_SAMPLE_CHECKS)) {
+         unsigned long rss,swap;t2_memwatch_self_status(&rss,&swap);
+-        printf("T2_MEMWATCH_SAMPLE checks=%llu available-MiB=%lu swap-free-MiB=%lu swap-total-MiB=%lu vmrss-MiB=%lu vmswap-MiB=%lu level=%d\n",
+-               (unsigned long long)t2_memwatch.checks,available>>10,m->swap_free_kib>>10,m->swap_total_kib>>10,rss>>10,swap>>10,t2_memwatch.level);
++        /* Read-only GPU ledger (roadmap §25.4 G0): the CHARGED texture budget next to the system
++         * numbers that actually decide survival, so "charged vs unaccounted" is one time series
++         * instead of scattered add-event lines. No new allocation, no admission change. */
++        pthread_mutex_lock(&t2_texture_budget_mutex);
++        uint64_t tex_live=t2_texture_budget.live_bytes,tex_peak=t2_texture_budget.peak_bytes,tex_count=t2_texture_budget.count;
++        pthread_mutex_unlock(&t2_texture_budget_mutex);
++        printf("T2_MEMWATCH_SAMPLE checks=%llu available-MiB=%lu swap-free-MiB=%lu swap-total-MiB=%lu vmrss-MiB=%lu vmswap-MiB=%lu level=%d texture-live-MiB=%llu texture-peak-MiB=%llu texture-charges=%llu texture-budget-MiB=%u\n",
++               (unsigned long long)t2_memwatch.checks,available>>10,m->swap_free_kib>>10,m->swap_total_kib>>10,rss>>10,swap>>10,t2_memwatch.level,
++               (unsigned long long)(tex_live>>20),(unsigned long long)(tex_peak>>20),(unsigned long long)tex_count,t2_memwatch.budget_mib);
+     }
+     int level=t2_memwatch_classify(m,t2_memwatch.floor_mib,t2_memwatch.swap_floor_mib,t2_memwatch.tight_mib);
+     if(level==3) {
 diff --git a/native/zero_bc.h b/native/zero_bc.h
 index f9e31ec..a1e6b35 100644
 --- a/native/zero_bc.h

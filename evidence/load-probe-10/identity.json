@@ -1,0 +1,5 @@
+{
+  "installed_sha256": "b8407822b205b0012401ed327a82f9ae94e31344a0bfc1d77ccdc1f7b798df4a",
+  "prior_sha256": "034c8f963d7e6b3eb5a2d2e305e59c4e1d58756ced309b304252c2ff71e324c3",
+  "change": "read-only GPU ledger line in T2_MEMWATCH_SAMPLE (G0)"
+}
