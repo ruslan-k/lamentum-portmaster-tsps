@@ -21,10 +21,10 @@ from PIL import Image
 
 from lamentum_pad_contract import capture, press, remote, snapshot
 from load_metrics import PAYLOAD as METRICS_RUNNER, fold
-from newgame_navigate import cursor_row
+from newgame_navigate import changed, cursor_row, grid
 
 NEWGAME_ROW_Y = (475, 503)
-CONTROLS_BRIGHT_JUMP = 400      # sampled bright pixels: page ~455, controls ~1400
+CONTROLS_CHANGE_CELLS = 120      # a real content change, not a value toggle or a cursor move
 POLL_S = 5
 
 def bright(png):
@@ -97,16 +97,26 @@ def navigate(out):
     for i in range(2):
         press('down', 700)
         time.sleep(4)
-    press('confirm', 1500)
-    time.sleep(9)
-    capture(out / 'controls.png')
-    controls_bright = bright(out / 'controls.png')
-    # Structural check, not a brightness jump: the New Game page carries a menu cursor band,
-    # the controls page does not. Measured controls brightness varies (602..1187), so an
-    # absolute jump threshold rejects a correct transition.
-    if cursor_row(out / 'controls.png') is not None:
-        raise RuntimeError('page -> controls transition not observed: a menu cursor is still present '
-                           '(page bright %d, controls bright %d)' % (page_bright, controls_bright))
+    # Leave the configuration page. Neither brightness nor the cursor band classifies the controls
+    # screen reliably (measured: 382, 600 and 1187 lit samples; a bright band is present on both),
+    # so gate on a large CONTENT change with bounded retries instead of on a screen heuristic.
+    page_grid = grid(out / 'page.png')
+    for attempt in range(4):
+        press('confirm', 1500)
+        time.sleep(9)
+        png = out / ('controls%s.png' % ('' if attempt == 0 else '-r%d' % attempt))
+        capture(png)
+        delta = changed(page_grid, grid(png))
+        (out / ('controls%s.json' % ('' if attempt == 0 else '-r%d' % attempt))).write_text(
+            json.dumps({'attempt': attempt, 'changed_cells': delta, 'need': CONTROLS_CHANGE_CELLS},
+                       indent=2) + '\n')
+        print(json.dumps({'step': 'leave-page', 'attempt': attempt, 'changed_cells': delta}))
+        if delta >= CONTROLS_CHANGE_CELLS:
+            break
+    else:
+        raise RuntimeError('the configuration page never changed after 4 Confirm presses '
+                           '(need %d cells)' % CONTROLS_CHANGE_CELLS)
+    controls_bright = bright(png)
     press('confirm', 1200)
     time.sleep(8)
     capture(out / 'loading.png')
