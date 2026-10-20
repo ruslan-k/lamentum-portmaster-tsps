@@ -1,0 +1,36 @@
+{
+  "stop": "INVALID_PROBE_TIME_BUDGET",
+  "requested_budget_s": 2400,
+  "runtime_cap_s": 900,
+  "source": "adapter-src/native/loader.c:831",
+  "state_after": {
+    "processes": {
+      "runtime.sh": [
+        {
+          "pid": 1228,
+          "starttime": 637
+        }
+      ],
+      "principal.sh": [
+        {
+          "pid": 2190,
+          "starttime": 1019
+        }
+      ],
+      "MainUI": [
+        {
+          "pid": 14380,
+          "starttime": 4771096
+        }
+      ]
+    },
+    "game": [],
+    "online": "0-7",
+    "frame": null,
+    "menu_events": 0,
+    "stops": [
+      "STOP status=INVALID_PROBE_TIME_BUDGET"
+    ],
+    "log_inode": 6652
+  }
+}

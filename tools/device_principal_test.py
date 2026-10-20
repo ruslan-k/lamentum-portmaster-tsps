@@ -87,13 +87,15 @@ def main():
     log = ssh('cat %s/logs/latest.log' % PORT_DIR).stdout
     stops = re.findall(r'STOP status=(\S+)', log)
     result = {'cleanup_errors': errors, 'before': before, 'after': after,
-              'stops': stops, 'runtime_ok': bool(stops) and all(x == 'TIME_LIMIT' for x in stops)}
+              'stops': stops, 'runtime_ok': bool(stops) and all(x == 'TIME_LIMIT' for x in stops),
+              'config_rejected': any(x.startswith('INVALID_') for x in stops)}
     if a.evidence:
         (a.evidence / 'latest.log').write_text(log)
         (a.evidence / 'cleanup.json').write_text(json.dumps(result, indent=2) + '\n')
         print('evidence ->', a.evidence)
-    # Cleanup failure differs from a guest fail-closed stop, and neither is success.
-    return 3 if errors else (0 if result['runtime_ok'] else 4)
+    # Cleanup failure, a rejected harness parameter and a guest fail-closed stop are three
+    # different outcomes; only a full budget with a clean device counts as a completed run.
+    return 3 if errors else (5 if result['config_rejected'] else (0 if result['runtime_ok'] else 4))
 
 
 if __name__ == '__main__':

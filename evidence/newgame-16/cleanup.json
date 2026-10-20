@@ -1,0 +1,67 @@
+{
+  "cleanup_errors": [],
+  "before": {
+    "processes": {
+      "runtime.sh": [
+        {
+          "pid": 1228,
+          "starttime": 637
+        }
+      ],
+      "principal.sh": [
+        {
+          "pid": 2190,
+          "starttime": 1019
+        }
+      ],
+      "MainUI": [
+        {
+          "pid": 13362,
+          "starttime": 4752883
+        }
+      ]
+    },
+    "game": [],
+    "online": "0-7",
+    "frame": 1469,
+    "menu_events": 4,
+    "stops": [
+      "STOP status=TIME_LIMIT"
+    ],
+    "log_inode": 6652
+  },
+  "after": {
+    "processes": {
+      "runtime.sh": [
+        {
+          "pid": 1228,
+          "starttime": 637
+        }
+      ],
+      "principal.sh": [
+        {
+          "pid": 2190,
+          "starttime": 1019
+        }
+      ],
+      "MainUI": [
+        {
+          "pid": 14380,
+          "starttime": 4771096
+        }
+      ]
+    },
+    "game": [],
+    "online": "0-7",
+    "frame": null,
+    "menu_events": 0,
+    "stops": [
+      "STOP status=INVALID_PROBE_TIME_BUDGET"
+    ],
+    "log_inode": 6652
+  },
+  "stops": [
+    "INVALID_PROBE_TIME_BUDGET"
+  ],
+  "runtime_ok": false
+}

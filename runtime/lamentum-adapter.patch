@@ -641,7 +641,7 @@ index 0000000..ff9ab3b
 +}
 +#endif
 diff --git a/native/loader.c b/native/loader.c
-index 8018af5..91280ac 100644
+index 8018af5..95bf9e5 100644
 --- a/native/loader.c
 +++ b/native/loader.c
 @@ -30,7 +30,9 @@
@@ -726,6 +726,18 @@ index 8018af5..91280ac 100644
                 megaman_memory_entry(s->base+off,v) ||
                 (v&0xffe0001fU)==0xd4000001U || (v&0xffffffe0U)==0xd53bd060U ||
                 (v&0xffffffe0U)==0xd53bd040U || (v&0xffffffe0U)==0xd51bd040U ||
+@@ -815,7 +828,10 @@ int main(int argc,char **argv) {
+     const char *budget=getenv("MEGAMAN_PROBE_SECONDS");
+     if(budget) {
+         char *end=NULL;unsigned long seconds=strtoul(budget,&end,10);
+-        if(!*budget || *end || (seconds<1 && strcmp(budget,"0")) || seconds>900)stop("INVALID_PROBE_TIME_BUDGET",0,seconds,24);
++        /* Bring-up bound, not a game limit: this title's first level load alone runs longer than
++         * 15 min at the measured guest frame rate, so the ceiling is 1800 s. The stop stays
++         * fail-closed for anything larger, and a run still ends by TIME_LIMIT + cleanup. */
++        if(!*budget || *end || (seconds<1 && strcmp(budget,"0")) || seconds>1800)stop("INVALID_PROBE_TIME_BUDGET",0,seconds,24);
+         probe_seconds=(unsigned)seconds;
+     }
+     printf("NATIVE_PROBE_TIME_BUDGET seconds=%u\n",probe_seconds);
 diff --git a/native/megaman_texture_view.h b/native/megaman_texture_view.h
 index 90cb048..a1ba190 100644
 --- a/native/megaman_texture_view.h

@@ -1,0 +1,6 @@
+{
+  "installed_sha256": "9c6ecc47184e12ec4f5a03825132ae43035cf86b49ce2b6d7ae6359255fa1338",
+  "prior_sha256": "6b1171257de082b0b7dcbc1150c3f815f6fc62f2d0b95228b45fb605099d894a",
+  "budget_s": 1800,
+  "change": "probe budget ceiling 900 -> 1800 s (instrument bound, not a fix)"
+}
