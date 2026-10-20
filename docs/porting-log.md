@@ -1173,3 +1173,23 @@ STOP status=NVN_RENDER_DESCRIPTOR_INVALID pc=main.text.seg+0x52d294 detail=0x3f8
 `0x3f800000` is the bit pattern of the float `1.0f`, so the value reaching the descriptor lookup is not a
 slot index at all - the sampler bind path is decoding the wrong word for this title's handle. That is the
 next measurement: the handle encoding at that call site, not the descriptor table.
+
+## The failing lookup is fed by a handle whose words are not a slot index
+
+With the last texture bind recorded, the miss now carries its context:
+
+```
+NVN_DESCRIPTOR_MISS index=0x3f800000 count=0x2100 base=0x100 valid=0 object=0 view=0
+  last-bind=0x40 a0=0x1 a1=0x0 a2=0x16000000620 a3=0x5560c3e168
+```
+
+`0x40` is the texture-bind op, and the arguments show what this title passes: `a0=1`, `a1=0`,
+`a2=0x16000000620` (a 64-bit handle with a high word of 1) and `a3=0x5560c3e168` (what looks like a guest
+pointer). The runtime assumes `(uint32_t)handle` is a slot index into the descriptor pool and
+`handle>>32` the sampler index - an encoding that held for the WoL trunk. Here the value that reaches the
+lookup as an index is `0x3f800000` (the bit pattern of `1.0f`), so the words are being taken from the
+wrong place for this title's handle layout.
+
+Next step is therefore a decode fix, not another guard: read the NVN handle the way this title builds it
+(the high word of `a2` is 1 - a plausible pool/sampler index - and the low word is a view offset), and keep
+the descriptor lookup driven by a real slot index.
