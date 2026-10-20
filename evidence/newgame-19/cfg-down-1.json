@@ -1,0 +1,34 @@
+{
+  "name": "cfg-down-1",
+  "action": "down",
+  "hold_ms": 700,
+  "attempt": 0,
+  "changed_cells": 9,
+  "need": 2,
+  "capture_sha256": "6e8debbece6bd87ddaba99a3c05375b2acdfdb49e726776791f713c6d0745d2f",
+  "press": {
+    "action": "down",
+    "event_type": 3,
+    "code": 17,
+    "value": 1,
+    "hold_ms": 700,
+    "provider": "/dev/input/event4",
+    "name": "TRIMUI Player1",
+    "capabilities": {
+      "ev": "20002b",
+      "key": "7cdb000000000000 0 0 0 0",
+      "abs": "3003f"
+    },
+    "writes": [
+      24,
+      24,
+      24,
+      24
+    ],
+    "start_ns": 50794089343391,
+    "end_ns": 50794808092431,
+    "released": true,
+    "source": "agent evdev injection, not a physical human press"
+  },
+  "frame": 170
+}

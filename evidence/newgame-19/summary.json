@@ -1,0 +1,35 @@
+{
+  "build": "build218",
+  "installed_sha256": "034c8f963d7e6b3eb5a2d2e305e59c4e1d58756ced309b304252c2ff71e324c3",
+  "navigator_result": "mis-navigated into the Options page; no entry-45 link, no shader request",
+  "menu_ground_truth": {
+    "main_menu": [
+      "Load game",
+      "New game",
+      "Options",
+      "Credits"
+    ],
+    "newgame_page": [
+      "Limited save",
+      "Difficulty",
+      "New game",
+      "Return"
+    ],
+    "after_newgame": "controls page: Press any button to continue."
+  },
+  "stray_relaunch_stop": "T2_MEMORY_FLOOR detail=0x49 at frame 4 (Confirm landed on the Spruce menu after the harness bound)",
+  "entry45": {
+    "appended": true,
+    "built": "build218",
+    "drawn": false
+  },
+  "device_after": {
+    "game": false,
+    "MainUI": 1,
+    "principal": 1,
+    "runtime": 1,
+    "cpu_online": "0-7",
+    "menu_capture": "clean-menu.png fully lit"
+  },
+  "raw_log_sha256": "708e4d2a7dfec974177f2996be717ccfcd0c70a70af15a857539732eed11cd1c"
+}

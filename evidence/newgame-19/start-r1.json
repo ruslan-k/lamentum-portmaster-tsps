@@ -1,0 +1,34 @@
+{
+  "name": "start",
+  "action": "confirm",
+  "hold_ms": 1500,
+  "attempt": 1,
+  "changed_cells": 3,
+  "need": 50,
+  "capture_sha256": "d5ef1271c54ed1ca41a0e895377263006ea3ea6c0fa0236d763270bac7ae2c72",
+  "press": {
+    "action": "confirm",
+    "event_type": 1,
+    "code": 305,
+    "value": 1,
+    "hold_ms": 1500,
+    "provider": "/dev/input/event4",
+    "name": "TRIMUI Player1",
+    "capabilities": {
+      "ev": "20002b",
+      "key": "7cdb000000000000 0 0 0 0",
+      "abs": "3003f"
+    },
+    "writes": [
+      24,
+      24,
+      24,
+      24
+    ],
+    "start_ns": 50811934179630,
+    "end_ns": 50813476096332,
+    "released": true,
+    "source": "agent evdev injection, not a physical human press"
+  },
+  "frame": 202
+}
