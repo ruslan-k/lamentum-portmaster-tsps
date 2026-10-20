@@ -1,0 +1,114 @@
+{
+  "samples": 70,
+  "usable": 70,
+  "errors": 0,
+  "first": {
+    "MemTotal": 986064,
+    "MemAvailable": 131544,
+    "SwapFree": 1749256,
+    "CmaFree": 11488
+  },
+  "last": {
+    "MemTotal": 986064,
+    "MemAvailable": 666484,
+    "SwapFree": 2030880,
+    "CmaFree": 668
+  },
+  "span_s": 393.5,
+  "min_available_kb": 61772,
+  "counter_delta": {
+    "romfs": null,
+    "textures": 15,
+    "bc_deferred": null,
+    "bc_fileback": null,
+    "presents": 0
+  },
+  "frames": {
+    "first": null,
+    "last": null
+  },
+  "timeline_minutes": [
+    {
+      "t": 1792514613.3,
+      "available_mb": 128
+    },
+    {
+      "t": 1792514644.6,
+      "available_mb": 650
+    },
+    {
+      "t": 1792514672.9,
+      "available_mb": 651
+    },
+    {
+      "t": 1792514701.2,
+      "available_mb": 650
+    },
+    {
+      "t": 1792514729.5,
+      "available_mb": 651
+    },
+    {
+      "t": 1792514757.8,
+      "available_mb": 650
+    },
+    {
+      "t": 1792514786.1,
+      "available_mb": 650
+    },
+    {
+      "t": 1792514814.4,
+      "available_mb": 650
+    },
+    {
+      "t": 1792514842.7,
+      "available_mb": 649
+    },
+    {
+      "t": 1792514871.0,
+      "available_mb": 651
+    },
+    {
+      "t": 1792514899.3,
+      "available_mb": 650
+    },
+    {
+      "t": 1792514927.6,
+      "available_mb": 650
+    },
+    {
+      "t": 1792514955.9,
+      "available_mb": 651
+    },
+    {
+      "t": 1792514984.2,
+      "available_mb": 651
+    }
+  ],
+  "stops": [],
+  "killed": false,
+  "entry45_links": 0,
+  "unknown_shader_requests": 0,
+  "guest_samples": {
+    "samples": 0,
+    "in_kernel": 0,
+    "threads": {},
+    "top_pc": [],
+    "top_frames": []
+  },
+  "build": "build218",
+  "arm": "T2_TEXTURE_BUDGET_MIB=300 (single variable vs load-probe-03=420)",
+  "result": "fail-closed STOP status=T2_TEXTURE_BUDGET instead of the kernel OOM",
+  "stop_line": "STOP status=T2_TEXTURE_BUDGET pc=main.text.seg+0x52d294 detail=0x19b",
+  "budget_exceeded_line": "T2_TEXTURE_BUDGET_EXCEEDED live-MiB=411 budget-MiB=300 last-bytes=268435456 action=exit",
+  "last_present_frame": 1081,
+  "oom": false,
+  "tipping_allocation": {
+    "tag": "LC2_BC_DEFERRED",
+    "id": 295,
+    "size": "8192x8192",
+    "rgba_bytes": 268435456,
+    "source": "retained-guest-pool"
+  },
+  "interpretation": "a lower budget converts the kernel OOM into a clean, attributable stop and the run presents 1081 frames (vs 572 in arm 3), but the load still does not complete: the 256 MiB decode of one 8192x8192 BC texture is what exceeds residency"
+}
