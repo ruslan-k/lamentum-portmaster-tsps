@@ -30,13 +30,23 @@ appeared exactly once.
   per-object sizes (several are 8192x8192 entries), not live storage — quoting them as "GPU memory
   used" would be wrong by an order of magnitude.
 
-## Consequence: the missing instrument
+## Correction: the live-storage counter already exists
 
-There is no counter of *live* GL/Mali storage (allocated minus released) in the runtime, so the
-next step is a bounded accounting instrument, not another guess: a per-frame tally of
-`glTexStorage2D`/`glDeleteTextures` bytes plus the BC materialization charge, printed every 60
-frames, with its own on/off A/B so its overhead is known. Only then can a residency lever (decode
-cap, format choice, mip policy) be chosen and attributed.
+An earlier draft of this note said the runtime had no live-storage counter. That was wrong:
+`t2_memwatch.h` maintains `t2_texture_budget.{live_bytes,peak_bytes,count}` through
+`t2_texture_budget_add/sub` (including the paging paths) and prints it on add events. Reading the
+arm-3 log gives the number directly:
+
+    T2_TEXTURE_BUDGET add-bytes=268435456 live-MiB=411 count=149 budget-MiB=420
+
+So the runtime's own live texture storage reached **411 MiB** against its 420 MiB cap, and the
+kernel killed the process at Mali **709 MiB**. The 298 MiB difference is GPU memory the texture
+budget does not model: framebuffers, depth/renderbuffers, driver-side allocations and padding.
+
+That makes the next experiment a single measured variable rather than new instrumentation:
+lower `T2_TEXTURE_BUDGET_MIB` (420 by default) so the runtime stops or trims *before* the kernel
+OOM path, and see whether the load advances. A `STOP status=T2_TEXTURE_BUDGET` is a clean,
+attributable outcome; another OOM is not.
 
 ## Tool fixes that came out of this
 
