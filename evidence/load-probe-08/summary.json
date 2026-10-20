@@ -281,7 +281,7 @@
       ]
     ]
   },
-  "conclusion": "387/400 round-robin samples were flagged in-kernel; this is not executing CPU-time share. The SVC/IPC event counts nominate specific paths for investigation but do not attribute the Loading CPU cost or exclude Unity work. Native PCs, endpoint service owner and exclusive handler CPU costs remain unresolved; see roadmap section 27.",
+  "conclusion": "387/400 round-robin samples were flagged in-kernel; this is not executing CPU-time share. The SVC/IPC event counts do not attribute Loading CPU cost or exclude Unity work. Follow-up source/ELF binding identifies endpoint0x40 as EP_AUDOUT (audout:u), cmd7 PCM append and cmd8 released-buffer retrieval. Correct per-opcode mutex operands yield 41 addresses, not 1011 mixed X1 words. Native PCs and exclusive handler CPU costs remain unresolved; see evidence/C1-audio-owner.",
   "device_after": {
     "game": false,
     "restored": "verified by the harness cleanup of this arm"

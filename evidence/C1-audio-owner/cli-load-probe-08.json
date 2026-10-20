@@ -1,0 +1,150 @@
+{
+  "scope": "static source binding + captured-run event counts; not latency/CPU attribution",
+  "log_build_id_verified": true,
+  "elf_sha256": "034c8f963d7e6b3eb5a2d2e305e59c4e1d58756ced309b304252c2ff71e324c3",
+  "overlay_sha256": "6333293b1161ccf24fd4930904d91fe085a8094591163548a411d26a93d3bbf9",
+  "overlay_matches": true,
+  "retained_build_source_matches": true,
+  "source_sha256": {
+    "ipc.h": "7751f5ed7c5eccccc362f23f76a9f7e00176402aa4e5546a9bbfd7641633ca2f",
+    "audout.h": "2c26a75d8c4630c32605f095eb54a65fea21be9b28903b3411722f9026bbe261",
+    "guest_profile.h": "51e550201b1ff10c688da86ca58dafeaa98bbdb0029ccb53fa49c8bb8807eb42",
+    "loader.c": "391307f09d479deb1659914c40faf4be82bb81044d9d39e738e51970f1d97942",
+    "threading.h": "a5bafbce4135c8c7971de789b871ea94399d9527472c94afb9af47fa44fea9ec"
+  },
+  "log_sha256": "dcfc4ab9ed25a4fceea2b3a5cf26f0e9296ae1f7beaefe2eec6717e51c9b9e73",
+  "compiled_endpoint_enum": {
+    "EP_AUDOUT_MANAGER": 63,
+    "EP_AUDOUT": 64
+  },
+  "source_markers_checked": {
+    "svc1a_mutex_address_x1": true,
+    "svc1b_mutex_address_x0": true,
+    "audout_service_manager": true,
+    "audio_child_created": true,
+    "audio_endpoint_gate": true,
+    "command7_append_branch": true,
+    "command8_release_branch": true,
+    "append_queue_operation": true,
+    "release_queue_operation": true
+  },
+  "interpretation": {
+    "endpoint_field": "adapter enum tag, NOT guest handle",
+    "service": "audout:u -> EP_AUDOUT_MANAGER -> EP_AUDOUT child",
+    "command7": "append an AudioOut PCM buffer",
+    "command8": "retrieve released AudioOut buffer tags",
+    "command_timings_measured": false
+  },
+  "captured_run": {
+    "service_requests": 2,
+    "successful_opens": 1,
+    "manager_commands": {
+      "1": 1,
+      "2": 1,
+      "3": 1
+    },
+    "child_commands": {
+      "0": 1,
+      "1": 1,
+      "3": 1,
+      "4": 1,
+      "7": 10376,
+      "8": 29140
+    },
+    "child_handles": [
+      "0x45a"
+    ],
+    "malformed_rows": 0,
+    "audio_host": {
+      "interval_rows": 259,
+      "consumed_frames": 10607360,
+      "underrun_frames": 2552064,
+      "maximum_nonzero_total": 5059884,
+      "audibility_verified": false
+    }
+  },
+  "arbitration": {
+    "calls": {
+      "0x1a": 5506,
+      "0x1b": 5389
+    },
+    "distinct_mutex_addresses": 41,
+    "mutex_addresses": [
+      [
+        "0x34073d08c",
+        4638
+      ],
+      [
+        "0x340000048",
+        2073
+      ],
+      [
+        "0xb0b40e0",
+        2027
+      ],
+      [
+        "0x3fc0000f8",
+        979
+      ],
+      [
+        "0x3fc0000f4",
+        772
+      ],
+      [
+        "0xb0bb0a8",
+        100
+      ],
+      [
+        "0x3410507bc",
+        82
+      ],
+      [
+        "0x34105078c",
+        58
+      ],
+      [
+        "0x3e5ed14bc",
+        30
+      ],
+      [
+        "0x341be37b4",
+        22
+      ],
+      [
+        "0xb0efbf8",
+        20
+      ],
+      [
+        "0x340f60a7c",
+        14
+      ],
+      [
+        "0x340f94738",
+        14
+      ],
+      [
+        "0x340e06330",
+        12
+      ],
+      [
+        "0x3fba41da8",
+        12
+      ]
+    ],
+    "callers": [
+      {
+        "opcode": "0x1a",
+        "pc": "sdk.text.seg+0x393dc8",
+        "calls": 5506
+      },
+      {
+        "opcode": "0x1b",
+        "pc": "sdk.text.seg+0x393dd0",
+        "calls": 5389
+      }
+    ],
+    "unlock_arg1_ffffffff_occurrences": 1493,
+    "malformed_rows": 0,
+    "scope": "logged calls and opcode-specific address registers, not lock outcome or timing"
+  }
+}

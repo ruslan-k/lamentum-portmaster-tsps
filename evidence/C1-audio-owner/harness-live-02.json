@@ -1,0 +1,160 @@
+{
+  "scope": "static source binding + captured-run event counts; not latency/CPU attribution",
+  "log_build_id_verified": true,
+  "elf_sha256": "b8407822b205b0012401ed327a82f9ae94e31344a0bfc1d77ccdc1f7b798df4a",
+  "overlay_sha256": "6333293b1161ccf24fd4930904d91fe085a8094591163548a411d26a93d3bbf9",
+  "overlay_matches": true,
+  "retained_build_source_matches": true,
+  "source_sha256": {
+    "ipc.h": "7751f5ed7c5eccccc362f23f76a9f7e00176402aa4e5546a9bbfd7641633ca2f",
+    "audout.h": "2c26a75d8c4630c32605f095eb54a65fea21be9b28903b3411722f9026bbe261",
+    "guest_profile.h": "51e550201b1ff10c688da86ca58dafeaa98bbdb0029ccb53fa49c8bb8807eb42",
+    "loader.c": "391307f09d479deb1659914c40faf4be82bb81044d9d39e738e51970f1d97942",
+    "threading.h": "a5bafbce4135c8c7971de789b871ea94399d9527472c94afb9af47fa44fea9ec"
+  },
+  "log_sha256": "2235e2777bbf3c4f72c0b9340ed2fa9be3123f24ef959927ab884ff2794f7a05",
+  "compiled_endpoint_enum": {
+    "EP_AUDOUT_MANAGER": 63,
+    "EP_AUDOUT": 64
+  },
+  "source_markers_checked": {
+    "svc1a_mutex_address_x1": true,
+    "svc1b_mutex_address_x0": true,
+    "audout_service_manager": true,
+    "audio_child_created": true,
+    "audio_endpoint_gate": true,
+    "command7_append_branch": true,
+    "command8_release_branch": true,
+    "append_queue_operation": true,
+    "release_queue_operation": true
+  },
+  "interpretation": {
+    "endpoint_field": "adapter enum tag, NOT guest handle",
+    "service": "audout:u -> EP_AUDOUT_MANAGER -> EP_AUDOUT child",
+    "command7": "append an AudioOut PCM buffer",
+    "command8": "retrieve released AudioOut buffer tags",
+    "command_timings_measured": false
+  },
+  "captured_run": {
+    "service_requests": 2,
+    "successful_opens": 1,
+    "manager_commands": {
+      "1": 1,
+      "2": 1,
+      "3": 1
+    },
+    "child_commands": {
+      "0": 1,
+      "1": 1,
+      "3": 1,
+      "4": 1,
+      "7": 4513,
+      "8": 12001
+    },
+    "child_handles": [
+      "0x45a"
+    ],
+    "malformed_rows": 0,
+    "audio_host": {
+      "interval_rows": 115,
+      "consumed_frames": 4601856,
+      "underrun_frames": 1083392,
+      "maximum_nonzero_total": 8473344,
+      "audibility_verified": false
+    }
+  },
+  "arbitration": {
+    "calls": {
+      "0x1a": 3125,
+      "0x1b": 3021
+    },
+    "distinct_mutex_addresses": 45,
+    "mutex_addresses": [
+      [
+        "0xb0b40e0",
+        1856
+      ],
+      [
+        "0x340000048",
+        1786
+      ],
+      [
+        "0x3fc0000f8",
+        1025
+      ],
+      [
+        "0x3fc0000f4",
+        704
+      ],
+      [
+        "0x34073d08c",
+        457
+      ],
+      [
+        "0xb0bb0a8",
+        61
+      ],
+      [
+        "0x341be3854",
+        50
+      ],
+      [
+        "0x34105078c",
+        30
+      ],
+      [
+        "0x3e5f77c9c",
+        29
+      ],
+      [
+        "0x3410507bc",
+        23
+      ],
+      [
+        "0xb0efbf8",
+        22
+      ],
+      [
+        "0x340f60a7c",
+        19
+      ],
+      [
+        "0x340f94738",
+        18
+      ],
+      [
+        "0x340e06330",
+        12
+      ],
+      [
+        "0xb068ef8",
+        4
+      ]
+    ],
+    "callers": [
+      {
+        "opcode": "0x1a",
+        "pc": "sdk.text.seg+0x393dc8",
+        "calls": 3125
+      },
+      {
+        "opcode": "0x1b",
+        "pc": "sdk.text.seg+0x393dd0",
+        "calls": 3021
+      }
+    ],
+    "unlock_arg1_ffffffff_occurrences": 499,
+    "malformed_rows": 0,
+    "scope": "logged calls and opcode-specific address registers, not lock outcome or timing"
+  },
+  "build": "build219",
+  "selected_startup_receipts": [
+    "GET_SERVICE name=audout:u",
+    "IPC handle=0x459 endpoint=0x3f type=0x7 command=0x3 data_bytes=0x8 pid=0x0 object=0x0",
+    "IPC handle=0x459 endpoint=0x3f type=0x6 command=0x2 data_bytes=0x8 pid=0x0 object=0x0",
+    "GET_SERVICE name=audout:u",
+    "IPC handle=0xc59 endpoint=0x3f type=0x6 command=0x1 data_bytes=0x20 pid=0x1 object=0x0",
+    "AUDOUT_HOST_OPEN backend=alsa rate=48000 channels=2 format=S16 period=256 provider=nxaudio-0.4.1 pcm=guest",
+    "AUDOUT_OPEN rate=48000 channels=2 PCM=S16 state=stopped"
+  ]
+}

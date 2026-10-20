@@ -4,6 +4,11 @@
 > approximately round-robin over 32 threads. Sample fractions are **not executing CPU-time shares**.
 > Earlier claims below identifying the dominant CPU owner from those fractions are withdrawn.
 > See [the current profiling requirements](build219-gameplay-performance-action-plan.md#4-pr-c1--identify-svc-0x1a0x1b-and-actual-endpoint0x40-owner).
+>
+> **C1 source/ELF-pinned follow-up:** [AudioOut owner and mutex operands](../evidence/C1-audio-owner/README.md)
+> resolves endpoint0x40 as EP_AUDOUT from audout:u, commands 7/8 as PCM append/released-buffer
+> retrieval. Correct opcode-specific mutex operands yield **41 distinct addresses** in load-probe-08;
+> the earlier 1,011 mixed X1 values were not a mutex-key census. Executing cost remains unmeasured.
 
 Roadmap §25.3–25.4 (C0, bounded guest CPU profile) — measured on build218, arm `load-probe-08`.
 No runtime change; the sampler is the existing `MOMO_STACK_SAMPLE_*` instrument.
@@ -53,12 +58,12 @@ Two commands on **one** endpoint are 94.4 % of all IPC traffic.
 
 The earlier 0.836 CPU s/present interval was a different build/phase. These round-robin samples
 cannot attribute that cost or exclude Unity/IL2CPP work, compression/restoration, blocking,
-scheduler delay or driver work. SVC 0x1A/0x1B and endpoint0x40 commands 7/8 are specific candidates
-for direct investigation, not proven CPU bottlenecks. Measure exclusive CLOCK_THREAD_CPUTIME_ID
-and wall intervals per handler/class, identify the actual IPC service and resolve PCs using
+scheduler delay or driver work. Endpoint0x40 is now source-bound to AudioOut (see follow-up above),
+and SVC 0x1A/0x1B are specific candidates for investigation, not proven CPU bottlenecks. Measure
+exclusive CLOCK_THREAD_CPUTIME_ID and wall intervals per handler/class, and resolve PCs using
 same-run mappings before choosing a semantics-preserving optimization.
 
-## Observed argument diversity (ABI roles still need verification)
+## Historical mixed argument-word distribution (not a mutex-key census)
 
 Every `0x1a`/`0x1b` line already carries its arguments. Over the 10 895 pair calls in this run:
 
@@ -70,7 +75,7 @@ Every `0x1a`/`0x1b` line already carries its arguments. Over the 10 895 pair cal
 | `0xb0b40e0` | 1 030 |
 | `0x34073d090` | 787 |
 
-There are 1,011 distinct logged values. Their diversity alone neither excludes a stalled wait
-elsewhere nor establishes per-SVC bridge cost as the remaining cause. Verify register/ABI roles
-for each opcode separately (including `0xffffffff`) and tie lock ownership/wake results to actual
-scene work. Do not combine different builds/phases to manufacture per-call latency or CPU share.
+There are 1,011 distinct values in this historical mixed-X1 table. It combines the lock address
+(X1 for svc0x1a) with a non-address operand (X1 for svc0x1b, whose address is X0). The corrected
+source-checked census is 41 mutex addresses; all 1,493 unlock-X1=0xffffffff values are not unlock
+mutex operands. Neither distribution alone proves a stalled wait or executing bridge cost.
