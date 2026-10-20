@@ -20,31 +20,17 @@ from pathlib import Path
 from PIL import Image
 
 from lamentum_pad_contract import capture, press, remote, snapshot
+from load_metrics import PAYLOAD as METRICS_RUNNER, fold
 from newgame_navigate import cursor_row
 
 NEWGAME_ROW_Y = (475, 503)
 CONTROLS_BRIGHT_JUMP = 400      # sampled bright pixels: page ~455, controls ~1400
 POLL_S = 5
 
-METRICS = '''import json,re
-from pathlib import Path
-mem={l.split(':')[0]:int(l.split()[1]) for l in Path('/proc/meminfo').read_text().splitlines() if l.split(':')[0] in
-     ('MemTotal','MemFree','MemAvailable','SwapFree','CmaFree')}
-t=Path('/mnt/SDCARD/Roms/PORTS/lamentum-switch/logs/latest.log').read_text(errors='replace')
-frames=re.findall(r'NVN_PRESENT_PIXELS frame=(\\d+)',t)
-print(json.dumps({'mem':mem,'frame':int(frames[-1]) if frames else None,
- 'presents':len(frames),'romfs':t.count('ROMFS_READ'),'textures':t.count('NVN_TEXTURE_REAL'),
- 'bc_deferred':t.count('LC2_BC_DEFERRED'),'bc_fileback':t.count('LC2_BC_FILEBACK'),
- 'stops':re.findall(r'STOP status=\\S+',t)[-3:],'killed':'Killed' in t,
- 'entry45':t.count('sources=0/45'),'unknown':len(re.findall(r'ZERO_SHADER_UNRECOGNIZED',t))}))
-'''
-
-
 def bright(png):
     """Count lit samples on a 320x180 grid (same sampling as the 4-pixel step used before)."""
     im = Image.open(png).convert('L').resize((320, 180))
     return sum(1 for value in im.get_flattened_data() if value > 110)
-
 
 def wait_menu(timeout_s):
     deadline = time.time() + timeout_s
@@ -54,7 +40,6 @@ def wait_menu(timeout_s):
             return s
         time.sleep(8)
     raise RuntimeError('menu never appeared')
-
 
 def pick_action(row, target=NEWGAME_ROW_Y):
     """None means 'the cursor is not visible yet - wait', never a blind nudge."""
@@ -66,7 +51,6 @@ def pick_action(row, target=NEWGAME_ROW_Y):
         return 'up'
     return 'here'
 
-
 def wait_menu_visible(out, timeout_s=300, name='menu'):
     deadline = time.time() + timeout_s
     while time.time() < deadline:
@@ -76,7 +60,6 @@ def wait_menu_visible(out, timeout_s=300, name='menu'):
             return row
         time.sleep(8)
     raise RuntimeError('no cursor band appeared within %d s' % timeout_s)
-
 
 def walk_to(out, name, action='down', tries=10, hold_ms=1000):
     """Press until the cursor reaches the New game row, verified by the measured band.
@@ -102,7 +85,6 @@ def walk_to(out, name, action='down', tries=10, hold_ms=1000):
     if not (row and NEWGAME_ROW_Y[0] <= row[0] <= NEWGAME_ROW_Y[1]):
         raise RuntimeError('could not select New game after %d presses; measured row %r' % (tries, row))
     return row
-
 
 def navigate(out):
     wait_menu(600)
@@ -130,7 +112,6 @@ def navigate(out):
     capture(out / 'loading.png')
     return {'page_bright': page_bright, 'controls_bright': controls_bright}
 
-
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--evidence', type=Path, required=True)
@@ -148,9 +129,14 @@ def main():
         transitions = navigate(a.evidence)
         (a.evidence / 'transitions.json').write_text(json.dumps(transitions, indent=2) + '\n')
         rows = []
+        running = {}
         while harness.poll() is None:
             try:
-                rows.append(dict(remote(METRICS), t=round(time.time(), 1)))
+                # Incremental: the device sends only the bytes appended since the last poll.
+                offset = running.get('offset', 0)
+                sample = remote("import sys\nsys.argv=['probe','%d']\n" % offset + METRICS_RUNNER)
+                running = fold(running, sample)
+                rows.append(dict(running, t=round(time.time(), 1)))
             except Exception as exc:                     # device busy or SSH hiccup: keep the series
                 rows.append({'error': str(exc), 't': round(time.time(), 1)})
             (a.evidence / 'samples.jsonl').write_text(''.join(json.dumps(r) + '\n' for r in rows))
@@ -161,7 +147,6 @@ def main():
         (a.evidence / 'transitions.json').write_text(json.dumps(transitions, indent=2) + '\n')
         rc = harness.wait()
         print(json.dumps({'harness_rc': rc, 'transitions': transitions}))
-
 
 if __name__ == '__main__':
     sys.exit(main())
