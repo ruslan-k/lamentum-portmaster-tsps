@@ -1013,9 +1013,10 @@ Do not extrapolate the New Game load frame reported at **152.8ms** (~6.5 inverse
 **Minimal host-only checks before deployment:**
 
 ~~~sh
-# Run at the repository root after reconstructing the licensed baseline locally.
-sha256sum -c tools/baseline-manifest.sha256
-python3 -m unittest discover -s tools -p 'test_*.py'
+# Manifest entries are relative to the recovered GPL runtime tree, not this repo:
+(cd /owner/recovered-runtime && sha256sum -c /owner/lamentum-repo/tools/baseline-manifest.sha256)
+# Separately, run Python test fixtures from the port repository root:
+(cd /owner/lamentum-repo && python3 -m unittest discover -s tools -p 'test_*.py')
 # The C input-latch fixture compiles against the recovered GPL native include path.
 # Supply the correct include paths for the pinned source tree; do not guess a build command.
 sha256sum /owner/private/nvn-lc2-shader-code-1792497924-0.bin \
