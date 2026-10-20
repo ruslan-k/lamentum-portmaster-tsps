@@ -14,7 +14,7 @@ class HardStopTests(unittest.TestCase):
 
 
 class KillClassificationTests(unittest.TestCase):
-    def test_sigkill_without_stop_is_the_oom_path(self):
+    def test_sigkill_without_stop_is_only_a_cause_unknown_hint(self):
         log = 'AUDOUT_HOST_PROFILE ...\n... Lamentum.sh: line 56: 26250 Killed                  ./lamentum-nextos\n'
         self.assertTrue(is_killed_without_stop(log, []))
 

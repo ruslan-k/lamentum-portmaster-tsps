@@ -1,0 +1,40 @@
+{
+  "scope": "read-only kernel collector smoke; no game launched or OOM induced",
+  "payload_sha256": "4570ae65300db4d98c84dd9a4cdfc478bd4510e0d14012dea414a01dfa5f4c46",
+  "before_available": true,
+  "after_available": true,
+  "same_boot": true,
+  "target_hz": 100,
+  "clock_monotonic": true,
+  "timestamped_kernel_lines": 1741,
+  "device": {
+    "game_count": 0,
+    "MainUI_count": 1,
+    "principal_count": 1,
+    "runtime_count": 1
+  },
+  "stored_log_only_replay": {
+    "newgame-20": {
+      "kind": "sigkill_unknown",
+      "stops": [],
+      "oom_evidence": []
+    },
+    "load-probe-03": {
+      "kind": "sigkill_unknown",
+      "stops": [],
+      "oom_evidence": []
+    },
+    "load-probe-08": {
+      "kind": "runtime_stop",
+      "stops": [
+        "T2_TEXTURE_BUDGET"
+      ],
+      "oom_evidence": []
+    },
+    "load-probe-10": {
+      "kind": "exit_unknown",
+      "stops": [],
+      "oom_evidence": []
+    }
+  }
+}

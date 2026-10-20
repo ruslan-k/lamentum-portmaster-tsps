@@ -10,14 +10,16 @@ back, CPU online mask restored.
 Never run this while another game is playing.
 """
 import argparse, json, re, subprocess, sys, time, pathlib, shlex
-from lamentum_pad_contract import snapshot, validate_cleanup
+from lamentum_pad_contract import remote, snapshot, validate_cleanup
+from exit_outcome import KERNEL_PAYLOAD, classify_exit
+from proc_metrics import sample_request
 
 HOST = 'root@192.168.50.135'
 HARD_STOP_GRACE_S = 120
 
 
 def is_killed_without_stop(log, stops):
-    """A SIGKILL with no STOP line is the kernel OOM path, not a fail-closed runtime stop."""
+    """Log-only SIGKILL hint; kernel OOM attribution requires separate matching evidence."""
     return not stops and bool(re.search(r'\bKilled\b|exit status 137', log))
 
 
@@ -51,6 +53,16 @@ def main():
         print('device state check failed', file=sys.stderr)
         return 2
 
+    # Refuse busy state BEFORE touching the old log. The preflight is not used as this run's
+    # snapshot, since its log fields may belong to the prior run.
+    preflight = snapshot()
+    if preflight['game'] or len(preflight['processes'].get('MainUI', [])) != 1:
+        print('device not idle; refusing to truncate log or launch', file=sys.stderr)
+        return 2
+    try:
+        kernel_before = remote(KERNEL_PAYLOAD)
+    except Exception as exc:
+        kernel_before = {'available': False, 'error': str(exc)}
     # Truncate FIRST: the snapshot reads the whole log, so a previous run's stop would otherwise
     # be reported as this run's state (measured: a stale T2_MEMORY_FLOOR in before.stops).
     ssh('truncate -s 0 %s/logs/latest.log' % PORT_DIR).check_returncode()
@@ -83,9 +95,19 @@ def main():
     # that terminates ONLY the exact game pids, so the principal flow still restores the menu.
     hard_deadline = time.time() + a.budget + HARD_STOP_GRACE_S
     host_terminated = None
+    owner = None
+    identity_errors = []
     last = ''
     while time.time() < deadline:
         time.sleep(10)
+        try:
+            process = remote(sample_request(expected=owner))
+            if process.get('running') and owner is None:
+                owner = {k: process[k] for k in ('boot_id', 'pid', 'starttime')}
+            elif process.get('sample_status') in ('identity_mismatch', 'changed_during_read', 'ambiguous'):
+                identity_errors.append(process)
+        except Exception as exc:
+            identity_errors.append({'error': str(exc)})
         if hard_deadline and time.time() > hard_deadline:
             state = snapshot()
             pids = [p['pid'] for p in state['game']]
@@ -113,12 +135,21 @@ def main():
     print('cleanup', json.dumps({'state': after, 'errors': errors}))
     log = ssh('cat %s/logs/latest.log' % PORT_DIR).stdout
     stops = re.findall(r'STOP status=(\S+)', log)
+    try:
+        kernel_after = remote(KERNEL_PAYLOAD)
+    except Exception as exc:
+        kernel_after = {'available': False, 'error': str(exc)}
+    termination = classify_exit(log, host_terminated=host_terminated, kernel_before=kernel_before,
+                                kernel_after=kernel_after, owner=owner)
     killed_without_stop = is_killed_without_stop(log, stops)
     result = {'cleanup_errors': errors, 'before': before, 'after': after, 'host_terminated': host_terminated,
+              'termination': termination, 'process_identity': owner, 'identity_errors': identity_errors,
               'killed_without_stop': killed_without_stop,
-              'stops': stops, 'runtime_ok': bool(stops) and all(x == 'TIME_LIMIT' for x in stops),
+              'stops': stops, 'runtime_ok': termination['kind'] == 'runtime_timeout',
               'config_rejected': any(x.startswith('INVALID_') for x in stops)}
     if a.evidence:
+        (a.evidence / 'kernel-before.json').write_text(json.dumps(kernel_before, indent=2) + '\n')
+        (a.evidence / 'kernel-after.json').write_text(json.dumps(kernel_after, indent=2) + '\n')
         (a.evidence / 'latest.log').write_text(log)
         (a.evidence / 'cleanup.json').write_text(json.dumps(result, indent=2) + '\n')
         print('evidence ->', a.evidence)
@@ -130,8 +161,10 @@ def main():
         return 5
     if host_terminated:
         return 6      # bounded run ended by the harness, not by the title's own governor
-    if result['killed_without_stop']:
-        return 7      # SIGKILL with no STOP line: kernel OOM path, not a fail-closed runtime stop
+    if result['termination']['kind'] == 'kernel_oom_sigkill':
+        return 8      # same-boot, in-window kernel victim matches the observed runtime identity
+    if result['termination']['kind'] == 'sigkill_unknown':
+        return 7      # log-only SIGKILL hint, without enough evidence to attribute its cause
     return 0 if result['runtime_ok'] else 4
 
 

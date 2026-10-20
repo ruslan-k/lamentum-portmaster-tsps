@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Bounded load probe: reach New Game, then sample memory/frames/shaders every few seconds.
 
-Navigation uses the measured cursor row (x 88..124 band) for the main menu and a bright-pixel
-jump for the page -> controls transition, so a wrong screen fails the probe instead of being
-reported as progress. Metrics are sampled from the device only (no runtime change):
+Navigation uses the measured cursor row for the main menu and a bounded content-change gate
+for the configuration transition. Content change alone does not prove the controls-screen identity;
+page-specific semantic navigation validation remains open. Metrics are sampled from the device
+(no runtime change):
 
   MemAvailable / MemFree / SwapFree / CmaFree, presented frames, ROMFS reads,
   NVN_TEXTURE_REAL / LC2_BC_DEFERRED / LC2_BC_FILEBACK counters, Mali-adjacent RSS.
@@ -133,7 +134,8 @@ def main():
             '--wait', str(a.budget + 80), '--evidence', str(a.evidence)]
     for e in a.env:
         argv += ['--env', e]
-    harness = subprocess.Popen(argv, stdout=(a.evidence / 'harness.log').open('w'), stderr=subprocess.STDOUT)
+    with (a.evidence / 'harness.log').open('w') as harness_log:
+        harness = subprocess.Popen(argv, stdout=harness_log, stderr=subprocess.STDOUT)
     transitions = {'navigate': 'pending'}
     try:
         transitions = navigate(a.evidence)
@@ -156,6 +158,7 @@ def main():
         (a.evidence / 'transitions.json').write_text(json.dumps(transitions, indent=2) + '\n')
         rc = harness.wait()
         print(json.dumps({'harness_rc': rc, 'transitions': transitions}))
+    return rc
 
 if __name__ == '__main__':
     sys.exit(main())
