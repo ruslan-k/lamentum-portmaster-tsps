@@ -60,7 +60,25 @@ Two concrete, competing candidates — to be separated by measurement, not by pr
    service answer the title is polling, which would make the loop a stall rather than useful work.
 
 Roadmap §25.4 C1 asks for exactly one of these, chosen by data, with an A/B on the same scene
-phase. The next measurement is therefore cheap and decisive: log the per-iteration arguments of
-`0x1a`/`0x1b` (already printed as `arg0x0..arg0x3`) and the `ep 0x40` command payload sizes for a
-short window, and check whether the same key/handle repeats — a repeated identical key means a
-stall, a changing key means genuine synchronization traffic.
+phase.
+
+## First discriminator already measured: the keys change
+
+Every `0x1a`/`0x1b` line already carries its arguments. Over the 10 895 pair calls in this run:
+
+| `arg0x1` (wait/arbitrate key) | Count |
+|---|---:|
+| `0x34073d08c` | 2 759 |
+| `0xffffffff` | 1 493 |
+| `0x340000048` | 1 052 |
+| `0xb0b40e0` | 1 030 |
+| `0x34073d090` | 787 |
+
+1 011 distinct keys with a small hot set: this is not one stuck key being re-polled forever, it is
+fine-grained synchronization traffic across several objects (≈35 SVCs per presented frame).
+
+So the "guest spins on a wait that is never satisfied" hypothesis is weakened for these keys, and
+the remaining candidate is the **per-SVC bridge cost**: 35 bridge round-trips per frame at a
+33 ms budget allows under ~1 ms per call in total. The next measurement is therefore the cost of
+one `0x1a`/`0x1b` bridge round-trip (bounded timing of the existing handler, no semantic change),
+followed by — only if it is material — a fast path that preserves return values and wake ordering.
