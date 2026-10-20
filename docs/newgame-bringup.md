@@ -88,3 +88,46 @@ frames: the menu path never needs it, the level load does.
    revert the build202 `c4 -> NVN UBO1` correction and the literal/probe specializations.
 4. Rebuild, redeploy, and repeat the same Accept-at-menu run until the level loads; only
    then is there a gameplay frame to talk about.
+
+## Blobs captured; the translator refuses this program
+
+`newgame-crash-03` ran with `LC2_SHADER_DUMP=1` and `AW_RELEASE=0` and wrote the pair for
+exactly the failing identity:
+
+```
+LC2_SHADER_DUMPED sequence=0 code-bytes=1280 control-bytes=2176
+nvn-lc2-shader-code-1792497924-0.bin   sha256 7a45f946…  (1280 B)
+nvn-lc2-shader-control-1792497924-0.bin sha256 588a3fad…  (2176 B, magic 0x98761234)
+```
+
+Both hashes match the `ZERO_SHADER_UNRECOGNIZED` line byte-for-byte, so the dump is the
+program the title really asked for. The blobs stay in the owner workspace and are not
+committed.
+
+Translation attempts with the hades-eval CLI, all on the same blob:
+
+| Flags | Result |
+|---|---|
+| `--es 310` | `Buffer block cannot be expressed as any of std430, std140, scalar, even with enhanced layouts` |
+| `--es 300` | same |
+| `--es 310 --cbuf-ubo` | `CBUF_AS_UBO decorations-changed=0`, then the same error |
+
+`decorations-changed=0` is the useful part: the existing `BufferBlock -> Block` /
+`StorageBuffer -> Uniform` rewrite found nothing to flip, so this is not the read-only
+cbuf case that the current catalogue handles. `--dump-decorations` shows a single
+`Block` (decoration 2) plus a `NonWritable` set (30) and `Binding`/`DescriptorSet`
+(33/34) — i.e. one block the ESSL backend cannot express, the same class as the SSBO
+skinning programs already covered by TEST substitutes.
+
+## The two honest options
+
+1. **TEST-ONLY substitute** (fast, labelled): add an explicitly named TEST entry so the
+   level load passes and the *next* blocker becomes visible. This is not a translation and
+   must be marked as such in the catalogue, exactly like the seven existing ones. It gives
+   a real gameplay frame only if this program does not affect visible geometry.
+2. **Proper conversion** (slow, correct): extend the translator to express this block as a
+   texture-fed uniform set like the cbuf path (sampler2D + texelFetch), with exact
+   access-shape and bank mapping, then append it with `tools/append_program.py`.
+
+Nothing here is a 30 FPS result: the port still cannot reach gameplay, and the measured
+gap (replay 250 ms + guest 316 ms per frame) is unchanged.
