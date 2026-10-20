@@ -656,6 +656,27 @@ index 3ecf8ab..1dd8c49 100644
          *effective_mask=0;return 1;
      }
      if(requested_mask&~declared_mask)return 0;
+diff --git a/native/nvn_platform_sdl.h b/native/nvn_platform_sdl.h
+index 56335e2..e2a8f9e 100644
+--- a/native/nvn_platform_sdl.h
++++ b/native/nvn_platform_sdl.h
+@@ -137,6 +137,16 @@ static EGLBoolean nvn_platform_swap(EGLDisplay display,EGLSurface surface) {
+         return EGL_FALSE;
+     }
+     SDL_GL_SwapWindow(nvn_platform_sdl_window);
++    /* KMSDRM can recreate its EGL surface on the first swap when fullscreen
++     * marks the display mode dirty. Never retain the destroyed bootstrap handle. */
++    EGLSurface current=eglGetCurrentSurface(EGL_DRAW);
++    if(current!=EGL_NO_SURFACE && current!=nvn_platform_sdl_surface) {
++        EGLSurface previous=nvn_platform_sdl_surface;
++        nvn_platform_sdl_surface=current;
++        if(nvn_device.surface==previous)nvn_device.surface=current;
++        if(nvn_device.render_surface==previous)nvn_device.render_surface=current;
++        printf("LC2_SDL_SURFACE_REFRESH old=%p current=%p\n",(void *)previous,(void *)current);
++    }
+     if(*SDL_GetError()) {
+         fprintf(stderr,"NVN_SDL_SWAP error=%s\n",SDL_GetError());
+         return EGL_FALSE;
 diff --git a/native/nvn_pointer.h b/native/nvn_pointer.h
 index 410deb4..7269206 100644
 --- a/native/nvn_pointer.h
@@ -674,7 +695,7 @@ index 410deb4..7269206 100644
  }
  /* Called after Submit, outside the producer/regions locks. A quick atomic
 diff --git a/native/nvn_present.h b/native/nvn_present.h
-index 8c0254b..095a759 100644
+index 8c0254b..eea3d6c 100644
 --- a/native/nvn_present.h
 +++ b/native/nvn_present.h
 @@ -13,6 +13,44 @@
@@ -808,7 +829,7 @@ index 8c0254b..095a759 100644
      if(t2_video_needs_readback()) {
          GLint viewport[4];EGLint measured_w=0,measured_h=0;
          glGetIntegerv(GL_VIEWPORT,viewport);
-@@ -308,7 +386,23 @@ static unsigned nvn_present_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -308,12 +386,29 @@ static unsigned nvn_present_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
  #ifdef ANIMAL_WELL_SHADERS
      if(aw_fbcopy_enabled())aw_fbcopy_present();else {
          nxgl_frame_proof_before_present(width,height);
@@ -833,6 +854,12 @@ index 8c0254b..095a759 100644
      }
  #else
      nxgl_frame_proof_before_present(width,height);
+     if(!eglSwapInterval(nvn_device.display,0) || !nvn_platform_swap(nvn_device.display,nvn_window.surface))stop("NVN_PRESENT_SWAP_FAILED",nvn_caller,eglGetError(),22);
+ #endif
++    if(nvn_platform_sdl_window)nvn_window.surface=nvn_platform_sdl_surface;
+     if(nxgl_frame_proof_consume_fatal())stop("NVN_FRAME_PROOF_FATAL",nvn_caller,nvn_present.frames,22);
+     uint64_t swap_finished=nvn_nanoseconds();nvn_profile.swap_ns+=swap_finished-swap_started;
+     t2_runtime_health_after_present(cadence_pixel_proof);
 diff --git a/native/nvn_queue.h b/native/nvn_queue.h
 index 0545586..ac198d5 100644
 --- a/native/nvn_queue.h
@@ -1525,10 +1552,34 @@ index 0fb14ec..f67a08a 100644
              free(premul);free(probe);free(sprite);free(flat);free(scaled);free(awf);free(mipped);free(r8);free(advent);free(lowered);free(wrapped);free(interface_source);
              if(!status){char log[2048]={0};glGetShaderInfoLog(shaders[i],sizeof(log),NULL,log);printf("NVN_SHADER_COMPILE_ERROR %s\n",log);stop("NVN_SHADER_COMPILE_FAILED",nvn_caller,p->sources[i],21);}
 diff --git a/native/nvn_textures.h b/native/nvn_textures.h
-index 0feaef1..bfab434 100644
+index 0feaef1..5e44457 100644
 --- a/native/nvn_textures.h
 +++ b/native/nvn_textures.h
-@@ -321,7 +321,7 @@ static struct nvn_texture *momo_texture_alias(uint64_t object,unsigned *index_ou
+@@ -135,7 +135,10 @@ static uint64_t nvn_texture_layout(uint64_t address,struct nvn_texture_builder *
+             unsigned bc=zero_bc_bytes(b->format);uint64_t face=0;
+             for(unsigned i=0;i<b->levels;i++) {
+                 struct zero_bc_level m;
+-                if(!zero_bc_level_layout(b->width,b->height,bc,i,&m))stop("NVN_TEXTURE_EXCESS_MIPS",nvn_caller,b->levels,24);
++                if(!zero_bc_level_layout(b->width,b->height,bc,i,&m)) {
++                printf("LC2_BC_LAYOUT_REJECT width=%u height=%u format=0x%x block-bytes=%u level=%u levels=%u device-limit=%d\n",b->width,b->height,b->format,bc,i,b->levels,nvn_device.texture_limit);
++                stop("NVN_TEXTURE_EXCESS_MIPS",nvn_caller,b->levels,24);
++            }
+                 levels[i]=m.offset;if(m.offset+m.size>face)face=m.offset+m.size;
+             }
+             face=(face+511)&~UINT64_C(511);
+@@ -197,7 +200,10 @@ static uint64_t nvn_texture_layout(uint64_t address,struct nvn_texture_builder *
+         uint64_t size=0;
+         for(unsigned i=0;i<b->levels;i++) {
+             struct zero_bc_level m;
+-            if(!zero_bc_level_layout(b->width,b->height,bc,i,&m))stop("NVN_TEXTURE_EXCESS_MIPS",nvn_caller,b->levels,24);
++            if(!zero_bc_level_layout(b->width,b->height,bc,i,&m)) {
++                printf("LC2_BC_LAYOUT_REJECT width=%u height=%u format=0x%x block-bytes=%u level=%u levels=%u device-limit=%d\n",b->width,b->height,b->format,bc,i,b->levels,nvn_device.texture_limit);
++                stop("NVN_TEXTURE_EXCESS_MIPS",nvn_caller,b->levels,24);
++            }
+             levels[i]=m.offset;size=m.offset+m.size;
+         }
+         return (size+4095)&~UINT64_C(4095);
+@@ -321,7 +327,7 @@ static struct nvn_texture *momo_texture_alias(uint64_t object,unsigned *index_ou
      return NULL;
  }
  #endif
@@ -1537,7 +1588,7 @@ index 0feaef1..bfab434 100644
  static uint64_t zero_texture_record_id(uint64_t object) {return nvn_texture_find(object)->id;}
  static void aw_clear_texture_admit(uint64_t object,uint64_t view,const int32_t *region) {
      struct nvn_texture *t=nvn_texture_find(object);
-@@ -329,6 +329,7 @@ static void aw_clear_texture_admit(uint64_t object,uint64_t view,const int32_t *
+@@ -329,6 +335,7 @@ static void aw_clear_texture_admit(uint64_t object,uint64_t view,const int32_t *
      if(region[0]<0||region[1]<0||region[2]||region[3]<=0||region[4]<=0||region[5]!=1||
         (uint64_t)region[0]+region[3]>t->b.width||(uint64_t)region[1]+region[4]>t->b.height)stop("NVN_CLEAR_TEXTURE_REGION",nvn_caller,object,20);
  }
@@ -1545,7 +1596,73 @@ index 0feaef1..bfab434 100644
  static void zero_record_target_view(uint64_t object,const uint8_t *view,unsigned attachment) {
      struct nvn_texture *t=object?nvn_texture_find(object):NULL;
  #ifdef MOMO_SHADERS
-@@ -749,7 +750,9 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -485,6 +492,38 @@ static void zero_texture_bc_pixels(struct nvn_texture *t,unsigned level,const ui
+         stop("ZERO_BC_TILED_DECODE",nvn_caller,t->id,24);
+     free(linear);
+ }
++/* Preserve full atlas resolution, but bound transient decode storage to 128
++ * rows instead of an entire 128-MiB RGBA atlas plus its linear BC copy. */
++static void lc2_bc_upload_stripes(struct nvn_texture *t,unsigned level,unsigned width,unsigned height,unsigned allocate) {
++    unsigned type=nvn_cpu_image_upload_type(t),bpp=nvn_texture_upload_bytes(type);
++    unsigned format=zero_bc_srgb(t->b.format)?0x8c42U:GL_RGBA;
++    size_t capacity=(size_t)width*128*bpp;
++    uint8_t *pixels=malloc(capacity);
++    if(!pixels)stop("LC2_BC_STRIPE_MEMORY",nvn_caller,capacity,21);
++    if(allocate)glTexImage2D(GL_TEXTURE_2D,level,format,width,height,0,format,type,NULL);
++    for(unsigned y=0;y<height;y+=128) {
++        unsigned rows=height-y;if(rows>128)rows=128;
++        uint32_t box[6]={0,y,0,width,rows,1};
++        zero_texture_bc_pixels(t,level,box,pixels,(size_t)width*rows*bpp);
++        glTexSubImage2D(GL_TEXTURE_2D,level,0,y,width,rows,format,type,pixels);
++    }
++    free(pixels);
++    printf("LC2_BC_STRIPED_UPLOAD id=%"PRIu64" size=%ux%u temporary-bytes=%zu resolution=preserved\n",t->id,width,height,capacity);
++    /* Optional memory experiment: ask the kernel to page out the preserved
++     * compressed CPU mirror after upload, never discard or rewrite it. */
++    const char *pageout=getenv("LC2_TEXTURE_PAGEOUT");
++    if(pageout && !strcmp(pageout,"1")) {
++        struct zero_bc_level layout;
++        if(zero_bc_level_layout(t->b.width,t->b.height,zero_bc_bytes(t->b.format),level,&layout)) {
++            uintptr_t source=(uintptr_t)nvn_pointer(t->pool->address+t->b.offset+layout.offset,layout.size,PROT_READ);
++            uintptr_t first=(source+4095)&~(uintptr_t)4095,last=(source+layout.size)&~(uintptr_t)4095;
++            if(last>first) {
++                int rc=madvise((void *)first,last-first,21); /* Linux MADV_PAGEOUT */
++                printf("LC2_TEXTURE_PAGEOUT id=%"PRIu64" bytes=%zu rc=%d errno=%d data=preserved diagnostic=1\n",t->id,(size_t)(last-first),rc,rc?errno:0);
++            }
++        }
++    }
++}
+ static void zero_texture_refresh(struct nvn_texture *t) {
+     t=zero_texture_storage_state(t);
+     if(!__atomic_exchange_n(&t->zero_cpu_dirty,0,__ATOMIC_ACQ_REL))return;
+@@ -496,6 +535,12 @@ static void zero_texture_refresh(struct nvn_texture *t) {
+     unsigned type=nvn_cpu_image_upload_type(t),output_bpp=nvn_texture_upload_bytes(type);
+     glBindTexture(GL_TEXTURE_2D,t->name);GLint alignment;glGetIntegerv(GL_UNPACK_ALIGNMENT,&alignment);glPixelStorei(GL_UNPACK_ALIGNMENT,1);
+     for(unsigned level=0;level<t->b.levels;level++) {
++        if(bc && width>4096 && !t->host_scaled) {
++            lc2_bc_upload_stripes(t,level,width,height,0);
++            if(width>1)width>>=1;
++            if(height>1)height>>=1;
++            continue;
++        }
+         uint64_t row=bc?(uint64_t)((width+3)/4)*bc:(uint64_t)width*nvn_texture_format_bytes(t->b.format);
+         uint64_t stride=t->b.flags&0x50?t->b.stride:row;
+         unsigned rows=bc?(height+3)/4:height;
+@@ -675,6 +720,13 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+             unsigned width=b.width,height=b.height;
+             if(t->host_half){glPixelStorei(GL_UNPACK_ALIGNMENT,1);glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,width/2,height/2,0,GL_RGBA,GL_UNSIGNED_BYTE,NULL);}
+             for(unsigned i=0;i<b.levels&&!t->host_half&&!t->packaged_lazy&&!t->t2_page.deferred;i++) {
++                if(zero_bc_bytes(b.format) && width>4096 && !t->host_scaled) {
++                    glPixelStorei(GL_UNPACK_ALIGNMENT,1);
++                    lc2_bc_upload_stripes(t,i,width,height,1);
++                    if(width>1)width>>=1;
++                    if(height>1)height>>=1;
++                    continue;
++                }
+                 unsigned upload_type=nvn_cpu_image_upload_type(t),upload_bpp=nvn_texture_upload_bytes(upload_type);
+                 size_t bytes=(size_t)width*height*upload_bpp;uint8_t *rgba=malloc(bytes);
+                 if(!rgba)stop("NVN_TEXTURE_INITIAL_DATA_MEMORY",nvn_caller,bytes,21);
+@@ -749,7 +801,9 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
      if(id==NI_nvnTexturePoolRegisterTexture) {
          struct nvn_descriptor_pool *d=NULL;
          for(unsigned i=0;i<32;i++)if(nvn_descriptor_pools[i].live&&nvn_descriptor_pools[i].object==a[0]&&nvn_descriptor_pools[i].type==1)d=&nvn_descriptor_pools[i];
@@ -1557,7 +1674,7 @@ index 0feaef1..bfab434 100644
          if(a[3] && !megaman_texture_view_identity(nvn_pointer(a[3],MEGAMAN_TEXTURE_VIEW_BYTES,PROT_READ),t->b.levels) &&
             !aw_texture_view_identity_native(nvn_pointer(a[3],MEGAMAN_TEXTURE_VIEW_BYTES,PROT_READ),&t->b,t->aw_native_format))
 diff --git a/native/nvn_window.h b/native/nvn_window.h
-index 241c564..9e55b31 100644
+index 241c564..25c22e7 100644
 --- a/native/nvn_window.h
 +++ b/native/nvn_window.h
 @@ -51,8 +51,18 @@ static unsigned nvn_window_dispatch(unsigned id,struct nvn_frame *f,uint64_t *re
@@ -1590,8 +1707,8 @@ index 241c564..9e55b31 100644
 + * measured on the second present). Recreating it is the only way to keep presenting; the surface is a
 + * handle, not state, so nothing else changes. */
 +static void nvn_window_surface_recreate(uint64_t pc) {
-+    if(nvn_window.surface!=EGL_NO_SURFACE)eglDestroySurface(nvn_device.display,nvn_window.surface);
 +    if(nvn_platform_sdl_window)return;
++    if(nvn_window.surface!=EGL_NO_SURFACE)eglDestroySurface(nvn_device.display,nvn_window.surface);
 +    nvn_window.surface=eglCreateWindowSurface(nvn_device.display,nvn_device.config,
 +        (EGLNativeWindowType)&nvn_window.fb,NULL);
 +    if(nvn_window.surface==EGL_NO_SURFACE)stop("NVN_EGL_WINDOW_RECREATE",pc,eglGetError(),21);
@@ -1631,6 +1748,35 @@ index 9ab8126..1db3c58 100644
      return bytes(output), dict(schema='t2-shader-diagnostic-sanitization/1',
                                 input_sha256=sha(data), output_sha256=sha(output),
                                 size=len(data), changed_bytes=len(differences), changes=changes,
+diff --git a/native/zero_bc.h b/native/zero_bc.h
+index f9e31ec..a1e6b35 100644
+--- a/native/zero_bc.h
++++ b/native/zero_bc.h
+@@ -32,7 +32,7 @@ static inline void zero_bc_signed_channel(const uint64_t *input,float *output,un
+ static inline unsigned zero_bc_decode(unsigned format,void *destination,size_t destination_bytes,
+                                       const void *source,size_t source_bytes,unsigned width,unsigned height,size_t stride) {
+     unsigned block_bytes=zero_bc_bytes(format),floating=zero_bc_float(format),pixel_bytes=floating?16:4;
+-    if(!block_bytes || !source || !destination || !width || !height || width>4096 || height>4096)return 0;
++    if(!block_bytes || !source || !destination || !width || !height || width>8192 || height>8192)return 0;
+     unsigned nx=(width+3)/4,ny=(height+3)/4;
+     if(stride<(size_t)nx*block_bytes || stride>64U*1024U*1024U ||
+        source_bytes<(ny-1)*stride+(size_t)nx*block_bytes || destination_bytes<(size_t)width*height*pixel_bytes)return 0;
+diff --git a/native/zero_bc_layout.h b/native/zero_bc_layout.h
+index 71d584f..4058493 100644
+--- a/native/zero_bc_layout.h
++++ b/native/zero_bc_layout.h
+@@ -14,7 +14,10 @@ static inline unsigned zero_bc_default_height(unsigned blocks_y) {
+ }
+ static inline unsigned zero_bc_level_layout(unsigned width,unsigned height,unsigned bytes,unsigned level,
+                                             struct zero_bc_level *out) {
+-    if(!out || !width || !height || width>4096 || height>4096 || (bytes!=8&&bytes!=16) || level>12)return 0;
++    /* Lamentum streams an 8192x4096 BC3 atlas (one mip); the old 4096
++     * admission ceiling was a title-specific guard, not a GOB-layout limit.
++     * Device GL_MAX_TEXTURE_SIZE is independently checked by the caller. */
++    if(!out || !width || !height || width>8192 || height>8192 || (bytes!=8&&bytes!=16) || level>13)return 0;
+     unsigned base_h=zero_bc_default_height((height+3)/4);size_t offset=0;
+     for(unsigned i=0;;i++) {
+         unsigned nx=(width+3)/4,ny=(height+3)/4,h=base_h;
 diff --git a/native/zero_texture_writes.h b/native/zero_texture_writes.h
 index 3d23814..2b4ce9b 100644
 --- a/native/zero_texture_writes.h

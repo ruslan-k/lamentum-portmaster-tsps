@@ -1,0 +1,43 @@
+NVN_SYSTEM_WINDOW backend=SDL driver=KMSDRM width=1280 height=720 EGL-config=7
+NVN_COMMANDS_EXECUTED handle=1 count=513 completed-with-glFinish=1 gpu-pending=0 game-draws=31 occurrence=1 suppressed=0 log-thread=26 log-scope=thread-channel changed=1
+NVN_PRESENT_PIXELS frame=1 nonblack=111958 max=255 white=11484 texture-draws=13 status=PIXELS
+LC2_SDL_SURFACE_REFRESH old=0x557f6d5670 current=0x7f78a51590
+NVN_COMMANDS_EXECUTED handle=2 count=471 completed-with-glFinish=1 gpu-pending=0 game-draws=62 occurrence=2 suppressed=0 log-thread=26 log-scope=thread-channel changed=1
+NVN_PRESENT_PIXELS frame=2 nonblack=4096 max=255 white=0 texture-draws=13 status=PIXELS
+NVN_COMMANDS_EXECUTED handle=3 count=471 completed-with-glFinish=1 gpu-pending=0 game-draws=93 occurrence=3 suppressed=0 log-thread=26 log-scope=thread-channel changed=0
+NVN_PRESENT_PIXELS frame=3 nonblack=4096 max=255 white=0 texture-draws=13 status=PIXELS
+NVN_COMMANDS_EXECUTED handle=4 count=471 completed-with-glFinish=1 gpu-pending=0 game-draws=124 occurrence=4 suppressed=0 log-thread=26 log-scope=thread-channel changed=0
+NVN_PRESENT_PIXELS frame=4 nonblack=4096 max=255 white=0 texture-draws=26 status=PIXELS
+NVN_PRESENT_PIXELS frame=5 nonblack=4125 max=255 white=0 texture-draws=26 status=PIXELS
+NVN_PRESENT_PIXELS frame=6 nonblack=4125 max=255 white=0 texture-draws=26 status=PIXELS
+NVN_PRESENT_PIXELS frame=7 nonblack=4128 max=255 white=0 texture-draws=39 status=PIXELS
+NVN_COMMANDS_EXECUTED handle=8 count=471 completed-with-glFinish=1 gpu-pending=0 game-draws=248 occurrence=8 suppressed=3 log-thread=26 log-scope=thread-channel changed=0
+NVN_PRESENT_PIXELS frame=8 nonblack=4128 max=255 white=0 texture-draws=39 status=PIXELS
+NVN_PRESENT_PIXELS frame=9 nonblack=4156 max=255 white=0 texture-draws=39 status=PIXELS
+NVN_PRESENT_PIXELS frame=10 nonblack=4157 max=255 white=0 texture-draws=52 status=PIXELS
+NVN_PRESENT_PIXELS frame=11 nonblack=4157 max=255 white=0 texture-draws=52 status=PIXELS
+NVN_PRESENT_PIXELS frame=12 nonblack=4157 max=255 white=0 texture-draws=52 status=PIXELS
+NVN_PRESENT_PIXELS frame=13 nonblack=4158 max=255 white=0 texture-draws=65 status=PIXELS
+NVN_PRESENT_PIXELS frame=14 nonblack=4158 max=255 white=0 texture-draws=65 status=PIXELS
+NVN_PRESENT_PIXELS frame=15 nonblack=4158 max=255 white=0 texture-draws=65 status=PIXELS
+NVN_COMMANDS_EXECUTED handle=16 count=471 completed-with-glFinish=1 gpu-pending=0 game-draws=496 occurrence=16 suppressed=10 log-thread=26 log-scope=thread-channel changed=0
+NVN_PRESENT_PIXELS frame=16 nonblack=4159 max=255 white=0 texture-draws=78 status=PIXELS
+NVN_COMMANDS_EXECUTED handle=17 count=446 completed-with-glFinish=1 gpu-pending=0 game-draws=526 occurrence=17 suppressed=10 log-thread=26 log-scope=thread-channel changed=1
+NVN_PRESENT_PIXELS frame=17 nonblack=4159 max=255 white=0 texture-draws=78 status=PIXELS
+NVN_COMMANDS_EXECUTED handle=18 count=445 completed-with-glFinish=1 gpu-pending=0 game-draws=556 occurrence=18 suppressed=10 log-thread=26 log-scope=thread-channel changed=1
+NVN_PRESENT_PIXELS frame=18 nonblack=4188 max=255 white=0 texture-draws=78 status=PIXELS
+NVN_PRESENT_PIXELS frame=19 nonblack=4188 max=255 white=0 texture-draws=91 status=PIXELS
+NVN_PRESENT_PIXELS frame=20 nonblack=4189 max=255 white=0 texture-draws=91 status=PIXELS
+NVN_PRESENT_PIXELS frame=21 nonblack=4189 max=255 white=0 texture-draws=91 status=PIXELS
+NVN_PRESENT_PIXELS frame=22 nonblack=4189 max=255 white=0 texture-draws=104 status=PIXELS
+NVN_PRESENT_PIXELS frame=23 nonblack=4190 max=255 white=0 texture-draws=104 status=PIXELS
+NVN_PRESENT_PIXELS frame=24 nonblack=4190 max=255 white=0 texture-draws=104 status=PIXELS
+NVN_PRESENT_PIXELS frame=25 nonblack=4250 max=255 white=0 texture-draws=117 status=PIXELS
+NVN_COMMANDS_EXECUTED handle=26 count=440 completed-with-glFinish=1 gpu-pending=0 game-draws=795 occurrence=26 suppressed=17 log-thread=26 log-scope=thread-channel changed=1
+NVN_PRESENT_PIXELS frame=26 nonblack=416 max=255 white=327 texture-draws=116 status=PIXELS
+NVN_COMMANDS_EXECUTED handle=27 count=437 completed-with-glFinish=1 gpu-pending=0 game-draws=824 occurrence=27 suppressed=17 log-thread=26 log-scope=thread-channel changed=1
+NVN_PRESENT_PIXELS frame=27 nonblack=424 max=255 white=329 texture-draws=116 status=PIXELS
+NVN_PRESENT_PIXELS frame=28 nonblack=420 max=255 white=334 texture-draws=129 status=PIXELS
+NVN_PRESENT_PIXELS frame=29 nonblack=431 max=255 white=339 texture-draws=128 status=PIXELS
+NVN_PRESENT_PIXELS frame=30 nonblack=442 max=255 white=347 texture-draws=128 status=PIXELS
+STOP status=T2_MEMORY_FLOOR pc=0x0 detail=0x28 query_memory_calls=0x102 tls_trap_reads=0x0

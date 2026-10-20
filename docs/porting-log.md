@@ -1310,3 +1310,52 @@ Evidence: sampler-origin-01, sampler-reserved-01/02, cbuf-texel-01 (filtered log
 final process state and physical menu capture). Runtime 0 and MainUI restored after
 each bounded run; intermediate harness samples sometimes precede MainUI restart.
 Latest diagnostic build 150 remains installed; before-148/149/150 copies retained.
+
+## Builds151-155: corrected SDL surface lifetime, large BC atlas, loading memory boundary
+
+Synchronous queue A/B (COTM_ASYNC_QUEUE=0 T2_GPU_PIPELINE=0) removes command-list
+reuse refusal without early-signaling or bypassing completion. sync-present-01
+reaches 38 presents / 1147 logged draws and then requests an 8192x4096 BC3 atlas.
+The misleading EXCESS_MIPS stop was zero_bc_level_layout's old 4096 dimension cap.
+Both layout and decoder now admit 8192, with independent device-limit checks retained.
+Host test proves 2097152 BC3 block addresses unique and in range, checks mip13,
+rejects oversized inputs, and compares full decoding with striped tiled decoding.
+
+Real display investigation: fb-copy runs had no active DRM planes during the game.
+SDL/KMSDRM was already selected, not fbdev. SDL2 release-2.32.6
+src/video/kmsdrm/SDL_kmsdrmopengles.c explicitly recreates surfaces on its first
+fullscreen swap (egl_surface_dirty). The adapter cached the destroyed old surface.
+Build152 refreshes platform/device/render/window aliases after SDL_GL_SwapWindow,
+and refuses to destroy an SDL-owned surface in fbdev fallback. Measured pointer
+change logged as LC2_SDL_SURFACE_REFRESH. SDL repeats 42 presentations; physical
+DRM capture succeeds but the captured loading frame is black (sdl-refresh-01).
+User subsequently confirms: physical splash screens display, then black screen.
+This is user observation, distinct from the captured black frame; NOT gameplay.
+
+Build153 admits the atlas but full BC decode also had an independent 4096 guard.
+Build154 fixes it and uploads large BC textures in 128-row slices: full resolution
+8192x4096 is preserved; RGBA temporary is 4194304 bytes plus small linear BC scratch,
+instead of a full 128MiB RGBA +32MiB linear BC transient. Host stripe equivalence test
+passes. Device logs LC2_BC_STRIPED_UPLOAD and creates the real 32MiB compressed atlas.
+Still stops on T2_MEMORY_FLOOR at 29MiB free; VmRSS=759632KiB, VmSwap=535896KiB.
+No OOM kill proved. A min_free_kbytes=65536 A/B did NOT solve it (floor at 23MiB),
+and the exact original sysctl 3967 was independently restored before further tests.
+Strict SDL run with COTM_GL_ERROR_IGNORE=0 and COTM_FB_PRESENT=0 proceeds to frame39
+and memory floor at30MiB: the old GL0x505 bypass is no longer required on this path.
+
+Build155 adds LC2_TEXTURE_PAGEOUT=1, opt-in only, to request non-destructive kernel
+pageout of compressed atlas CPU pages after upload. Default is OFF; no discard or
+pixel reduction. The test proceeded further into loading, then network connectivity
+was lost. The harness failed collecting final state; no final full runtime log or
+pageout result was recovered. Ping and a fresh SSH connection both report host
+unreachable. Cause unknown (memory pressure is a hypothesis). Physical restart
+required. Do NOT claim menu cleanup for this last run. Build155 remains installed:
+a64d13a5c75e33e7e6fdaaf692e077df2153ccc188b312d7732d7a63386042d0.
+Before-151..155 binary copies preserved; baseline source unchanged.
+
+Next after recovery: forward SSH key with established helper, verify fresh SSH,
+collect preserved previous-run log and new-boot dmesg separately. Keep pageout OFF
+unless its actual rc/effect can be recovered. Profile scene-load guest/GPU residency
+and replace TEST shaders; splash success is not a working game port.
+
+Aggregated run logs (evidence/loading-summary.json): striped build154 reached frame89 and 1843 logged draws before the memory guard. Counts are per-run observations, not FPS or playable content.

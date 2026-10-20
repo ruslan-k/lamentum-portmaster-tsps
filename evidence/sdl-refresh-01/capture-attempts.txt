@@ -1,0 +1,3 @@
+No active framebuffers found on planes
+Screenshot saved to /mnt/SDCARD/Roms/PORTS/lamentum-switch/logs/live152-0.png (FB ID: 163, 1280x720)
+Screenshot saved to /mnt/SDCARD/Roms/PORTS/lamentum-switch/logs/live152-1.png (FB ID: 163, 1280x720)

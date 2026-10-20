@@ -1,0 +1,5 @@
+NVN_SYSTEM_WINDOW backend=SDL driver=KMSDRM width=1280 height=720 EGL-config=7
+NVN_COMMANDS_EXECUTED handle=1 count=513 completed-with-glFinish=1 gpu-pending=0 game-draws=31 occurrence=1 suppressed=0 log-thread=26 log-scope=thread-channel changed=1
+NVN_PRESENT_PIXELS frame=1 nonblack=111965 max=255 white=11484 texture-draws=13 status=PIXELS
+NVN_COMMANDS_EXECUTED handle=2 count=471 completed-with-glFinish=1 gpu-pending=0 game-draws=62 occurrence=2 suppressed=0 log-thread=26 log-scope=thread-channel changed=1
+STOP status=NVN_PRESENT_CONTEXT pc=main.text.seg+0x52d3bc detail=0x300d query_memory_calls=0xfc tls_trap_reads=0x0

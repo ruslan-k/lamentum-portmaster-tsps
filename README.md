@@ -1,13 +1,17 @@
 # Lamentum — experimental Switch-to-Linux-ARM64 port (TSPS / SpruceOS)
 
-**Status: bring-up. The port boots the original title code into NVN and creates its real
-1280x720 window; no frame has been rendered yet and there is no playable launch.**
+**Status: not playable. The user confirms physical splash screens, followed by a black
+screen. SDL/KMSDRM surface lifetime, bound-sampler metadata and cbuf addressing have been
+corrected; the scene-loading transition still fails under memory pressure.**
 
-Last measured device run (`evidence/device-09`): owner modules mapped -> original `rtld` ->
-SDK init (24+ threads) -> `nvnBootstrapLoader` -> NVN device/window (three 1280x720 textures,
-context preserved, nothing drawn) -> first `ProgramSetShaders` -> controlled stop
-`ZERO_SHADER_NOT_PINNED`. The runtime refuses to invent a shader translation, which is why the
-port stops there; the shader catalogue is the open work item.
+Latest work: `docs/porting-log.md` (builds 151–155). A synchronous queue passes command-list
+reuse checks; the real SDL page-flip path survives more than one swap. An 8192×4096 BC3 atlas
+uploads at full resolution using stripe staging. TEST shader substitutes remain in the
+catalogue: successful compilation or nonblack readback is not evidence of correct gameplay.
+
+The last opt-in texture-pageout experiment lost device connectivity after further loading.
+The exact cause is unconfirmed; final process/menu cleanup could not be verified for that
+run. A physical device restart is required before further testing.
 
 This repository tracks the attempt to run the owner's Nintendo Switch copy of *Lamentum*
 (Unity 2019.4.4f1, IL2CPP, ARM64) natively on a TrimUI Smart Pro S class handheld through a
@@ -40,21 +44,18 @@ keys, no saves. Only our own tooling, the adapter patch and measured evidence ar
   `level0`, `level2`, `resources.assets*`, `sharedassets0.*`, `sharedassets2.*`). Merged RomFS
   image 1,832,059,520 B; its extraction was compared file-by-file with the merged tree —
   34/34 identical.
-- **Adapter patch scope** (2 files, 8 lines): hoist two texture-lifetime helpers out of the
-  `ZERO_ZX_GAME` guard so the generic command recorder can reach them, and declare
-  `zero_texture_record_id` for every title profile. Nothing else is changed.
-- **Shader translation: absent.** The build uses the baseline's empty catalogue stub, so the
-  runtime is expected to stop at its first real `ProgramSetShaders` with a
-  `ZERO_SHADER_UNRECOGNIZED`/`ZERO_SHADER_NOT_PINNED` controlled stop. That is a deliberate
-  fail-closed answer, not a rendering result.
+- **Adapter scope**: all runtime changes are carried in `runtime/lamentum-adapter.patch`;
+  the 435-file recovered source baseline stays read-only and manifest-verified.
+- **Shader catalogue**: 34 captured programs with translated sources plus explicit TEST
+  substitutes. Sampler/constant-buffer metadata is exercised on-device, but complete shader
+  semantics, scene rendering and gameplay are not yet validated.
 
 ## Not done yet
 
-- No device run has been performed yet (see `docs/porting-log.md` for the run list as it fills).
-- NVN structure layouts for this SDK generation (texture-view width, sampler builder, window
-  and command builder offsets) are **not** derived yet; the build currently carries the
-  baseline's modern (`MOMO_SHADERS=1`) profile, which is an assumption to verify, not a fact.
-- Shader catalogue, audio, input mapping, saves and performance are all unmeasured.
+- Resolve the black screen after physical splash screens and the scene-loading memory wall.
+- Replace TEST shader substitutes with validated translations.
+- Validate input actions, audible sound, saves and sustained gameplay/performance.
+- Recover the device from the last failed experiment and verify the menu/process state.
 
 ## Build your own copy
 

@@ -1,0 +1,109 @@
+NVN_SYSTEM_WINDOW backend=SDL driver=KMSDRM width=1280 height=720 EGL-config=7
+NVN_COMMANDS_EXECUTED handle=1 count=513 completed-with-glFinish=1 gpu-pending=0 game-draws=31 occurrence=1 suppressed=0 log-thread=26 log-scope=thread-channel changed=1
+NVN_PRESENT_PIXELS frame=1 nonblack=111963 max=255 white=11482 texture-draws=13 status=PIXELS
+LC2_SDL_SURFACE_REFRESH old=0x55b08fb670 current=0x7f98a4fbc0
+NVN_COMMANDS_EXECUTED handle=2 count=471 completed-with-glFinish=1 gpu-pending=0 game-draws=62 occurrence=2 suppressed=0 log-thread=26 log-scope=thread-channel changed=1
+NVN_PRESENT_PIXELS frame=2 nonblack=4095 max=255 white=0 texture-draws=13 status=PIXELS
+NVN_COMMANDS_EXECUTED handle=3 count=471 completed-with-glFinish=1 gpu-pending=0 game-draws=93 occurrence=3 suppressed=0 log-thread=26 log-scope=thread-channel changed=0
+NVN_PRESENT_PIXELS frame=3 nonblack=4096 max=255 white=0 texture-draws=13 status=PIXELS
+NVN_COMMANDS_EXECUTED handle=4 count=471 completed-with-glFinish=1 gpu-pending=0 game-draws=124 occurrence=4 suppressed=0 log-thread=26 log-scope=thread-channel changed=0
+NVN_PRESENT_PIXELS frame=4 nonblack=4096 max=255 white=0 texture-draws=26 status=PIXELS
+NVN_PRESENT_PIXELS frame=5 nonblack=4096 max=255 white=0 texture-draws=26 status=PIXELS
+NVN_PRESENT_PIXELS frame=6 nonblack=4096 max=255 white=0 texture-draws=26 status=PIXELS
+NVN_PRESENT_PIXELS frame=7 nonblack=4125 max=255 white=0 texture-draws=39 status=PIXELS
+NVN_COMMANDS_EXECUTED handle=8 count=471 completed-with-glFinish=1 gpu-pending=0 game-draws=248 occurrence=8 suppressed=3 log-thread=26 log-scope=thread-channel changed=0
+NVN_PRESENT_PIXELS frame=8 nonblack=4126 max=255 white=0 texture-draws=39 status=PIXELS
+NVN_PRESENT_PIXELS frame=9 nonblack=4127 max=255 white=0 texture-draws=39 status=PIXELS
+NVN_PRESENT_PIXELS frame=10 nonblack=4128 max=255 white=0 texture-draws=52 status=PIXELS
+NVN_PRESENT_PIXELS frame=11 nonblack=4128 max=255 white=0 texture-draws=52 status=PIXELS
+NVN_PRESENT_PIXELS frame=12 nonblack=4157 max=255 white=0 texture-draws=52 status=PIXELS
+NVN_PRESENT_PIXELS frame=13 nonblack=4157 max=255 white=0 texture-draws=65 status=PIXELS
+NVN_PRESENT_PIXELS frame=14 nonblack=4157 max=255 white=0 texture-draws=65 status=PIXELS
+NVN_PRESENT_PIXELS frame=15 nonblack=4158 max=255 white=0 texture-draws=65 status=PIXELS
+NVN_COMMANDS_EXECUTED handle=16 count=471 completed-with-glFinish=1 gpu-pending=0 game-draws=496 occurrence=16 suppressed=10 log-thread=26 log-scope=thread-channel changed=0
+NVN_PRESENT_PIXELS frame=16 nonblack=4158 max=255 white=0 texture-draws=78 status=PIXELS
+NVN_PRESENT_PIXELS frame=17 nonblack=4158 max=255 white=0 texture-draws=78 status=PIXELS
+NVN_COMMANDS_EXECUTED handle=18 count=446 completed-with-glFinish=1 gpu-pending=0 game-draws=557 occurrence=18 suppressed=11 log-thread=26 log-scope=thread-channel changed=1
+NVN_PRESENT_PIXELS frame=18 nonblack=4159 max=255 white=0 texture-draws=78 status=PIXELS
+NVN_COMMANDS_EXECUTED handle=19 count=445 completed-with-glFinish=1 gpu-pending=0 game-draws=587 occurrence=19 suppressed=11 log-thread=26 log-scope=thread-channel changed=1
+NVN_PRESENT_PIXELS frame=19 nonblack=4160 max=255 white=0 texture-draws=91 status=PIXELS
+NVN_PRESENT_PIXELS frame=20 nonblack=4188 max=255 white=0 texture-draws=91 status=PIXELS
+NVN_PRESENT_PIXELS frame=21 nonblack=4188 max=255 white=0 texture-draws=91 status=PIXELS
+NVN_PRESENT_PIXELS frame=22 nonblack=4189 max=255 white=0 texture-draws=104 status=PIXELS
+NVN_PRESENT_PIXELS frame=23 nonblack=4189 max=255 white=0 texture-draws=104 status=PIXELS
+NVN_PRESENT_PIXELS frame=24 nonblack=4190 max=255 white=0 texture-draws=104 status=PIXELS
+NVN_PRESENT_PIXELS frame=25 nonblack=4191 max=255 white=0 texture-draws=117 status=PIXELS
+NVN_COMMANDS_EXECUTED handle=26 count=439 completed-with-glFinish=1 gpu-pending=0 game-draws=796 occurrence=26 suppressed=17 log-thread=26 log-scope=thread-channel changed=1
+NVN_PRESENT_PIXELS frame=26 nonblack=4222 max=255 white=0 texture-draws=116 status=PIXELS
+NVN_COMMANDS_EXECUTED handle=27 count=438 completed-with-glFinish=1 gpu-pending=0 game-draws=825 occurrence=27 suppressed=17 log-thread=26 log-scope=thread-channel changed=1
+NVN_PRESENT_PIXELS frame=27 nonblack=416 max=255 white=327 texture-draws=116 status=PIXELS
+NVN_COMMANDS_EXECUTED handle=28 count=437 completed-with-glFinish=1 gpu-pending=0 game-draws=854 occurrence=28 suppressed=17 log-thread=26 log-scope=thread-channel changed=1
+NVN_PRESENT_PIXELS frame=28 nonblack=422 max=255 white=331 texture-draws=129 status=PIXELS
+NVN_PRESENT_PIXELS frame=29 nonblack=425 max=255 white=336 texture-draws=128 status=PIXELS
+NVN_PRESENT_PIXELS frame=30 nonblack=431 max=255 white=339 texture-draws=128 status=PIXELS
+NVN_PRESENT_PIXELS frame=31 nonblack=443 max=255 white=349 texture-draws=141 status=PIXELS
+NVN_COMMANDS_EXECUTED handle=32 count=437 completed-with-glFinish=1 gpu-pending=0 game-draws=970 occurrence=32 suppressed=20 log-thread=26 log-scope=thread-channel changed=0
+NVN_PRESENT_PIXELS frame=32 nonblack=443 max=255 white=364 texture-draws=140 status=PIXELS
+NVN_PRESENT_PIXELS frame=33 nonblack=452 max=255 white=370 texture-draws=140 status=PIXELS
+NVN_PRESENT_PIXELS frame=34 nonblack=491 max=255 white=377 texture-draws=153 status=PIXELS
+NVN_PRESENT_PIXELS frame=35 nonblack=492 max=255 white=378 texture-draws=152 status=PIXELS
+NVN_PRESENT_PIXELS frame=36 nonblack=488 max=255 white=384 texture-draws=152 status=PIXELS
+LC2_BC_STRIPED_UPLOAD id=302 size=8192x4096 temporary-bytes=4194304 resolution=preserved
+NVN_COMMANDS_EXECUTED handle=37 count=411 completed-with-glFinish=1 gpu-pending=0 game-draws=1114 occurrence=37 suppressed=24 log-thread=26 log-scope=thread-channel changed=1
+NVN_PRESENT_PIXELS frame=37 nonblack=0 max=0 white=0 texture-draws=164 status=BLACK-SAMPLE
+NVN_COMMANDS_EXECUTED handle=38 count=385 completed-with-glFinish=1 gpu-pending=0 game-draws=1141 occurrence=38 suppressed=24 log-thread=26 log-scope=thread-channel changed=1
+NVN_PRESENT_PIXELS frame=38 nonblack=0 max=0 white=0 texture-draws=162 status=BLACK-SAMPLE
+NVN_COMMANDS_EXECUTED handle=39 count=386 completed-with-glFinish=1 gpu-pending=0 game-draws=1168 occurrence=39 suppressed=24 log-thread=26 log-scope=thread-channel changed=1
+NVN_PRESENT_PIXELS frame=39 nonblack=0 max=0 white=0 texture-draws=162 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=40 nonblack=0 max=0 white=0 texture-draws=174 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=41 nonblack=0 max=0 white=0 texture-draws=172 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=42 nonblack=0 max=0 white=0 texture-draws=172 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=43 nonblack=0 max=0 white=0 texture-draws=184 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=44 nonblack=0 max=0 white=0 texture-draws=182 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=45 nonblack=0 max=0 white=0 texture-draws=182 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=46 nonblack=0 max=0 white=0 texture-draws=194 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=47 nonblack=0 max=0 white=0 texture-draws=192 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=48 nonblack=0 max=0 white=0 texture-draws=192 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=49 nonblack=0 max=0 white=0 texture-draws=204 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=50 nonblack=0 max=0 white=0 texture-draws=202 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=51 nonblack=0 max=0 white=0 texture-draws=202 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=52 nonblack=0 max=0 white=0 texture-draws=214 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=53 nonblack=0 max=0 white=0 texture-draws=212 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=54 nonblack=0 max=0 white=0 texture-draws=212 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=55 nonblack=0 max=0 white=0 texture-draws=224 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=56 nonblack=0 max=0 white=0 texture-draws=222 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=57 nonblack=0 max=0 white=0 texture-draws=222 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=58 nonblack=0 max=0 white=0 texture-draws=234 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=59 nonblack=0 max=0 white=0 texture-draws=232 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=60 nonblack=0 max=0 white=0 texture-draws=232 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=61 nonblack=0 max=0 white=0 texture-draws=244 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=62 nonblack=0 max=0 white=0 texture-draws=242 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=63 nonblack=0 max=0 white=0 texture-draws=242 status=BLACK-SAMPLE
+NVN_COMMANDS_EXECUTED handle=64 count=386 completed-with-glFinish=1 gpu-pending=0 game-draws=1843 occurrence=64 suppressed=48 log-thread=26 log-scope=thread-channel changed=0
+NVN_PRESENT_PIXELS frame=64 nonblack=0 max=0 white=0 texture-draws=254 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=65 nonblack=0 max=0 white=0 texture-draws=252 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=66 nonblack=0 max=0 white=0 texture-draws=252 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=67 nonblack=0 max=0 white=0 texture-draws=264 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=68 nonblack=0 max=0 white=0 texture-draws=262 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=69 nonblack=0 max=0 white=0 texture-draws=262 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=70 nonblack=0 max=0 white=0 texture-draws=274 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=71 nonblack=0 max=0 white=0 texture-draws=272 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=72 nonblack=0 max=0 white=0 texture-draws=272 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=73 nonblack=0 max=0 white=0 texture-draws=284 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=74 nonblack=0 max=0 white=0 texture-draws=282 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=75 nonblack=0 max=0 white=0 texture-draws=282 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=76 nonblack=0 max=0 white=0 texture-draws=294 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=77 nonblack=0 max=0 white=0 texture-draws=292 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=78 nonblack=0 max=0 white=0 texture-draws=292 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=79 nonblack=0 max=0 white=0 texture-draws=304 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=80 nonblack=0 max=0 white=0 texture-draws=302 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=81 nonblack=0 max=0 white=0 texture-draws=302 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=82 nonblack=0 max=0 white=0 texture-draws=314 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=83 nonblack=0 max=0 white=0 texture-draws=312 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=84 nonblack=0 max=0 white=0 texture-draws=312 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=85 nonblack=0 max=0 white=0 texture-draws=324 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=86 nonblack=0 max=0 white=0 texture-draws=322 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=87 nonblack=0 max=0 white=0 texture-draws=322 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=88 nonblack=0 max=0 white=0 texture-draws=334 status=BLACK-SAMPLE
+NVN_PRESENT_PIXELS frame=89 nonblack=0 max=0 white=0 texture-draws=332 status=BLACK-SAMPLE
+STOP status=T2_MEMORY_FLOOR pc=0x0 detail=0x1d query_memory_calls=0x104 tls_trap_reads=0x0

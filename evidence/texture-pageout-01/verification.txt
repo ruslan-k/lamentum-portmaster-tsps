@@ -1,0 +1,5 @@
+Build155 SHA256 (independent local/device match before test): a64d13a5c75e33e7e6fdaaf692e077df2153ccc188b312d7732d7a63386042d0
+Opt-in LC2_TEXTURE_PAGEOUT=1 experiment. Harness failed collecting final state after host became unreachable.
+No complete latest.log or MADV_PAGEOUT result was recovered. Do not infer success, OOM, or kernel hang.
+Repeated ping: 3/3 destination-host-unreachable. Fresh SSH: No route to host.
+User observation: splash screens display, then black screen. Physical restart needed; cleanup NOT verified.

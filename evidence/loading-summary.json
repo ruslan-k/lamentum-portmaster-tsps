@@ -1,0 +1,74 @@
+[
+  {
+    "run": "sync-present-01",
+    "max_present_frame": 38,
+    "max_logged_draws": 1147,
+    "stops": [
+      "NVN_TEXTURE_EXCESS_MIPS"
+    ]
+  },
+  {
+    "run": "bc-layout-01",
+    "max_present_frame": 29,
+    "max_logged_draws": 865,
+    "stops": [
+      "NVN_TEXTURE_EXCESS_MIPS"
+    ]
+  },
+  {
+    "run": "sdl-present-01",
+    "max_present_frame": 1,
+    "max_logged_draws": 62,
+    "stops": [
+      "NVN_PRESENT_CONTEXT"
+    ]
+  },
+  {
+    "run": "sdl-refresh-01",
+    "max_present_frame": 42,
+    "max_logged_draws": 1228,
+    "stops": [
+      "NVN_TEXTURE_EXCESS_MIPS"
+    ]
+  },
+  {
+    "run": "bc8192-01",
+    "max_present_frame": 30,
+    "max_logged_draws": 824,
+    "stops": [
+      "T2_MEMORY_FLOOR"
+    ]
+  },
+  {
+    "run": "bc8192-02",
+    "max_present_frame": 34,
+    "max_logged_draws": 1027,
+    "stops": [
+      "ZERO_BC_TILED_DECODE"
+    ]
+  },
+  {
+    "run": "bc-stripe-01",
+    "max_present_frame": 89,
+    "max_logged_draws": 1843,
+    "stops": [
+      "T2_MEMORY_FLOOR"
+    ]
+  },
+  {
+    "run": "reclaim-01",
+    "max_present_frame": 40,
+    "max_logged_draws": 1168,
+    "stops": [
+      "T2_MEMORY_FLOOR"
+    ]
+  },
+  {
+    "run": "strict-sdl-01",
+    "max_present_frame": 39,
+    "max_logged_draws": 1205,
+    "stops": [
+      "T2_MEMORY_FLOOR"
+    ]
+  }
+]
