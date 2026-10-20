@@ -1,0 +1,64 @@
+{
+  "dump-1792425422-0": {
+    "code_sha256": "d032944a8929b2cc5364e1df7f02f38a7f31d8225fe002ecad35148f3cacf968",
+    "control_sha256": "8c4fe34281e7467c72818a1481902a580924da357e05b6645b5d703e3d8123ff",
+    "literal_offset": 512,
+    "code_capture_end": 768,
+    "removed_uniforms": [
+      "c1"
+    ],
+    "static_word_indices": [
+      0
+    ]
+  },
+  "dump-33650b4b": {
+    "code_sha256": "33650b4b250293b5c244b5b33e62a77c1f03ed8571ac3ffdda9368347bdc6166",
+    "control_sha256": "7a38f8cc6464edcb265c682270577a3a9b4668acf49d26ee9c388bdd257bbc01",
+    "literal_offset": 768,
+    "code_capture_end": 1024,
+    "removed_uniforms": [
+      "c1"
+    ],
+    "static_word_indices": [
+      0
+    ]
+  },
+  "dump-8af77a17": {
+    "code_sha256": "8af77a177b7838819ff46bb634747d4406bd08ae4ad4fde1ca202fe9ef854ab9",
+    "control_sha256": "632ec03a6cee39da99dae2100a0f271e1cc0acd7a621923f1c333bb2f3ffb1fd",
+    "literal_offset": 1792,
+    "code_capture_end": 2048,
+    "removed_uniforms": [
+      "c1"
+    ],
+    "static_word_indices": [
+      0
+    ]
+  },
+  "dump-d032944a": {
+    "code_sha256": "d032944a8929b2cc5364e1df7f02f38a7f31d8225fe002ecad35148f3cacf968",
+    "control_sha256": "8c4fe34281e7467c72818a1481902a580924da357e05b6645b5d703e3d8123ff",
+    "literal_offset": 512,
+    "code_capture_end": 768,
+    "removed_uniforms": [
+      "c1"
+    ],
+    "static_word_indices": [
+      0
+    ]
+  },
+  "dump-e6091e72": {
+    "code_sha256": "e6091e727431c3272e5d6b9198de23df1ed2f661cbe9a74e4b035dc6e2aa4593",
+    "control_sha256": "3934065f962af2ede854b23cb45c9f7f7ce445fbcf92fabc5cc34a375fb36b2e",
+    "literal_offset": 512,
+    "code_capture_end": 768,
+    "removed_uniforms": [
+      "c1"
+    ],
+    "static_word_indices": [
+      0,
+      1,
+      2
+    ]
+  }
+}

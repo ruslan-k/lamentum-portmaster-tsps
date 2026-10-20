@@ -1,0 +1,3 @@
+programs: 34 -> /home/ruslan/.hermes/cache/scratch/tmp9m6s8whw/generated.h
+report: /home/ruslan/.hermes/cache/scratch/tmp9m6s8whw/catalogue-draft.json
+entries needing ESSL100 texel-fetch work (emitted as error entries by the runtime until rewritten): []

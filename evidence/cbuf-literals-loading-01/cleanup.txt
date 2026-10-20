@@ -1,0 +1,2 @@
+Screenshot saved to /mnt/SDCARD/Roms/PORTS/lamentum-switch/literals-clean-menu.png (FB ID: 163, 1280x720)
+83607a54a351f0236fcb0639b63f28e17c9d9b21ea2968c8936ab35c1880f2ca  /mnt/SDCARD/Roms/PORTS/lamentum-switch/lamentum-nextos

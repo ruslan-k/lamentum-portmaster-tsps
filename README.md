@@ -4,8 +4,10 @@
 physical scanout now shows a partial rainy scene rather than the white field.
 Complete rendering, the game menu, input and gameplay remain unverified.**
 
-Latest work: `docs/cbuf-unit-isolation.md` (same-binary A/B: 37 colliding audit
-records versus zero, physical captures included). Memory history remains in
+Latest work: `docs/shader-literal-bank.md` (build 178: capture-validated literal
+specialization in five existing real programs; no demonstrated visual gain).
+`docs/cbuf-unit-isolation.md` records the preceding same-binary A/B: 37 colliding
+audit records versus zero, with physical captures. Memory history remains in
 `docs/loading-memory-170-174.md`, `docs/loading-memory.md` and `docs/porting-log.md`.
 The historical best loading probe initialized 522 textures before its physical-memory
 floor; the new short rendering A/B does not establish an improvement to that limit.
@@ -14,7 +16,7 @@ original texture resolution and the owner image; the 420 MiB GPU ceiling is unch
 
 The installed launcher keeps experimental memory features off unless explicitly requested;
 it uses strict GL checks, synchronous submission, SDL/KMSDRM and a 96 MiB memory floor.
-The failed pageout experiment remains disabled. The latest binary is build 177, installed
+The failed pageout experiment remains disabled. The latest binary is build 178, installed
 with a device-side backup and independently verified SHA-256. The temporary watermark
 experiment was restored to its original value and is not a persistent system change.
 

@@ -1,0 +1,9 @@
+{
+  "stops": [
+    "T2_MEMORY_FLOOR"
+  ],
+  "texture_initializations": 328,
+  "frame_ceiling": 124,
+  "audit_collisions": 0,
+  "device_state": "0\n1\n0-7\n"
+}

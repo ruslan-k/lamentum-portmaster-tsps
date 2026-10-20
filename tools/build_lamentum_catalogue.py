@@ -16,6 +16,7 @@ fragment stage needs capabilities ESSL100 lacks (texelFetch with explicit LOD) a
 `error` set so the runtime stops instead of rendering something that only looks plausible.
 """
 import argparse, json, pathlib, re
+from shader_literals import inline_literal_cbuf
 
 
 
@@ -310,8 +311,13 @@ def main():
             translated, needs_fetch = filter, False
         else:
             translated, needs_fetch = rewrite_essl100(source, stage)
+        cbufs = cbuf_blocks_of(source)
+        translated, literal_names = inline_literal_cbuf(
+            translated, {b['instance'] for b in cbufs}, code.read_bytes(), control.read_bytes())
         programs.append({
-            'cbufs': cbuf_blocks_of(source),
+            # Preserve the pre-specialization application-bank mapping.
+            'cbufs': [b for b in cbufs if b['instance'] not in literal_names],
+            'literal_banks_inlined': sorted(literal_names),
             'error': 'fragment stage needs an ESSL100 texel-fetch rewrite' if (stage == 'fragment' and needs_fetch) else None,
             'write_masks': component_masks(source, 'out'),
             'read_masks': component_masks(translated if placeholder else source, 'in'),

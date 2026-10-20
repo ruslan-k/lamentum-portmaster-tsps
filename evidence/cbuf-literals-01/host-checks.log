@@ -1,0 +1,20 @@
+$ python3 tools/test_shader_literals.py
+.....
+----------------------------------------------------------------------
+Ran 5 tests in 0.003s
+
+OK
+
+$ python3 tools/test_sampler_metadata.py
+.......
+----------------------------------------------------------------------
+Ran 7 tests in 0.088s
+
+OK
+
+$ python3 tools/test_launcher.py
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.034s
+
+OK
