@@ -9,7 +9,7 @@
  * NOT translated and the runtime stops on them by design. */
 #include <stddef.h>
 #include <stdint.h>
-#define ZERO_ZX_SHADER_PACKAGES 45
+#define ZERO_ZX_SHADER_PACKAGES 46
 #define ZERO_SHADER_VARYING_SLOTS 8
 #ifndef MOMO_SHADERS
 #define MOMO_SHADERS 1
@@ -1474,6 +1474,55 @@ static const struct {const char *original,*gles;unsigned stage;} nvn_shader_sour
 	 "    varying_5.z = max(0.0, fma(exp2(log2(max(0.0, fma(_248, texelFetch(c3_1, ivec2((int(26u) >> 2) & 1023, int(26u) >> 12), 0)[int(26u) & 3], fma(_171, texelFetch(c3_1, ivec2((int(23u) >> 2) & 1023, int(23u) >> 12), 0)[int(23u) & 3], fma(_178, texelFetch(c3_1, ivec2((int(22u) >> 2) & 1023, int(22u) >> 12), 0)[int(22u) & 3], fma(_170, texelFetch(c3_1, ivec2((int(21u) >> 2) & 1023, int(21u) >> 12), 0)[int(21u) & 3], _169 * texelFetch(c3_1, ivec2((int(20u) >> 2) & 1023, int(20u) >> 12), 0)[int(20u) & 3])))) + (fma(_147, texelFetch(c3_1, ivec2((int(10u) >> 2) & 1023, int(10u) >> 12), 0)[int(10u) & 3], fma(_146, texelFetch(c3_1, ivec2((int(9u) >> 2) & 1023, int(9u) >> 12), 0)[int(9u) & 3], _145 * texelFetch(c3_1, ivec2((int(8u) >> 2) & 1023, int(8u) >> 12), 0)[int(8u) & 3])) + texelFetch(c3_1, ivec2((int(11u) >> 2) & 1023, int(11u) >> 12), 0)[int(11u) & 3]))) * 0.4166666567325592041015625), uintBitsToFloat(0x3f870a3du), -0.054999999701976776123046875));\n"
 	 "}\n"
 	 "", 0},
+	/* 45 half-mrt fragment */
+	{"", "\n"
+	 "#version 310 es\n"
+	 "precision highp int;\n"
+	 "precision mediump float;\n"
+	 "#define fma(a, b, c) ((a) * (b) + (c))\n"
+	 "#define lc2_half(a) unpackHalf2x16(packHalf2x16(vec2(float(a), 0.0))).x\n"
+	 "\n"
+	 "uniform sampler2D fs_tex0_20;\n"
+	 "\n"
+	 "in vec4 varying_0;\n"
+	 "in vec4 varying_1;\n"
+	 "in vec4 varying_3;\n"
+	 "in vec4 varying_5;\n"
+	 "layout(location = 0) out vec4 frag_color0;\n"
+	 "layout(location = 1) out vec4 frag_color1;\n"
+	 "layout(location = 2) out vec4 frag_color2;\n"
+	 "layout(location = 3) out vec4 frag_color3;\n"
+	 "\n"
+	 "void main()\n"
+	 "{\n"
+	 "    mediump vec4 _54 = texture(fs_tex0_20, vec2(varying_0.x, varying_0.y));\n"
+	 "    uint _61 = packHalf2x16(vec2(_54.xy));\n"
+	 "    uint _63 = packHalf2x16(vec2(_54.zw));\n"
+	 "    float _90 = lc2_half(float(unpackHalf2x16(_61).x) * varying_3.x);\n"
+	 "    vec2 _92 = unpackHalf2x16(_61);\n"
+	 "    _92.x = _90;\n"
+	 "    float _97 = lc2_half(float(unpackHalf2x16(_63).y) * varying_3.w);\n"
+	 "    float _108 = float(lc2_half(_97 * _90));\n"
+	 "    float _110 = float(lc2_half(_97 * lc2_half(float(_92.y) * varying_3.y)));\n"
+	 "    float _112 = float(lc2_half(_97 * lc2_half(float(unpackHalf2x16(_63).x) * varying_3.z)));\n"
+	 "    frag_color0.x = _108;\n"
+	 "    frag_color0.y = _110;\n"
+	 "    frag_color0.z = _112;\n"
+	 "    frag_color0.w = 1.0;\n"
+	 "    frag_color1.x = 0.0;\n"
+	 "    frag_color1.y = 0.0;\n"
+	 "    frag_color1.z = 0.0;\n"
+	 "    frag_color1.w = 0.0;\n"
+	 "    frag_color2.x = fma(varying_1.x, 0.5, 0.5);\n"
+	 "    frag_color2.y = fma(varying_1.y, 0.5, 0.5);\n"
+	 "    frag_color2.z = fma(varying_1.z, 0.5, 0.5);\n"
+	 "    frag_color2.w = 1.0;\n"
+	 "    frag_color3.x = exp2(-(_108 * varying_5.x));\n"
+	 "    frag_color3.y = exp2(-(_110 * varying_5.y));\n"
+	 "    frag_color3.z = exp2(-(_112 * varying_5.z));\n"
+	 "    frag_color3.w = 1.0;\n"
+	 "}\n"
+	 "", 1},
 };
 
 struct mm_shader_uniform {const char *name;unsigned stage,binding,offset,size,components,word_boolean,word_int,word_array;};
@@ -1802,4 +1851,11 @@ static const struct mm_shader_binding nvn_megaman_shader_bindings[]={
   .code_hash={0x80,0x1b,0x91,0xae,0xd1,0xfb,0x16,0x60,0xa5,0xc1,0xae,0x94,0x13,0x99,0x4c,0x01,0x13,0x54,0x7d,0x59,0x6e,0x4b,0xe5,0xef,0x51,0x43,0x58,0x2a,0xdd,0xc3,0x25,0xd0},.control_hash={0xad,0xa6,0x76,0xaa,0xf6,0x75,0xd0,0x51,0x0a,0xa7,0xfe,0xa9,0x08,0xd1,0x47,0x35,0x18,0x59,0x60,0x87,0xa1,0xa9,0xda,0xdf,0x5a,0x0c,0xc4,0x32,0x35,0xee,0xe8,0x20},
   .samplers={},
   .attributes={{.name="in_attr0",.location=0,.kind=0},{.name="in_attr1",.location=1,.kind=0},{.name="in_attr2",.location=2,.kind=0},{.name="in_attr3",.location=3,.kind=0}}},
+ /* 45 half-mrt fragment */
+ {.sha256="bb10c5c308ac2a145198a848f7a13ac9",.error=NULL,.control_size=2176,.code_size=768,.sampler_count=1,.attribute_count=4,.color_write_mask=15,.requires_fragment_highp=0,.requires_fragment_mediump=1,.wave_contract=0,
+  .uniform_count=0,.uniforms={},
+  .varying_read_masks={15,15,0,15,0,15,0,0},.varying_write_masks={7,0,7,7,0,0,0,0},
+  .code_hash={0xbb,0x10,0xc5,0xc3,0x08,0xac,0x2a,0x14,0x51,0x98,0xa8,0x48,0xf7,0xa1,0x3a,0xc9,0xc2,0xd5,0x10,0xc0,0x2d,0x20,0x86,0x95,0xc0,0xdc,0x55,0x11,0xad,0xcf,0x1c,0x07},.control_hash={0xc2,0x80,0x23,0xec,0x00,0x7c,0xc6,0x76,0xbf,0x9f,0x5a,0xd0,0x8d,0xb0,0xa6,0x70,0x53,0xe0,0x41,0x09,0x67,0x92,0x22,0xc1,0x6f,0x70,0x3f,0x23,0x5f,0xda,0xf5,0x40},
+  .samplers={{.name="fs_tex0_20",.stage=1,.binding=14,.offset=0,.size_query=1,.texel_fetch_bits=0,.cpu_view=0}},
+  .attributes={{.name="in_attr0",.location=0,.kind=0},{.name="in_attr1",.location=1,.kind=0},{.name="in_attr3",.location=3,.kind=0},{.name="in_attr5",.location=5,.kind=0}}},
 };

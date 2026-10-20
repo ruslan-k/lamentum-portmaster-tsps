@@ -1,0 +1,17 @@
+{
+  "build": "build217",
+  "stopped_on": {
+    "code": "bb10c5c308ac2a145198a848f7a13ac9c2d510c02d208695c0dc5511adcf1c07",
+    "control": "c28023ec007cc676bf9f5ad08db0a67053e04109679222c16f703f235fdaf540"
+  },
+  "entry44_linked": [
+    "NVN_LC2_PROGRAM_STAGES object=0x3e8b85940 id=813 mask=1 sources=44/0 code-control-source=byte-exact link=on-native-pair-draw"
+  ],
+  "entry44_guard_lines": 0,
+  "presented_frames": 566,
+  "stop": [
+    "STOP status=ZERO_SHADER_NOT_PINNED"
+  ],
+  "raw_log_sha256": "4d4fde0867b1f704846478186aa4e1054930a7a8f7d05c58c35cad723959edaa",
+  "phase": "menu/config/controls reached by agent input; stopped at program setup before draw"
+}

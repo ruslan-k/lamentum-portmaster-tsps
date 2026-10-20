@@ -1,0 +1,20 @@
+{
+  "index": 45,
+  "code_sha256": "bb10c5c308ac2a145198a848f7a13ac9c2d510c02d208695c0dc5511adcf1c07",
+  "control_sha256": "c28023ec007cc676bf9f5ad08db0a67053e04109679222c16f703f235fdaf540",
+  "source_sha256_before": "330094f224f266efe3fdf19a06c560b2da36e7ebcbe22161175d13049a87c945",
+  "source_sha256_after": "d380cc399a368319642dd6bc51827a8710e1c3a45c99d6aa60cc0cd6a0019ea8",
+  "samplers": [
+    {
+      "binding": 14,
+      "type": "sampler2D",
+      "name": "fs_tex0_20",
+      "stage": 1,
+      "offset": 0
+    }
+  ],
+  "cbufs": [],
+  "outputs": 4,
+  "half_rounding": "every original f16 product is wrapped in lc2_half",
+  "execution_model": "fragment"
+}

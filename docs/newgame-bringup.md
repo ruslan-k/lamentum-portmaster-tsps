@@ -1,6 +1,14 @@
 # New Game bring-up: attempts and what each one proved
 
-## Current status: build216; load runs past the old frontier, entry 44 unproven
+## Current status: build218; entry 44 linked, entry 45 unproven
+
+`newgame-18` reached the next shader with entry 44 actually linked
+(`sources=44/0 code-control-source=byte-exact`), and stopped on the fragment
+`bb10c5c3…/c28023ec…`, now entry 45 (half-accurate products, 4 MRT outputs). Build218
+(`034c8f96…`) carries it; `newgame-19` runs it with the new capture-gated navigator.
+Details: [build218 and entry 45](build218-entry45.md).
+
+## Historical status: build216; load runs past the old frontier, entry 44 unproven
 
 Build216 (`6b1171257de082b0b7dcbc1150c3f815f6fc62f2d0b95228b45fb605099d894a`) adds entry 44 for
 the vertex `801b91ae…/ada676aa…` with a mandatory 368-byte UBO0 guard. `newgame-15` then ended on
