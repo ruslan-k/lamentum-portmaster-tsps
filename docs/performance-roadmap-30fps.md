@@ -289,99 +289,108 @@ Pair 12/14 may render nine separate UI objects per frame; sharing one shader is 
 
 **PASS:** repeatable whole-frame P95 gains in real gameplay without thermal, sound, input, or Spruce CPU-restoration regressions.
 
-## 13. P3 — другие варианты, которые нельзя делать вслепую
+## 13. P3 — Other Options That Must Not Be Tried Blindly
 
-| Предложение | Приоритет/вердикт | Условие, которое оправдывает тест |
+| Proposal | Priority / current decision | Evidence needed before revisiting |
 |---|---|---|
-| Просто снизить physical SDL/KMS mode до 720 | Уже panel 720; это **не** Unity 1080 target | доказан owner internal scaling |
-| Force Handheld вместо Docked / fake VI resolution | Не делать по аналогии с WoL: SDK/Unity разные | наблюдён call и verified consumer |
-| glFinish bypass, fake command completion | ЗАПРЕЩЕНО для release, ранее был resource reuse stop | serial+fence ownership доказаны |
-| Always enable async | Не default | significant sync waits + stage-level safety |
-| Disable all ZRAM/fileback | Риск memory floor/OOM | продемонстрирован точный resident RAM headroom |
-| T2_MEMORY_FLOOR_MIB=0 или снять GPU 420MiB cap | Нельзя использовать как FPS toggle | новая безопасная accounting model |
-| Global sysctl/swapoff/forced clocks | Не предлагает performance fix | отдельная reproducible hardware cause |
-| Remove bloom/UI/particle draws | Некорректный rendering | explicit reversible visual quality mode |
-| Подменить shader TEST program нулевым цветом | Не годится для gameplay | shader semantically verified or guarded unused |
-| Сгруппировать все draws одинакового shader | Опасно для alpha/depth/UI order | exact dependency and state equivalence |
-| Rewrite runtime to Vulkan / direct DRM zero-copy | Долгосрочный R&D: огромный portability cost | доказан принципиальный GLES bottleneck |
-| Native Unity ARM64 game build | Не доступен без source/engine-specific port | owner has rebuildable game source |
-| Увеличить логирование для поиска FPS | Дополнительный overhead | bounded trace and quiet comparison |
-| Играть через Box64 | Не подходит задачам native ARM64/Horizon, исключено | не рассматривать |
-| Отключать kernel safeguards или patch proprietary image | Не требуется | никогда как незащищённый performance workaround |
+| Simply lower the physical SDL/KMS display mode to 720p | The panel is **already 720p**; changing it does not imply smaller internal Unity targets | Verified internal resolution owner |
+| Force Handheld instead of Docked, or fake a VI resolution | Do not copy the WoL experiment: this game uses a different Unity/SDK contract | An observed API call and verified consumer |
+| Bypass glFinish or fake command completion | **Prohibited for release**; resource-reuse stops already occurred | Proven serial/fence/resource-ownership model |
+| Enable async unconditionally | Keep disabled by default | Significant measured synchronization waits and passing concurrency correctness tests |
+| Disable all ZRAM/file backing | Risks memory-floor stops and OOM | Proven, measured resident memory headroom |
+| Set T2_MEMORY_FLOOR_MIB=0 or remove the 420 MiB GPU cap | Not a legitimate FPS toggle | A validated replacement memory-accounting/safety model |
+| Global sysctl tuning, swapoff, or forced CPU clocks | Not recommended as a performance fix | A separately reproduced and diagnosed hardware/system cause |
+| Remove bloom, UI, or particle draws globally | Incorrect rendering and possibly broken stencil/alpha/depth behavior | An explicit, reversible, quality-reviewed preset |
+| Replace a TEST shader with a constant/blank output | Insufficient for correct gameplay | Semantically verified shader implementation or a guarded, proven-unused path |
+| Merge every draw that uses the same shader | Unsafe for alpha/depth/UI ordering | Exact draw-dependency and state equivalence |
+| Rewrite the runtime around Vulkan or direct DRM zero-copy | Long-term R&D with a very high portability cost | A demonstrated fundamental GLES bottleneck |
+| Rebuild Lamentum as a native ARM64 Unity game | Not practical without rebuildable original game sources | Owner has full game source and a viable engine toolchain |
+| Increase detailed logging to diagnose FPS | Adds substantial measurement overhead | A bounded diagnostic trace and quiet-run comparison |
+| Run the Switch game via Box64 | Not applicable to the native ARM64/Horizon goal | Do not pursue |
+| Disable kernel safety mechanisms or patch proprietary game files indiscriminately | Not required or justified | Never use as an unguarded performance workaround |
 
-## 14. Приоритетный execution plan с проверками и результатами
+## 14. Prioritized Execution Plan, Checks, and Deliverables
 
-| Этап | ID | Чёткое действие | Выходной артефакт | Решение |
+| Priority | ID | Specific action | Required deliverable | Decision |
 |---|---|---|---|---|
-| P0 | F0 | New game -> управляемая сцена, звук, cold save/load | visual+state screenshots, exact binary, logs | нужен до FPS claims |
-| P0 | B0 | Diagnostic vs quiet one-variable A/B | period/replay p50/p95, observer | пересчитать приоритеты |
-| P0 | T0 | Timeline wall vs CPU vs wait, >95% attribution | CPU/gl queue/thread spans | устранить крупную задержку |
-| P1 | M0–M5 | Guest compression cold/budget/fault A/B | safe headroom, fault stalls, frame P95 | оставить лучший или закрыть |
-| P1 | C1–C3 | cbuf TexImage->guarded subimage/reuse | GL op count, CPU, pixel parity | только с cache generation |
-| P1 | R1–R4 | samplers/GL state/VBO/FBO hotspot | replay stage timeline and paired A/B | только по фактической цене |
-| P1 | G1 | owner 1080 target -> scoped 720p | same-scene screenshots and memory/FPS | если proven consumer |
-| P1 | G2 | postprocess/bloom opt-in preset | explicit image quality vs perf | если GPU hotspot |
-| P2 | M6 | residency/BC decode/ASTC side cache | verified object lifetime/cache hash | если significant pressure |
-| P2 | Q1 | fences/async only when eligible | serial ownership proof | default OFF until passed |
-| P2 | C4 | affinity/CPU/compiler opt-ins | clocks/thermal, P95 | no regressions |
-| P0-final | A0 | extended gameplay, save/load, clean package | release acceptance evidence | freeze release flags |
+| P0 | F0 | New Game -> controllable scene; audible sound; cold save/load | Visual/state screenshots, exact executable, logs | Required before FPS claims |
+| P0 | B0 | One-factor diagnostic vs quiet A/B | Frame/replay P50/P95 and external observer data | Reorder work using fresh evidence |
+| P0 | T0 | Explain elapsed wall time vs CPU vs wait; >=95% attribution | CPU/GL queue/thread spans | Fix the dominant delay |
+| P1 | M0–M5 | Guest-page compression cold/budget/fault A/B | Safe headroom, fault stalls, full-frame P95 | Keep best candidate or close the family |
+| P1 | C1–C3 | Replace redundant cbuf TexImage with guarded subimage/reuse | GL call counts, CPU time, pixel parity | Require valid resource generations |
+| P1 | R1–R4 | Sampler, GL state, VBO, and FBO hot spots | Replay-stage timing and paired A/B | Only fix measured costs |
+| P1 | G1 | Identify 1080p owner and test scoped 720p | Identical-scene screenshots, memory/FPS | Only if a real owner/consumer is proven |
+| P1 | G2 | Opt-in postprocessing/bloom preset | Explicit visual quality vs performance report | Only if GPU time is material |
+| P2 | M6 | Resource residency, BC decoding, ASTC side cache | Verified lifetime and cache source hashes | Only if memory pressure is substantial |
+| P2 | Q1 | Fences/async experimentation when eligible | Serial ownership proof | Keep default OFF until accepted |
+| P2 | C4 | CPU affinity/compilation candidates | Clock/thermal data and frame P95 | Reject regressions |
+| Final P0 | A0 | Extended gameplay, save/load, release packaging and cleanup | Full release-acceptance evidence | Freeze accepted release flags |
 
-**Распределение time budget — не общая сумма из medians.** На заключительном профиле для **каждого** кадра вычислить guest CPU, render CPU, waits, GPU completion, present, а затем сравнить p50/p95 distribution. Если чистый B0 даёт резкое ускорение из-за отключения диагностики, следовать актуальному bottleneck, а не историческим приоритетам. Если воспроизводимый gap ~400ms сохранился — T0/M0 выше shader tuning. Если gameplay значительно тяжелее меню, составить его отдельный список проблем.
+**Frame-time budgeting:** the median values in Section 0 **must not be added**. In the final profile, classify guest CPU, rendering CPU, waits, GPU completion, and present time **for each frame**, then compare distributions of frame P50/P95. If removing diagnostics makes B0 dramatically faster, prioritize the bottleneck observed in the new measurements rather than the historical ones. If a reproducible ~400 ms gap remains, T0/M0 outrank shader tuning. If actual gameplay is substantially more expensive than the menu, prepare a separate gameplay-specific ranking.
 
-## 15. Формат evidence для каждого PR: обоснование, воспроизводимость, откат
+## 15. Evidence Format for Every PR: Rationale, Reproducibility, and Rollback
 
-Делать один маленький opt-in feature/PR за раз. PR description содержит exact code lines, скрин текущего симптома, контрфактическую гипотезу («если CBUF повторяется, bypass сэкономит X ms»), **измерение X до изменения**, safety constraints, тесты и критерий исключения гипотезы. Не выставлять feature default=1 до полного acceptance.
+Implement **one small opt-in performance feature per PR**. Each PR description must include precise code locations, a screenshot or log demonstrating the current problem, a falsifiable counterfactual hypothesis (for example, "if cbuf contents are unchanged, bypassing redundant uploads should save X ms"), **a measurement of X before the change**, safety assumptions, regression tests, and a criterion for rejecting the hypothesis. Do not enable a feature by default before passing the complete acceptance gate.
 
-Рекомендуемая структура, без game binary и пользовательских saves:
+Suggested evidence folder structure, excluding game binaries and user saves:
 
 ~~~text
 evidence/perf-<ID>-<unique-tag>/
-  README.md               источник, версия, сцена, намерение A/B
-  identity.json           repo commit, baseline manifest hash,
-                          ELF SHA256, owner image/section SHA256,
-                          shader catalogue SHA256, device/OS identifier
-  env-a.json              флаги, clocks/governor, memory envelope, phase
-  env-b.json              ровно один изменённый фактор
-  frame-a.csv             present serial, monotonic_ns, phase and duration
-  frame-b.csv             те же колонки, provenance и missing samples
+  README.md               Source, version, scene, A/B rationale
+  identity.json           Repository commit, baseline manifest hash,
+                          ELF SHA-256, owner image/section SHA-256,
+                          shader catalogue SHA-256, device/OS identifier
+  env-a.json              Flags, clocks/governor, memory settings, phase
+  env-b.json              Exactly one changed factor
+  frame-a.csv             Present serial, monotonic_ns, phase, duration
+  frame-b.csv             Same fields, provenance, missing samples
   observer-a.csv          CPU/TID, faults, RSS, PSS/SwapPSS,
-                          MemAvailable, CmaFree, temp, swap IO
-  observer-b.csv          те же показатели
-  summary.json            p50/p90/p95/p99, counts and false/missing frames,
-                          differences, outside confidence/noise limits
-  screen-a.png            снято через реальный DRM, при живом game PID
-  screen-b.png            эквивалентная сцена, original screenshot preserved
+                          MemAvailable, CmaFree, temperature, swap I/O
+  observer-b.csv          Equivalent measurements
+  summary.json            P50/P90/P95/P99, counts, false/missing frames,
+                          A/B deltas and uncertainty/noise classification
+  screen-a.png            Actual DRM capture while game PID is alive
+  screen-b.png            Equivalent scene, original screenshot retained
   cleanup.json            Game PID=0, MainUI=1, principal restored,
-                          CPU mask original, no leaked subprocesses
+                          original CPU mask, no leaked processes
 ~~~
 
-**Строгий процесс**: source+image pin -> verify build/test -> backup working binary & saves -> check idle device/disk reserve -> run A -> cleanup proof -> run B -> cleanup proof -> repeat matched pairs -> analyze distributions -> human review screenshots/input/audio/save -> decide default/rollback. Структура Git evidence не должна включать оцифрованные NSO fragments, RomFS, keys, user save data и необработанные original shader blobs.
+**Required experiment workflow:** pin source and image identity -> verify build and tests -> back up current working executable and saves -> verify idle device and disk-space reserve -> run A -> verify cleanup -> run B -> verify cleanup -> repeat matched pairs -> analyze distributions -> manually review screenshots, controls, audio, and saves -> decide on promotion or rollback.
 
-**Цифры:** throughput=number_of_presented_frames / measured_steady_elapsed_seconds, median fps=1000/median_period только как отдельная статистика, **не** воспринимать как panel FPS без подтверждённой кадровой последовательности. Считать P95/P99 spikes и missed vsync; отбрасывать startup и scene transition только **в отдельный отчет**, не скрывать плохие лаги gameplay. Презентация в 60Hz может требовать равномерной выдачи одного игрового кадра за два scanouts; внутри 30 FPS кадр <=33.333ms (с учётом очереди и джиттера). Указать sample frame count, time window, phase, loading fraction and instrumentation overhead.
+Git evidence must **not** include extracted proprietary NSO code, RomFS assets, keys, user-save data, or unprocessed original shader binary blobs.
 
-**Пререквизиты и host tests:** sha256sum -c tools/baseline-manifest.sha256, все доступные tools/test_*.py и C host fixtures из репозитория, UI cbuf replay test, launcher CPU restore test, shader append-only test, GL texture lifetime/invalidation tests. Полный AArch64 cross-build в pinned container и read-back SHA256 установленного ELF; при любых отказах использовать сохранённый предыдущий бинарник. Скрипт tools/device_principal_test.py сейчас не является универсальной лабораторией: он использует owner-specific SSH/device path и MainUI handoff; адаптацию нужно делать в контролируемом owner workspace и не запускать вслепую на чужом устройстве.
+**How to report FPS:** calculate real throughput as number_of_presented_frames / measured_steady_elapsed_seconds. The value 1000/median_period_ms may be reported separately as an **inverse median interval**, but must not be interpreted as confirmed physical-display FPS without a verified presentation sequence. Include P95/P99 spikes and missed v-sync intervals. Startup and scene transitions may be excluded **only from an explicitly separate steady-play report**; they must still be reported rather than silently hidden. In a 60 Hz output mode, stable 30 FPS generally requires consistent delivery of one game frame per two scanouts, accounting for queue behavior and jitter. Always disclose sampled frame count, time window, scene/phase, loading fraction, and profiler overhead.
 
-## 16. Definition of done и stop criteria
+**Prerequisites and host testing:** run sha256sum -c tools/baseline-manifest.sha256, all applicable tools/test_*.py and available C host fixtures, UI cbuf replay tests, launcher CPU-restoration tests, shader append-only tests, and new GL resource-lifetime/invalidation tests. Then perform the full AArch64 cross-build in the pinned container and read back the installed executable's SHA-256. Preserve the previous working binary as a rollback target.
 
-**Не объявлять 30 FPS достигнутыми, пока:**
+tools/device_principal_test.py is **not a general-purpose test laboratory**: it includes owner-specific SSH/device paths and MainUI handoff assumptions. Adapt it only within the owner's controlled workspace and never run it blindly against another device.
 
-1. Версия ELF и owner-generated image действительно достигает воспроизводимой настоящей игровой сцены, её можно контролировать физическим TSPS controller, правильный KMS 1280×720 вывод без пропадающего текста/пунктов меню, stencil, lighting, bloom, alpha и wrong cbuf.
-2. Есть настоящие audible sound/SFX, inventory, диалог/interaction, save -> quit -> cold start -> load и подтверждённое сохранённое состояние, корректное завершение и MainUI/CPU restoration.
-3. Имеется **не менее трёх** независимых warm-scene runs по 60 секунд каждое, в одинаковых состояниях и при измеренных clocks/thermal; отдельно stationary и moving routes, effects/interior и transitions. На gameplay **P50 <=33.33ms и P95 <=33.33ms** full frame; P99 <=50ms целевой дополнительный порог, без регулярных >100ms зависаний. Если строго P95 33.33 не достигается — статус «не достигнуто», даже при средних 30.
-4. Для A/B зафиксированы latency breakdown, diagnostic overhead, real presented throughput и исключены визуально неверные/потерянные кадры. Нет необходимости искусственно ускорять guest clocks или игнорировать shader/resource errors.
-5. MemAvailable/CmaFree, SwapPSS, system major faults, temperatures не демонстрируют опасный тренд; нет OOM, kernel crash, сломанных save files или остаточных процессов. Производственный memory floor/flags отдельно доказаны, а не скопированы из 32MiB diagnostics.
-6. Source parity проверена (baseline identity, adapter patch, GLSL source catalogue, конкретный ELF); собранные evidence доступны, проигравшие варианты имеют честный OFF/rollback.
+## 16. Definition of Done and Stop Criteria
 
-**Stop rules для отдельного performance feature:** FPS различия в пределах run-to-run noise (после 3 A/B), выигрыш replay полностью переехал в GPU wait, потеря ресурса/текста/UI, memory floor/OOM, нарушение CPU restore, неизвестная зависимость guest buffer, неверный shader program identity. Тогда **не** добавлять flag в release, сохранить evidence и закрыть гипотезу.
+**Do not claim that 30 FPS has been achieved until all the following are true:**
 
-## 17. Внешние материалы и порядок следующей работы
+1. The pinned executable and owner-generated image reach a **reproducible, genuine gameplay scene** controllable via the physical TSPS controller. The real 1280×720 KMS output is correct, with no missing UI text or options and no broken stencil, lighting, bloom, alpha, or constant-buffer binding.
+2. Audible music/sound effects, inventory, dialogues/interactions, save -> quit -> cold start -> load, and the restored player/inventory state are verified. The port exits cleanly, returns to MainUI, and restores the original CPU state.
+3. At least **three independent warmed-up gameplay runs of 60 seconds each** are available for the same controlled route, with measured clocks and thermals. Test stationary gameplay and movement separately, plus effects/interior scenes and transitions. For gameplay, full-frame **P50 <=33.33 ms and P95 <=33.33 ms** are required; **P99 <=50 ms** is an additional target, with no recurring stalls >100 ms. If strict P95 <=33.33 ms is not met, report that the 30 FPS acceptance criterion **has not been achieved**, even if the average rate is 30.
+4. The A/B evidence includes a phase-level latency breakdown, diagnostic overhead, true presented-frame throughput, and verification that frames were neither lost nor rendered incorrectly. Do not artificially accelerate guest clocks or ignore shader/resource errors to pass the benchmark.
+5. MemAvailable/CmaFree, SwapPSS, major faults, and temperature remain safe under sustained gameplay, without an OOM, kernel crash, corrupted saves, or orphaned processes. The production memory floor/flags must be qualified independently rather than copied from the diagnostic 32 MiB environment.
+6. Full source parity is established: recovered baseline identity, adapter patch, GLSL source catalogue, and installed executable. Evidence and rollback instructions must be available, and rejected experiments must remain explicitly disabled.
 
-- [West of Loathing optimisation-roadmap](https://github.com/ruslan-k/west-of-loathing-portmaster-tsps/blob/main/docs/optimization-roadmap.md) и [2026-10-16 measured frame breakdown](https://github.com/ruslan-k/west-of-loathing-portmaster-tsps/blob/main/evidence/roadmap-roundup-20261016/README.md): проверенная методика измерений, feature flags и доказательства, что owner-level Unity 720p может помочь; *не* готовый port-specific patch Lamentum.
-- [Arm Mali: framebuffer handling](https://developer.arm.com/community/arm-community-blogs/b/mobile-graphics-and-gaming-blog/posts/mali-performance-2-how-to-correctly-handle-framebuffers): использовать load/store/invalidate лишь с просчитанной dependency и tile-based lifetime.
-- [Mali tile-based rendering guide](https://documentation-service.arm.com/static/636dfb934e6cf12278ad8c27): внешняя документация, не устройство-специфический benchmark.
-- Existing [UI cbuf binding](ui-cbuf-binding.md), [cbuf isolation](cbuf-unit-isolation.md), [shader literal bank](shader-literal-bank.md), [probe-disabled fragment](probe-disabled-fragment.md), [shader tail](catalogue-tail.md) и [loading 170–174](loading-memory-170-174.md) содержат применимые exact provenance и previous failure boundaries.
+**Stop rules for an individual performance feature:** an FPS difference within run-to-run noise after three A/B comparisons; a replay gain completely shifted into GPU wait; any lost texture, UI element, or shader resource; memory floor/OOM; failed CPU restoration; unknown guest-buffer dependencies; or incorrect shader-program identity. In those cases, **do not enable the flag in release**, preserve the evidence, and close the hypothesis or return to prerequisite investigation.
 
-**Рекомендованный следующий эксперимент — не ещё один shader tweak:**
-(1) подтвердить New game и игровую корректность F0; (2) получить clean performance B0, иначе цифры build202 нельзя интерпретировать; (3) измерить wall+CPU timeline T0, установить природу ~400ms; (4) если compression действительно платная — M0–M4, иначе сразу CBUF/replay c конкретным ms профилем; (5) после этого owner-specific 720p (если 1080 target окажется критичным). GPU bloom, ASTC, async и compiler — при фактическом профиле и с жесткими gates.
+## 17. External References and Recommended Next Steps
 
-**Примечание о выполнении:** весь этот roadmap создан по source/evidence аудиту GitHub; новых handheld запусков, 30 FPS замеров, patch игрового ELF, hardware deploy или тестов на устройстве в ходе аудита **не выполнялось**. Данные build202 подтверждают проблему, а шаги выше пока являются инженерными гипотезами и планом их проверки.
+- [West of Loathing optimization roadmap](https://github.com/ruslan-k/west-of-loathing-portmaster-tsps/blob/main/docs/optimization-roadmap.md) and the [measured frame-time breakdown of 2026-10-16](https://github.com/ruslan-k/west-of-loathing-portmaster-tsps/blob/main/evidence/roadmap-roundup-20261016/README.md): a verified methodology for measurement, feature flags, and identifying an owner-level Unity 720p setting; **not** a ready-made Lamentum-specific patch.
+- [Arm Mali: framebuffer handling](https://developer.arm.com/community/arm-community-blogs/b/mobile-graphics-and-gaming-blog/posts/mali-performance-2-how-to-correctly-handle-framebuffers): attachment load/store/invalidate operations require correct tile-rendering dependencies and resource lifetimes.
+- [Mali tile-based rendering guide](https://documentation-service.arm.com/static/636dfb934e6cf12278ad8c27): external reference material, **not** a benchmark for this particular handheld.
+- Existing [UI cbuf binding](ui-cbuf-binding.md), [constant-buffer isolation](cbuf-unit-isolation.md), [shader literal banks](shader-literal-bank.md), [disabled-fragment probe](probe-disabled-fragment.md), [shader catalogue tail](catalogue-tail.md), and [loading-memory builds 170–174](loading-memory-170-174.md) document exact provenance and previously established failure boundaries.
+
+**Recommended next experiment is not another speculative shader tweak:**
+
+1. Verify New Game and real gameplay correctness (**F0**).
+2. Collect a clean performance baseline (**B0**) before interpreting build202's diagnostic frame-time numbers.
+3. Instrument an elapsed-wall-time and per-thread-CPU timeline (**T0**) to explain the approximately 400 ms of unattributed time.
+4. If guest compression is actually expensive, run controlled **M0–M4** experiments; otherwise, measure and optimize the concrete **constant-buffer/replay** hot path.
+5. Then investigate the **Lamentum-specific 720p owner** if the internal 1080p target proves significant. Consider bloom, ASTC, asynchronous GPU submission, and compiler tuning only if profiling identifies a relevant cost and the appropriate safety gates are met.
+
+**Execution note:** this roadmap comes from a GitHub source and evidence audit. **No new handheld runs, verified 30 FPS benchmarks, proprietary game-executable patches, hardware deployments, or on-device tests were performed during the audit.** Build202 measurements establish the existence of a performance problem; the techniques above are engineering hypotheses and a plan for testing them, not completed fixes.
