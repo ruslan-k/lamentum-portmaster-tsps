@@ -8,8 +8,9 @@
   },
   "samples": 32,
   "last_frame": 440,
-  "status": "ended without a STOP line",
+  "status": "clean fail-closed stop: STOP status=T2_TEXTURE_BUDGET (detail=0x19b)",
   "log_killed": false,
   "cleanup_errors": [],
-  "note": "collector counters matched the log exactly (presents == frame at every sample), rotation-safe"
+  "note": "the sample loop stops when the harness process exits, so the STOP itself is recorded in cleanup.json and the log, not in the last sample; counters matched the log exactly at every sample (presents == frame)",
+  "stop_line": "STOP status=T2_TEXTURE_BUDGET pc=main.text.seg+0x52d294 detail=0x19b query_memory_calls=0x171 tls_trap_reads=0x0"
 }
