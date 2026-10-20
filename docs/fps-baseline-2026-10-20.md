@@ -1,5 +1,7 @@
 # FPS baseline and first measurements (2026-10-20)
 
+> **2026-10-20 follow-up audit:** The authoritative next-action and safety corrections are in [performance-roadmap-30fps.md §18](performance-roadmap-30fps.md#18-post-roadmap-reassessment-2026-10-20). The new perf-* evidence directories currently publish distributions but not the raw logs/effective environments/ELF hashes needed to independently reconstruct the frame-250–500 comparisons. In particular, the cbuf comparison table labels build202 vs build208 even though the prose says "same binary"; treat the reported result as **no demonstrated win**, not as a strictly isolated same-ELF A/B until the identities are reconciled. T2_GZRAM fields named cpu-compress-ms and cpu-restore-ms are measured with CLOCK_MONOTONIC (elapsed time in selected code paths), not CLOCK_THREAD_CPUTIME_ID; the "ms/frame" figures are not established true executing-thread CPU time. The glFlush arm is diagnostic until GPU command completion and resource reuse are independently proven. No gameplay or 30 FPS result has been established.
+
 Numbers here come from the runtime's own `T2P_SLOW_FRAME` records, parsed by
 `tools/analyze_perf.py` (the parser the 30 FPS roadmap §3 asks for). Frames 250–500
 are used for like-for-like comparison because every run in this set reaches them;
