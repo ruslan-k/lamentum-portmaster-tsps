@@ -26,12 +26,12 @@ class PayloadExecutionTests(unittest.TestCase):
     def test_payload_executes_against_a_synthetic_log(self):
         """Run the real payload locally with a rewritten log path: this is T0's missing test."""
         source = load_metrics.PAYLOAD.replace(
-            "Path('/mnt/SDCARD/Roms/PORTS/lamentum-switch/logs/latest.log')", "Path(sys.argv[2])")
+            "Path('/mnt/SDCARD/Roms/PORTS/lamentum-switch/logs/latest.log')", "Path(sys.argv[3])")
         source = source.replace("Path('/proc/meminfo').read_text().splitlines()", "[]")
         with tempfile.TemporaryDirectory() as td:
             log = Path(td) / 'latest.log'
             log.write_text(SYNTH)
-            run = subprocess.run([sys.executable, '-c', source, '0', str(log)],
+            run = subprocess.run([sys.executable, '-c', source, '0', 'null', str(log)],
                                  capture_output=True, text=True, timeout=60)
             self.assertEqual(run.returncode, 0, run.stderr)
             out = json.loads(run.stdout)
@@ -46,16 +46,107 @@ class PayloadExecutionTests(unittest.TestCase):
 
     def test_payload_reports_rotation_instead_of_double_counting(self):
         source = load_metrics.PAYLOAD.replace(
-            "Path('/mnt/SDCARD/Roms/PORTS/lamentum-switch/logs/latest.log')", "Path(sys.argv[2])")
+            "Path('/mnt/SDCARD/Roms/PORTS/lamentum-switch/logs/latest.log')", "Path(sys.argv[3])")
         source = source.replace("Path('/proc/meminfo').read_text().splitlines()", "[]")
         with tempfile.TemporaryDirectory() as td:
             log = Path(td) / 'latest.log'
             log.write_text('short\n')
-            run = subprocess.run([sys.executable, '-c', source, '999999', str(log)],
+            run = subprocess.run([sys.executable, '-c', source, '999999', 'null', str(log)],
                                  capture_output=True, text=True, timeout=60)
             out = json.loads(run.stdout)
         self.assertTrue(out['rotated'])
         self.assertEqual(out['offset'], len('short\n'))
+
+
+class ByteFramingTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.log = Path(self.tmp.name) / 'latest.log'
+
+    def poll(self, previous=None):
+        # Exercise the exact request builder used by load_probe, including argument transport.
+        source = load_metrics.collector_request(previous).replace(
+            "Path('/mnt/SDCARD/Roms/PORTS/lamentum-switch/logs/latest.log')",
+            'Path(%r)' % str(self.log))
+        source = source.replace("Path('/proc/meminfo').read_text().splitlines()", "[]")
+        run = subprocess.run([sys.executable, '-c', source], capture_output=True,
+                             text=True, timeout=10)
+        self.assertEqual(run.returncode, 0, run.stderr)
+        return json.loads(run.stdout)
+
+    def test_partial_present_not_counted_twice(self):
+        prefix = b'ROMFS_READ a\n'
+        self.log.write_bytes(prefix + b'NVN_PRESENT_PIXELS frame=80')
+        first = self.poll()
+        self.assertEqual(first['offset'], len(prefix))
+        self.assertEqual(first['counters']['presents'], 0)
+        self.assertIsNone(first['frame'])
+        state = load_metrics.fold(None, first)
+        with self.log.open('ab') as handle:
+            handle.write(b'6 status=PIXELS\n')
+        state = load_metrics.fold(state, self.poll(state))
+        self.assertEqual(state['presents'], 1)
+        self.assertEqual(state['frame'], 806)
+        state = load_metrics.fold(state, self.poll(state))
+        self.assertEqual(state['presents'], 1)
+        self.assertEqual(state['romfs'], 1)
+
+    def test_no_newline_means_no_consumption_or_stop(self):
+        self.log.write_bytes(b'STOP status=T2_TEXTURE_BUDGET')
+        first = self.poll()
+        self.assertEqual(first['offset'], 0)
+        self.assertEqual(first['stops'], [])
+        with self.log.open('ab') as handle:
+            handle.write(b'\n')
+        second = self.poll(first)
+        self.assertEqual(second['stops'], ['T2_TEXTURE_BUDGET'])
+        self.assertEqual(second['offset'], self.log.stat().st_size)
+
+    def test_invalid_and_split_utf8_preserve_byte_cursor(self):
+        self.log.write_bytes(b'\xff ROMFS_READ a\n\xe2\x82')
+        first = self.poll()
+        self.assertEqual(first['offset'], len(b'\xff ROMFS_READ a\n'))
+        self.assertEqual(first['counters']['romfs'], 1)
+        with self.log.open('ab') as handle:
+            handle.write(b'\xac NVN_PRESENT_PIXELS frame=9 x\n')
+        second = self.poll(first)
+        self.assertEqual(second['frame'], 9)
+        self.assertEqual(second['offset'], self.log.stat().st_size)
+        self.assertEqual(second['counters']['romfs'], 0)
+
+    def test_new_inode_at_equal_or_greater_length_resets(self):
+        for extra in (b'', b'extra padding\n'):
+            with self.subTest(extra=extra):
+                self.log.write_bytes(b'NVN_PRESENT_PIXELS frame=99 x\n')
+                state = load_metrics.fold(None, self.poll())
+                # Keep old inode alive to prevent allocator reuse.
+                old = self.log.with_suffix('.old')
+                self.log.replace(old)
+                self.log.write_bytes(b'NVN_PRESENT_PIXELS frame=03 x\n' + extra)
+                second = self.poll(state)
+                self.assertTrue(second['rotated'])
+                self.assertNotEqual(second['identity'], state['identity'])
+                state = load_metrics.fold(state, second)
+                self.assertEqual(state['presents'], 1)
+                self.assertEqual(state['frame'], 3)
+                old.unlink()
+
+    def test_truncation_then_append_uses_new_cursor(self):
+        self.log.write_text(SYNTH)
+        state = load_metrics.fold(None, self.poll())
+        self.log.write_bytes(b'ROMFS_READ fresh\n')
+        second = self.poll(state)
+        self.assertTrue(second['rotated'])
+        state = load_metrics.fold(state, second)
+        self.assertEqual(state['presents'], 0)
+        self.assertIsNone(state['frame'])
+        self.assertEqual(state['stops'], [])
+        with self.log.open('ab') as handle:
+            handle.write(b'NVN_PRESENT_PIXELS frame=2 x\n')
+        state = load_metrics.fold(state, self.poll(state))
+        self.assertEqual(state['presents'], 1)
+        self.assertEqual(state['frame'], 2)
 
 
 class FoldTests(unittest.TestCase):

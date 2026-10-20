@@ -1,0 +1,60 @@
+{
+  "load-probe-08": {
+    "pass": true,
+    "source_sha256": "dcfc4ab9ed25a4fceea2b3a5cf26f0e9296ae1f7beaefe2eec6717e51c9b9e73",
+    "bytes": 6065651,
+    "complete_bytes": 6065651,
+    "polls": 49,
+    "counters": {
+      "presents": 461,
+      "romfs": 1099,
+      "textures": 588,
+      "bc_deferred": 448,
+      "bc_fileback": 189,
+      "budget_adds": 14
+    },
+    "frame": 461,
+    "stops": [
+      "T2_TEXTURE_BUDGET"
+    ],
+    "scope": "host replay of captured log; not a new device run or FPS result"
+  },
+  "load-probe-09": {
+    "pass": true,
+    "source_sha256": "fd151f24b7a62fc173dbac1f1be33202b6829b6764ee0b25dab329f47d78f2ce",
+    "bytes": 5831985,
+    "complete_bytes": 5831985,
+    "polls": 49,
+    "counters": {
+      "presents": 440,
+      "romfs": 1111,
+      "textures": 588,
+      "bc_deferred": 448,
+      "bc_fileback": 189,
+      "budget_adds": 14
+    },
+    "frame": 440,
+    "stops": [
+      "T2_TEXTURE_BUDGET"
+    ],
+    "scope": "host replay of captured log; not a new device run or FPS result"
+  },
+  "load-probe-10": {
+    "pass": true,
+    "source_sha256": "42790260b3b31cb4311eae1a4e9145120b1e58c4877c9d41b4b665b116c7d211",
+    "bytes": 8330344,
+    "complete_bytes": 8330344,
+    "polls": 46,
+    "counters": {
+      "presents": 501,
+      "romfs": 1124,
+      "textures": 586,
+      "bc_deferred": 448,
+      "bc_fileback": 189,
+      "budget_adds": 12
+    },
+    "frame": 501,
+    "stops": [],
+    "scope": "host replay of captured log; not a new device run or FPS result"
+  }
+}

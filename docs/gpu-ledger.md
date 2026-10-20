@@ -1,4 +1,4 @@
-# G0 at first light: textures are NOT the consumer — the guest heap is
+# G0 initial ledger: charged textures plateau; remaining memory owners unresolved
 
 Roadmap §25.4 G0 ("top memory growth classes and charged-vs-unaccounted gap measured before unsafe
 pressure"). Build219 adds one read-only line to the existing memory sampler; no admission change,
@@ -34,30 +34,27 @@ Raw series: `evidence/load-probe-10/memwatch-series.json`.
 
 ## What this corrects
 
-The charged texture budget **saturates at 126 MiB against a 300 MiB cap** and then stops growing,
-while `MemAvailable` collapses from 440 to ~70 MiB and the process's swap-in-use climbs to ~870 MiB.
-So in this phase:
+The charged texture budget plateaus at 126 MiB against a 300 MiB cap in this sampled interval,
+while `MemAvailable` falls from 440 to around 70 MiB and process `VmSwap` rises to around 870 MiB.
+This is evidence of pressure alongside stable **accounted** texture storage, not proof of a specific
+unaccounted owner. RSS includes more than the guest heap; `VmSwap` is not physical resident RAM.
+Neither value identifies Unity heap, host allocations, driver pages or alias overlap by itself.
 
-- the consumer is the **guest process's own memory** (RSS + swap ≈ 1.5 GiB on a 963 MiB board with
-  2 GiB of swap), not textures;
-- the earlier "GPU wall" reading (Mali OOM notifier reporting 725 992 kB) was Mali's accounting over
-  **shared system memory**, so it must be read next to RSS/swap, not as separate VRAM. The roadmap
-  warned about exactly this: ZRAM savings, SD backing and "GPU bytes" are not independent pools;
-- the one heavy texture event (an 8192×8192 BC decode charged at 256 MiB) is a **spike**, not the
-  steady-state cause: it appears in some arms and not others, and the 126 MiB plateau here shows the
-  load does not need it resident to reach this phase.
-
-The earlier request to change texture decode policy is therefore **withdrawn as a priority**: it
-addresses a spike that is not what exhausts the device in the measured phase.
+The earlier version of this report incorrectly concluded that textures were not the consumer and
+that Mali's OOM figure was merely overlapping process memory. Those claims are withdrawn. Shared
+physical RAM does not establish whether the particular accounting categories overlap; obtain
+mapping/driver ownership evidence before adding or subtracting them. The 8192-square first-use
+reservation remains a separate proven hazard (§26.3), even when not reached in this interval.
+No priority change or texture-policy change is justified by this series alone.
 
 ## What follows
 
-- The dominant class to investigate is the guest heap (CPU side) — matching §25.3's CPU attribution
-  (96.75 % of bounded samples in the adapter's SVC path) and the 0.836 s/present main-thread cost.
-- G0 is not finished: this ledger covers the texture class only. Depth/renderbuffer/framebuffer
-  classes and EGL surfaces still have no counter, and until they do the charged-vs-unaccounted gap
-  stays partially unknown. The next ledger increment must add those classes at allocation and
-  release, with generation and fence lifetime, before any residency lever is chosen.
-- The first acceptance gate from the roadmap still holds: a **controlled clean fail-closed stop
-  before kernel OOM**. Build219 with `T2_TEXTURE_BUDGET_MIB=300` produced exactly that in arms 04,
-  07, 08 and 09; this arm is the first one to show *why* the budget alone cannot prevent exhaustion.
+- Follow the latest roadmap §26: finish collector identity/framing, audit the exact large-resource
+  descriptor, then classify other GL/driver/guest owners. Do not pick a heap or residency fix yet.
+- G0 is not finished: depth/renderbuffer storage, buffers and EGL surfaces remain unclassified;
+  FBO object counts must not be confused with attachment storage. Track allocation generations,
+  aliases and completion lifetime before deriving a charged-vs-unaccounted gap.
+- Arms 04/07/08/09 used build218, **not build219**. They demonstrated controlled budget stops.
+  Arm 10 used build219 and was explicitly terminated by the operator with TERM to its game PID;
+  it did **not** demonstrate that its 300 MiB texture guard stopped the load. MainUI restoration
+  was checked separately. Presentation counts and these memory samples are not gameplay evidence.

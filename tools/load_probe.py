@@ -20,7 +20,7 @@ from pathlib import Path
 from PIL import Image
 
 from lamentum_pad_contract import capture, press, remote, snapshot
-from load_metrics import PAYLOAD as METRICS_RUNNER, fold
+from load_metrics import collector_request, fold
 from newgame_navigate import changed, cursor_row, grid
 
 NEWGAME_ROW_Y = (475, 503)
@@ -143,8 +143,7 @@ def main():
         while harness.poll() is None:
             try:
                 # Incremental: the device sends only the bytes appended since the last poll.
-                offset = running.get('offset', 0)
-                sample = remote("import sys\nsys.argv=['probe','%d']\n" % offset + METRICS_RUNNER)
+                sample = remote(collector_request(running))
                 running = fold(running, sample)
                 rows.append(dict(running, t=round(time.time(), 1)))
             except Exception as exc:                     # device busy or SSH hiccup: keep the series

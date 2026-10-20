@@ -1,0 +1,13 @@
+{
+  "case": "complete ROMFS line + unterminated NVN_PRESENT_PIXELS frame=80",
+  "before": {
+    "offset": 13,
+    "presents": 1,
+    "frame": 80
+  },
+  "after": {
+    "offset": 13,
+    "presents": 0,
+    "frame": null
+  }
+}

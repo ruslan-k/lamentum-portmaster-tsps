@@ -10,19 +10,28 @@ import json
 import re
 
 PAYLOAD = r'''
-import json, re, sys
+import json, os, re, sys
 from pathlib import Path
 offset = int(sys.argv[1]) if len(sys.argv) > 1 else 0
+if offset < 0:
+    raise ValueError('negative log offset')
+expected_identity = json.loads(sys.argv[2]) if len(sys.argv) > 2 else None
 path = Path('/mnt/SDCARD/Roms/PORTS/lamentum-switch/logs/latest.log')
-size = path.stat().st_size if path.exists() else 0
-if offset > size:          # log was truncated or rotated: start over, and say so
-    offset = 0
-    rotated = True
-else:
-    rotated = False
+# fstat the opened file, not the pathname: rename during a poll must not mix identities.
 with path.open('rb') as handle:
+    stat = os.fstat(handle.fileno())
+    identity = [stat.st_dev, stat.st_ino]
+    size = stat.st_size
+    rotated = offset > size or (expected_identity is not None and expected_identity != identity)
+    if rotated:
+        offset = 0
     handle.seek(offset)
-    chunk = handle.read().decode('utf-8', 'replace')
+    raw = handle.read(max(0, size - offset))
+# Consume complete records in BYTES. Replacement decoding changes encoded lengths and a
+# partial event must not be counted until its newline arrives on a subsequent poll.
+complete_bytes = raw.rfind(b'\n') + 1
+chunk = raw[:complete_bytes].decode('utf-8', 'replace')
+consumed = offset + complete_bytes
 mem = {}
 for line in Path('/proc/meminfo').read_text().splitlines():
     key = line.split(':')[0]
@@ -40,9 +49,7 @@ frames = re.findall(r'NVN_PRESENT_PIXELS frame=(\d+)', chunk)
 stops = re.findall(r'STOP status=(\S+)', chunk)
 budget = re.findall(r'T2_TEXTURE_BUDGET add-bytes=\d+ live-MiB=\d+ count=\d+ budget-MiB=\d+', chunk)
 killed = 'Killed' in chunk
-cut = chunk.rfind('\n')
-consumed = offset + (len(chunk.encode('utf-8', 'replace')) if cut < 0 else len(chunk[:cut + 1].encode('utf-8', 'replace')))
-print(json.dumps({'offset': consumed, 'size': size, 'rotated': rotated, 'mem': mem,
+print(json.dumps({'offset': consumed, 'size': size, 'identity': identity, 'rotated': rotated, 'mem': mem,
                   'counters': counters, 'frame': int(frames[-1]) if frames else None,
                   'stops': stops[-3:], 'budget_last': budget[-1] if budget else None,
                   'killed': killed}))
@@ -53,7 +60,10 @@ CUMULATIVE = ('presents', 'romfs', 'textures', 'bc_deferred', 'bc_fileback', 'bu
 
 def fold(previous, sample):
     """Add a new chunk's counters to the previous running totals (rotation resets them)."""
-    base = {} if sample['rotated'] else dict(previous or {})
+    identity_changed = (previous and previous.get('identity') is not None
+                        and sample.get('identity') is not None
+                        and previous['identity'] != sample['identity'])
+    base = {} if sample['rotated'] or identity_changed else dict(previous or {})
     for key in CUMULATIVE:
         base[key] = base.get(key, 0) + sample['counters'].get(key, 0)
     base['frame'] = sample['frame'] if sample['frame'] is not None else base.get('frame')
@@ -64,7 +74,15 @@ def fold(previous, sample):
     base['mem'] = sample['mem']
     base['offset'] = sample['offset']
     base['size'] = sample['size']
+    base['identity'] = sample.get('identity')
     return base
+
+
+def collector_request(previous):
+    """Pass the byte cursor and opened-file identity together to the real remote payload."""
+    previous = previous or {}
+    args = ['probe', str(previous.get('offset', 0)), json.dumps(previous.get('identity'))]
+    return 'import sys\nsys.argv=%r\n' % args + PAYLOAD
 
 
 def parse_chunk(chunk):

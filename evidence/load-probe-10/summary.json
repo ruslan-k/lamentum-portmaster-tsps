@@ -1,9 +1,10 @@
 {
   "build": "build219",
   "installed_sha256": "b8407822b205b0012401ed327a82f9ae94e31344a0bfc1d77ccdc1f7b798df4a",
-  "arm": "G0 read-only ledger: texture budget next to system memory, every ~10 s",
-  "finding": "texture-live saturates at 126 MiB of a 300 MiB cap while MemAvailable falls 440->70 MiB and swap-in-use climbs to ~870 MiB; the guest heap, not textures, is the consumer in this phase",
+  "arm": "G0 read-only ledger: texture budget next to system memory",
+  "finding": "In the published sample interval texture-live plateaus at 126 MiB of a 300 MiB cap, MemAvailable falls from 440 to around 70 MiB and VmSwap rises to around 870 MiB. Unaccounted owners remain unresolved.",
   "series_file": "memwatch-series.json",
-  "correction": "the earlier \"GPU wall\" label described Mali accounting over shared RAM; texture decode policy is withdrawn as the priority lever",
+  "correction": "RSS and VmSwap do not identify guest heap ownership or prove overlap with Mali accounting. The previous guest-heap diagnosis and texture-priority withdrawal were unsupported and are withdrawn.",
+  "termination": "operator TERM to exact game PID 19890; not a demonstrated runtime texture-budget stop",
   "stage": "loading phase, not gameplay"
 }
