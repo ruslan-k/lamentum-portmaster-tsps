@@ -1,6 +1,15 @@
 # New Game bring-up: attempts and what each one proved
 
-## Current status: build215, still a shader-tail frontier
+## Current status: build216; load runs past the old frontier, entry 44 unproven
+
+Build216 (`6b1171257de082b0b7dcbc1150c3f815f6fc62f2d0b95228b45fb605099d894a`) adds entry 44 for
+the vertex `801b91ae…/ada676aa…` with a mandatory 368-byte UBO0 guard. `newgame-15` then ended on
+`TIME_LIMIT` with **no** unknown-shader request, 1469 presented frames, a full-RomFS asset pass and
+clean cleanup - so entry 44 exists but has not been drawn yet, and the previous shader stop is no
+longer the frontier at this point in the load. Details, hashes and the corrected ROMFS reading:
+[build216 and entry 44](build216-entry44.md).
+
+## Historical status: build215, a shader-tail frontier
 
 Build215 is installed and independently hash-verified:
 19329da2cc00adebe9dcd9668344f0ea5865f13da93f6086c11e2d9662cfc828.

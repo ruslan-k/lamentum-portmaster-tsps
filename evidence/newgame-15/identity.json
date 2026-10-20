@@ -1,0 +1,12 @@
+{
+  "run_id": "98dbd22b-7cbc-4300-a755-2a26fc714b6f",
+  "source_parent": "48955fd1a4d3ceeb355c572564a17f2669616e62",
+  "phase": "New Game shader-tail; not performance acceptance",
+  "installed_sha256": "6b1171257de082b0b7dcbc1150c3f815f6fc62f2d0b95228b45fb605099d894a",
+  "prior_sha256": "19329da2cc00adebe9dcd9668344f0ea5865f13da93f6086c11e2d9662cfc828",
+  "adapter_sha256": "360815723aaa9c67cc1f5c0fcdb046ea7889336c2d8683588bc188be242d818e",
+  "catalogue_sha256": "e26bb66d55e8bb093f16e0b4756b0fd9e8b78a217d4b099d3c1d5c6e53f1239f",
+  "baseline_manifest_sha256": "f8d9ebbb0051faa2a141248031061e20934121ed07953e512b06393cd133300b",
+  "baseline_verified_files": 435,
+  "container_image": "sha256:e437308c01ce7af4a035c3f0652bc886e258889f66803f805bce53d05af75f0c"
+}

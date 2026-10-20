@@ -1,0 +1,36 @@
+{
+  "build": "build216",
+  "installed_sha256": "6b1171257de082b0b7dcbc1150c3f815f6fc62f2d0b95228b45fb605099d894a",
+  "stop": [
+    "TIME_LIMIT"
+  ],
+  "cleanup_errors": [],
+  "phase": "level load in progress; NOT gameplay",
+  "last_present_frame": 1469,
+  "presented_frames": 1469,
+  "unknown_shader_requests": [],
+  "entry44_guard_lines": 0,
+  "romfs_container_bytes": 1832059520,
+  "romfs_read_high_water_bytes": 1832059520,
+  "romfs_read_high_water_fraction": 1.0,
+  "romfs_read_calls": 1111,
+  "catalogue_program_ids_bound": [
+    0,
+    2,
+    5,
+    7,
+    8,
+    10,
+    11,
+    12,
+    16,
+    17,
+    18,
+    24,
+    25,
+    36
+  ],
+  "programs_bound": 14,
+  "raw_log_sha256": "a5bdb1786b19252f6cdba16d580bcc9ac85bf582757336560c3d55f6ebdd65d4",
+  "raw_log_bytes": 19343594
+}
