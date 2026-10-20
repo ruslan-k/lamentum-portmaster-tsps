@@ -78,28 +78,36 @@ def wait_menu_visible(out, timeout_s=300, name='menu'):
     raise RuntimeError('no cursor band appeared within %d s' % timeout_s)
 
 
-def walk_to(out, name, action, tries=4):
-    """Press until the cursor row reaches NEW GAME, verified by the measured band."""
-    for i in range(tries):
-        row = cursor_row(out / ('%s.png' % name)) if (out / ('%s.png' % name)).exists() else None
+def walk_to(out, name, action='down', tries=10, hold_ms=1000):
+    """Press until the cursor reaches the New game row, verified by the measured band.
+
+    A press can be swallowed at 1-2 guest frames/s: measured, four 700 ms presses left the
+    cursor on "Load game". The loop therefore counts ATTEMPTS, not assumed row steps, keeps a
+    hold longer than one measured guest frame interval, and re-reads the cursor after each one.
+    """
+    png = out / ('%s.png' % name)
+    for attempt in range(tries):
+        row = cursor_row(png) if png.exists() else None
         if row and NEWGAME_ROW_Y[0] <= row[0] <= NEWGAME_ROW_Y[1]:
             return row
-        press(action, 700)
+        direction = pick_action(row) or action
+        if direction == 'here':
+            return row
+        press(direction, hold_ms)
         time.sleep(5)
-        capture(out / ('%s.png' % name))
-    row = cursor_row(out / ('%s.png' % name))
+        capture(png)
+        (out / ('%s-%d.json' % (name, attempt))).write_text(
+            json.dumps({'attempt': attempt, 'action': direction, 'row': cursor_row(png)}, indent=2) + '\n')
+    row = cursor_row(png) if png.exists() else None
     if not (row and NEWGAME_ROW_Y[0] <= row[0] <= NEWGAME_ROW_Y[1]):
-        raise RuntimeError('could not select New game; measured row %r' % (row,))
+        raise RuntimeError('could not select New game after %d presses; measured row %r' % (tries, row))
     return row
 
 
 def navigate(out):
     wait_menu(600)
     row = wait_menu_visible(out)
-    action = pick_action(row)
-    if action in (None, 'here'):
-        action = 'down'
-    walk_to(out, 'selected', action)
+    walk_to(out, 'selected')
     press('confirm', 1500)
     time.sleep(8)
     capture(out / 'page.png')
