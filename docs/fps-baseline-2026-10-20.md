@@ -69,3 +69,25 @@ also proves the old "glFinish dominates the frame" reading is no longer true on 
 Neither arm is a fix. The remaining gap to 33.33 ms is ~17x, and after these changes the
 frame is still split roughly replay 185 ms / unattributed 338 ms. The next measurement must
 attribute the 338 ms per thread (guest main loop vs our worker), not another GL tweak.
+
+## Full attribution of one frame (build209, `gap-ms`)
+
+`nvn_profile` now also reports the interval between the end of one present and the
+start of the next submit — time that runs inside the guest thread and that
+replay/present/readback structurally cannot see.
+
+```
+NVN_PROFILE frame=601 count=60 elapsed-ms=572.700 replay-ms=249.626
+            present-ms=4.725 readback-ms=2.689 gap-ms=316.431
+```
+
+249.6 + 316.4 + 4.7 + 2.7 = 573.4 ms against 572.7 ms elapsed, so the frame is now
+accounted for: replay 44%, guest gap 55%, present/readback 1%.
+
+Per-thread sampling during the same phase shows one thread at ~78% of a core and a
+second at ~19%, i.e. the gap is real guest CPU, not a sleep we could shorten.
+
+Consequence for the 30 FPS goal: reaching 33.33 ms requires replay 250 -> ~15 ms and
+guest gap 316 -> ~15 ms. The adapter can attack the first; the second is the game's own
+per-frame work on this SoC, so the only levers there are guest-side (resolution, effects,
+quality) or reducing what the guest is asked to redo each frame.

@@ -108,7 +108,7 @@ def main():
                 old = prv['sample']['threads'].get(tid)
                 if old:
                     per.append({'tid': tid, 'name': v['name'],
-                                'cpu_ms_per_s': round(1000.0 * (v['cpu'] - old['cpu']) / dt, 1),
+                                'cpu_ms_per_s': round(1000.0 * (v['cpu'] - old['cpu']) / (dt * os.sysconf('SC_CLK_TCK')), 1),
                                 'state': v['state']})
             per.sort(key=lambda r: -r['cpu_ms_per_s'])
             rec['top_threads'] = per[:6]
