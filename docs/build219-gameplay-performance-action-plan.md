@@ -2,6 +2,8 @@
 
 **Audit:** 2026-10-20. **Repository HEAD inspected:** [19dc04644d6381dd9c4921500116c21333914295](https://github.com/ruslan-k/lamentum-portmaster-tsps/commit/19dc04644d6381dd9c4921500116c21333914295). **Installed build219 ELF SHA-256:** `b8407822b205b0012401ed327a82f9ae94e31344a0bfc1d77ccdc1f7b798df4a`, according to committed [load-probe-10](../evidence/load-probe-10/summary.json). This is a source/evidence audit, **not a new device run, compiled ELF, or claim of playability or 30 FPS**.
 
+> **CURRENT PRIORITIES MOVED TO [MAIN ROADMAP §28](performance-roadmap-30fps.md#28-head-2968919-post-c1-audit-and-the-critical-path-to-gameplay-and-30-fps-2026-10-20)** after HEAD 2968919c0 (2026-10-20). This document is preserved as the original build219 implementation plan; later verified AudioOut ownership, correct lock/unlock operands, real menu observer acceptance and a possible deferred multilevel texture-budget mismatch are incorporated in §28. Where task status differs, follow §28. The current port is **NOT PLAYABLE** and there is no measured gameplay FPS.
+
 **Read alongside:** [main 30 FPS roadmap](performance-roadmap-30fps.md), [previous current gameplay plan](current-gameplay-performance-plan.md), [G0 ledger](gpu-ledger.md), [CPU/SVC attribution](load-cpu-attribution.md), [build218 fragment45](build218-entry45.md), and [New Game bring-up](newgame-bringup.md).
 
 ## 1. Updated repository assessment: implemented versus unverified
