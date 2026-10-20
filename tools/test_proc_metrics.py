@@ -32,6 +32,30 @@ class CpuDeltaTests(unittest.TestCase):
 
 
 class CollectorExecutionTests(unittest.TestCase):
+    def test_same_inode_path_alias_is_accepted_but_different_file_is_not(self):
+        # Hard links reproduce same dev/inode with unequal resolved strings on ordinary host FS.
+        # On TSPS the observed equivalent paths came from case-insensitive Roms/ports vs PORTS.
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'sys/kernel/random').mkdir(parents=True)
+            (root / 'sys/kernel/random/boot_id').write_text('fixture-boot')
+            process = root / '77'
+            process.mkdir()
+            (process / 'comm').write_text('terminator2d-ne')
+            (process / 'stat').write_text('77 (terminator2d-ne) Z 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21')
+            actual = root / 'actual-binary'
+            alias = root / 'expected-alias'
+            actual.write_bytes(b'self-authored fixture, not game code')
+            os.link(actual, alias)
+            (process / 'exe').symlink_to(actual)
+            accepted = collect_proc(proc_root=str(root), runtime_path=str(alias))
+            self.assertEqual(accepted['sample_status'], 'exited')
+            self.assertEqual(accepted['pid'], 77)
+            alias.unlink()
+            alias.write_bytes(actual.read_bytes())
+            rejected = collect_proc(proc_root=str(root), runtime_path=str(alias))
+            self.assertEqual(rejected['sample_status'], 'absent')
+
     def test_zombie_is_not_live_and_comm_alone_does_not_own_a_runtime(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

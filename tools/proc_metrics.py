@@ -14,7 +14,8 @@ def parse_stat(text):
             'minflt': int(fields[7]), 'majflt': int(fields[9]), 'starttime': int(fields[19])}
 
 
-def collect_proc(pid=None, expected=None, proc_root='/proc'):
+def collect_proc(pid=None, expected=None, proc_root='/proc',
+                 runtime_path='/mnt/SDCARD/Roms/PORTS/lamentum-switch/lamentum-nextos'):
     """Read one unique runtime or an explicitly pinned PID; never combine process generations."""
     import os
     import time
@@ -36,12 +37,13 @@ def collect_proc(pid=None, expected=None, proc_root='/proc'):
         pid = expected['pid']
     if pid is None:
         candidates = []
-        runtime = Path('/mnt/SDCARD/Roms/PORTS/lamentum-switch/lamentum-nextos').resolve()
+        runtime = Path(runtime_path).resolve()
         for directory in root.iterdir():
             if directory.name.isdigit() and optional(directory / 'comm') in ('lamentum-nextos', 'terminator2d-ne'):
                 try:
-                    # comm is truncated and shared by other ports; it is not executable identity.
-                    if (directory / 'exe').resolve(strict=True) == runtime:
+                    # Resolve by filesystem identity: VFAT paths can differ in spelling/case
+                    # while naming the exact same executable. Do not lowercase or trust comm.
+                    if os.path.samefile(directory / 'exe', runtime):
                         candidates.append(int(directory.name))
                 except OSError:
                     continue
