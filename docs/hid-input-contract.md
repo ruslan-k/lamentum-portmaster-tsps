@@ -91,12 +91,37 @@ Next step: decide between them by A/B-ing the +0x18 table (guest address of our
 entry block vs an offset/id), never by touching the entry table again until the
 head is non-zero.
 
-## 6. Consequences
+## 6. What the title's own reader expects (derived, not borrowed)
+
+Resolving the call chain removes the guesswork:
+
+- `nn::hid::GetNpadStates(NpadFullKeyState*, int, const uint&)` at `sdk+0x2147b0`
+  is a thin wrapper; it calls through the GOT slot at `0xc62240` (R_AARCH64_ABS64,
+  .dynsym index 18224) to `nn::hid::detail::GetNpadStates(Pi, NpadFullKeyState*, int,
+  const uint&)` at `sdk+0x208a40` — a symbol defined in this same module.
+- That function (`sdk+0x208a40`, disassembled) does:
+  `bl 0x56d4e0` (instance) → `ldr w1,[x24]` (npad id) → `bl 0x56d4f0`
+  (the accessor's `GetInternalState`) → **treats the returned value as a POINTER**,
+  then reads `[x0+0x40]` (count) and `[x0+0x38]` (ring counter) and walks records at
+  `x0 + index*0x30`, copying 0x28 bytes from `[rec+0x50..0x70]` into the caller's
+  state struct, with a sequence re-check through `[rec+0x48]`.
+
+So for this SDK the platform must publish a **table of pointers at `+0x18`**
+(8 bytes per npad id: ids 0–7, 8 for 0x10, 9 for 0x20), each pointing at a
+per-npad block whose ring records have a **0x30-byte stride**, a sequence word at
+`+0x48`, counters at `+0x38`/`+0x40`, and the state payload at `+0x50`–`+0x70`.
+
+The adapter instead writes an entry table at `+0x9a00` with 0x5000-byte entries and
+0x350-byte rings — a different SDK generation's shape. Combined with section 5
+(the table is zero), that is why every press is invisible: the title's reader
+dereferences zero before it ever looks at our entry table.
+
+## 7. Consequences
 
 - Do not retry `LC2_HID_BROADCAST` or Npad-id A/Bs; that axis is measured and dead.
-- Next: follow `GetInternalState`'s returned pointer and the `GetNpadStates`
-  (`+0x2147b0` for NpadFullKeyState) copy path in the title's own `sdk` module to
-  derive the real record offsets, then publish that shape. Anything else is guessing.
+- Next: extend the publisher for SDK 10.9.0.0 — fill the `+0x18` pointer table and
+  emit 0x30-stride ring records per npad, keeping the existing 0x9a00 entry layout
+  untouched until the new path is measured to move the menu.
 - The run still ends on `TIME_LIMIT` with 563 textures and no defect stop, so the
   graphics side is stable while input is worked on.
 
