@@ -1,19 +1,21 @@
 # Lamentum — experimental Switch-to-Linux-ARM64 port (TSPS / SpruceOS)
 
-**Status: not playable. Physical splash screens were seen during bring-up; menu,
-input, audio and gameplay remain unverified. The latest bounded run progresses beyond
-the former scene-load guards, then faults at `main.text.seg+0x1177010` (NULL base + `0x9d30`).**
+**Status: not playable. The best bounded probe initializes 522 textures, then stops
+at the physical-memory floor. Captured output remains white, not a verified scene or game menu.
+The previous NULL-base fault was localized to FMOD's allocation-failure cleanup path.**
 
-Latest work: `docs/loading-memory.md` (builds 156–169), following `docs/porting-log.md`.
-Large BC textures retain their original resolution. Their CPU backing can be snapshotted
-losslessly after a complete texel write; deferred textures consume GPU budget only upon
-materialization. The 420 MiB GPU budget is unchanged. Eight TEST shader substitutes remain:
-a successful draw, presentation count or white screen is not a correct game frame.
+Latest work: `docs/loading-memory-170-174.md`, following `docs/loading-memory.md` and
+`docs/porting-log.md`. All eligible single-level BC textures can defer GL storage; four
+first-use materializations are now positively verified. Lossless CPU backing uses two
+bounded temporary files when requested. Disjoint BC writes avoid redundant staging up
+to 64 MiB. Original texture resolution, the game image and the 420 MiB GPU ceiling remain
+unchanged. Eight TEST shader substitutes still prevent any gameplay-correctness claim.
 
 The installed launcher keeps experimental memory features off unless explicitly requested;
 it uses strict GL checks, synchronous submission, SDL/KMSDRM and a 96 MiB memory floor.
-The failed pageout experiment remains disabled. The latest binary is build 169, installed
-with a device-side backup and independently verified SHA-256.
+The failed pageout experiment remains disabled. The latest binary is build 174, installed
+with a device-side backup and independently verified SHA-256. The temporary watermark
+experiment was restored to its original value and is not a persistent system change.
 
 This repository tracks the attempt to run the owner's Nintendo Switch copy of *Lamentum*
 (Unity 2019.4.4f1, IL2CPP, ARM64) natively on a TrimUI Smart Pro S class handheld through a

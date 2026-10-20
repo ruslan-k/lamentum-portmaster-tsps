@@ -28,6 +28,11 @@ int main(void) {
     assert(linear&&tiled&&full&&striped);
     for(size_t k=0;k<linear_bytes;k++)linear[k]=(unsigned char)(k*37+k/19);
     assert(zero_bc_blocks_copy(&m,tiled,m.size,linear,linear_bytes,0,0,w/4,h/4,1));
+    unsigned char *staging=malloc(linear_bytes),*reference=calloc(m.size,1);
+    assert(staging&&reference);memcpy(staging,linear,linear_bytes);
+    assert(zero_bc_blocks_copy(&m,reference,m.size,staging,linear_bytes,0,0,w/4,h/4,1));
+    assert(memcmp(reference,tiled,m.size)==0 && memcmp(staging,linear,linear_bytes)==0);
+    free(reference);free(staging);
     assert(zero_bc_decode(0x44,full,rgba_bytes,linear,linear_bytes,w,h,w/4*16));
     for(unsigned y=0;y<h;y+=128) {
         unsigned rows=h-y;if(rows>128)rows=128;

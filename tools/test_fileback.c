@@ -17,6 +17,10 @@ int main(void) {
     char path[1024];snprintf(path,sizeof(path),"%s/lamentum-test-XXXXXX",temporary);
     int fd=mkstemp(path);assert(fd>=0);unlink(path);
     uint64_t cursor=0;
+    assert(mprotect(memory+4096,4096,PROT_NONE)==0);
+    errno=0;
+    assert(lc2_fileback_snapshot(fd,&cursor,memory+17,12288,8192)==-1 && errno==EFAULT && cursor==0);
+    assert(mprotect(memory+4096,4096,PROT_READ|PROT_WRITE)==0);
     assert(lc2_fileback_snapshot(fd,&cursor,memory+17,12288,8192)==8192);
     assert(cursor==8192);
     assert(lc2_fileback_overlaps((uintptr_t)memory+4096,4096));
@@ -30,7 +34,14 @@ int main(void) {
     assert(value==original[5000]);
     assert(memory[5000]!=(unsigned char)original[5000]);
     assert(lc2_fileback_snapshot(fd,&cursor,memory,size,8192)==0);
-    close(fd);munmap(memory,size);
+    snprintf(path,sizeof(path),"%s/lamentum-test-XXXXXX",temporary);
+    int extra=mkstemp(path);assert(extra>=0);assert(unlink(path)==0);
+    uint64_t extra_cursor=0;
+    assert(lc2_fileback_snapshot(extra,&extra_cursor,memory,4096,4096)==4096);
+    assert(extra_cursor==4096 && cursor==8192 && memcmp(memory,original,4096)==0);
+    assert(pread(extra,&value,1,0)==1 && value==original[0]);
+    assert(pread(fd,&value,1,904)==1 && value==original[5000]);
+    close(extra);close(fd);munmap(memory,size);
     puts("fileback: exact bytes, unaligned tails, COW independence and capacity guard OK");
     return 0;
 }

@@ -1,0 +1,2 @@
+Screenshot saved to /mnt/SDCARD/Roms/PORTS/lamentum-switch/menu-final174.png (FB ID: 163, 1280x720)
+{"MainUI": 1, "runtime.sh": 1, "principal.sh": 1, "port": 0, "watermark_scale_factor": "10", "binary_sha256": "a12634e98841fa178eba704f56a0cd31373a6d08d2de1dfc99f070117ae567bd"}

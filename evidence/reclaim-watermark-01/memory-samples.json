@@ -1,0 +1,65 @@
+[
+  {
+    "elapsed": 10.0,
+    "MemAvailable": 192836,
+    "SwapFree": 2032140,
+    "pswpin": 31739,
+    "pswpout": 395157,
+    "pgsteal_kswapd": 3666047,
+    "pgscan_kswapd": 5803721
+  },
+  {
+    "elapsed": 20.1,
+    "MemAvailable": 183052,
+    "SwapFree": 2031884,
+    "pswpin": 31739,
+    "pswpout": 395191,
+    "pgsteal_kswapd": 3687727,
+    "pgscan_kswapd": 5851778
+  },
+  {
+    "elapsed": 30.2,
+    "MemAvailable": 139080,
+    "SwapFree": 2031884,
+    "pswpin": 31747,
+    "pswpout": 395191,
+    "pgsteal_kswapd": 3687727,
+    "pgscan_kswapd": 5851778
+  },
+  {
+    "elapsed": 40.3,
+    "MemAvailable": 106248,
+    "SwapFree": 2031884,
+    "pswpin": 31747,
+    "pswpout": 395191,
+    "pgsteal_kswapd": 3687727,
+    "pgscan_kswapd": 5851778
+  },
+  {
+    "elapsed": 50.4,
+    "MemAvailable": 82008,
+    "SwapFree": 2031884,
+    "pswpin": 31747,
+    "pswpout": 395191,
+    "pgsteal_kswapd": 3715404,
+    "pgscan_kswapd": 5892376
+  },
+  {
+    "elapsed": 60.5,
+    "MemAvailable": 69352,
+    "SwapFree": 2031884,
+    "pswpin": 31747,
+    "pswpout": 395191,
+    "pgsteal_kswapd": 3715404,
+    "pgscan_kswapd": 5892376
+  },
+  {
+    "elapsed": 71.0,
+    "MemAvailable": 356148,
+    "SwapFree": 2031884,
+    "pswpin": 31885,
+    "pswpout": 395191,
+    "pgsteal_kswapd": 3715404,
+    "pgscan_kswapd": 5892376
+  }
+]

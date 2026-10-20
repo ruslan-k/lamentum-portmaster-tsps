@@ -1,5 +1,7 @@
 # Loading-memory investigation: builds 156–169
 
+Historical checkpoint; continuation and current frontier: [builds 170–174](loading-memory-170-174.md).
+
 Status: experimental, not playable. No main menu, control response, audible audio,
 save/reload or gameplay acceptance has been demonstrated. Eight TEST shader
 substitutes remain. Original game image and texture resolution are unchanged.
