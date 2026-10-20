@@ -897,7 +897,7 @@ index 0545586..ac198d5 100644
      nvn_gl_completion.real_waits++;
  }
 diff --git a/native/nvn_render.h b/native/nvn_render.h
-index 543b4b5..3487f2c 100644
+index 543b4b5..7dd424e 100644
 --- a/native/nvn_render.h
 +++ b/native/nvn_render.h
 @@ -234,11 +234,51 @@ static void nvn_render_stencil(void) {
@@ -1193,6 +1193,20 @@ index 543b4b5..3487f2c 100644
          nvn_render.uniform[a[0]][a[1]]=(struct nvn_range){a[2],a[3]};return 1;
      case NI_nvnCommandBufferBindUniformBuffersDeferred: {
          /* The ranges live in guest memory and are read now, at execution, which is the deferred contract. */
+@@ -1644,6 +1858,13 @@ static unsigned nvn_render_record(struct nvn_record *r) {
+         return 1;
+     case NI_nvnCommandBufferBindTexture:
+         if(a[0]>1 || a[1]>=128)stop("NVN_TEXTURE_BINDING_REQUIRED",nvn_caller,a[1],20);
++        {   /* COTM_HANDLE_LOG=<n>: every texture-handle write, so a garbage handle can be traced to its bind */
++            static int configured;static unsigned limit,printed;
++            if(!configured){const char *o=getenv("COTM_HANDLE_LOG");limit=o?(unsigned)strtoul(o,NULL,0):0;configured=1;}
++            if(printed<limit){printed++;printf("NVN_HANDLE_WRITE stage=%llu unit=%llu handle=0x%llx low=%llu high=%llu\n",
++                (unsigned long long)a[0],(unsigned long long)a[1],(unsigned long long)a[2],
++                (unsigned long long)(uint32_t)a[2],(unsigned long long)(a[2]>>32));}
++        }
+         nvn_render.texture_handles[a[0]][a[1]]=a[2];nvn_render.texture_known[a[0]][a[1]/64]|=1ULL<<(a[1]%64);return 1;
+     case NI_nvnCommandBufferBindSeparateTexture:case NI_nvnCommandBufferBindSeparateSampler: {
+         if(a[0]>1)return 1;   /* a stage this host does not run */
 diff --git a/native/nvn_replay.h b/native/nvn_replay.h
 index b3d6c20..761dd84 100644
 --- a/native/nvn_replay.h

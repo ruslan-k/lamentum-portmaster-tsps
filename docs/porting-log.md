@@ -1193,3 +1193,24 @@ wrong place for this title's handle layout.
 Next step is therefore a decode fix, not another guard: read the NVN handle the way this title builds it
 (the high word of `a2` is 1 - a plausible pool/sampler index - and the low word is a view offset), and keep
 the descriptor lookup driven by a real slot index.
+
+## The garbage handle comes from the *plural* texture bind, not the single one
+
+`COTM_HANDLE_LOG=12` produced **no** `NVN_HANDLE_WRITE` line at all, which means this title never calls
+`nvnCommandBufferBindTexture` (the single form the runtime's handle table is written from). It uses the
+plural `nvnCommandBufferBindTextures`, and the recorded arguments show why the handle table receives
+nonsense:
+
+```
+last-bind=0x40 a0=0x1 a1=0x0 a2=0x16000000640 a3=0x558eb5f168
+```
+
+`a2` looks like a 64-bit texture handle (high word 0x16, low word 0x640 - a plausible pair of pool
+indices), `a3` looks like a guest pointer. The runtime's plural handler, however, treats the call as
+`(stage, first, count, handles)` and copies `count*8` bytes from `a3`, so the values it stores are not the
+handles the title passed - and the sampler path later reads `0x3f800000` (the bit pattern of `1.0f`) as a
+slot index.
+
+Next step is a static one, not another guess: disassemble the guest's call site for
+`nvnCommandBufferBindTextures` in `main.text` (the tooling for that is already in `tools/inspect_nso.py`
+plus capstone) and read the real argument order from the register setup, then fix the handler to match it.
