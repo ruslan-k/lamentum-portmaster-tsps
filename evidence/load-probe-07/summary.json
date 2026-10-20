@@ -1,0 +1,11 @@
+{
+  "build": "build218",
+  "arm": "T2_TEXTURE_BUDGET_MIB=300, LC2_BC_FILE_CAP_MIB=512 (disk fits)",
+  "result": "reproduced the clean budget stop; no OOM",
+  "stop_line": "STOP status=T2_TEXTURE_BUDGET pc=main.text.seg+0x52d294 detail=0x19b query_memory_calls=0x174 tls_trap_reads=0x0",
+  "budget_line": "T2_TEXTURE_BUDGET add-bytes=268435456 live-MiB=411 count=151 budget-MiB=300",
+  "last_present_frame": 806,
+  "min_available_kb": 60740,
+  "navigation_note": "a 1000 ms Down can move two rows and wrap (measured 425 -> 525 -> 425 -> 475), so the walker re-reads the cursor band every attempt",
+  "phase": "menu -> New Game page -> controls -> loading; stopped by the texture budget"
+}
