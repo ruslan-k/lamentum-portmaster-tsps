@@ -1,0 +1,36 @@
+{
+  "build": "build217",
+  "installed_sha256": "9c6ecc47184e12ec4f5a03825132ae43035cf86b49ce2b6d7ae6359255fa1338",
+  "stop": [],
+  "stopped_by": "operator TERM after the guest governor failed to fire",
+  "probe_budget_s": 1800,
+  "main_thread_cpu_s_at_termination": 2599.7,
+  "presented_frames": 2176,
+  "measured_fps_window": {
+    "seconds": 20.14,
+    "frames": 23,
+    "fps": 1.14,
+    "main_thread_cpu_s_per_frame": 0.836,
+    "total_thread_cpu_s_per_frame": 1.63
+  },
+  "window_new_work": {
+    "romfs_reads": 0,
+    "textures": 0,
+    "texel_writes": 0,
+    "bc_deferred": 0,
+    "commands_executed": 1,
+    "presents": 23
+  },
+  "entry44_guard_lines": 0,
+  "unknown_shader_requests": 0,
+  "input": "agent evdev injection, not physical human input",
+  "cleanup": {
+    "game_absent": true,
+    "MainUI": 1,
+    "principal": 1,
+    "runtime": 1,
+    "cpu_online": "0-7",
+    "menu_capture": "clean-menu.png (fully lit)"
+  },
+  "phase": "menu -> New Game config -> controls -> load screen; NOT gameplay"
+}

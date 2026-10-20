@@ -1,0 +1,48 @@
+{
+  "snapshot": {
+    "processes": {
+      "runtime.sh": [
+        {
+          "pid": 1228,
+          "starttime": 637
+        }
+      ],
+      "principal.sh": [
+        {
+          "pid": 2190,
+          "starttime": 1019
+        },
+        {
+          "pid": 15665,
+          "starttime": 4826448
+        }
+      ],
+      "terminator2d-ne": [
+        {
+          "pid": 15780,
+          "starttime": 4826529
+        }
+      ]
+    },
+    "game": [
+      {
+        "pid": 15780,
+        "starttime": 4826529
+      }
+    ],
+    "online": "0-7",
+    "frame": 2175,
+    "menu_events": 4,
+    "stops": [],
+    "log_inode": 6652
+  },
+  "measurements": {
+    "main_thread_cpu_s": 2599.7,
+    "starttime_ticks": 4826529,
+    "presents": 2176,
+    "stops": [],
+    "budget_line": [
+      "NATIVE_PROBE_TIME_BUDGET seconds=1800"
+    ]
+  }
+}

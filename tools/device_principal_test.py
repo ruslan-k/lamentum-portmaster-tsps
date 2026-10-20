@@ -13,6 +13,12 @@ import argparse, json, re, subprocess, sys, time, pathlib, shlex
 from lamentum_pad_contract import snapshot, validate_cleanup
 
 HOST = 'root@192.168.50.135'
+HARD_STOP_GRACE_S = 120
+
+
+def should_hard_stop(now, hard_deadline, game_pids):
+    """Terminate only a still-running game, never the supervisors or the menu."""
+    return bool(hard_deadline) and now > hard_deadline and bool(game_pids)
 PORT_DIR = '/mnt/SDCARD/Roms/PORTS/lamentum-switch'
 LAUNCHER = '/mnt/SDCARD/Roms/PORTS/Lamentum.sh'
 STD_LAUNCH = '/mnt/SDCARD/Emu/PORTS/../../spruce/scripts/emu/standard_launch.sh'
@@ -65,9 +71,23 @@ def main():
     print('MainUI %s -> TERM; run started, watching %d s' % (mainui, a.wait))
 
     deadline = time.time() + a.wait
+    # The guest-side SIGALRM governor is not reliable on every title: measured on this one, a run
+    # continued ~800 s past its own 1800 s budget with no TIME_LIMIT stop. Keep a host-side bound
+    # that terminates ONLY the exact game pids, so the principal flow still restores the menu.
+    hard_deadline = time.time() + a.budget + HARD_STOP_GRACE_S
+    host_terminated = None
     last = ''
     while time.time() < deadline:
         time.sleep(10)
+        if hard_deadline and time.time() > hard_deadline:
+            state = snapshot()
+            pids = [p['pid'] for p in state['game']]
+            if should_hard_stop(time.time(), hard_deadline, pids):
+                for pid in pids:
+                    ssh('kill -TERM %d' % pid)
+                host_terminated = {'pids': pids, 'at_elapsed_s': round(time.time() - (deadline - a.wait), 1)}
+                print('host hard stop', host_terminated)
+                hard_deadline = None
         log = ssh('tail -c 4000 %s/logs/latest.log 2>/dev/null' % PORT_DIR).stdout
         if log != last:
             last = log
@@ -86,7 +106,7 @@ def main():
     print('cleanup', json.dumps({'state': after, 'errors': errors}))
     log = ssh('cat %s/logs/latest.log' % PORT_DIR).stdout
     stops = re.findall(r'STOP status=(\S+)', log)
-    result = {'cleanup_errors': errors, 'before': before, 'after': after,
+    result = {'cleanup_errors': errors, 'before': before, 'after': after, 'host_terminated': host_terminated,
               'stops': stops, 'runtime_ok': bool(stops) and all(x == 'TIME_LIMIT' for x in stops),
               'config_rejected': any(x.startswith('INVALID_') for x in stops)}
     if a.evidence:
@@ -95,7 +115,13 @@ def main():
         print('evidence ->', a.evidence)
     # Cleanup failure, a rejected harness parameter and a guest fail-closed stop are three
     # different outcomes; only a full budget with a clean device counts as a completed run.
-    return 3 if errors else (5 if result['config_rejected'] else (0 if result['runtime_ok'] else 4))
+    if errors:
+        return 3
+    if result['config_rejected']:
+        return 5
+    if host_terminated:
+        return 6      # bounded run ended by the harness, not by the title's own governor
+    return 0 if result['runtime_ok'] else 4
 
 
 if __name__ == '__main__':
