@@ -7,6 +7,8 @@ frame 709 and ends on TIME_LIMIT. Gameplay, audible output and save/reload are
 still unverified. The whole-region watch also proves guest Npad reads; the old
 shared-head/+0x18 diagnosis was incorrect (private SDK accessor, not shared memory).**
 
+**2026-10-20 follow-up reassessment:** [Roadmap §18](docs/performance-roadmap-30fps.md#18-post-roadmap-reassessment-2026-10-20) reviews the new build208 diagnostic comparisons, cold250 guest-ZRAM results, submit-flush safety, cbuf-subimage non-win and profiling/test-harness bugs. The original README build202 note remains the last independently described installed menu reference; no new playable-game or 30 FPS acceptance is claimed.
+
 **30 FPS performance roadmap:** [docs/performance-roadmap-30fps.md](docs/performance-roadmap-30fps.md) — 2026-10-20 source/evidence audit, build202 diagnostic frame-time breakdown, gameplay correctness gate, low-overhead profiling, guest compression, cbuf uploads, NVN replay, 720p owner-resolution investigation, Mali bloom/texture residency, GPU synchronization, and measurable acceptance/rollback criteria. **Target only:** no handheld 30 FPS result or playable release is claimed.
 
 Latest work: `docs/ui-cbuf-binding.md` (build202: one-field correction c4 -> NVN
