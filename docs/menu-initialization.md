@@ -36,7 +36,7 @@ The host test actually executes replay logic for all five prologues and checks
 stack offsets, stored register values, preservation of registers and off=0.
 Cross-build200 and its deployment SHA-256 are in the evidence.
 
-Live receipts (`evidence/menu-trace-01/live.log`):
+Live receipts (`evidence/menu-trace-01/latest.log`):
 
     LC2_MENU_EVENT name=ManagerMenuPrincipal.Start caller=main.text.seg+0x7bb54
     LC2_MENU_EVENT name=ManagerMenuPrincipal.GetResolutions caller=main.text.seg+0x16cb624
