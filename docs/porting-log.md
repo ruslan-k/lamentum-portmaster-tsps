@@ -1214,3 +1214,18 @@ slot index.
 Next step is a static one, not another guess: disassemble the guest's call site for
 `nvnCommandBufferBindTextures` in `main.text` (the tooling for that is already in `tools/inspect_nso.py`
 plus capstone) and read the real argument order from the register setup, then fix the handler to match it.
+
+## The bad handle is read from the cbuf at offset 0 - because every sampler says offset 0
+
+The sampler handle does not come from a bind call at all: the draw path reads it out of the constant
+buffer - `memcpy(&handle, nvn_gpu_pointer(range.address + u->offset, 8), 8)` in the sampler loop - and the
+catalogue emits **`.offset=0` for every sampler** (hardcoded in the emitter). Offset 0 of this title's cbuf
+holds the float `1.0`, so the "handle" is `0x3f800000` and the descriptor lookup fails on it.
+
+That closes the loop: the invalid descriptor is our own metadata error, not a guest encoding problem.
+The single and plural bind paths were red herrings (and one of them was even shadowed by a diagnostic case
+I had inserted in the wrong switch; that is reverted).
+
+Next step: give each sampler its real byte offset inside the cbuf. The information exists in the shader
+the translator produced (the uniform block member layout), so the builder must emit per-sampler offsets
+instead of 0, and the runtime then reads a genuine 64-bit handle at that offset.

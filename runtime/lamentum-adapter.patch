@@ -897,7 +897,7 @@ index 0545586..ac198d5 100644
      nvn_gl_completion.real_waits++;
  }
 diff --git a/native/nvn_render.h b/native/nvn_render.h
-index 543b4b5..7dd424e 100644
+index 543b4b5..f2d0f96 100644
 --- a/native/nvn_render.h
 +++ b/native/nvn_render.h
 @@ -234,11 +234,51 @@ static void nvn_render_stencil(void) {
@@ -1148,17 +1148,10 @@ index 543b4b5..7dd424e 100644
      nvn_replay.draws++;nvn_render.target->draws++;
      struct nvn_texture *target_storage=zero_texture_storage_state(nvn_render.target);
      if(target_storage!=nvn_render.target)target_storage->draws++;
-@@ -1589,6 +1772,29 @@ static unsigned nvn_render_record(struct nvn_record *r) {
+@@ -1589,6 +1772,22 @@ static unsigned nvn_render_record(struct nvn_record *r) {
          static unsigned reported;if(!reported++)printf("NVN_LC2_SHADER_SCRATCH pool=0x%"PRIx64" offset=0x%"PRIx64" bytes=0x%"PRIx64" backend=GLES-driver-owned\n",a[0],a[1],size);
          return 1;
      }
-+    case NI_nvnCommandBufferBindTexture:case NI_nvnCommandBufferBindTextures:
-+        nvn_last_texture_bind.op=r->op;
-+        nvn_last_texture_bind.op_args[0]=a[0];nvn_last_texture_bind.op_args[1]=a[1];
-+        nvn_last_texture_bind.op_args[2]=a[2];nvn_last_texture_bind.op_args[3]=a[3];
-+        nvn_last_texture_bind.valid=1;
-+        /* fall through */
-+        __attribute__((fallthrough));
 +        case NI_nvnCommandBufferBindColorState:memcpy(&nvn_render.color,r->payload,4);return 1;
 +    default: break;
 +    }
@@ -1178,7 +1171,7 @@ index 543b4b5..7dd424e 100644
      case NI_nvnCommandBufferBindColorState:memcpy(&nvn_render.color,r->payload,4);return 1;
      case NI_nvnCommandBufferBindBlendState:memcpy(nvn_render.blend,r->payload,8);return 1;
      case NI_nvnCommandBufferBindDepthStencilState:memcpy(nvn_render.depth_state,r->payload,8);return 1;
-@@ -1621,6 +1827,14 @@ static unsigned nvn_render_record(struct nvn_record *r) {
+@@ -1621,6 +1820,14 @@ static unsigned nvn_render_record(struct nvn_record *r) {
      case NI_nvnCommandBufferBindVertexBuffers:memcpy(nvn_render.vertex+a[0],r->payload,a[1]*16);return 1;
      case NI_nvnCommandBufferBindUniformBuffer:
          if(a[0]>1||a[1]>=16)stop("NVN_UNIFORM_BINDING",nvn_caller,a[1],24);
@@ -1193,9 +1186,14 @@ index 543b4b5..7dd424e 100644
          nvn_render.uniform[a[0]][a[1]]=(struct nvn_range){a[2],a[3]};return 1;
      case NI_nvnCommandBufferBindUniformBuffersDeferred: {
          /* The ranges live in guest memory and are read now, at execution, which is the deferred contract. */
-@@ -1644,6 +1858,13 @@ static unsigned nvn_render_record(struct nvn_record *r) {
+@@ -1643,7 +1850,18 @@ static unsigned nvn_render_record(struct nvn_record *r) {
+         }
          return 1;
      case NI_nvnCommandBufferBindTexture:
++        nvn_last_texture_bind.op=r->op;
++        nvn_last_texture_bind.op_args[0]=a[0];nvn_last_texture_bind.op_args[1]=a[1];
++        nvn_last_texture_bind.op_args[2]=a[2];nvn_last_texture_bind.op_args[3]=a[3];
++        nvn_last_texture_bind.valid=1;
          if(a[0]>1 || a[1]>=128)stop("NVN_TEXTURE_BINDING_REQUIRED",nvn_caller,a[1],20);
 +        {   /* COTM_HANDLE_LOG=<n>: every texture-handle write, so a garbage handle can be traced to its bind */
 +            static int configured;static unsigned limit,printed;
