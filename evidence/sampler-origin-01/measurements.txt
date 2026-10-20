@@ -1,0 +1,11 @@
+NVN_HANDLE_WRITE stage=1 unit=0 handle=0x140000001c0 low=448 high=320
+NVN_HANDLE_WRITE stage=1 unit=1 handle=0x14000000320 low=800 high=320
+NVN_HANDLE_WRITE stage=1 unit=0 handle=0x16000000820 low=2080 high=352
+MOMO_UNIFORM_BIND draw=0 stage=0 first=1 count=1 [1]=0x391436300/368
+MOMO_UNIFORM_BIND draw=0 stage=1 first=0 count=1 [0]=0x391437700/160
+MOMO_UNIFORM_ENTRY draw=1 name=c1 stage=0 binding=0 offset=0x0 kind=7
+MOMO_UNIFORM_ENTRY draw=1 name=c4_1 stage=0 binding=1 offset=0x0 kind=7
+MOMO_UNIFORM_ENTRY draw=1 name=c3 stage=1 binding=0 offset=0x0 kind=7
+MOMO_UNIFORM_ENTRY draw=1 name=fs_tex0_20 stage=1 binding=0 offset=0x20 kind=3
+NVN_SAMPLER_HANDLE_IN handle=0x3f80000000000000 draw=0 frame=0 program=16/19
+STOP status=NVN_RENDER_DESCRIPTOR_INVALID pc=main.text.seg+0x52d294 detail=0x3f800000 query_memory_calls=0xfd tls_trap_reads=0x0

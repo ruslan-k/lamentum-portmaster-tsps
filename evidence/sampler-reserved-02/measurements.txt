@@ -1,0 +1,39 @@
+NVN_SAMPLER_HANDLE_IN handle=0x16000000820 draw=0 frame=0 program=16/19
+NVN_SAMPLER_HANDLE_IN handle=0x16000000640 draw=1 frame=0 program=7/0
+NVN_SAMPLER_HANDLE_IN handle=0x16000000640 draw=2 frame=0 program=7/0
+NVN_SAMPLER_HANDLE_IN handle=0x160000004a0 draw=3 frame=0 program=18/1
+NVN_SAMPLER_HANDLE_IN handle=0x16000000560 draw=4 frame=0 program=18/21
+NVN_SAMPLER_HANDLE_IN handle=0x14000000880 draw=5 frame=0 program=10/13
+NVN_SAMPLER_HANDLE_IN handle=0x16000000f00 draw=6 frame=0 program=11/22
+NVN_SAMPLER_HANDLE_IN handle=0x16000000f40 draw=7 frame=0 program=17/4
+NVN_SAMPLER_HANDLE_IN handle=0x16000000f60 draw=8 frame=0 program=17/4
+NVN_SAMPLER_HANDLE_IN handle=0x16000000f80 draw=9 frame=0 program=17/4
+NVN_SAMPLER_HANDLE_IN handle=0x16000000fa0 draw=10 frame=0 program=17/4
+NVN_SAMPLER_HANDLE_IN handle=0x16000000fc0 draw=11 frame=0 program=17/4
+NVN_SAMPLER_HANDLE_IN handle=0x16000000fe0 draw=12 frame=0 program=17/4
+NVN_SAMPLER_HANDLE_IN handle=0x16000001000 draw=13 frame=0 program=17/4
+NVN_SAMPLER_HANDLE_IN handle=0x16000001020 draw=14 frame=0 program=17/4
+NVN_SAMPLER_HANDLE_IN handle=0x16000001040 draw=15 frame=0 program=17/4
+NVN_SAMPLER_HANDLE_IN handle=0x16000001060 draw=16 frame=0 program=17/4
+NVN_VARYING_COMPLETED declarations=1
+NVN_SAMPLER_HANDLE_IN handle=0x140000001c0 draw=17 frame=0 program=11/6
+NVN_VARYING_COMPLETED declarations=1
+NVN_SAMPLER_HANDLE_IN handle=0x16000000f00 draw=18 frame=0 program=11/9
+NVN_SAMPLER_HANDLE_IN handle=0x160000010a0 draw=18 frame=0 program=11/9
+NVN_SAMPLER_HANDLE_IN handle=0x16000000540 draw=19 frame=0 program=12/14
+NVN_SAMPLER_HANDLE_IN handle=0x14000000660 draw=20 frame=0 program=12/14
+NVN_SAMPLER_HANDLE_IN handle=0x14000000ee0 draw=21 frame=0 program=12/14
+NVN_SAMPLER_HANDLE_IN handle=0x160000008a0 draw=22 frame=0 program=12/14
+NVN_WINDOW_SAMPLE index=0x0 id=0x2 texture=0x1 size=0x780x0x438 nonblack=0x0 max=0x0 status=0x8cd5
+NVN_WINDOW_SAMPLE index=0x1 id=0x3 texture=0x2 size=0x780x0x438 nonblack=0x0 max=0x0 status=0x8cd5
+NVN_WINDOW_SAMPLE index=0x2 id=0x4 texture=0x3 size=0x780x0x438 nonblack=0x0 max=0x0 status=0x8cd5
+NVN_PRESENT_PIXELS frame=1 nonblack=0 max=0 white=0 texture-draws=13 status=BLACK-SAMPLE
+NVN_WINDOW_SAMPLE index=0x0 id=0x2 texture=0x1 size=0x780x0x438 nonblack=0x0 max=0x0 status=0x8cd5
+NVN_WINDOW_SAMPLE index=0x1 id=0x3 texture=0x2 size=0x780x0x438 nonblack=0x0 max=0x0 status=0x8cd5
+NVN_WINDOW_SAMPLE index=0x2 id=0x4 texture=0x3 size=0x780x0x438 nonblack=0x0 max=0x0 status=0x8cd5
+NVN_PRESENT_PIXELS frame=2 nonblack=0 max=0 white=0 texture-draws=13 status=BLACK-SAMPLE
+NVN_WINDOW_SAMPLE index=0x0 id=0x2 texture=0x1 size=0x780x0x438 nonblack=0x0 max=0x0 status=0x8cd5
+NVN_WINDOW_SAMPLE index=0x1 id=0x3 texture=0x2 size=0x780x0x438 nonblack=0x0 max=0x0 status=0x8cd5
+NVN_WINDOW_SAMPLE index=0x2 id=0x4 texture=0x3 size=0x780x0x438 nonblack=0x0 max=0x0 status=0x8cd5
+NVN_PRESENT_PIXELS frame=3 nonblack=0 max=0 white=0 texture-draws=13 status=BLACK-SAMPLE
+STOP status=NVN_COMMAND_REUSE_BEFORE_COMPLETION pc=main.text.seg+0x52da34 detail=0x2 query_memory_calls=0xfa tls_trap_reads=0x0

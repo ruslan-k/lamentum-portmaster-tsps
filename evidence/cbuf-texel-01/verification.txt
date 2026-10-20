@@ -1,0 +1,4 @@
+Build 150 local and device SHA256: 78273f3a9d8b76df3f5447b8c0760272337cb3ce489186ccb620494df5bc92b8
+Six regression tests passed, including exhaustive 16384 scalar coordinate round-trips.
+DRM menu-after.png visually checked: Spruce main navigation restored, not game.
+No game picture or gameplay verified.

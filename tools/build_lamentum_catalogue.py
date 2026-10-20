@@ -51,7 +51,7 @@ def rewrite_cbuf_blocks(body, blocks):
         access = re.compile(r'\b' + re.escape(b['instance']) + r'\.data\[([^\]]+)\]')
         # Explicit int casts: the driver rejects mixed signedness in bitwise operators
         # ("S0001: Bitwise operations operands signs must match"), and index expressions are sometimes uint.
-        body = access.sub(lambda m: 'texelFetch(%s, ivec2(int(%s) & 1023, int(%s) >> 10), 0)[int(%s) & 3]'
+        body = access.sub(lambda m: 'texelFetch(%s, ivec2((int(%s) >> 2) & 1023, int(%s) >> 12), 0)[int(%s) & 3]'
                           % (b['instance'], m.group(1), m.group(1), m.group(1)), body)
     return body
 
@@ -214,6 +214,16 @@ def samplers_of(source):
         sampler['stage'] = 0 if identity[1] == 'vs' else 1
         sampler['binding'] = int(identity[2])
         sampler['offset'] = int(identity[3], 16)
+        # This capture tool's TextureBoundBuffer() defaults to 0; bound TEX
+        # therefore appears as tex0 even though it is NOT application cbuf 0.
+        # The adapter represents SDK BindTexture's reserved bank as binding 14,
+        # with catalogue offsets excluding the 0x20-byte hardware header.
+        # Verified against live Lamentum BindTexture unit=0 and fs_tex0_20.
+        if sampler['binding'] == 0:
+            if sampler['offset'] < 0x20 or (sampler['offset'] - 0x20) % 8:
+                raise ValueError('Invalid bound texture offset: ' + sampler['name'])
+            sampler['binding'] = 14
+            sampler['offset'] -= 0x20
     return out
 
 
@@ -247,6 +257,10 @@ def component_masks(glsl, decl):
     This mirrors the runtime's per-slot mask check; it is inferred metadata, verify on device.
     """
     masks = {}
+    # Normalized and TEST sources no longer carry layout(location). Keep
+    # their declared interface visible to link-time completion as well.
+    for m in re.finditer(r'\b' + decl + r'\s+\w+\s+varying_(\d+)\s*;', glsl):
+        masks[int(m.group(1))] = 15
     for m in re.finditer(r'layout\(location = (\d+)\) ' + decl + r' (\w+)\s+(\w+);', glsl):
         loc, base = int(m.group(1)), m.group(3)
         mask = 0
@@ -300,7 +314,7 @@ def main():
             'cbufs': cbuf_blocks_of(source),
             'error': 'fragment stage needs an ESSL100 texel-fetch rewrite' if (stage == 'fragment' and needs_fetch) else None,
             'write_masks': component_masks(source, 'out'),
-            'read_masks': component_masks(source, 'in'),
+            'read_masks': component_masks(translated if placeholder else source, 'in'),
             'name': name, 'stage': stage,
             'code_size': code.stat().st_size, 'control_size': control.stat().st_size,
             'code_sha': __import__('hashlib').sha256(code.read_bytes()).hexdigest(),

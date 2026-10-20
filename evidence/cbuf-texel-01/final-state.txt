@@ -1,0 +1,4 @@
+Screenshot saved to /mnt/SDCARD/Roms/PORTS/lamentum-switch/logs/menu-after150.png (FB ID: 161, 1280x720)
+ 1214 root     {runtime.sh} /bin/sh ./runtime.sh
+ 2202 root     {principal.sh} /bin/sh /mnt/SDCARD/spruce/scripts/principal.sh
+23561 root     /mnt/SDCARD/spruce/flip/bin/MainUI /mnt/SDCARD/App/PyUI/main-ui/mainui.py -device TRIMUI_SMART_PRO_S -logDir /mnt/SDCARD/Saves/spruce -pyUiConfig /mnt/SDCARD/App/PyUI/py-ui-config.json -cfwConfig /mnt/SDCARD/Saves/spruce/spruce-config.json

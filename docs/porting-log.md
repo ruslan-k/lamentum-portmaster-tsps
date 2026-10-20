@@ -1273,3 +1273,40 @@ Earlier claims that only fixing an offset would close texture binding were prema
 Next measurement: log the actual bound ranges and bytes at bank 0 offset 32 alongside
 the shader identity and recording-time BindUniformBuffer arguments; do not scan for
 plausible handles or reinterpret this failure as proof of a new handle encoding.
+
+## Builds 148-150: real sampler handles and first nonblack present-pass readback
+
+Correction to build 147 interpretation: the compiler bridge initializes textureBufferIndex=0
+(bridge/src/bridge.cc:43), and TexturePass uses TextureBoundBuffer() for bound (not
+bindless) texture instructions. Consequently fs_tex0_20 in these captures is the
+SDK reserved BindTexture table, NOT application uniform bank 0. Live BindTexture
+calls supply handles 0x16000000820 and 0x16000000620 while application bank 0 holds
+float constants. Use adapter binding 14 and subtract the 0x20 hardware header from
+catalogue offsets. The generic upload already resolves this via texture_handles.
+
+Build 148 independently verified SHA256:
+5ef5bb1c30da3eba4778a874c32ef54394bffb6244a834d87a63db4758aab134.
+Descriptor failure gone: valid handles through draws 0..16. Next stop was L0007,
+missing varying_1 in a pair using a TEST fragment. TEST metadata had been inferred
+from the original shader, not its emitted substitute. Corrected 10 TEST fragment
+read masks without changing GLSL; build 149 linked, presented 3 BLACK samples,
+then stopped at NVN_COMMAND_REUSE_BEFORE_COMPLETION.
+
+A separate exact addressing bug was then found: runtime packs FOUR cbuf floats
+per RGBA32F texel, but GLSL used scalar index as texel index. Correct coordinates:
+x=(index>>2)&1023, y=index>>12, lane=index&3, not x=index&1023,y=index>>10.
+Corrected generator and 408 generated accesses; all 16384 scalar indices round-trip.
+Build 150 SHA256 (local/device independently matched):
+78273f3a9d8b76df3f5447b8c0760272337cb3ce489186ccb620494df5bc92b8.
+
+Measured present-pass readbacks: frame1 nonblack=111958 max=255 white=11484;
+frames2/3 nonblack=4157 max=255 white=0. HOWEVER all three window textures still
+sample nonblack=0 max=0. Thus nonblack in the present pass is NOT proof of correct
+game swapchain content or physical picture. TEST shaders remain; no playable port
+or gameplay claim. Stop remains NVN_COMMAND_REUSE_BEFORE_COMPLETION detail=2.
+Diagnostic ignore-GL-error and fb-present flags are still active, not a production fix.
+
+Evidence: sampler-origin-01, sampler-reserved-01/02, cbuf-texel-01 (filtered logs,
+final process state and physical menu capture). Runtime 0 and MainUI restored after
+each bounded run; intermediate harness samples sometimes precede MainUI restart.
+Latest diagnostic build 150 remains installed; before-148/149/150 copies retained.

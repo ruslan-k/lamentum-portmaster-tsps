@@ -1,0 +1,39 @@
+NVN_HANDLE_WRITE stage=1 unit=0 handle=0x140000001c0 low=448 high=320
+NVN_HANDLE_WRITE stage=1 unit=1 handle=0x14000000320 low=800 high=320
+NVN_HANDLE_WRITE stage=1 unit=0 handle=0x16000000820 low=2080 high=352
+NVN_SAMPLER_HANDLE_IN handle=0x16000000820 draw=0 frame=0 program=16/19
+NVN_HANDLE_WRITE stage=1 unit=0 handle=0x1c000000700 low=1792 high=448
+NVN_HANDLE_WRITE stage=1 unit=0 handle=0x16000000620 low=1568 high=352
+NVN_SAMPLER_HANDLE_IN handle=0x16000000620 draw=1 frame=0 program=7/0
+NVN_HANDLE_WRITE stage=1 unit=0 handle=0x1c000000700 low=1792 high=448
+NVN_HANDLE_WRITE stage=1 unit=0 handle=0x16000000620 low=1568 high=352
+NVN_SAMPLER_HANDLE_IN handle=0x16000000620 draw=2 frame=0 program=7/0
+NVN_HANDLE_WRITE stage=1 unit=0 handle=0x160000004a0 low=1184 high=352
+NVN_SAMPLER_HANDLE_IN handle=0x160000004a0 draw=3 frame=0 program=18/1
+NVN_HANDLE_WRITE stage=1 unit=0 handle=0x16000000540 low=1344 high=352
+NVN_SAMPLER_HANDLE_IN handle=0x16000000540 draw=4 frame=0 program=18/21
+NVN_HANDLE_WRITE stage=1 unit=0 handle=0x140000001c0 low=448 high=320
+NVN_HANDLE_WRITE stage=1 unit=0 handle=0x140000008c0 low=2240 high=320
+NVN_SAMPLER_HANDLE_IN handle=0x140000008c0 draw=5 frame=0 program=10/13
+NVN_HANDLE_WRITE stage=1 unit=0 handle=0x140000001c0 low=448 high=320
+NVN_HANDLE_WRITE stage=1 unit=0 handle=0x16000000f00 low=3840 high=352
+NVN_SAMPLER_HANDLE_IN handle=0x16000000f00 draw=6 frame=0 program=11/22
+NVN_HANDLE_WRITE stage=1 unit=0 handle=0x140000001c0 low=448 high=320
+NVN_HANDLE_WRITE stage=1 unit=0 handle=0x16000000f40 low=3904 high=352
+NVN_SAMPLER_HANDLE_IN handle=0x16000000f40 draw=7 frame=0 program=17/4
+NVN_HANDLE_WRITE stage=1 unit=0 handle=0x140000001c0 low=448 high=320
+NVN_HANDLE_WRITE stage=1 unit=0 handle=0x16000000f60 low=3936 high=352
+NVN_SAMPLER_HANDLE_IN handle=0x16000000f60 draw=8 frame=0 program=17/4
+NVN_HANDLE_WRITE stage=1 unit=0 handle=0x140000001c0 low=448 high=320
+NVN_HANDLE_WRITE stage=1 unit=0 handle=0x16000000f80 low=3968 high=352
+NVN_SAMPLER_HANDLE_IN handle=0x16000000f80 draw=9 frame=0 program=17/4
+NVN_HANDLE_WRITE stage=1 unit=0 handle=0x140000001c0 low=448 high=320
+NVN_SAMPLER_HANDLE_IN handle=0x16000000fa0 draw=10 frame=0 program=17/4
+NVN_SAMPLER_HANDLE_IN handle=0x16000000fc0 draw=11 frame=0 program=17/4
+NVN_SAMPLER_HANDLE_IN handle=0x16000000fe0 draw=12 frame=0 program=17/4
+NVN_SAMPLER_HANDLE_IN handle=0x16000001000 draw=13 frame=0 program=17/4
+NVN_SAMPLER_HANDLE_IN handle=0x16000001020 draw=14 frame=0 program=17/4
+NVN_SAMPLER_HANDLE_IN handle=0x16000001040 draw=15 frame=0 program=17/4
+NVN_SAMPLER_HANDLE_IN handle=0x16000001060 draw=16 frame=0 program=17/4
+NVN_PROGRAM_LINK_ERROR L0007 Fragment shader uses a varying varying_1 that has not been declared in the vertex shader.
+STOP status=NVN_PROGRAM_LINK_FAILED pc=main.text.seg+0x52d294 detail=0x8 query_memory_calls=0x100 tls_trap_reads=0x0
