@@ -92,19 +92,20 @@ def main():
         frames = [int(x) for x in re.findall(r'NVN_PRESENT_PIXELS frame=(\d+)', log)]
         frame = frames[-1] if frames else None
         rec = {'t': round(time.time(), 3), 'frame': frame, 'sample': s}
-        if prev and s.get('running') and prev.get('running'):
-            dt = rec['t'] - prev['t']
-            dticks = sum(v['cpu'] for v in s['threads'].values()) - \
-                     sum(v['cpu'] for v in prev['threads'].values())
+        cur = s if s.get('running') and s.get('threads') else None
+        prv = prev if prev and prev.get('sample', {}).get('threads') else None
+        if cur and prv:
+            dt = rec['t'] - prv['t']
+            dticks = sum(v['cpu'] for v in cur['threads'].values()) - \
+                     sum(v['cpu'] for v in prv['sample']['threads'].values())
             rec['cpu_percent'] = round(100.0 * dticks / (dt * os.sysconf('SC_CLK_TCK')), 1)
-            rec['minflt_per_s'] = int((s['minflt'] - prev['minflt']) / dt)
-            rec['majflt_per_s'] = int((s['majflt'] - prev['majflt']) / dt)
+            rec['minflt_per_s'] = int((cur['minflt'] - prv['sample']['minflt']) / dt)
+            rec['majflt_per_s'] = int((cur['majflt'] - prv['sample']['majflt']) / dt)
             if frame is not None and last_frame is not None and frame > last_frame:
-                # Present-cadence measured over the sample window, in the guest's own frames.
                 rec['guest_frame_ms'] = round(1000.0 * dt / (frame - last_frame), 1)
             per = []
-            for tid, v in s['threads'].items():
-                old = prev['threads'].get(tid)
+            for tid, v in cur['threads'].items():
+                old = prv['sample']['threads'].get(tid)
                 if old:
                     per.append({'tid': tid, 'name': v['name'],
                                 'cpu_ms_per_s': round(1000.0 * (v['cpu'] - old['cpu']) / dt, 1),
@@ -115,7 +116,7 @@ def main():
             last_frame = frame
         out.write(json.dumps(rec) + '\n')
         out.flush()
-        prev = s
+        prev = rec
         time.sleep(INTERVAL)
     harness.wait(timeout=90)
     out.close()
