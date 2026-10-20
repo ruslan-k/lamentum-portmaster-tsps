@@ -1,0 +1,16 @@
+{
+  "cbuf-unit-legacy-01": {
+    "width": 1280,
+    "height": 720,
+    "all_white_pixels": 921600,
+    "nonblack_pixels": 921600,
+    "max_channel": 255
+  },
+  "cbuf-unit-distinct-01": {
+    "width": 1280,
+    "height": 720,
+    "all_white_pixels": 0,
+    "nonblack_pixels": 259040,
+    "max_channel": 92
+  }
+}

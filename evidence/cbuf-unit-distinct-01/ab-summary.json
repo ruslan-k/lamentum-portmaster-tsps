@@ -1,0 +1,38 @@
+{
+  "cbuf-unit-legacy-01": {
+    "audit_count": 101,
+    "collision_count": 37,
+    "stops": [
+      "TIME_LIMIT"
+    ],
+    "state": "0\n1\n0-7\n",
+    "first_audits": [
+      "LC2_CBUF_AUDIT draw=1 pair=16/19 name=c4_1 stage=0 bank=1 unit=15 object=90 collision=0",
+      "LC2_CBUF_AUDIT draw=2 pair=7/0 name=c4 stage=0 bank=0 unit=15 object=92 collision=0",
+      "LC2_CBUF_AUDIT draw=2 pair=7/0 name=c3 stage=1 bank=0 unit=15 object=92 collision=1",
+      "LC2_CBUF_AUDIT draw=3 pair=7/0 name=c4 stage=0 bank=0 unit=15 object=92 collision=0",
+      "LC2_CBUF_AUDIT draw=3 pair=7/0 name=c3 stage=1 bank=0 unit=15 object=92 collision=1",
+      "LC2_CBUF_AUDIT draw=4 pair=18/1 name=c4 stage=0 bank=0 unit=15 object=92 collision=0",
+      "LC2_CBUF_AUDIT draw=4 pair=18/1 name=c3 stage=1 bank=0 unit=15 object=92 collision=1",
+      "LC2_CBUF_AUDIT draw=5 pair=18/21 name=c4 stage=0 bank=0 unit=15 object=92 collision=0"
+    ]
+  },
+  "cbuf-unit-distinct-01": {
+    "audit_count": 101,
+    "collision_count": 0,
+    "stops": [
+      "TIME_LIMIT"
+    ],
+    "state": "0\n1\n0-7\n",
+    "first_audits": [
+      "LC2_CBUF_AUDIT draw=1 pair=16/19 name=c4_1 stage=0 bank=1 unit=31 object=90 collision=0",
+      "LC2_CBUF_AUDIT draw=2 pair=7/0 name=c4 stage=0 bank=0 unit=31 object=90 collision=0",
+      "LC2_CBUF_AUDIT draw=2 pair=7/0 name=c3 stage=1 bank=0 unit=30 object=91 collision=0",
+      "LC2_CBUF_AUDIT draw=3 pair=7/0 name=c4 stage=0 bank=0 unit=31 object=90 collision=0",
+      "LC2_CBUF_AUDIT draw=3 pair=7/0 name=c3 stage=1 bank=0 unit=30 object=91 collision=0",
+      "LC2_CBUF_AUDIT draw=4 pair=18/1 name=c4 stage=0 bank=0 unit=31 object=90 collision=0",
+      "LC2_CBUF_AUDIT draw=4 pair=18/1 name=c3 stage=1 bank=0 unit=30 object=91 collision=0",
+      "LC2_CBUF_AUDIT draw=5 pair=18/21 name=c4 stage=0 bank=0 unit=31 object=90 collision=0"
+    ]
+  }
+}

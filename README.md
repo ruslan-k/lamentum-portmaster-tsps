@@ -1,19 +1,20 @@
 # Lamentum — experimental Switch-to-Linux-ARM64 port (TSPS / SpruceOS)
 
-**Status: not playable. The best bounded probe initializes 522 textures, then stops
-at the physical-memory floor. Captured output remains white, not a verified scene or game menu.
-The previous NULL-base fault was localized to FMOD's allocation-failure cleanup path.**
+**Status: not playable. Build 177 fixes a proven cbuf texture-unit collision:
+physical scanout now shows a partial rainy scene rather than the white field.
+Complete rendering, the game menu, input and gameplay remain unverified.**
 
-Latest work: `docs/loading-memory-170-174.md`, following `docs/loading-memory.md` and
-`docs/porting-log.md`. All eligible single-level BC textures can defer GL storage; four
-first-use materializations are now positively verified. Lossless CPU backing uses two
-bounded temporary files when requested. Disjoint BC writes avoid redundant staging up
-to 64 MiB. Original texture resolution, the game image and the 420 MiB GPU ceiling remain
-unchanged. Eight TEST shader substitutes still prevent any gameplay-correctness claim.
+Latest work: `docs/cbuf-unit-isolation.md` (same-binary A/B: 37 colliding audit
+records versus zero, physical captures included). Memory history remains in
+`docs/loading-memory-170-174.md`, `docs/loading-memory.md` and `docs/porting-log.md`.
+The historical best loading probe initialized 522 textures before its physical-memory
+floor; the new short rendering A/B does not establish an improvement to that limit.
+Eight TEST shader substitutes remain. Lossless backing/deferred uploads preserve
+original texture resolution and the owner image; the 420 MiB GPU ceiling is unchanged.
 
 The installed launcher keeps experimental memory features off unless explicitly requested;
 it uses strict GL checks, synchronous submission, SDL/KMSDRM and a 96 MiB memory floor.
-The failed pageout experiment remains disabled. The latest binary is build 174, installed
+The failed pageout experiment remains disabled. The latest binary is build 177, installed
 with a device-side backup and independently verified SHA-256. The temporary watermark
 experiment was restored to its original value and is not a persistent system change.
 
@@ -56,7 +57,7 @@ keys, no saves. Only our own tooling, the adapter patch and measured evidence ar
 
 ## Not done yet
 
-- Resolve the black screen after physical splash screens and the scene-loading memory wall.
+- Resolve the incomplete scene rendering and the scene-loading memory wall.
 - Replace TEST shader substitutes with validated translations.
 - Validate input actions, audible sound, saves and sustained gameplay/performance.
 - Resolve scene-load memory pressure and validate the transition beyond splash screens.

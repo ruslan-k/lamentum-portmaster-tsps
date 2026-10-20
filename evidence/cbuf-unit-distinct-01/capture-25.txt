@@ -1,0 +1,2 @@
+mainui=port=15237
+Screenshot saved to /mnt/SDCARD/Roms/PORTS/lamentum-switch/cbuf-0-25.png (FB ID: 161, 1280x720)
