@@ -68,10 +68,10 @@ index f85a59d..13390cf 100644
          /* sub sp,sp,#imm12 */
          ctx->uc_mcontext.sp-=(instruction>>10)&0xfff;
 diff --git a/native/input_host.h b/native/input_host.h
-index cdecae8..81965df 100644
+index cdecae8..fda3668 100644
 --- a/native/input_host.h
 +++ b/native/input_host.h
-@@ -6,6 +6,7 @@
+@@ -6,11 +6,19 @@
  #include <sys/un.h>
  #include <math.h>
  #include "input_ring.h"
@@ -79,7 +79,33 @@ index cdecae8..81965df 100644
  #include "input_gptk.h"
  #include "input_c6.h"
  #include "t2_face_position.h"
-@@ -238,16 +239,36 @@ static void hid_publish(struct hid_sample sample,unsigned connected) {
+ #include "megaman_virtual_pad.h"
+ #include "megaman_left_stick.h"
++
++/* Tap latch: a physical press can be shorter than one guest frame (the title renders at
++ * 1-2 fps here), so it would otherwise never be sampled. Declared outside the
++ * T2_SWITCH_INPUT block because hid_publish() is used by every build. */
++#include "lc2_input_latch.h"
++unsigned lc2_guest_frame_count(void);
++static struct lc2_input_latch hid_latch;
+ static const char *hid_input_provider(void) {
+ #if defined(MEGAMAN_HOST_DIAGNOSTIC) && MEGAMAN_HOST_DIAGNOSTIC
+     if(megaman_virtual_pad.enabled)return "host-virtual";
+@@ -224,6 +232,13 @@ static struct hid_sample hid_read_sample(SDL_GameController *pad,uint64_t diagno
+ }
+ static void hid_publish(struct hid_sample sample,unsigned connected) {
+     if(!hid_state.shared_plus_one)return;
++    sample.buttons=lc2_input_latch_apply(&hid_latch,hid_now_ms(),lc2_guest_frame_count(),sample.buttons);
++    static int latch_logged;
++    if(!latch_logged&&hid_latch.interval) {
++        latch_logged=1;
++        printf("LC2_INPUT_LATCH guest-frame-ms=%llu window-ms=%llu reason=tap-shorter-than-one-guest-frame\n",
++            (unsigned long long)hid_latch.interval,(unsigned long long)hid_latch.window);
++    }
+     uint8_t *shared=shared_regions[hid_state.shared_plus_one-1].writer;
+     unsigned target=10;
+     if(hid_state.active && (hid_state.styles&1) && connected)
+@@ -238,16 +253,36 @@ static void hid_publish(struct hid_sample sample,unsigned connected) {
      static int hh_cfg;static unsigned handheld;
      if(!hh_cfg){const char *o=getenv("MOMO_NPAD_HANDHELD");handheld=!o||strcmp(o,"0");hh_cfg=1;
          if(handheld)printf("MOMO_NPAD_HANDHELD enabled=1 entry=8 style-bit=1 scope=diagnostic\n");}
@@ -119,7 +145,7 @@ index cdecae8..81965df 100644
              struct hid_sample value=live?actual:(struct hid_sample){.number=sample.number};
              hid_ring_publish((struct hid_ring *)(entry+0x28+ring*0x350),value);
          }
-@@ -263,6 +284,18 @@ static void hid_publish(struct hid_sample sample,unsigned connected) {
+@@ -263,6 +298,18 @@ static void hid_publish(struct hid_sample sample,unsigned connected) {
      if(sample.buttons!=hid_host.last_buttons) {
          printf("HID_SAMPLE number=%"PRIu64" buttons=0x%"PRIx64" player=%u\n",sample.number,sample.buttons,target);
          hid_host.last_buttons=sample.buttons;
@@ -418,6 +444,100 @@ index 0000000..1bde144
 +    }
 +    return 1;
 +}
++#endif
+diff --git a/native/lc2_input_latch.h b/native/lc2_input_latch.h
+new file mode 100644
+index 0000000..fbe5673
+--- /dev/null
++++ b/native/lc2_input_latch.h
+@@ -0,0 +1,88 @@
++/* Tap latch: a physical button press can be shorter than one guest frame.
++ *
++ * Measured on this device: the title renders at roughly 1-2 frames per second while it
++ * loads, so a 100-200 ms human tap starts and ends entirely between two guest samples
++ * and the title never sees it. The pad path itself is fine (the adapter publishes every
++ * ~8 ms and the guest reads the canonical Npad records), so the loss is purely sampling.
++ *
++ * This keeps a bit asserted for one measured guest frame interval after release, so an
++ * edge-triggered menu still sees exactly one press. It changes latency, not semantics:
++ * a bit is never held longer than one frame plus a margin, and holding a button behaves
++ * exactly as before. Two taps inside the same frame merge into one, which is the correct
++ * reading at that frame rate.
++ *
++ * Pure function of (time, present counter, buttons) so it is unit-testable off-device.
++ * LC2_INPUT_MIN_HOLD_MS forces a fixed window (milliseconds, 0 disables) for A/B runs.
++ */
++#ifndef LC2_INPUT_LATCH_H
++#define LC2_INPUT_LATCH_H
++#include <stdint.h>
++#include <stdlib.h>
++#include <string.h>
++
++#define LC2_INPUT_LATCH_FLOOR_MS 120u
++#define LC2_INPUT_LATCH_MARGIN_MS 80u
++#define LC2_INPUT_LATCH_CEIL_MS 900u
++
++struct lc2_input_latch {
++    uint64_t deadline[64];
++    uint64_t active;
++    uint64_t interval;
++    uint64_t last_change;
++    uint64_t window;
++    unsigned last_frame;
++    long forced;
++    int configured;
++    int disabled;
++};
++
++static uint64_t lc2_input_latch_window(struct lc2_input_latch *s, uint64_t now, unsigned frame) {
++    if (!s->configured) {
++        /* Opt-in until an end-to-end device A/B proves it: LC2_INPUT_LATCH=1 enables the
++         * adaptive window, and LC2_INPUT_MIN_HOLD_MS forces a fixed one for measurement. */
++        const char *on = getenv("LC2_INPUT_LATCH");
++        if (!(on && !strcmp(on, "1"))) s->disabled = 1;
++        const char *o = getenv("LC2_INPUT_MIN_HOLD_MS");
++        s->forced = o ? strtol(o, 0, 10) : -1;
++        if (s->forced > (long)LC2_INPUT_LATCH_CEIL_MS) s->forced = LC2_INPUT_LATCH_CEIL_MS;
++        if (s->forced < 0) s->forced = -1;
++        s->configured = 1;
++    }
++    if (frame != s->last_frame) {
++        if (s->last_frame && now > s->last_change) s->interval = now - s->last_change;
++        s->last_frame = frame;
++        s->last_change = now;
++    }
++    uint64_t window;
++    if (s->forced >= 0) {
++        window = (uint64_t)s->forced;
++    } else {
++        window = s->interval > LC2_INPUT_LATCH_FLOOR_MS
++                     ? s->interval + LC2_INPUT_LATCH_MARGIN_MS
++                     : LC2_INPUT_LATCH_FLOOR_MS;
++        if (window > LC2_INPUT_LATCH_CEIL_MS) window = LC2_INPUT_LATCH_CEIL_MS;
++    }
++    s->window = window;
++    return window;
++}
++
++static uint64_t lc2_input_latch_apply(struct lc2_input_latch *s, uint64_t now,
++                                      unsigned frame, uint64_t buttons) {
++    uint64_t window = lc2_input_latch_window(s, now, frame);
++    if (s->disabled) return buttons;
++    if (!window) return buttons;
++    uint64_t extra = 0;
++    for (unsigned b = 0; b < 64; b++) {
++        uint64_t bit = 1ULL << b;
++        if (buttons & bit) {
++            s->active |= bit;
++            s->deadline[b] = now + window;
++        } else if (s->active & bit) {
++            if (now < s->deadline[b]) extra |= bit;
++            else s->active &= ~bit;
++        }
++    }
++    return buttons | extra;
++}
++
 +#endif
 diff --git a/native/lc2_menu_trace.h b/native/lc2_menu_trace.h
 new file mode 100644
@@ -1204,7 +1324,7 @@ index 410deb4..7269206 100644
  }
  /* Called after Submit, outside the producer/regions locks. A quick atomic
 diff --git a/native/nvn_present.h b/native/nvn_present.h
-index 8c0254b..eea3d6c 100644
+index 8c0254b..cc3d2b7 100644
 --- a/native/nvn_present.h
 +++ b/native/nvn_present.h
 @@ -13,6 +13,44 @@
@@ -1369,6 +1489,15 @@ index 8c0254b..eea3d6c 100644
      if(nxgl_frame_proof_consume_fatal())stop("NVN_FRAME_PROOF_FATAL",nvn_caller,nvn_present.frames,22);
      uint64_t swap_finished=nvn_nanoseconds();nvn_profile.swap_ns+=swap_finished-swap_started;
      t2_runtime_health_after_present(cadence_pixel_proof);
+@@ -376,3 +471,8 @@ static unsigned nvn_present_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+     megaman_frame_cadence_end_present(1,cadence_pixel_proof);
+     return 1;
+ }
++
++/* Definition consumed by input_host.h (declared there, before nvn_present.h is included). */
++unsigned lc2_guest_frame_count(void) {
++    return nvn_present.frames;
++}
 diff --git a/native/nvn_queue.h b/native/nvn_queue.h
 index 0545586..ac198d5 100644
 --- a/native/nvn_queue.h
@@ -1433,7 +1562,7 @@ index 0545586..ac198d5 100644
      nvn_gl_completion.real_waits++;
  }
 diff --git a/native/nvn_render.h b/native/nvn_render.h
-index 543b4b5..afe7da0 100644
+index 543b4b5..43e8277 100644
 --- a/native/nvn_render.h
 +++ b/native/nvn_render.h
 @@ -2,6 +2,8 @@
@@ -1620,7 +1749,7 @@ index 543b4b5..afe7da0 100644
      nvn_mfc_target(nvn_render.target);nvn_mfc_target(nvn_render.depth);
      if(nvn_render.scratch_pool && !nvn_render.scratch_pool->live)
          stop("NVN_SHADER_SCRATCH_POOL_LIFETIME",nvn_caller,nvn_render.scratch_pool->object,24);
-@@ -788,24 +936,95 @@ static void nvn_render_draw_inner(struct nvn_record *r) {
+@@ -788,24 +936,112 @@ static void nvn_render_draw_inner(struct nvn_record *r) {
      unsigned units=0,samplers_total=0,momo_tmp_sprite_atlas=0;
      uint64_t pass_textures[8],pass_handles[8];unsigned pass_slots[8],pass_offsets[8],pass_texture_count=0;const char *pass_names[8];unsigned pass_sizes[8][2];
      for(unsigned i=0;i<p->uniform_count;i++)if(p->uniforms[i].kind==3)samplers_total++;
@@ -1686,7 +1815,8 @@ index 543b4b5..afe7da0 100644
 +            if(need>sizeof staging/sizeof staging[0])stop("NVN_CBUF_TEXTURE_SIZE",nvn_caller,(uint64_t)need,24);
 +            memset(staging,0,need*sizeof(float));
 +            if(avail)memcpy(staging,nvn_gpu_pointer(range.address+u->offset,avail,PROT_READ),avail);
-+            static GLuint cbuf_texture[32];unsigned slot=(u->stage*16U+u->binding)&31U;
++            static GLuint cbuf_texture[32];static unsigned cbuf_w[32],cbuf_h[32];
++            unsigned slot=(u->stage*16U+u->binding)&31U;
 +            GLint cbuf_unit=15;
 +#ifdef LC2_TEXTURE_VIEW_36
 +            static int legacy=-1;
@@ -1700,12 +1830,28 @@ index 543b4b5..afe7da0 100644
 +                slot=(unsigned)cbuf_unit; /* one immutable-for-this-draw object per active bank */
 +            }
 +#endif
-+            if(!cbuf_texture[slot])glGenTextures(1,&cbuf_texture[slot]);
-+            glActiveTexture(GL_TEXTURE0+cbuf_unit);
-+            glBindTexture(GL_TEXTURE_2D,cbuf_texture[slot]);
-+            glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
-+            glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
-+            glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA32F,(GLsizei)width,(GLsizei)height,0,GL_RGBA,GL_FLOAT,staging);
++            if(!cbuf_texture[slot]) {
++                glGenTextures(1,&cbuf_texture[slot]);
++                glActiveTexture(GL_TEXTURE0+cbuf_unit);
++                glBindTexture(GL_TEXTURE_2D,cbuf_texture[slot]);
++                glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
++                glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
++            } else {
++                glActiveTexture(GL_TEXTURE0+cbuf_unit);
++                glBindTexture(GL_TEXTURE_2D,cbuf_texture[slot]);
++            }
++            /* C1 (FPS roadmap §6): glTexImage2D redefines the whole storage on every draw, which makes
++             * the driver allocate and free the image 20+ times per frame for a 16-368 byte payload.
++             * Allocate once per (width,height) and refresh with glTexSubImage2D; reallocate only when
++             * the block size really changes. Same bytes, same format, same sampling. */
++            static int sub_cfg,sub_image=1;
++            if(!sub_cfg){const char *o=getenv("LC2_CBUF_SUBIMAGE");sub_image=!(o&&!strcmp(o,"0"));sub_cfg=1;}
++            if(!sub_image||cbuf_w[slot]!=width||cbuf_h[slot]!=height) {
++                glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA32F,(GLsizei)width,(GLsizei)height,0,GL_RGBA,GL_FLOAT,staging);
++                cbuf_w[slot]=width;cbuf_h[slot]=height;
++            } else {
++                glTexSubImage2D(GL_TEXTURE_2D,0,0,0,(GLsizei)width,(GLsizei)height,GL_RGBA,GL_FLOAT,staging);
++            }
 +            if(location>=0)glUniform1i(location,cbuf_unit);
 +            glActiveTexture(GL_TEXTURE0);
 +            {   /* COTM_CBUF_GL=<n>: does the rewritten sampler uniform resolve, and does the unit stick? */
@@ -1725,7 +1871,7 @@ index 543b4b5..afe7da0 100644
          {   /* MOMO_UNIFORM_DUMP=<draw>: the whole constant bank bound for that draw, so a shader whose
               * values look shifted can be checked against the raw buffer instead of guessed. */
              static int cfg;static unsigned wanted;static unsigned done;
-@@ -1146,6 +1365,26 @@ static void nvn_render_draw_inner(struct nvn_record *r) {
+@@ -1146,6 +1382,26 @@ static void nvn_render_draw_inner(struct nvn_record *r) {
          for(uint64_t i=0;i<count;i++){uint32_t v=type==0?src[i]:type==1?(uint32_t)src[i*2]|((uint32_t)src[i*2+1]<<8):read32(src+i*4);scratch[i]=v-min;}
          }
      }
@@ -1752,7 +1898,7 @@ index 543b4b5..afe7da0 100644
      if(p->momo_tmp_sprite>=0) {
          /* A single-channel page cannot carry colour, so it is a font and the colour belongs to the face
           * texture; anything else is a sprite atlas and carries the picture. */
-@@ -1267,10 +1506,36 @@ static void nvn_render_draw_inner(struct nvn_record *r) {
+@@ -1267,10 +1523,36 @@ static void nvn_render_draw_inner(struct nvn_record *r) {
          if(stream>=nvn_render.stream_count||stream>=16||nvn_render.streams[stream][1])stop("NVN_VERTEX_STREAM_REQUIRED",nvn_caller,stream,20);
          struct nvn_vertex_format vf=nvn_vertex_format_decode(format);
          unsigned components=vf.components;
@@ -1791,7 +1937,7 @@ index 543b4b5..afe7da0 100644
          void *data=nvn_gpu_pointer(range.address+start,extent,PROT_READ);nvn_render_attrib_enable(i,1);
          if(megaman_frame_cadence_enabled() && p->sources[0]==8 && p->sources[1]==7 && i==0 &&
             vf.type==GL_FLOAT && components==2 && !vf.normalized && maximum==2 && count==3) {
-@@ -1449,6 +1714,71 @@ static void nvn_render_draw_inner(struct nvn_record *r) {
+@@ -1449,6 +1731,71 @@ static void nvn_render_draw_inner(struct nvn_record *r) {
      }
      if(preserve)momo_stencil_probe(nvn_replay.draws+1,p->sources[0],p->sources[1]);
      momo_window_draws_census(nvn_render.target,nvn_replay.last_frame,nvn_replay.draws+1,p->sources[0],p->sources[1]);
@@ -1863,7 +2009,7 @@ index 543b4b5..afe7da0 100644
      nvn_replay.draws++;nvn_render.target->draws++;
      struct nvn_texture *target_storage=zero_texture_storage_state(nvn_render.target);
      if(target_storage!=nvn_render.target)target_storage->draws++;
-@@ -1589,6 +1919,22 @@ static unsigned nvn_render_record(struct nvn_record *r) {
+@@ -1589,6 +1936,22 @@ static unsigned nvn_render_record(struct nvn_record *r) {
          static unsigned reported;if(!reported++)printf("NVN_LC2_SHADER_SCRATCH pool=0x%"PRIx64" offset=0x%"PRIx64" bytes=0x%"PRIx64" backend=GLES-driver-owned\n",a[0],a[1],size);
          return 1;
      }
@@ -1886,7 +2032,7 @@ index 543b4b5..afe7da0 100644
      case NI_nvnCommandBufferBindColorState:memcpy(&nvn_render.color,r->payload,4);return 1;
      case NI_nvnCommandBufferBindBlendState:memcpy(nvn_render.blend,r->payload,8);return 1;
      case NI_nvnCommandBufferBindDepthStencilState:memcpy(nvn_render.depth_state,r->payload,8);return 1;
-@@ -1621,6 +1967,14 @@ static unsigned nvn_render_record(struct nvn_record *r) {
+@@ -1621,6 +1984,14 @@ static unsigned nvn_render_record(struct nvn_record *r) {
      case NI_nvnCommandBufferBindVertexBuffers:memcpy(nvn_render.vertex+a[0],r->payload,a[1]*16);return 1;
      case NI_nvnCommandBufferBindUniformBuffer:
          if(a[0]>1||a[1]>=16)stop("NVN_UNIFORM_BINDING",nvn_caller,a[1],24);
@@ -1901,7 +2047,7 @@ index 543b4b5..afe7da0 100644
          nvn_render.uniform[a[0]][a[1]]=(struct nvn_range){a[2],a[3]};return 1;
      case NI_nvnCommandBufferBindUniformBuffersDeferred: {
          /* The ranges live in guest memory and are read now, at execution, which is the deferred contract. */
-@@ -1643,7 +1997,18 @@ static unsigned nvn_render_record(struct nvn_record *r) {
+@@ -1643,7 +2014,18 @@ static unsigned nvn_render_record(struct nvn_record *r) {
          }
          return 1;
      case NI_nvnCommandBufferBindTexture:
@@ -2540,10 +2686,21 @@ index 9ab8126..1db3c58 100644
                                 input_sha256=sha(data), output_sha256=sha(output),
                                 size=len(data), changed_bytes=len(differences), changes=changes,
 diff --git a/native/t2_guest_memory.h b/native/t2_guest_memory.h
-index 81f1ea1..8657c0d 100644
+index 81f1ea1..96969a7 100644
 --- a/native/t2_guest_memory.h
 +++ b/native/t2_guest_memory.h
-@@ -125,7 +125,7 @@ static void t2_stack_alias_release_source(uint64_t source,uint64_t size) {
+@@ -75,6 +75,10 @@ static size_t t2lz_compress(const uint8_t *src,size_t n,uint8_t *dst,size_t cap,
+     return (size_t)(op-dst);
+ }
+ /* Returns 1 only if exactly n bytes were produced without reading or writing out of bounds. */
++static uint64_t t2_gz_now_ns(void) {
++    struct timespec t;clock_gettime(CLOCK_MONOTONIC,&t);
++    return (uint64_t)t.tv_sec*1000000000ull+(uint64_t)t.tv_nsec;
++}
+ static int t2lz_decompress(const uint8_t *src,size_t clen,uint8_t *dst,size_t n) {
+     const uint8_t *ip=src,*iend=src+clen;uint8_t *op=dst,*oend=dst+n;
+     while(ip<iend) {
+@@ -125,7 +129,7 @@ static void t2_stack_alias_release_source(uint64_t source,uint64_t size) {
      if(t2_stack_sparse_enabled())madvise((void *)(uintptr_t)source,size,MADV_DONTNEED);
  }
  /* ---- block table ---- */
@@ -2552,7 +2709,34 @@ index 81f1ea1..8657c0d 100644
  enum {T2_GZ_NORMAL=0,T2_GZ_COMPRESSED=1};
  static struct {
      unsigned enabled,shift,cold_ms,period_ms,max_permille,stats_ms,pools,trace_left;uint64_t block,nblocks,budget,target_kib;
-@@ -226,6 +226,26 @@ static void t2_gzram_touch(uint64_t address,uint64_t size) {
+@@ -133,6 +137,10 @@ static struct {
+     uint8_t *raw,*packed,*vec;uint32_t *table;void *deferred[1024];unsigned ndeferred;
+     uint64_t live,stored,peak_live,compressions,faults,restores,zero_reclaimed,incompressible,protect_fail,read_fail,
+              touched,forgotten,stale_retries,scans,growing;
++    /* CPU attribution for the compression layer: the roadmap's open question is whether the
++     * ~400 ms per frame that replay/present do not account for is this codec or guest logic.
++     * Two clock_gettime calls per block are negligible against a 16-64 KiB compress. */
++    uint64_t compress_ns,restore_ns,scan_ns;
+     struct timespec start;
+ } t2_gz={.mutex=PTHREAD_MUTEX_INITIALIZER,.memfd=-1};
+ static _Thread_local uint64_t t2_gz_last_fault;
+@@ -166,6 +174,7 @@ static int t2_gz_all_zero(const uint8_t *p,size_t n) {
+ }
+ /* t2_gz.mutex held. Restores one compressed block; 1 on success. */
+ static int t2_gz_restore_locked(uint64_t index) {
++    uint64_t restore_t0=t2_gz_now_ns();
+     struct t2_gz_block *b=&t2_gz.blocks[index];
+     if(b->state!=T2_GZ_COMPRESSED)return 1;
+     uint64_t address=ALIAS_BASE+(index<<t2_gz.shift);
+@@ -183,6 +192,7 @@ static int t2_gz_restore_locked(uint64_t index) {
+     else free(b->data);
+     t2_gz.stored-=b->clen;t2_gz.live-=t2_gz.block;t2_gz.restores++;
+     b->data=NULL;b->clen=0;b->state=T2_GZ_NORMAL;if(b->restores<255)b->restores++;
++    t2_gz.restore_ns+=t2_gz_now_ns()-restore_t0;
+     unsigned shift=b->restores>6?6:b->restores;
+     b->ready_ms=t2_gz_now_ms()+(t2_gz.cold_ms<<shift);
+     return 1;
+@@ -226,6 +236,26 @@ static void t2_gzram_touch(uint64_t address,uint64_t size) {
      }
      pthread_mutex_unlock(&t2_gz.mutex);
  }
@@ -2579,7 +2763,7 @@ index 81f1ea1..8657c0d 100644
  /* Before svcUnmapPhysicalMemory: blocks fully inside the range are dropped, partial ones restored. */
  static void t2_gzram_forget(uint64_t address,uint64_t size) {
      if(!t2_gz.enabled || !size)return;
-@@ -244,6 +264,7 @@ static void t2_gzram_forget(uint64_t address,uint64_t size) {
+@@ -244,6 +274,7 @@ static void t2_gzram_forget(uint64_t address,uint64_t size) {
      pthread_mutex_unlock(&t2_gz.mutex);
  }
  static int t2_gz_pool_overlap(uint64_t address,uint64_t size) {
@@ -2587,7 +2771,7 @@ index 81f1ea1..8657c0d 100644
      if(t2_gz.pools)return 0;
      for(unsigned i=0;i<256;i++) {
          const struct nvn_pool *p=&nvn_pools[i];
-@@ -254,6 +275,7 @@ static int t2_gz_pool_overlap(uint64_t address,uint64_t size) {
+@@ -254,6 +285,7 @@ static int t2_gz_pool_overlap(uint64_t address,uint64_t size) {
  /* regions_mutex and t2_gz.mutex held; the block is eligible. */
  static void t2_gz_compact_locked(uint64_t index,uint32_t now) {
      struct t2_gz_block *b=&t2_gz.blocks[index];
@@ -2595,6 +2779,37 @@ index 81f1ea1..8657c0d 100644
      uint64_t address=ALIAS_BASE+(index<<t2_gz.shift),size=t2_gz.block;
      if(mprotect((void *)(uintptr_t)address,size,PROT_NONE)){t2_gz.protect_fail++;b->ready_ms=now+t2_gz.cold_ms*8;return;}
      if(!t2_gz_io(0,t2_gz.raw,size,address)) {
+@@ -266,6 +298,7 @@ static void t2_gz_compact_locked(uint64_t index,uint32_t now) {
+         if(mprotect((void *)(uintptr_t)address,size,PROT_READ|PROT_WRITE))stop("T2_GZRAM_UNDO_PROTECT",address,(uint64_t)errno,21);
+         t2_gz.zero_reclaimed++;b->ready_ms=now+t2_gz.cold_ms*4;return;
+     }
++    uint64_t compress_t0=t2_gz_now_ns();
+     size_t clen=t2lz_compress(t2_gz.raw,size,t2_gz.packed,size*t2_gz.max_permille/1000,t2_gz.table);
+     uint8_t *data=clen?malloc(clen):NULL;
+     if(!data) {
+@@ -277,6 +310,7 @@ static void t2_gz_compact_locked(uint64_t index,uint32_t now) {
+     }
+     memcpy(data,t2_gz.packed,clen);
+     madvise((void *)(uintptr_t)address,size,MADV_DONTNEED);
++    t2_gz.compress_ns+=t2_gz_now_ns()-compress_t0;
+     b->data=data;b->clen=(uint32_t)clen;b->state=T2_GZ_COMPRESSED;
+     t2_gz.stored+=clen;t2_gz.live+=size;t2_gz.compressions++;
+     if(t2_gz.live>t2_gz.peak_live)t2_gz.peak_live=t2_gz.live;
+@@ -285,11 +319,12 @@ static void t2_gz_stats(const char *why) {
+     printf("T2_GZRAM %s compressed-MiB=%.1f stored-MiB=%.1f saved-MiB=%.1f peak-compressed-MiB=%.1f compressions=%" PRIu64
+            " faults=%" PRIu64 " restores=%" PRIu64 " touched=%" PRIu64 " forgotten=%" PRIu64 " zero-reclaimed=%" PRIu64
+            " incompressible=%" PRIu64 " protect-fail=%" PRIu64 " read-fail=%" PRIu64 " stale-retries=%" PRIu64
+-           " scans=%" PRIu64 " growing=%" PRIu64 " memavail-MiB=%lu\n",why,
++           " scans=%" PRIu64 " growing=%" PRIu64 " memavail-MiB=%lu"
++           " cpu-compress-ms=%" PRIu64 " cpu-restore-ms=%" PRIu64 "\n",why,
+            t2_gz.live/1048576.0,t2_gz.stored/1048576.0,(t2_gz.live-t2_gz.stored)/1048576.0,t2_gz.peak_live/1048576.0,
+            t2_gz.compressions,t2_gz.faults,t2_gz.restores,t2_gz.touched,t2_gz.forgotten,t2_gz.zero_reclaimed,
+            t2_gz.incompressible,t2_gz.protect_fail,t2_gz.read_fail,t2_gz.stale_retries,t2_gz.scans,t2_gz.growing,
+-           t2_mem_available_kib()/1024);
++           t2_mem_available_kib()/1024,t2_gz.compress_ns/1000000,t2_gz.restore_ns/1000000);
+     fflush(stdout);
+ }
+ static void *t2_gz_thread(void *argument) {
 diff --git a/native/zero_bc.h b/native/zero_bc.h
 index f9e31ec..a1e6b35 100644
 --- a/native/zero_bc.h
