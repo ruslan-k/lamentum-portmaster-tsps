@@ -1,5 +1,6 @@
 import unittest
 from analyze_load_probe import summarize
+from load_probe import pick_action
 
 
 def row(t, avail, frame, textures, presents, **extra):
@@ -34,6 +35,16 @@ class LoadProbeSummaryTests(unittest.TestCase):
 
     def test_no_samples_is_zero_not_crash(self):
         self.assertEqual(summarize([]), {'samples': 0, 'usable': 0, 'errors': 0})
+
+
+class PickActionTests(unittest.TestCase):
+    def test_invisible_cursor_never_nudges(self):
+        self.assertIsNone(pick_action(None))
+
+    def test_direction_from_the_measured_row(self):
+        self.assertEqual(pick_action((425, 453)), 'down')
+        self.assertEqual(pick_action((475, 503)), 'here')
+        self.assertEqual(pick_action((575, 603)), 'up')
 
 
 if __name__ == '__main__':

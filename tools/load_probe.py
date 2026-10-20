@@ -56,6 +56,28 @@ def wait_menu(timeout_s):
     raise RuntimeError('menu never appeared')
 
 
+def pick_action(row, target=NEWGAME_ROW_Y):
+    """None means 'the cursor is not visible yet - wait', never a blind nudge."""
+    if row is None:
+        return None
+    if row[0] < target[0]:
+        return 'down'
+    if row[0] > target[1]:
+        return 'up'
+    return 'here'
+
+
+def wait_menu_visible(out, timeout_s=300, name='menu'):
+    deadline = time.time() + timeout_s
+    while time.time() < deadline:
+        capture(out / ('%s.png' % name))
+        row = cursor_row(out / ('%s.png' % name))
+        if row is not None:
+            return row
+        time.sleep(8)
+    raise RuntimeError('no cursor band appeared within %d s' % timeout_s)
+
+
 def walk_to(out, name, action, tries=4):
     """Press until the cursor row reaches NEW GAME, verified by the measured band."""
     for i in range(tries):
@@ -73,9 +95,10 @@ def walk_to(out, name, action, tries=4):
 
 def navigate(out):
     wait_menu(600)
-    capture(out / 'menu.png')
-    row = cursor_row(out / 'menu.png')
-    action = 'down' if row and row[0] < NEWGAME_ROW_Y[0] else 'up'
+    row = wait_menu_visible(out)
+    action = pick_action(row)
+    if action in (None, 'here'):
+        action = 'down'
     walk_to(out, 'selected', action)
     press('confirm', 1500)
     time.sleep(8)
@@ -121,8 +144,10 @@ def main():
             (a.evidence / 'samples.jsonl').write_text(''.join(json.dumps(r) + '\n' for r in rows))
             time.sleep(POLL_S)
     finally:
-        rc = harness.wait()
+        # Record the navigation outcome BEFORE blocking on the harness, so an aborted probe
+        # still leaves its reason on disk instead of an empty evidence directory.
         (a.evidence / 'transitions.json').write_text(json.dumps(transitions, indent=2) + '\n')
+        rc = harness.wait()
         print(json.dumps({'harness_rc': rc, 'transitions': transitions}))
 
 
