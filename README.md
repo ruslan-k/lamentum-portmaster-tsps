@@ -1,13 +1,8 @@
 # Lamentum — experimental Switch-to-Linux-ARM64 port (TSPS / SpruceOS)
 
-**Status: not yet playable. Build 202 restores the real main-menu text, load-slot
-selection and Options page on physical scanout. Navigation, Back and Confirm
-have visible screen effects in controlled evdev tests. A 520-second run reaches
-frame 709 and ends on TIME_LIMIT. Gameplay, audible output and save/reload are
-still unverified. The whole-region watch also proves guest Npad reads; the old
-shared-head/+0x18 diagnosis was incorrect (private SDK accessor, not shared memory).**
+**Status: not yet playable.** Build202 established a real, correctly rendered title/main-menu, Options and slot navigation on physical scanout. New **build210** (HEAD [2b6b2a1](https://github.com/ruslan-k/lamentum-portmaster-tsps/commit/2b6b2a1d35dead6a9aade1e611700cc9b378c0cb)) appends the previously blocked New Game vertex shader and, according to the [owner's bring-up report](docs/newgame-bringup.md), proceeds to a controls/tutorial screen ("Press any button to continue") and studio splash, with no shader stop over 275 presented frames. Actual interactive gameplay, audible sound, save/load and 30 FPS are **not yet demonstrated**. The earlier build202 menu evidence remains the independently documented visual baseline.
 
-**2026-10-20 latest reassessment:** [Roadmap §20](docs/performance-roadmap-30fps.md#20-head-b1832de-audit--actionable-next-iteration-2026-10-20) audits main at b1832de (15 commits after the English roadmap), including the *new* exact New Game shader-layout blocker, owner-only shader dump hashes, reproducible SSBO/GLSL lowering choices, inconsistent 304/305 input test scripts, harness cleanup assertions, the measured ~316ms present-to-submit gap and ~250ms NVN replay, cold250 ZRAM result, and a code-level prioritized performance plan. [§19](docs/performance-roadmap-30fps.md#19-current-head-reassessment-and-detailed-next-steps-2026-10-20) and [§18](docs/performance-roadmap-30fps.md#18-post-roadmap-reassessment-2026-10-20) are historical audits. The original build202 menu report remains the independent visible reference; **the game is still not playable and 30 FPS has not been demonstrated**.
+**Latest 2026-10-20 performance reassessment:** [Roadmap §21 — build210 and HEAD 2b6b2a1](docs/performance-roadmap-30fps.md#21-head-2b6b2a1-reassessment--build210-updated-critical-path-2026-10-20) is the current prioritized and detailed next-action plan. It supersedes historical [§20](docs/performance-roadmap-30fps.md#20-head-b1832de-audit--historical-snapshot-2026-10-20) because the known 1280-byte New Game shader is **now translated**. Remaining priorities are advancing past the intro into verified gameplay; fixing test-input 304/305 and principal cleanup; eliminating manual c4 -> NVN slot 1 corrections in the shader generator; repairing the frame/CPU profiling tools; then measuring and improving the large guest present-to-submit (~316 ms) and NVN replay (~250 ms) phases. The cold250 guest-ZRAM arm remains promising but unreplicated; cbuf subimage and generic 720p scaling have not demonstrated useful gains; glFlush-only completion remains unsafe. No verified gameplay P95/FPS exists.
 
 **30 FPS performance roadmap:** [docs/performance-roadmap-30fps.md](docs/performance-roadmap-30fps.md) — 2026-10-20 source/evidence audit, build202 diagnostic frame-time breakdown, gameplay correctness gate, low-overhead profiling, guest compression, cbuf uploads, NVN replay, 720p owner-resolution investigation, Mali bloom/texture residency, GPU synchronization, and measurable acceptance/rollback criteria. **Target only:** no handheld 30 FPS result or playable release is claimed.
 
@@ -34,7 +29,7 @@ original texture resolution and the owner image; the 420 MiB GPU ceiling is unch
 
 The installed launcher keeps experimental memory features off unless explicitly requested;
 it uses strict GL checks, synchronous submission, SDL/KMSDRM and a 96 MiB memory floor.
-The failed pageout experiment remains disabled. The installed binary is build202,
+The failed pageout experiment remains disabled. The historically verified installed menu binary was build202,
 SHA-256 `ff4454232247b935748db7a76b05a7af27e62f2a189d199b49d7d6d93f9d1fd2`,
 with its previous runtime backed up and an independent device read-back.
 The visible-menu run still uses explicit diagnostic memory/GL settings, not the
@@ -77,8 +72,8 @@ keys, no saves. Only our own tooling, the adapter patch and measured evidence ar
   34/34 identical.
 - **Adapter scope**: all runtime changes are carried in `runtime/lamentum-adapter.patch`;
   the 435-file recovered source baseline stays read-only and manifest-verified.
-- **Shader catalogue**: 38 captured programs with translated sources plus seven explicit TEST
-  substitutes. Sampler/constant-buffer metadata is exercised on-device, but complete shader
+- **Shader catalogue**: 39 total entries after build210, including seven explicit TEST-only
+  substitutes; the latest appended program is vertex index 38. Sampler/constant-buffer metadata is exercised on-device, but complete shader
   semantics, scene rendering and gameplay are not yet validated.
 
 ## Not done yet
