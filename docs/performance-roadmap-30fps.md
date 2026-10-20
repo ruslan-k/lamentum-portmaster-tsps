@@ -1,72 +1,72 @@
-# Lamentum (TrimUI Smart Pro S): roadmap для стабильных 30 FPS
+# Lamentum (TrimUI Smart Pro S): Roadmap to Stable 30 FPS
 
-**Аудит:** 2026-10-20, HEAD 4547117fb7b727bd7b8e12c68a2e3899a872c037, build202.  
-**Назначение:** технический, исполнимый план экспериментов, НЕ обещание достигнутого FPS.  
-**Статус игры:** настоящие main menu / slots / Options и управляемый UI доказаны. **New game, gameplay, звук, save/reload НЕ подтверждены.** Поэтому сначала функциональная проверка, затем игровые FPS.  
-**Стек:** Nintendo Switch Lamentum, Unity 2019.4.4f1 IL2CPP/ARM64; guest Horizon + NVN translation через EGL/GLES на Mali-G57 в TrimUI Smart Pro S / SpruceOS; экран 1280×720, примерно 1 GiB физической RAM. Без Box64, без модификаций оригинального game image в репозитории. Все изменения к 435-file baseline только через runtime/lamentum-adapter.patch.
+**Audit date:** 2026-10-20; HEAD 4547117fb7b727bd7b8e12c68a2e3899a872c037; build202.  
+**Purpose:** a detailed, actionable engineering roadmap, **not a claim that the target FPS has been achieved**.  
+**Game status:** the real main menu, save slots, Options screen, and working UI navigation have been verified. **New Game, gameplay, audible audio, and save/reload have NOT yet been verified.** Functional verification must therefore precede gameplay performance claims.  
+**Platform:** Nintendo Switch version of Lamentum, Unity 2019.4.4f1 with ARM64 IL2CPP; guest Horizon + NVN translated to EGL/GLES on the TrimUI Smart Pro S Mali-G57 running SpruceOS; 1280×720 display and approximately 1 GiB of physical RAM. No Box64 and no distribution of modified original game images in the repository. All modifications to the manifest-pinned, 435-file recovered runtime baseline must be applied through runtime/lamentum-adapter.patch.
 
-История и контракты: [README](../README.md), [architecture](architecture.md), [UI cbuf binding](ui-cbuf-binding.md), [catalogue tail](catalogue-tail.md), [loading memory](loading-memory.md), [porting log](porting-log.md). Исторические записи не являются текущими performance measurements.
+History, architecture, and contracts: [README](../README.md), [architecture](architecture.md), [UI constant-buffer binding](ui-cbuf-binding.md), [shader catalogue tail](catalogue-tail.md), [loading-memory research](loading-memory.md), and [porting log](porting-log.md). Historical entries must not be mistaken for measurements of the current performance baseline.
 
-## 0. Аудит существующего кода и чисел
+## 0. Audit of the Existing Code and Measurements
 
-**Главное свидетельство:** [build202 log](../evidence/ui-cbuf-fixed-01/latest.log) + [effective env](../evidence/ui-cbuf-fixed-01/env.json). Установленный ELF SHA256 ff4454232247b935748db7a76b05a7af27e62f2a189d199b49d7d6d93f9d1fd2. Длительность до TIME_LIMIT 520 секунд, последний представленный кадр 709. Из журнала рассчитаны распределения **708 строк T2P_SLOW_FRAME**. Это диагностический прогон, не quiet gameplay benchmark.
+**Primary evidence:** [build202 runtime log](../evidence/ui-cbuf-fixed-01/latest.log) and [effective environment](../evidence/ui-cbuf-fixed-01/env.json). The installed executable's SHA-256 is ff4454232247b935748db7a76b05a7af27e62f2a189d199b49d7d6d93f9d1fd2. The run ended with TIME_LIMIT after 520 seconds, with frame 709 being the last presented frame. The distributions below were calculated from **708 T2P_SLOW_FRAME entries**. This was a diagnostic run, **not** a quiet gameplay benchmark.
 
-| Записанный показатель | P50 | P95 | Примечание |
+| Recorded metric | P50 | P95 | Interpretation |
 |---|---:|---:|---|
-| period-ms, вся серия | 620.0 ms | 1242.0 ms | медианный интервал ~1.61 кадра/с, не игровая оценка |
-| replay-ms | 235.7 ms | 605.7 ms | только replay, не весь кадр |
-| finish-ms | 0.1 ms | 0.6 ms | НЕ все потенциальные GPU waits |
-| present-ms | 3.2 ms | 6.7 ms | presenter |
-| swap-ms | 0.2 ms | 0.7 ms | внутри instrumented swap |
-| readback-ms | 2.5 ms | 4.7 ms | diagnostic GPU readback |
-| period-ms, frames 500–709 | 512.5 ms | ~676 ms | поздний прогретый участок |
-| replay-ms, frames 500–709 | 96.9 ms | ~356 ms | поздний участок |
+| period-ms, entire run | 620.0 ms | 1242.0 ms | Median interval corresponds to ~1.61 frames/s; not a gameplay result |
+| replay-ms | 235.7 ms | 605.7 ms | Replay time only, not complete frame time |
+| finish-ms | 0.1 ms | 0.6 ms | Does NOT account for every potential GPU wait |
+| present-ms | 3.2 ms | 6.7 ms | Measured present stage |
+| swap-ms | 0.2 ms | 0.7 ms | Measured swap stage |
+| readback-ms | 2.5 ms | 4.7 ms | Diagnostic GPU readback |
+| period-ms, frames 500–709 | 512.5 ms | ~676 ms | Later, relatively warmed-up interval |
+| replay-ms, frames 500–709 | 96.9 ms | ~356 ms | Later replay interval |
 
-**Отдельно:** помодельная медиана (period - replay - present - swap - readback) для frame>=500 равна ~403 ms. Это пока **неатрибутированное время**, НЕ доказательство сна, низкой частоты или memory compression; в расчёте учитываются только названные поля. Медианы разных столбцов НЕ складываются. Цель 30 FPS требует full frame period <=33.33ms и correctness. Поздний diagnostic period ~513ms и replay ~97ms — разрыв очень большой, но возможный diagnostic overhead пока не вычтен.
+**Additionally:** the per-frame difference (period - replay - present - swap - readback) for frame >=500 has a median of approximately **403 ms**. This is **unattributed time**, not evidence by itself of sleeping, low clock rates, or memory compression. Only fields actually present in the log have been deducted. **Do not add medians of different columns.** Stable 30 FPS requires complete frame intervals of no more than 33.33 ms, together with correctness. The late diagnostic ~513 ms period and ~97 ms replay illustrate the size of the gap, but their instrumentation overhead has not yet been removed.
 
-**Почему эти данные нельзя принимать за финальный FPS:** env включал LC2_CBUF_AUDIT=64, COTM_CBUF_GL=32, LC2_PAIR_CENSUS=60, LC2_HID_WATCH=1, LC2_MENU_TRACE=1, MOMO_DIAG_MASK=1, MOMO_FBO_DIAGNOSE=1, MOMO_FBO_FRAME=300. Имеются GL readbacks, shader/UI receipts, trace и большой лог.
+**Why these numbers are not final FPS results:** the environment enabled LC2_CBUF_AUDIT=64, COTM_CBUF_GL=32, LC2_PAIR_CENSUS=60, LC2_HID_WATCH=1, LC2_MENU_TRACE=1, MOMO_DIAG_MASK=1, MOMO_FBO_DIAGNOSE=1, and MOMO_FBO_FRAME=300. GL readbacks, shader/UI receipts, tracing, and a very large runtime log may substantially distort frame times.
 
-**Наблюдения с прямым адресом в коде:**
+**Concrete findings tied to code and evidence:**
 
-1. В build202 на завершении T2_GZRAM periodic: compressions=336501, faults=274244, restores=312330, scans=914, compressed=377.7 MiB, stored=82.5 MiB, reported saved=295.1 MiB. MemAvailable около 119 MiB, процесс VmRSS около 644060 KiB и VmSwap около 218912 KiB. Счётчики НЕ показывают CPU-времени компрессии; но это явный кандидат для instrumented A/B. Отключение механизма без дополнительного headroom рискованно.
-2. В runtime/lamentum-adapter.patch, hunk **native/nvn_render.h**, ветка kind=7 для cbuf создаёт staging float array, копирует guest bytes и вызывает **glTexImage2D(GL_RGBA32F) для каждого активного uniform block/draw**, даже если содержимое и размеры не изменились. Это конкретный кандидат для reuse / glTexSubImage2D / identical-content skip, после замера.
-3. NVN_DRAW_PROGRAM_PROFILE after-frame=660 за окно 60 frames перечисляет **1620 draw records** (~27 на кадр в профилированном наборе). Pair 12/14: 540 draws в target 1920×1080; pair 17/4: 600 draws через десятиуровневую bloom/downsample цепь 640×360 до 1×1. Это subset, не вся стоимость GL/Unity. Target 1920×1080 имеет 2.25× пикселей относительно физического 720p.
-4. NVN_COMMANDS_EXECUTED показывает completed-with-glFinish=1; малый present finish-ms не исключает другие waits внутри queue. Уже была ошибка NVN_COMMAND_REUSE_BEFORE_COMPLETION при небезопасной схеме, а корректный SDL/KMSDRM surface lifetime измерен в build152.
-5. Текущий port/Lamentum.sh по умолчанию: AW_RELEASE=1, LC2_GLES3=1, COTM_ASYNC_QUEUE=0, T2_GPU_PIPELINE=0, COTM_FB_PRESENT=0, COTM_GL_ERROR_IGNORE=0, LC2_TEXTURE_PAGEOUT=0 и memory floor **96 MiB**. Рабочий menu run применял diagnostic floor **32 MiB**, lossless file backing и GZRAM. Не считать diagnostic envelope полноценным production default.
-6. Shader catalogue содержит 38 real translated/captured programs + 7 TEST substitutes. Исправление c4 -> NVN UBO1 в build202 — единичное и принципиальное. Регенерация всего каталога без точного сохранения provenance способна вернуть старую ошибку; для new shader tail пользоваться append-only tools/append_program.py.
-7. Актуальный путь корректной графики включает sampler handles, cbuf unit isolation, embedded shader literals, deferred BC and stripe decode. Не откатывать эти исправления под видом performance optimisation.
+1. At the end of build202, T2_GZRAM periodic reports compressions=336501, faults=274244, restores=312330, scans=914, compressed=377.7 MiB, stored=82.5 MiB, and reported savings of 295.1 MiB. MemAvailable was approximately 119 MiB; the process reported VmRSS around 644060 KiB and VmSwap around 218912 KiB. These counters **do not quantify compression CPU time**, but they identify a clear candidate for instrumented A/B testing. Disabling compression without proven extra headroom is risky.
+2. In runtime/lamentum-adapter.patch, the **native/nvn_render.h** kind=7 constant-buffer branch creates a float staging array, copies guest data, and calls **glTexImage2D(GL_RGBA32F) for every active uniform block on every draw**, even when dimensions and contents are unchanged. This is a concrete candidate for resource reuse, glTexSubImage2D, and exact-content upload skipping, after measuring its actual cost.
+3. The NVN_DRAW_PROGRAM_PROFILE sample after frame 660 lists **1620 draw records over 60 frames** (~27 per frame in the profiled subset). Pair 12/14 contributes 540 draws to a 1920×1080 target; pair 17/4 contributes 600 draws to a ten-level bloom/downsample chain from 640×360 down to 1×1. This is a subset of recorded work, **not** a complete cost attribution for GL or Unity. A 1920×1080 target contains 2.25 times as many pixels as the physical 720p output.
+4. NVN_COMMANDS_EXECUTED reports completed-with-glFinish=1. A low present finish-ms does not exclude waits elsewhere in the queue. An unsafe earlier implementation triggered NVN_COMMAND_REUSE_BEFORE_COMPLETION; proper SDL/KMSDRM EGL surface lifetime was established in build152.
+5. The checked-in port/Lamentum.sh defaults are AW_RELEASE=1, LC2_GLES3=1, COTM_ASYNC_QUEUE=0, T2_GPU_PIPELINE=0, COTM_FB_PRESENT=0, COTM_GL_ERROR_IGNORE=0, LC2_TEXTURE_PAGEOUT=0, and a **96 MiB** memory floor. The successful menu run instead used a diagnostic **32 MiB** floor, lossless file backing, and guest ZRAM. Do not treat this diagnostic environment as validated production defaults.
+6. The shader catalogue contains 38 captured/translated real programs and seven TEST substitutes. The build202 correction mapping c4 to NVN UBO1 is specific and essential. Regenerating the entire catalogue without preserving proven compiler/SDK provenance could restore the original bug; use tools/append_program.py for additional shader-tail captures.
+7. The currently correct rendering path also depends on sampler-handle mapping, isolated constant-buffer texture units, embedded shader literals, deferred BC uploads, and striped BC decoding. These fixes must not be reverted in the name of performance.
 
-## 1. Жёсткие правила всех экспериментов
+## 1. Mandatory Rules for Every Experiment
 
-- **Два независимых gates:** (A) правильный игровой кадр/управление/звук/save; (B) его полное frame-time <=33.33ms. Frame counter и FPS без реального игрового изображения не проходят gate A.
-- Менять ровно одну переменную, хранить baseline ELF SHA256, git commit, owner image hash и manifest-pinned source identity. Сравнивать одну сцену/сейв и одинаковое реальное состояние после прогрева; 3 повторных A/B пары для спорных результатов.
-- Отдельные серии startup, title/menu, New game transition, stationary gameplay, moving gameplay, interactions, bloom/effects и save/load. Не сравнивать cold loading A с warmed menu B.
-- В release measurements **отключить диагностику**; diagnostic builds и glReadPixels могут менять profile. Логировать минимальными кольцевыми буферами вместо printf на каждый draw/SVC.
-- Не обходить GL errors, zero shader contract, NVN command-buffer ownership, glFinish и fences с целью «ускорить». Не отключать CPU/memory safety governor и не снимать лимит 420 MiB GPU бюджетирования.
-- Исходные NSO/RomFS/assets/ключи/сейвы/shader binary остаются только owner-local; публично в evidence — лог/stat/hash/свои исходники и проверенные captures.
-- Проверять реальные DRM captures **при живом port PID**, а также cleanup (MainUI, CPU online mask, отсутствие зависших процессов). Перед опытами создать идентичный backup всех save files и прежнего ELF.
-- На исходной плате ~1 GiB RAM, guest ZRAM и file backing занимают разные учётные домены; reported compression saving нельзя складывать с backing size как независимую освобождённую RAM.
+- **Two independent acceptance gates:** (A) correct gameplay rendering, input, audio, and saves; (B) complete frame times <=33.33 ms. A frame counter or a fast but visually broken scene cannot pass gate A.
+- Change **one variable at a time** and retain the baseline executable SHA-256, Git commit, owner-image hash, and manifest-pinned source identity. Compare the same scene and save state under equivalent warmed-up conditions; repeat three independent A/B pairs if the difference is subtle.
+- Profile startup, title/menu, New Game transition, stationary gameplay, moving gameplay, interactions, bloom/effects, and save/load **separately**. Never compare cold loading in run A with a warmed-up menu in run B.
+- **Disable expensive diagnostics** in release measurements; debug builds and glReadPixels may distort results. Prefer bounded preallocated ring buffers over printf on every draw or SVC.
+- Do not bypass GL errors, shader identity contracts, NVN command-buffer ownership, glFinish, or fences just to produce a better FPS number. Do not disable CPU/memory safety guards or remove the 420 MiB GPU texture-budget cap.
+- Original NSO/RomFS/assets/keys/saves/shader binaries remain in the owner's local workspace. Public evidence may contain measurements, configuration, hashes, authored tools, and verified screenshots where distribution is appropriate.
+- Verify actual DRM captures **while the port process is alive**, and verify cleanup afterward: MainUI restored, CPU online mask restored, and no orphan game processes. Back up owner saves and the previous known-good executable before each experiment.
+- This board has roughly 1 GiB RAM. Guest ZRAM and file backing use different accounting domains; reported compression savings and file-backed bytes must not simply be summed as independent free RAM.
 
-## 2. P0-FUNC — прежде всего дойти до воспроизводимого gameplay
+## 2. P0-FUNC — Reach Reproducible Gameplay Before FPS Tuning
 
-**Причина:** оптимизировать меню до 30 FPS бессмысленно, если последующий New game упрётся в новый shader, memory floor или сломанные спрайты.
+**Reason:** optimizing the title menu to 30 FPS is not useful if New Game later fails due to another shader, memory floor, or broken sprites.
 
-**Пошагово:**
+**Step-by-step procedure:**
 
-1. Зафиксировать билд202, identity SHA и его owner image. Проверить sha256sum -c tools/baseline-manifest.sha256 на отдельном baseline (435/435).
-2. Через правильный Spruce principal flow открыть экран main menu, сделать screenshot реального KMS кадра, подобрать **New game**, затем Confirm. В build202 уже доказано открытие **Options**, не New game; не смешивать.
-3. Запустить bounded longer run с локационным логированием guest shaders, service stops, загрузок и MemAvailable. Сохранять кадры после New game, реальные переходы между сценами, не JPEG «что-то нарисовано».
-4. При ZERO_SHADER_NOT_PINN использовать строго code/control identity и tools/append_program.py. Не регенерировать runtime/lamentum-shaders-draft.h целиком. При новом pair записать stage, uniforms, sampler slot/offset, bank +3 mapping и correct cbuf binding. Провести host tests и сравнить UI text 202.
-5. В gameplay отдельно собрать LC2_PAIR_CENSUS с коротким фиксированным окном и определить, задействованы ли 7 TEST substitutes. Они включают SSBO-skinning и MSAA/per-sample пути: не заменять их sampler2D без правильной семантики.
-6. Проверить движение, взаимодействие с предметом, inventory, диалоги, stencil/alpha/lighting, смену сцены. При визуальных дефектах остановить FPS оптимизацию до точной shader/texture/state коррекции.
-7. Проверить **слышимый** звук (AUDOUT nonzero недостаточно), сохранение -> quit -> cold start -> load -> совпадение позиции/инвентаря, затем полный возврат MainUI и восстановление CPU.
-8. Повторить короткий smoke **без diagnostic draw/GL probes**; отдельно проверить, выдерживает ли launcher memory envelope. Не переводить 32 MiB floor в дефолт без safety acceptance.
+1. Pin build202, executable SHA-256, and owner-image identity. Verify the separate recovered baseline with sha256sum -c tools/baseline-manifest.sha256 (435/435 files).
+2. Using the proper Spruce principal launch flow, open the main menu and capture a real KMS framebuffer. Deliberately select **New Game** and confirm. Build202 has already proven that **Options** can be opened; that is **not** proof that New Game works.
+3. Run a sufficiently long but bounded New Game test and capture guest shader/service stops, texture loads, memory availability, and screenshots of actual scene transitions. A nonblack pixel counter alone is not a gameplay screenshot.
+4. On ZERO_SHADER_NOT_PINN, validate the captured code/control identity and use tools/append_program.py **without regenerating all of** runtime/lamentum-shaders-draft.h. For new pairs record stage, uniforms, sampler slots/offsets, hardware-bank +3 mapping, and correct NVN constant-buffer binding. Run host tests and compare the build202 UI text.
+5. During real gameplay, take a short bounded LC2_PAIR_CENSUS and check whether any of the seven TEST substitutes is used. The outstanding features include SSBO skinning and MSAA/per-sample operations, which cannot safely be replaced by ordinary sampler2D sampling without preserving semantics.
+6. Verify movement, item interaction, inventory, dialogues, stencil/alpha/lighting, and scene changes. Stop performance experiments on visual regressions until the exact shader, texture, or pipeline-state defect has been identified.
+7. Verify **audible** music and sound effects (AUDOUT nonzero counters are insufficient), then save -> quit -> cold start -> load and check character position/inventory. Verify the full return to MainUI and restoration of CPU state.
+8. Repeat a short smoke test **without diagnostic draw/GL probes**. Establish whether the default launcher can safely support the required memory environment. Do not promote the 32 MiB diagnostic floor without explicit safety acceptance.
 
-**PASS:** правильный управляемый игровой кадр с воспроизводимыми состояниями/сохранением. **STOP:** любой shader stop, неверные pixels или конфликт сохранений. Никакой claim «играбельно» до gate.
+**PASS:** a correct, controllable gameplay scene with reproducible state and save/load. **STOP:** an uncatalogued shader, incorrect pixels, or a save conflict. Do not claim playability before passing the functional gate.
 
-## 3. P0-BENCH — чистый baseline + профиль diagnostic overhead
+## 3. P0-BENCH — Establish a Quiet Baseline and Measure Diagnostic Overhead
 
-**Начальный controlled run** должен сохранять те же memory-параметры, на которых был получен build202 menu, но без дорогостоящей графической диагностики. Пример, запускать только после проверки idle MainUI и owner backup:
+The first controlled run should retain the build202 memory environment that reaches the menu, but remove expensive graphics diagnostics. **Example:** run only after checking that MainUI is idle and owner data has been backed up.
 
 ~~~sh
 python3 tools/device_principal_test.py --budget 520 --wait 600 \
@@ -87,73 +87,72 @@ python3 tools/device_principal_test.py --budget 520 --wait 600 \
   --evidence evidence/perf-quiet-b0
 ~~~
 
-**Важно:** это только **диагностическая memory envelope**, не безопасный production preset; при memory floor/pressure быстро остановить, не пытаться вытеснить другие системные процессы. Не выставлять MOMO_FBO_FRAME и дополнительные dump flags. Проверить source getenv semantics: у некоторых переключателей даже строка 0 может отличаться от unset; если есть сомнения, запускать новый чистый shell с разрешённым env allowlist.
+**Important:** this reproduces a **diagnostic memory configuration**, not a safe production preset. Stop immediately if the device approaches the memory floor or exhibits memory pressure; do not free memory by terminating unrelated system processes. Do not enable MOMO_FBO_FRAME or additional dump flags. Audit the source's getenv parsing: for certain experimental flags, an explicit value of "0" may not be equivalent to an unset variable. If in doubt, run from a clean environment using an explicit allowlist.
 
-Порядок: historical diagnostic A -> quiet B -> quiet A/B повторения, при одном ELF, одинаковом menu/game phase. Записать реальное время достижения menu и начало последующего **steady** окна; сравнивать только одинаковые окна. Не выводить FPS из 709/520 (в этом интервале была и загрузка).
+**Test order:** historical diagnostic A -> quiet B -> repeated quiet-control A/B under the same executable and equivalent menu/game state. Record the actual point when the menu is reached and the start of the subsequent **steady-state** sampling window; compare only like-for-like intervals. Do **not** infer gameplay FPS by dividing 709 frames by 520 seconds, because loading was included.
 
-**Добавить инструменты (отдельный PR, не реализовано):**
+**Add the following tools in separate PRs (not yet implemented):**
 
-- tools/lamentum_perf_observer.py: внешний process observer раз в 1–5s, /proc PID status/stat/io/schedstat, smaps_rollup (редко), task threads, MemAvailable, CmaFree, swap counters, thermal, cpu online/governor/freq; не опрашивать слишком часто.
-- tools/analyze_perf.py: parser existing T2P_SLOW_FRAME with frames, period/replay/finish/present/swap/readback, median/P90/P95/P99/max и dropped/unknown spans, early vs late windows, gaps >100/250/1000ms; output JSON/CSV, input log and exact ELF SHA.
-- Инструмент gated screenshot **только при live game PID**; sampling cadence не на каждый кадр, не считать запаздывающее возвращение MainUI доказательством правильного game capture.
+- **tools/lamentum_perf_observer.py:** an external process observer sampling every 1–5 seconds: /proc PID status/stat/io/schedstat, infrequent smaps_rollup, per-thread statistics, MemAvailable, CmaFree, swap counters, temperatures, CPU online mask/governor/frequencies. Avoid high-frequency probing.
+- **tools/analyze_perf.py:** a parser for existing T2P_SLOW_FRAME records, extracting frame, period/replay/finish/present/swap/readback, P50/P90/P95/P99/max, missing/unknown spans, early and late phases, and gaps >100/250/1000 ms. Produce JSON and CSV tied to the exact log and executable hash.
+- **Gated screenshot acquisition:** capture only while a real game PID is alive, and do not capture every frame. Delayed MainUI restoration is not evidence that a requested screenshot belongs to the game.
 
-**PASS:** три quiet-run профиля с цифрами P50/P95 и фиксацией diagnostic overhead; при сильном улучшении без probes пересмотреть весь следующий приоритет.
+**PASS:** three quiet profiles with P50/P95 values and quantified diagnostic overhead. If disabling probes substantially changes results, revise the priority order below.
 
-## 4. P1-TIMELINE — объяснить оставшиеся ~400 ms до любого render-tuning
+## 4. P1-TIMELINE — Explain the Unattributed ~400 ms Before Tuning Rendering
 
-**Проблема:** frame500–709 period p50=512.5ms, replay p50=96.9ms, остальные известные этапы единицы ms. Root cause находится **не обязательно в GPU**.
+**Problem:** frames 500–709 show period P50=512.5 ms and replay P50=96.9 ms; the other measured stages take only a few milliseconds. The underlying cause **may be outside the GPU**.
 
-**Новый узкий LC2_FRAME_TIMELINE=1**, желательно preallocated ring + dump каждые 60/120 кадров:
+**Add a narrowly scoped LC2_FRAME_TIMELINE=1 instrument**, preferably using a preallocated ring and one dump every 60–120 frames:
 
-1. CLOCK_MONOTONIC_RAW: previous present end, guest present-enter, command-buffer publish/snapshot, replay enter/exit, **каждый glFinish и eglMakeCurrent** на всех thread'ах, SDL swap enter/exit, owner presented frame generation.
-2. CLOCK_THREAD_CPUTIME_ID и /proc/TID/schedstat для guest-main, render, input/audio, host compressor: разнести running, runnable-but-unscheduled, blocked-on-wait, page fault, GPU fence wait, sleep.
-3. Guest SVC WaitSynchronization/SleepThread/WaitProcessWideKey/WaitForAddress и другие actual waits: count, requested duration, actual duration, guest caller PC. Особое внимание Unity PlayerLoop/frame pacing; не подменять guest deltaTime и не игнорировать sleeps без причинного теста.
-4. CPU page-fault/major-fault и guest-memory restore events со thread ID и bins, но без полного trap printf. Для самого NVN replay делить wall и thread CPU, т.к. wall включает возможный scheduler wait.
-5. Выводить per-frame mutually exclusive wall components с проверкой, что суммы объясняют >=95% period. Отдельно показывать overlap GPU vs CPU, не складывать inclusive durations.
-6. После instrumented профиля выполнить **тот же ELF с instrument off**: overhead <5%, иначе sampling агрегировать ещё реже.
+1. Record CLOCK_MONOTONIC_RAW timestamps for previous present end, guest present entry, command-buffer publication/snapshot, replay start/end, **every glFinish and eglMakeCurrent** across threads, SDL swap entry/exit, and the owner frame serial/generation.
+2. Record CLOCK_THREAD_CPUTIME_ID and /proc/TID/schedstat for guest main, render, input/audio, and host compression threads. Distinguish CPU running, runnable-but-not-scheduled, blocked waiting, page faults, GPU fence waits, and intentional sleeps.
+3. Trace actual guest SVC WaitSynchronization/SleepThread/WaitProcessWideKey/WaitForAddress calls and other waits: occurrence count, requested duration, actual elapsed time, and guest caller PC. Pay special attention to Unity PlayerLoop/frame pacing; do not alter guest deltaTime or bypass sleeps before establishing their purpose.
+4. Record CPU page faults/major faults and guest-memory restores with thread IDs and bucketed statistics, not a full printf per trap. Inside NVN replay, report both elapsed wall time and executing thread CPU time.
+5. Produce mutually exclusive elapsed categories per frame and verify that the sum accounts for >=95% of each interval. GPU/CPU overlap should be shown separately, not double-counted as inclusive time.
+6. Compare an instrumented run with **the same executable, instrumentation off**. Keep profiler overhead below 5%; otherwise sample less frequently.
 
-**Разветвление решения:** guest actual sleep -> выяснить timer/SDK contract; thread runnable but preempted -> CPU affinity/load; time on decompression -> §5; high guest CPU -> profiled SDK/IL2CPP hotspot; queue waits -> §8; high render CPU -> §6. Не начинать переписывать backend до attribution.
+**Decision branches:** actual guest sleeping -> investigate the timer/SDK contract; guest thread runnable but starved -> CPU affinity/system load; costly decompression -> Section 5; high guest CPU -> profile SDK/IL2CPP hot spots; queue waits -> Section 11; high rendering CPU -> Sections 6–7. Do not rewrite the backend before attributing the time.
 
-**PASS:** >=95% frame period атрибутировано по фазам с чистым B comparison. **STOP:** попытка уменьшить sleep без знания guest caller semantics.
+**PASS:** >=95% of the frame period is attributed to consistent stages, with a clean comparison. **STOP:** attempts to remove guest sleeps without knowing the caller's timing semantics.
 
-## 5. P1-MEM — оптимизация частой guest-page compression/fault
+## 5. P1-MEM — Reduce Frequent Guest-Page Compression and Fault Overhead
 
-**Исходная проблема:** 336501 компрессий и 274244 faults в build202. Имеется значительная заявленная экономия памяти, поэтому unsafe simple OFF не подходит.
+**Evidence:** 336501 compressions and 274244 faults in build202. Compression also reports substantial saved memory, so simply switching it off may be unsafe.
 
-**Точки:** native/t2_guest_memory.h, guest mmap/alias ownership, memory.h, native/nvn_textures.h, LC2_BC_FILE_BACKING и LC2_BC_LAZY_UPLOAD. Добавить счётчики compress_CPU_ns, restore_CPU_ns, faults per guest page, recompression within 10/50/200ms, pages pinned/excluded, effective saved MiB and fault stall ms; не смешивать со system swap.
+**Implementation points:** native/t2_guest_memory.h, guest mmap/alias ownership, memory.h, native/nvn_textures.h, LC2_BC_FILE_BACKING, and LC2_BC_LAZY_UPLOAD. Introduce counters for compress_CPU_ns, restore_CPU_ns, faults per guest page, recompression within 10/50/200 ms, pinned/excluded pages, effective saved MiB, and fault-induced stalls. Keep these separate from system swap statistics.
 
-**A/B-матрица (одна переменная за раз, с одинаковым ELF и контролем RAM):**
+**Controlled A/B matrix** (change one variable at a time; keep the same executable and monitor RAM safety):
 
-| Тест | Изменение от current diagnostic memory flags | Что проверяет |
+| Test | Change from the current diagnostic memory configuration | Hypothesis |
 |---|---|---|
-| M0 | cold=10ms, period=20ms, budget=32MiB, block=16KiB | тихий контроль |
-| M1 | T2_GZRAM_COLD_MS=50 | повторно сжимались ли горячие страницы |
-| M2 | T2_GZRAM_COLD_MS=100, затем 200 | CPU savings против RAM residency |
-| M3 | T2_GZRAM_BUDGET_MIB=16, отдельно 8 | уменьшение конфликтов с guest CPU |
-| M4 | T2_GZRAM_PERIOD_MS=50, отдельно 100 | частота сканирования и pressure |
-| M5 | selective no-compress hot ranges, **только** exact owner accounting | исключить систематический fault churn |
-| M6 | T2_GUEST_ZRAM=0, **только** при доказанном headroom | проверить upper bound эффекта компрессии |
+| M0 | cold=10ms, period=20ms, budget=32MiB, block=16KiB | Quiet baseline |
+| M1 | T2_GZRAM_COLD_MS=50 | Recompression of still-hot pages |
+| M2 | T2_GZRAM_COLD_MS=100, then 200 | CPU savings versus resident RAM growth |
+| M3 | T2_GZRAM_BUDGET_MIB=16, separately 8 | Lower contention with guest CPU |
+| M4 | T2_GZRAM_PERIOD_MS=50, separately 100 | Scan cadence and memory pressure |
+| M5 | Selective do-not-compress of verified hot ranges, **only** with exact owner accounting | Eliminate repeat fault/compression churn |
+| M6 | T2_GUEST_ZRAM=0, **only with proven headroom** | Upper bound on compression overhead |
 
-Для M1–M4 проверять корректную семантику cold/period/budget в baseline до запуска; снимать P50/P95 period, replay, host compression CPU ns, page faults, VmRSS/VmSwap/PSS, minimum MemAvailable/CmaFree, kernel OOM/kill, load completeness. Не менять одновременно file backing quota/texture cap. При floor=32 и MemAvailable ~119 MiB нельзя предполагать, что компрессия отключается без вреда.
+Before M1–M4, verify the baseline's parsing and actual semantics of cold/period/budget. For each run, record frame period/replay P50/P95, host compression CPU nanoseconds, faults, VmRSS/VmSwap/PSS, minimum MemAvailable/CmaFree, kernel OOM signals, and whether the requested scene completed. Do not change backing quota or GPU texture budget in the same comparison. A diagnostic floor of 32 MiB and observed MemAvailable ~119 MiB **do not** guarantee safe operation without compression.
 
-**M5:** сначала точная read/write и lifetime карта адресов (mutable Unity heap, repeated hot pages, NVN GPU pools, audio/shared IPC). Только доказанные safe to exclude страницы, без произвольного madvise или pageout. **PASS:** repeatable whole-frame P95/guest CPU gain, no loss of texture/saves, safe memory. **STOP:** floor/OOM, alias invalidation, swap storm, regressions.
+For **M5**, first establish a read/write and lifetime map of actual guest ranges: mutable Unity allocations, repeatedly touched pages, NVN GPU pools, and audio/shared IPC. Exclude only ranges proven safe to exclude; do not apply speculative madvise or pageout. **PASS:** repeatable whole-frame P95/guest CPU improvement with correct texture/save results and safe memory. **STOP:** memory floor/OOM, alias invalidation, swap storms, or regressions.
 
-## 6. P1-CBUF — GL_RGBA32F uniform-texture uploads per draw
+## 6. P1-CBUF — Reduce Per-Draw GL_RGBA32F Constant-Buffer Texture Uploads
 
-**Подтверждено в overlay:** native/nvn_render.h, branch u->kind==7, memcpy staged guest range, glActiveTexture, glBindTexture, glTexParameteri, glTexImage2D, glUniform1i. Здесь потенциально много повторений с 144–368-byte active cbuf data; текущее распределение повторов и стоимость пока **не измерены**.
+**Confirmed in the adapter patch:** native/nvn_render.h, branch u->kind==7, copies a staged guest range and invokes glActiveTexture, glBindTexture, glTexParameteri, glTexImage2D, and glUniform1i. Active buffer data was observed in the 144–368 byte range for relevant draws, but the actual repetition rate and time cost **have not yet been measured**.
 
-**Подробные шаги:**
+**Detailed implementation sequence:**
 
-1. Добавить counters: kind7 count/frame, bytes copied, unique active cbuf snapshots, unchanged bytes count, GL texture allocations and redefinitions, CPU nano per step. Разнести pair12/14 UI от pair17/4 bloom и всех gameplay pairs.
-2. **C1:** хранить texture generation, GL unit assignment, allocated format/width/height и active program/context. glTexImage2D использовать при первом allocation/resize; при same-size changed data — glTexSubImage2D. Не считать флаг gl object name достаточным: EGL context loss/recreate и allocator reuse инвалидируют состояние.
-3. **C2:** upload skip только после exact byte comparison и matching generation; дешёвый 32/64-bit hash может служить предфильтром, не доказательством равенства. Сравнивать именно **actual size and padded bytes**, не всю 65536-byte max cbuf каждый draw.
-4. **C3:** skip повторных glUniform1i/glTexParameteri/glActiveTexture only when tracked GL state confirmed unchanged. При program switch, other textures, audio/EGL context and distinct stage bank — invalidate appropriately.
-5. **C4:** GL buffer/PBO/immutable storage и ring для GPU in-flight read — только если профилирование доказывает выгоду. Нельзя менять текстуру, которую GPU читает из предыдущей queue generation, без правильного fence/serial и lifetime.
-6. Текущая unit isolation после build177 и bank4->UBO1 после build202 обязаны остаться. Host tests tools/test_cbuf_units.c, tools/test_ui_cbuf_binding.py, tools/analyze_ui_cbuf.py, сохранение shader-catalogue exact identity; сравнить KMS UI text/selected item, alpha, UV и scene texture.
-7. Не делать fallback to any nonempty cbuf глобально: binding должен быть выведен из compiler instance name и SDK hardware bank = NVN slot +3, а не из ordinal/bare block type.
+1. Add counters for kind=7 blocks/frame, bytes copied, distinct active constant-buffer snapshots, identical-data counts, GL texture allocations/redefinitions, and CPU nanoseconds per operation. Separate pair 12/14 UI from pair 17/4 bloom and all newly reached gameplay pairs.
+2. **C1:** track GL texture generation, GL unit, allocated format/width/height, and active context/program. Call glTexImage2D on first allocation or resize; use glTexSubImage2D for changed data with the same allocated dimensions. A nonzero GL object name does not prove validity after context loss, resource deletion, or name reuse.
+3. **C2:** skip uploads only after comparing the exact bytes and matching resource generation. A cheap 32-/64-bit hash may be a prefilter, **not** proof of identity. Compare actual active and padded data, not the entire 65536-byte maximum buffer on every draw.
+4. **C3:** skip redundant glUniform1i/glTexParameteri/glActiveTexture calls only when tracked GL state is provably unchanged. Invalidate shadow state when another shader, texture binding, or EGL context path changes its ownership.
+5. **C4:** consider immutable texture storage, GL buffers/PBOs, or a ring for in-flight GPU data only if the simpler changes prove insufficient. Never overwrite a buffer or texture still being read by an earlier GPU queue generation without the appropriate serial, fence, and lifetime guarantees.
+6. Preserve build177 texture-unit isolation and build202's c4 -> UBO1 correction. Run tools/test_cbuf_units.c, tools/test_ui_cbuf_binding.py, tools/analyze_ui_cbuf.py, and compare actual KMS screenshots for UI text, selected item, alpha, UVs, and scene textures.
+7. Do not introduce a global fallback to an arbitrary nonempty constant-buffer slot. Correct bindings must follow the compiler's instance-name provenance and the SDK contract hardware bank = NVN slot +3, not declaration ordinal or a guessed block type.
 
-**PASS:** уменьшение upload-time and entire replay p95 на одном кадре при идентичном GL output / game state. **STOP:** cbuf collisions, пропажа UI, bad transform или unknown resource lifetime.
-
+**PASS:** lower measured upload/replay times per frame with identical GL output and gameplay state. **STOP:** constant-buffer unit collisions, missing UI, invalid transforms, or undefined resource lifetimes.
 
 ## 7. P1-REPLAY — где именно тратятся 97–236 ms replay
 
