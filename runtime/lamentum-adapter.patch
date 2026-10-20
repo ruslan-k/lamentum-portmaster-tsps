@@ -656,42 +656,6 @@ index 3ecf8ab..1dd8c49 100644
          *effective_mask=0;return 1;
      }
      if(requested_mask&~declared_mask)return 0;
-diff --git a/native/nvn_normal_early.h b/native/nvn_normal_early.h
-index b370b8d..f3bf86e 100644
---- a/native/nvn_normal_early.h
-+++ b/native/nvn_normal_early.h
-@@ -54,6 +54,31 @@ static unsigned nvn_normal_early_try(const struct nvn_record *r,const struct nvn
-             for(unsigned sx=0;sx<2;sx++)for(unsigned bx=0;bx<16;bx++)if(nvn_render.uniform[sx][bx].size)printf("AW_UNIFORM_BOUND stage=%u index=%u size=%"PRIu64"\n",sx,bx,nvn_render.uniform[sx][bx].size);
-             stop("NVN_DRAW_UNIFORM_RANGE",nvn_caller,u->offset,24);}
-         uint64_t handle;memcpy(&handle,nvn_gpu_pointer(range.address+u->offset,8,PROT_READ),8);
-+        /* The catalogue carries no per-sampler offset inside the cbuf (it emits 0), so the word read there
-+         * is whatever float happens to be first - measured as 0x3f800000, i.e. 1.0f. Until the layout is
-+         * emitted properly, look for the first 64-bit value in the bound range that has the shape of an NVN
-+         * handle: texture index and sampler index both inside the pool's reserved..count window. */
-+        {
-+            unsigned texture_count=0,sampler_count=0;
-+            for(unsigned k=0;k<32;k++)if(nvn_descriptor_pools[k].live&&nvn_descriptor_pools[k].type==1)texture_count=nvn_descriptor_pools[k].count;
-+            for(unsigned k=0;k<32;k++)if(nvn_descriptor_pools[k].live&&nvn_descriptor_pools[k].type==2)sampler_count=nvn_descriptor_pools[k].count;
-+            unsigned lo=(unsigned)handle,hi=(unsigned)(handle>>32);
-+            int plausible=(lo>=NVN_DESCRIPTOR_RESERVED&&(!texture_count||lo<texture_count)&&
-+                           hi>=NVN_DESCRIPTOR_RESERVED&&(!sampler_count||hi<sampler_count));
-+            if(!plausible&&texture_count) {
-+                const uint8_t *base=nvn_gpu_pointer(range.address,range.size,PROT_READ);
-+                for(uint64_t off=0;off+8<=range.size;off+=4) {
-+                    uint64_t candidate;memcpy(&candidate,base+off,8);
-+                    unsigned clo=(unsigned)candidate,chi=(unsigned)(candidate>>32);
-+                    if(clo>=NVN_DESCRIPTOR_RESERVED&&clo<texture_count&&
-+                       chi>=NVN_DESCRIPTOR_RESERVED&&chi<sampler_count) {
-+                        static unsigned told;if(told++<6)printf("NVN_SAMPLER_HANDLE_SCAN name=%s offset=%llu handle=0x%llx\n",
-+                            u->name,(unsigned long long)off,(unsigned long long)candidate);
-+                        handle=candidate;break;
-+                    }
-+                }
-+            }
-+        }
-         if(units>=(unsigned)nvn_device.texture_units)stop("NVN_DRAW_TEXTURE_UNITS",nvn_caller,units,24);
-         nvn_render_sampler_prepare(handle,0);units++;nvn_normal_early.sampler_reads++;
-     }
 diff --git a/native/nvn_pointer.h b/native/nvn_pointer.h
 index 410deb4..7269206 100644
 --- a/native/nvn_pointer.h

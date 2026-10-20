@@ -205,7 +205,16 @@ def samplers_of(source):
         binding = next(i for i in range(16) if i not in taken)
         taken.add(binding)
         out.append({'binding': binding, 'type': m.group(1), 'name': m.group(2)})
-    return sorted(out, key=lambda s: s['binding'])
+    # SPIR-V NameOf(stage, desc, "tex") preserves the guest cbuf index
+    # and HEX BYTE offset; the GL descriptor binding is NOT a cbuf binding.
+    for sampler in out:
+        identity = re.fullmatch(r'(vs|fs)_tex(\d+)_([0-9a-fA-F]+)(?:_\d+)?', sampler['name'])
+        if not identity:
+            raise ValueError('Missing guest sampler identity: ' + sampler['name'])
+        sampler['stage'] = 0 if identity[1] == 'vs' else 1
+        sampler['binding'] = int(identity[2])
+        sampler['offset'] = int(identity[3], 16)
+    return out
 
 
 def attributes_of(glsl):
@@ -354,7 +363,7 @@ def main():
                      % (','.join(str(x) for x in reads), ','.join(str(x) for x in writes)))
         lines.append('  .code_hash={%s},.control_hash={%s},'
                      % (','.join('0x%02x' % b for b in code), ','.join('0x%02x' % b for b in control)))
-        lines.append('  .samplers={%s},' % ','.join('{.name="%s",.stage=1,.binding=%d,.offset=0,.size_query=1,.texel_fetch_bits=0,.cpu_view=0}' % (s['name'], s['binding']) for s in p['samplers']))
+        lines.append('  .samplers={%s},' % ','.join('{.name="%s",.stage=%d,.binding=%d,.offset=%d,.size_query=1,.texel_fetch_bits=0,.cpu_view=0}' % (s['name'], s['stage'], s['binding'], s['offset']) for s in p['samplers']))
         # Attribute kind must match the NVN vertex format the guest binds: 0 = float, 1 = int,
         # 2 = uint (nvn_vertex_format_decode). The old expression mapped vec4 -> 2 and everything else
         # -> 1, so an ordinary float attribute was announced as uint and the draw stopped on

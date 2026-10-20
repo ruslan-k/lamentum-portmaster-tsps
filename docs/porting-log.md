@@ -1251,3 +1251,25 @@ handle-resolution logic has to be applied there - or, better, once in a shared h
 So the remaining work for textures is exactly this: resolve a real per-sampler offset (from the shader's
 uniform block layout, or by scanning the bound range for a value shaped like a handle) and use it in both
 upload paths.
+
+## Build 147: sampler identities derived from the compiler, not guessed
+
+The compiler vendor `backend/spirv/spirv_emit_context.cpp:420-426` explicitly names
+samplers as stage + tex + decimal cbuf index + hexadecimal cbuf byte offset.
+Thus `fs_tex0_20` is fragment bank 0, offset 32, NOT GL binding 0 offset 0.
+Fixed the generator and all 25 sampler metadata entries in the existing catalogue,
+preserving the already exercised GLSL (including TEST substitutes). Four regression
+tests cover bare names, GL binding distinct from bank, collision suffix, and unknown names.
+Removed the speculative normal-early memory scan: no guessed handles are selected.
+
+Build 147 sha256: dea6217d33749acbd31f604387d28d058013c112cc3e7d17c71a3bb0bf398303.
+Device binary independently hashed; prior binary saved as lamentum-nextos.before-147.
+Bounded principal run evidence: evidence/sampler-offset-01.
+Actual result: draw 0, program 16/19, handle=0x3f80000000000000;
+STOP NVN_RENDER_DESCRIPTOR_INVALID detail=0x3f800000. Runtime 0, MainUI 1 afterward.
+No present or game picture proved. Correct shader metadata alone is insufficient:
+the selected guest bank/range or its data still does not match the compiler identity.
+Earlier claims that only fixing an offset would close texture binding were premature.
+Next measurement: log the actual bound ranges and bytes at bank 0 offset 32 alongside
+the shader identity and recording-time BindUniformBuffer arguments; do not scan for
+plausible handles or reinterpret this failure as proof of a new handle encoding.
