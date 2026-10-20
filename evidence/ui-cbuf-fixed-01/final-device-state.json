@@ -1,0 +1,11 @@
+{
+  "processes": {
+    "MainUI": 1,
+    "principal.sh": 1,
+    "runtime.sh": 1,
+    "lamentum-nextos": 0,
+    "terminator2d-ne": 0,
+    "gdb": 0
+  },
+  "runtime_sha256": "ff4454232247b935748db7a76b05a7af27e62f2a189d199b49d7d6d93f9d1fd2"
+}

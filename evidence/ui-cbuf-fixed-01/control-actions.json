@@ -1,0 +1,13 @@
+{
+  "provider": "/dev/input/event4",
+  "source": "agent evdev injection; not a claimed physical human button press",
+  "actions": [
+    {"type": "EV_ABS", "code": 17, "value": 1, "hold_ms": 1000, "result": "slot selection 1 -> 2", "before": "slots-before.png", "after": "slots-after-down.png"},
+    {"type": "EV_KEY", "code": 304, "value": 1, "hold_ms": 1000, "result": "Back returns to main menu", "after": "main-menu-after-back.png"},
+    {"type": "EV_ABS", "code": 17, "value": 1, "hold_ms": 1000, "result": "Options selected; intended New game selection overshot", "after": "main-menu-options-selected.png"},
+    {"type": "EV_ABS", "code": 17, "value": -1, "hold_ms": 300, "result": "no visible selection movement", "after": "after-short-up-unchanged.png"},
+    {"type": "EV_KEY", "code": 305, "value": 1, "hold_ms": 1500, "trigger": "first observed presented frame >= 400", "result": "Options page opens", "before": "at-title.png", "after": "after-confirm-a.png"}
+  ],
+  "gameplay_started": false,
+  "save_backup": "save-backup.json"
+}

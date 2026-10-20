@@ -1,0 +1,29 @@
+{
+  "pid": "9703",
+  "main_base": "0x8005000",
+  "icall_cache": {
+    "SetActive": {
+      "address": "0x8d6e8e0",
+      "main_rva": "0xd698e0"
+    },
+    "activeSelf": {
+      "address": "0x0",
+      "main_rva": null
+    },
+    "activeInHierarchy": {
+      "address": "0x8d6ea70",
+      "main_rva": "0xd69a70"
+    }
+  },
+  "manager": "0x340de9900",
+  "objects": {
+    "CanvasMenuPrincipal": {
+      "managed": "0x3e9301a20",
+      "cached_native": "0x3e92293d0"
+    },
+    "EscenaPrincipal": {
+      "managed": "0x3e9301920",
+      "cached_native": "0x3e90e05f0"
+    }
+  }
+}

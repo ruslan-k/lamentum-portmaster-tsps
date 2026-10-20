@@ -1,0 +1,37 @@
+{
+  "sdk_text_sha256": "ff614dae42158f50ffd1e8c28f268fcf85a56dcc8a97c020d960ce2f6ea9d421",
+  "function": "nvnCommandBufferBindUniformBuffers",
+  "sdk_offset": "0x4752f0",
+  "verified_instructions": [
+    {
+      "sdk_offset": "0x475308",
+      "instruction": "mov w20, w2"
+    },
+    {
+      "sdk_offset": "0x4753b8",
+      "instruction": "lsl w10, w20, #0x14"
+    },
+    {
+      "sdk_offset": "0x4753c4",
+      "instruction": "add w10, w10, #0x300, lsl #12"
+    },
+    {
+      "sdk_offset": "0x475404",
+      "instruction": "and w16, w10, #0x1f00000"
+    },
+    {
+      "sdk_offset": "0x475430",
+      "instruction": "add w10, w10, #0x100, lsl #12"
+    }
+  ],
+  "hardware_cbuf_formula": "nvn_slot + 3 (graphics stages)",
+  "ui_hardware_bank": 4,
+  "ui_nvn_slot": 1,
+  "compiler_provenance": {
+    "file": "backend/spirv/spirv_emit_context.cpp",
+    "sha256": "2be7c765fd8c9070dec5b2c30c979aef064f301764697628fe15fe83cbada486",
+    "variable_name": "c{desc.index}",
+    "binding_decoration": "sequential compiler descriptor binding, not NVN slot"
+  },
+  "scope": "Only catalogue entry12 changed; no global regeneration or guessed type-block digits."
+}

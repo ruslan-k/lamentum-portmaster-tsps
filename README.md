@@ -1,13 +1,15 @@
 # Lamentum — experimental Switch-to-Linux-ARM64 port (TSPS / SpruceOS)
 
-**Status: not playable. Build 193 reaches the game's own title screen ("Lamentum"
-logo on physical scanout) and a 420-second run ends on time rather than on a defect.
-The menu list, input actions, audio, saves and gameplay remain unverified.
-A whole-region access watch now proves that the guest reads canonical Npad
-entries and the Handheld state. The earlier shared-head/+0x18 diagnosis was
-incorrect: that pointer table belongs to a PRIVATE SDK accessor, not shared memory.**
+**Status: not yet playable. Build 202 restores the real main-menu text, load-slot
+selection and Options page on physical scanout. Navigation, Back and Confirm
+have visible screen effects in controlled evdev tests. A 520-second run reaches
+frame 709 and ends on TIME_LIMIT. Gameplay, audible output and save/reload are
+still unverified. The whole-region watch also proves guest Npad reads; the old
+shared-head/+0x18 diagnosis was incorrect (private SDK accessor, not shared memory).**
 
-Latest work: `docs/hid-input-contract.md` (builds 198–199: direct guest-read
+Latest work: `docs/ui-cbuf-binding.md` (build202: one-field correction c4 -> NVN
+UBO1, SDK/compiler provenance, replay of captured UI draws, actual menu/input
+captures, save backup and frontend cleanup). `docs/hid-input-contract.md` (builds 198–199: direct guest-read
 receipts, hash-pinned derivation of accessor Attach, retirement of the unrelated
 head-table experiment, bounded long-press input probes). `docs/title-screen.md` (build 193:
 title screen reached, shader tail closed by appending captured programs).
@@ -28,12 +30,15 @@ original texture resolution and the owner image; the 420 MiB GPU ceiling is unch
 
 The installed launcher keeps experimental memory features off unless explicitly requested;
 it uses strict GL checks, synchronous submission, SDL/KMSDRM and a 96 MiB memory floor.
-The failed pageout experiment remains disabled. The latest binary is build 200, installed
-with a device-side backup and independently verified SHA-256. Build 200 adds
-opt-in semantic tracing: `ManagerMenuPrincipal.Start` is reached and calls
-`SetActive(true)` for the principal menu and scene, yet the physical capture
-still has no readable menu choices (`docs/menu-initialization.md`). The temporary watermark
-experiment was restored to its original value and is not a persistent system change.
+The failed pageout experiment remains disabled. The installed binary is build202,
+SHA-256 `ff4454232247b935748db7a76b05a7af27e62f2a189d199b49d7d6d93f9d1fd2`,
+with its previous runtime backed up and an independent device read-back.
+The visible-menu run still uses explicit diagnostic memory/GL settings, not the
+strict production defaults. Build200's Start/SetActive tracing and native cache
+reads prove the menu objects are active; build202 fixes their invisible UI by
+selecting the measured application constant-buffer slot, not by activating game
+objects or changing the game image. The temporary watermark experiment was
+restored and is not a persistent system change.
 
 This repository tracks the attempt to run the owner's Nintendo Switch copy of *Lamentum*
 (Unity 2019.4.4f1, IL2CPP, ARM64) natively on a TrimUI Smart Pro S class handheld through a
@@ -68,17 +73,17 @@ keys, no saves. Only our own tooling, the adapter patch and measured evidence ar
   34/34 identical.
 - **Adapter scope**: all runtime changes are carried in `runtime/lamentum-adapter.patch`;
   the 435-file recovered source baseline stays read-only and manifest-verified.
-- **Shader catalogue**: 34 captured programs with translated sources plus explicit TEST
+- **Shader catalogue**: 38 captured programs with translated sources plus seven explicit TEST
   substitutes. Sampler/constant-buffer metadata is exercised on-device, but complete shader
   semantics, scene rendering and gameplay are not yet validated.
 
 ## Not done yet
 
-- Close the remaining shader tail (each run still stops on an uncatalogued program).
+- Handle any further shader tail reached by New game; the bounded menu run no longer stops on it.
 - Resolve the incomplete scene rendering and the scene-loading memory wall.
 - Replace TEST shader substitutes with validated translations.
-- Validate input actions, audible sound, saves and sustained gameplay/performance.
-- Resolve scene-load memory pressure and validate the transition beyond splash screens.
+- Validate gameplay controls, audible sound, save/reload and sustained performance.
+- Resolve scene-load memory pressure and validate the transition beyond the working menus.
 
 ## Build your own copy
 

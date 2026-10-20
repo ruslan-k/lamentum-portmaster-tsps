@@ -1,0 +1,24 @@
+{
+  "baseline": {
+    "capture": "evidence/menu-trace-01/live.png",
+    "menu_region_xyxy": [
+      80,
+      390,
+      330,
+      620
+    ],
+    "pixels_luminance_gt128": 0,
+    "region_mean": 0.010104347826086957
+  },
+  "fixed": {
+    "capture": "evidence/ui-cbuf-fixed-01/after-short-up-unchanged.png",
+    "menu_region_xyxy": [
+      80,
+      390,
+      330,
+      620
+    ],
+    "pixels_luminance_gt128": 2451,
+    "region_mean": 10.56568695652174
+  }
+}

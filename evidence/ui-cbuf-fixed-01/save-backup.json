@@ -1,0 +1,10 @@
+{
+  "backup": "/mnt/SDCARD/Roms/PORTS/lamentum-switch/save-laboratory.before-newgame202",
+  "files": [
+    {
+      "path": "PlayerPrefs.dat",
+      "sha256": "563c194b3ea3e608011ff2710636e88ecdaf07a159967684f09e88a89cf65001",
+      "bytes": 132
+    }
+  ]
+}
