@@ -897,10 +897,40 @@ index 0545586..ac198d5 100644
      nvn_gl_completion.real_waits++;
  }
 diff --git a/native/nvn_render.h b/native/nvn_render.h
-index 543b4b5..139a430 100644
+index 543b4b5..618757d 100644
 --- a/native/nvn_render.h
 +++ b/native/nvn_render.h
-@@ -793,19 +793,74 @@ static void nvn_render_draw_inner(struct nvn_record *r) {
+@@ -238,7 +238,28 @@ static struct nvn_descriptor *nvn_render_descriptor(uint64_t pool,unsigned type,
+     for(unsigned i=0;i<32;i++) {
+         struct nvn_descriptor_pool *d=&nvn_descriptor_pools[i];
+         if(d->live&&d->object==pool&&d->type==type) {
+-            if(index<NVN_DESCRIPTOR_RESERVED||index>=d->count||!d->entries[index].valid)stop("NVN_RENDER_DESCRIPTOR_INVALID",nvn_caller,index,24);
++            /* Some titles number descriptor slots from zero instead of the 256-entry prefix this adapter
++             * reserved for Zero/ZX. LC2_DESCRIPTOR_ZERO_BASED=1 (the launcher sets it for this port) accepts
++             * the guest's own numbering; validity is still enforced. */
++            static int zero_based_configured,zero_based;
++            if(!zero_based_configured){const char *o=getenv("LC2_DESCRIPTOR_ZERO_BASED");zero_based=o&&!strcmp(o,"1");zero_based_configured=1;}
++            unsigned base=zero_based?0U:NVN_DESCRIPTOR_RESERVED;
++            if(index<base||index>=d->count||!d->entries[index].valid) {
++                static unsigned told;
++                if(told++<6){struct line b={0};text(&b,"NVN_DESCRIPTOR_MISS index=");hex(&b,index);
++                    text(&b," count=");hex(&b,d->count);text(&b," base=");hex(&b,base);
++                    text(&b," valid=");hex(&b,index<d->count?d->entries[index].valid:0);
++                    /* The title may write descriptors straight into pool memory, in which case our own
++                     * valid flag stays zero while the slot is not empty. Name the words it wrote. */
++                    text(&b," object=0x");hex(&b,index<d->count?d->entries[index].object:0);
++                    text(&b," view=0x");hex(&b,index<d->count?d->entries[index].view:0);
++                    if(index<d->count) {
++                        const uint32_t *words=(const uint32_t *)&d->entries[index];
++                        text(&b," words=");for(unsigned k=0;k<8;k++){hex(&b,words[k]);if(k<7)text(&b,",");}
++                    }
++                    text(&b," zero-based=");hex(&b,zero_based);emit(&b);}
++                stop("NVN_RENDER_DESCRIPTOR_INVALID",nvn_caller,index,24);
++            }
+             return &d->entries[index];
+         }
+     }
+@@ -793,19 +814,74 @@ static void nvn_render_draw_inner(struct nvn_record *r) {
          if(u->location<0 && u->size_location<0)continue;
          if(u->texel_fetch_bits && !u->cpu_view)stop("NVN_LC2_PACKED_TEXTURE_CONTRACT_REQUIRED",nvn_caller,u->texel_fetch_bits,20);
          unsigned bytes=u->kind==1?64:u->kind==2?16:u->kind==3||u->kind==5?8:u->kind==4||u->kind==6?4:0;
@@ -984,7 +1014,7 @@ index 543b4b5..139a430 100644
          {   /* MOMO_UNIFORM_DUMP=<draw>: the whole constant bank bound for that draw, so a shader whose
               * values look shifted can be checked against the raw buffer instead of guessed. */
              static int cfg;static unsigned wanted;static unsigned done;
-@@ -1267,7 +1322,12 @@ static void nvn_render_draw_inner(struct nvn_record *r) {
+@@ -1267,7 +1343,12 @@ static void nvn_render_draw_inner(struct nvn_record *r) {
          if(stream>=nvn_render.stream_count||stream>=16||nvn_render.streams[stream][1])stop("NVN_VERTEX_STREAM_REQUIRED",nvn_caller,stream,20);
          struct nvn_vertex_format vf=nvn_vertex_format_decode(format);
          unsigned components=vf.components;
@@ -998,7 +1028,7 @@ index 543b4b5..139a430 100644
          unsigned element=vf.bytes,stride=nvn_render.streams[stream][0];struct nvn_range range=nvn_render.vertex[stream];
          uint64_t start=base*stride+offset,extent=maximum*stride+element;
          if(!stride||start>range.size||extent>range.size-start)stop("NVN_VERTEX_FETCH_RANGE",nvn_caller,start+extent,24);
-@@ -1449,6 +1509,71 @@ static void nvn_render_draw_inner(struct nvn_record *r) {
+@@ -1449,6 +1530,71 @@ static void nvn_render_draw_inner(struct nvn_record *r) {
      }
      if(preserve)momo_stencil_probe(nvn_replay.draws+1,p->sources[0],p->sources[1]);
      momo_window_draws_census(nvn_render.target,nvn_replay.last_frame,nvn_replay.draws+1,p->sources[0],p->sources[1]);
@@ -1070,7 +1100,7 @@ index 543b4b5..139a430 100644
      nvn_replay.draws++;nvn_render.target->draws++;
      struct nvn_texture *target_storage=zero_texture_storage_state(nvn_render.target);
      if(target_storage!=nvn_render.target)target_storage->draws++;
-@@ -1590,6 +1715,22 @@ static unsigned nvn_render_record(struct nvn_record *r) {
+@@ -1590,6 +1736,22 @@ static unsigned nvn_render_record(struct nvn_record *r) {
          return 1;
      }
      case NI_nvnCommandBufferBindColorState:memcpy(&nvn_render.color,r->payload,4);return 1;
@@ -1093,7 +1123,7 @@ index 543b4b5..139a430 100644
      case NI_nvnCommandBufferBindBlendState:memcpy(nvn_render.blend,r->payload,8);return 1;
      case NI_nvnCommandBufferBindDepthStencilState:memcpy(nvn_render.depth_state,r->payload,8);return 1;
      case NI_nvnCommandBufferBindMultisampleState: {
-@@ -1621,6 +1762,14 @@ static unsigned nvn_render_record(struct nvn_record *r) {
+@@ -1621,6 +1783,14 @@ static unsigned nvn_render_record(struct nvn_record *r) {
      case NI_nvnCommandBufferBindVertexBuffers:memcpy(nvn_render.vertex+a[0],r->payload,a[1]*16);return 1;
      case NI_nvnCommandBufferBindUniformBuffer:
          if(a[0]>1||a[1]>=16)stop("NVN_UNIFORM_BINDING",nvn_caller,a[1],24);
@@ -1419,7 +1449,7 @@ index 0fb14ec..f67a08a 100644
              free(premul);free(probe);free(sprite);free(flat);free(scaled);free(awf);free(mipped);free(r8);free(advent);free(lowered);free(wrapped);free(interface_source);
              if(!status){char log[2048]={0};glGetShaderInfoLog(shaders[i],sizeof(log),NULL,log);printf("NVN_SHADER_COMPILE_ERROR %s\n",log);stop("NVN_SHADER_COMPILE_FAILED",nvn_caller,p->sources[i],21);}
 diff --git a/native/nvn_textures.h b/native/nvn_textures.h
-index 0feaef1..ab194b5 100644
+index 0feaef1..bfab434 100644
 --- a/native/nvn_textures.h
 +++ b/native/nvn_textures.h
 @@ -321,7 +321,7 @@ static struct nvn_texture *momo_texture_alias(uint64_t object,unsigned *index_ou
@@ -1439,6 +1469,17 @@ index 0feaef1..ab194b5 100644
  static void zero_record_target_view(uint64_t object,const uint8_t *view,unsigned attachment) {
      struct nvn_texture *t=object?nvn_texture_find(object):NULL;
  #ifdef MOMO_SHADERS
+@@ -749,7 +750,9 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+     if(id==NI_nvnTexturePoolRegisterTexture) {
+         struct nvn_descriptor_pool *d=NULL;
+         for(unsigned i=0;i<32;i++)if(nvn_descriptor_pools[i].live&&nvn_descriptor_pools[i].object==a[0]&&nvn_descriptor_pools[i].type==1)d=&nvn_descriptor_pools[i];
+-        if(!d || a[1]<NVN_DESCRIPTOR_RESERVED || a[1]>=d->count)stop("NVN_TEXTURE_DESCRIPTOR_INDEX",nvn_caller,a[1],24);
++        static int zb_configured,zb;
++        if(!zb_configured){const char *o=getenv("LC2_DESCRIPTOR_ZERO_BASED");zb=o&&!strcmp(o,"1");zb_configured=1;}
++        if(!d || a[1]<(zb?0U:NVN_DESCRIPTOR_RESERVED) || a[1]>=d->count)stop("NVN_TEXTURE_DESCRIPTOR_INDEX",nvn_caller,a[1],24);
+         struct nvn_texture *t=nvn_texture_find(a[2]);struct nvn_descriptor *slot=&d->entries[a[1]];
+         if(a[3] && !megaman_texture_view_identity(nvn_pointer(a[3],MEGAMAN_TEXTURE_VIEW_BYTES,PROT_READ),t->b.levels) &&
+            !aw_texture_view_identity_native(nvn_pointer(a[3],MEGAMAN_TEXTURE_VIEW_BYTES,PROT_READ),&t->b,t->aw_native_format))
 diff --git a/native/nvn_window.h b/native/nvn_window.h
 index 241c564..9e55b31 100644
 --- a/native/nvn_window.h

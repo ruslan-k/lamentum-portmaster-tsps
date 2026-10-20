@@ -1134,3 +1134,22 @@ STOP status=NVN_RENDER_DESCRIPTOR_INVALID pc=main.text.seg+0x52d294 detail=0x0
 with the sampler objects themselves created and accepted
 (`NVN_SAMPLER_CREATED min=5 mag=1 wrap=7/7/7 lod=0:1000 ...`). So the next step is the texture descriptor
 the runtime refuses - a real guest handle it cannot decode - not a missing table.
+
+## The invalid descriptor is a *null* texture handle, not a missing registration
+
+`NVN_DESCRIPTOR_MISS` now prints the slot itself:
+
+```
+NVN_DESCRIPTOR_MISS index=0 count=0x2100 base=0 object=0 view=0 words=0,0,0,0,0,0,0,0 zero-based=1
+```
+
+The pool was created with **0x2100 = 8448 entries = 8192 + 256**, so this title *does* use the 256-entry
+reserved prefix (the `LC2_DESCRIPTOR_ZERO_BASED` experiment is therefore wrong for it and must stay off).
+The slot that fails is index 0 - the null slot - and it is completely zero: the title bound a texture
+handle whose low word is 0, i.e. **"no texture"**, and the runtime treats that as an invalid descriptor and
+stops.
+
+So the fix is not decoding: index < 256 must mean "no texture bound" (skip the lookup, leave the unit
+alone or point it at a 1x1 placeholder) instead of stopping. That is the next change, and it is small; what
+matters is that it was measured rather than assumed, and that the zero-based flag is now known to be wrong
+for this title.
