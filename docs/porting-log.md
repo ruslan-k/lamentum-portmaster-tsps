@@ -1229,3 +1229,25 @@ I had inserted in the wrong switch; that is reverted).
 Next step: give each sampler its real byte offset inside the cbuf. The information exists in the shader
 the translator produced (the uniform block member layout), so the builder must emit per-sampler offsets
 instead of 0, and the runtime then reads a genuine 64-bit handle at that offset.
+
+## The bad handle is read in the generic uniform upload path, at the sampler's offset 0
+
+`COTM_HANDLE_IN=10` shows the handle each sampler preparation receives, per draw:
+
+```
+NVN_SAMPLER_HANDLE_IN handle=0x0                draw=0 frame=0 program=16/19
+NVN_SAMPLER_HANDLE_IN handle=0x3f8000003f800000 draw=1 frame=0 program=7/0
+```
+
+`0x3f8000003f800000` is `1.0f, 1.0f` - two floats, not a handle. The value is read in the generic uniform
+upload loop (`nvn_render.h`, the `kind==3` branch: `memcpy(&handle, data, 8)` where `data` is the cbuf
+snapshot taken at `u->offset`), and the catalogue sets **`offset=0` for every sampler**, so what is read is
+the first two floats of the cbuf.
+
+The scan added to `nvn_normal_early.h` does not cover this path: that file handles the "normal early" draw
+route, while this draw (programs 7/0 and 11/9/12/14) goes through the generic uniform loop. The same
+handle-resolution logic has to be applied there - or, better, once in a shared helper used by both loops.
+
+So the remaining work for textures is exactly this: resolve a real per-sampler offset (from the shader's
+uniform block layout, or by scanning the bound range for a value shaped like a handle) and use it in both
+upload paths.
