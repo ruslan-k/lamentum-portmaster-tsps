@@ -8,7 +8,7 @@
 
 **30 FPS roadmap:** [docs/performance-roadmap-30fps.md §25](docs/performance-roadmap-30fps.md#25-build218-post-oom-audit-and-next-steps-2026-10-20) — latest build218 audit, detailed memory and CPU hypotheses, current PR order, benchmarks and correctness gates; §§0–24 preserve earlier experiments and should not be mistaken for present status. No device run or source runtime build was performed in the current roadmap audit.
 
-Latest work: `docs/ui-cbuf-binding.md` (build202: one-field correction c4 -> NVN
+Earlier engineering milestones (build202 and predecessors; later results supersede their status claims): `docs/ui-cbuf-binding.md` (build202: one-field correction c4 -> NVN
 UBO1, SDK/compiler provenance, replay of captured UI draws, actual menu/input
 captures, save backup and frontend cleanup). `docs/hid-input-contract.md` (builds 198–199: direct guest-read
 receipts, hash-pinned derivation of accessor Attach, retirement of the unrelated
@@ -49,7 +49,9 @@ recovered Horizon/NVN compatibility runtime — the same class of runtime used b
 Nothing from the game is distributed here: no modules, no RomFS, no textures, no shaders, no
 keys, no saves. Only our own tooling, the adapter patch and measured evidence are committed.
 
-## Verified facts (2026-10-19)
+## Historical verified facts (2026-10-19; current status is above)
+
+These are source/version facts and prior milestones from that snapshot. Shader catalogue size and current device outcome have changed in build218; use the opening status and the current roadmap for latest results.
 
 - **Title identity**: `0100EC901551C000` (base v0), update `0100EC901551C800` v393216, NCA SDK
   version 10.9.0.0, NPDM stack `0x100000`, main priority 44, core 0, 46 services.
