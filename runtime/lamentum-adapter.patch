@@ -68,7 +68,7 @@ index f85a59d..13390cf 100644
          /* sub sp,sp,#imm12 */
          ctx->uc_mcontext.sp-=(instruction>>10)&0xfff;
 diff --git a/native/input_host.h b/native/input_host.h
-index cdecae8..a126470 100644
+index cdecae8..8e2bedc 100644
 --- a/native/input_host.h
 +++ b/native/input_host.h
 @@ -238,16 +238,24 @@ static void hid_publish(struct hid_sample sample,unsigned connected) {
@@ -99,6 +99,25 @@ index cdecae8..a126470 100644
              struct hid_sample value=live?actual:(struct hid_sample){.number=sample.number};
              hid_ring_publish((struct hid_ring *)(entry+0x28+ring*0x350),value);
          }
+@@ -263,6 +271,18 @@ static void hid_publish(struct hid_sample sample,unsigned connected) {
+     if(sample.buttons!=hid_host.last_buttons) {
+         printf("HID_SAMPLE number=%"PRIu64" buttons=0x%"PRIx64" player=%u\n",sample.number,sample.buttons,target);
+         hid_host.last_buttons=sample.buttons;
++        /* LC2_HID_DUMP=1 (diagnostic): dump the head of the published region on the first press.
++         * SDK 10.9.0.0's NpadSharedMemoryAccessor::GetInternalState indexes +0x18 with 8-byte
++         * entries, so a zero there means the guest reads nothing whatever the entry table says. */
++        static int dc;static unsigned dumped;
++        if(!dc){const char *o=getenv("LC2_HID_DUMP");dumped=!(o&&!strcmp(o,"1"));dc=1;}
++        if(!dumped && sample.buttons) {
++            dumped=1;printf("LC2_HID_DUMP head:");
++            for(unsigned off=0;off<0xa0;off+=4)printf(" %03x=%08x",off,*(uint32_t *)(shared+off));
++            printf("\nLC2_HID_DUMP id-table:");
++            for(unsigned i=0;i<10;i++)printf(" +%03x=%016"PRIx64,(unsigned)(0x18+8*i),*(uint64_t *)(shared+0x18+8*i));
++            printf("\n");
++        }
+     }
+ }
+ static void hid_exit_request(unsigned diagnostic) {
 diff --git a/native/ipc.h b/native/ipc.h
 index 7389a4e..59df724 100644
 --- a/native/ipc.h

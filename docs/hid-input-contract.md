@@ -62,7 +62,36 @@ menu would be drawn does not change. Broadcasting to every entry and ring produc
 no visible change, so the failure is **not** which NpadId/style/ring we address.
 It is the published shape (or the region) itself.
 
-## 5. Consequences
+## 5. The region head is EMPTY — measured, this is the defect
+
+`LC2_HID_DUMP=1` (build 195, diagnostic) prints the first 0xA0 bytes of the
+published region on the first press, plus the id-table this SDK's accessor indexes
+(`+0x18 + 8*i` for i = 0..9). Measured on a live run with the press confirmed in
+the same log (`../evidence/hid-dump-01/hid-dump.txt`):
+
+```
+head:   000=00000000 … 09c=00000000        (every word zero)
+id-table: +018=0000000000000000 … +060=0000000000000000   (all ten zero)
+```
+
+So the accessor at `sdk+0x207ec0` loads zero for every npad id, and no entry we
+write at `+0x9a00` can be seen: the guest never reaches that table. This is the
+first measured defect in the input path, and it explains why the broadcast A/B
+(section 4) changed nothing — the record the title reads was never populated.
+
+Two candidate causes remain, and they are distinguishable by one experiment each:
+
+1. the shared region we publish into is not the one the accessor reads (the title
+   may map a second HID region for the internal-state table), or
+2. this SDK expects the +0x18 table to be FILLED by the platform (8 bytes per npad
+   id, ids 0–7 plus 8 for 0x10 and 9 for 0x20) and our publisher writes only the
+   entry table at +0x9a00, leaving the table the accessor uses at zero.
+
+Next step: decide between them by A/B-ing the +0x18 table (guest address of our
+entry block vs an offset/id), never by touching the entry table again until the
+head is non-zero.
+
+## 6. Consequences
 
 - Do not retry `LC2_HID_BROADCAST` or Npad-id A/Bs; that axis is measured and dead.
 - Next: follow `GetInternalState`'s returned pointer and the `GetNpadStates`

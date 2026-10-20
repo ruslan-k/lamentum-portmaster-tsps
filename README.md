@@ -3,9 +3,9 @@
 **Status: not playable. Build 193 reaches the game's own title screen ("Lamentum"
 logo on physical scanout) and a 420-second run ends on time rather than on a defect.
 The menu list, input actions, audio, saves and gameplay remain unverified:
-pressing A/Start reaches the adapter but the title does not react — loading has
-ended by then, and a broadcast to every npad entry/ring changed nothing, so the
-published pad record shape (not the routing) is the frontier.**
+pressing A/Start reaches the adapter but the title does not react — measured, the
+published HID shared region's head (including the +0x18 npad table this SDK reads)
+is entirely zero, so the guest loads no pad state at all.**
 
 Latest work: `docs/hid-input-contract.md` (build 194: loading proven finished
 before the title, per-frame IPC polling ruled out, npad-id broadcast falsified,
@@ -28,7 +28,7 @@ original texture resolution and the owner image; the 420 MiB GPU ceiling is unch
 
 The installed launcher keeps experimental memory features off unless explicitly requested;
 it uses strict GL checks, synchronous submission, SDL/KMSDRM and a 96 MiB memory floor.
-The failed pageout experiment remains disabled. The latest binary is build 194, installed
+The failed pageout experiment remains disabled. The latest binary is build 195, installed
 with a device-side backup and independently verified SHA-256. The temporary watermark
 experiment was restored to its original value and is not a persistent system change.
 
