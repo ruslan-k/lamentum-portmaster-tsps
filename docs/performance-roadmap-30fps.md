@@ -1,8 +1,8 @@
 # Lamentum (TrimUI Smart Pro S): Roadmap to Stable 30 FPS
 
-> **CURRENT AUTHORITATIVE WORKLIST: [§23 — source review at ffbe7ac, build213 New Game blocker and next FPS work](#23-current-head-ffbe7ac-build213-frontier-gameplay-and-fps-priorities-2026-10-20).** Sections 0–22 are retained as historical audits, implementation notes, rejected experiments and supporting technical reference; **old sections do not supersede §23**.
+> **CURRENT AUTHORITATIVE EXECUTION PLAN: [Gameplay Bring-up and Performance Plan (build216 / 54e031d)](current-gameplay-performance-plan.md).** This companion document contains the latest source-vetted priorities, exact implementation instructions, test fixtures and stop criteria. Sections **0–23 below are preserved as historical audits**; old references to build213, 42 shader entries, or an unimplemented vertex42/43/44 are superseded.
 
-**Latest reviewed source:** [ffbe7ac14da551b78dcf418717c60489e22e0862](https://github.com/ruslan-k/lamentum-portmaster-tsps/commit/ffbe7ac14da551b78dcf418717c60489e22e0862) on 2026-10-20, before the documentation-only commits adding §23. **Latest confirmed device run:** [newgame-12, build213](../evidence/newgame-12/README.md), stopped on a new vertex shader at frame 516. **Game status:** real menu, New Game configuration, control/tutorial and loading are reached with the corrected input mapping. **Controllable gameplay, audible audio, cold save/reload and measured gameplay FPS remain unverified.** Current source has **42 shader catalogue entries, including seven TEST substitutes**; entry index42 is the next task.
+**Latest source reviewed:** [54e031d](https://github.com/ruslan-k/lamentum-portmaster-tsps/commit/54e031d396c559ab90c4de94f54da99a73059b14), 2026-10-20. **Latest completed and analyzed device run:** [newgame-15 / build216](../evidence/newgame-15/README.md): 1469 presents, clean TIME_LIMIT after a 900-second probe, **no unknown shader stop**, but **no confirmed playable world**. Catalogue: **45 entries indexed 0–44, including seven TEST substitutes**; entry44 has not been observed drawing. The source probe cap is now **1800 seconds**. [newgame-17](../evidence/newgame-17/identity.json) currently provides identity/environment, not a validated outcome. Real-gameplay FPS, audible audio and save/load remain unverified.
 
 **Purpose:** an executable engineering plan to reach a correct first playable scene, then work toward stable 30 FPS (whole-frame P95 <=33.33ms), not a promise or claim that 30 FPS has been achieved. The recovered GPL runtime source baseline contains 435 manifest-pinned files. Changes to the native adapter must remain within runtime/lamentum-adapter.patch; owner Switch executable/image assets stay private. Platform: Switch Unity 2019.4.4f1 ARM64 IL2CPP/Horizon/NVN adapted to TrimUI Smart Pro S SpruceOS, Mali-G57 EGL/GLES, 1280x720 panel, approximately 1GiB RAM.
 
@@ -1500,3 +1500,31 @@ If corrected target-side CPU profiling attributes major recurring cost to **Unit
 **Safety and reproducibility:** run the baseline SHA-256 manifest check from the separate **recovered GPL source root**; then host unit/C fixtures, full adapter cross-build, install + independent ELF hash, quiet owner-controlled principal launch and cleanup/CPU mask validation. Keep old known-good executable and save backups. The diagnostic **32MiB floor** and AW_RELEASE=0 shader dump are *not* production defaults; production still requires separate validation at the default **96MiB floor**. Do not run scripts with their owner's hardcoded IP/workstation paths against another handheld.
 
 **Hard acceptance separation:** (a) program appended, (b) linked/accepted, (c) actually drawn/pixel-validated, (d) actual controllable world, (e) audible audio/save/reload, (f) complete-frame stable 30 FPS. Passing one does not imply any later milestone. No 30 FPS result is claimed by this review.
+
+
+## 24. Current build216 execution priorities and next implementation PRs (2026-10-20)
+
+> **Source of truth for detailed instructions:** [Current Gameplay Bring-up and Performance Plan](current-gameplay-performance-plan.md). This section explicitly supersedes the historical action status in §§0–23 while retaining those sections as technical background. Review covers code through [54e031d](https://github.com/ruslan-k/lamentum-portmaster-tsps/commit/54e031d396c559ab90c4de94f54da99a73059b14), without a new on-device test.
+
+### 24.1. Completed and still missing
+
+- **Done:** New Game navigation and Loading verified with the corrected EV_KEY305/304 mapping; shader catalogue entries **42–44** hash-pinned and appended; original c1/c3 bank aliasing guarded; ten narrow real-Mali GLES cbuf fixture checks; build216 ELF and complete newgame-15 log hash pinned; MainUI and CPU state restore cleanly.
+- **Not done:** no first playable level/world, physical controller gameplay, audible audio, cold save/reload, or valid gameplay FPS. **Newgame-15 had no shader stop**, but after 900 seconds it was still loading; entry44 **zero draw-guard receipts**. The ROMFS read high-water at EOF is **not** proof that all assets were loaded. Newgame-16 budget 2400 was **rejected** because the historical cap was 900; source cap now 1800; newgame-17 has no committed completed outcome at this review.
+- **Already attempted/available, not new work:** glTexSubImage2D constant-buffer optimization default-on, cold250 guest ZRAM setting, original 8192x4096 BC3 striped decoding/lossless backing, generic render scaling tested near-neutral, and synchronous GL completion retained for correct NVN lifetimes.
+
+### 24.2. Strict next sequence
+
+| Priority | Next PR | Minimum concrete acceptance |
+|---:|---|---|
+| P0-01 | Build an actual New Game **loading progress ledger** | Time/scene-phased ROMFS **interval-union** read coverage, re-read metrics, shader **draw** counts, texture/guest-page activity, CPU/waits and KMS scene state; classify work vs stall vs wrong pixels |
+| P0-02 | Finish or inspect the already prepared **1800-second** owner-local probe | One hash-pinned run with full log and independent cleanup; a clean TIME_LIMIT is not a loaded world |
+| P0-03 | Correct existing profiling tools | Target SC_CLK_TCK rather than workstation ticks, PID/TID/starttime+boot ID, complete presentation coverage, signed residual and per-run benchmark-validity tests |
+| P1-04 | Measure guest present-to-submit and NVN/GLES replay independently | Mutually exclusive wall stages account for >=95%, profiler overhead <=5%, host CPU ns separated from wall waits |
+| P1-05 | Fix the **measured** load bottleneck | Repeatable increase in actual completed asset/scene progress per second, safe memory and correct output; not just a bigger timeout |
+| P0-06 | Prove first **real-world draw and interaction** | First entry44 draw if reached; any next original program append-only; correct world pixels, player movement, actual interaction |
+| P1-07 | Test only validated renderer hot spots | CBUF small dirty-region uploads, sampler/FBO caching, vertex/BC staging, quality controls, or correct fences **only if their measured cost is material** |
+| Release | Validate **playable** state and real 30 FPS | Audible sound, controller, cold save/load and 3x60s gameplay P50/P95<=33.33ms, safe memory and clean Spruce exit |
+
+**Immediate interpretation change:** the ~1.63 gross presents/s in newgame-15 includes menu/navigation and startup and cannot be used as gameplay FPS. A new shader should not be appended merely because entry44 was newly admitted; it was **not drawn**. The highest-value investigation is whether the scene load is progressing, waiting on a missing Unity/Horizon event, or running world logic without correct pixels. Guest-ZRAM cold250 and per-draw GL changes must be tested under a phase-matched, target-correct profiler, not inferred from historical loading frame counts.
+
+**Full step-by-step implementation and QA:** [docs/current-gameplay-performance-plan.md](current-gameplay-performance-plan.md), §§3–11. Original game data, NSO shaders, keys and saves remain owner-private, and device principal-flow tests must never be invoked blindly.
