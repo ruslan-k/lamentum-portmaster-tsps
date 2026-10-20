@@ -1,0 +1,16 @@
+{
+  "raw_log_sha256": "a09da06e9b4679ddc203007cdcca8914a03a138de9fcb279024df553ea8520f2",
+  "raw_log_bytes": 7139339,
+  "phase": "visually-confirmed New Game / loading; not gameplay",
+  "last_present": 516,
+  "stop": [
+    "ZERO_SHADER_NOT_PINNED"
+  ],
+  "cleanup_errors": [],
+  "decisive_rows": [
+    "LC2_SHADER_DUMPED sequence=0 code-bytes=2304 control-bytes=2176 (needs AW_RELEASE=0)",
+    "ZERO_SHADER_UNRECOGNIZED code-bytes=2304 control-bytes=2176 code-hash=301af8ced90e7e506eb4d5ace0dfabd65453557bac79a74dfebacef7396b3098 control-hash=1307789791808c82c0b5c7a141f34ef4780a3ec430630b1588b0803e4ffba4fe",
+    "STOP status=ZERO_SHADER_NOT_PINNED pc=main.text.seg+0x542b68 detail=0x3fe4f8540 query_memory_calls=0x174 tls_trap_reads=0x0"
+  ],
+  "memory_sample_min_MiB": 47
+}

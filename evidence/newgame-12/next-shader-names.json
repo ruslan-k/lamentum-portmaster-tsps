@@ -1,0 +1,18 @@
+{
+  "code_sha256": "301af8ced90e7e506eb4d5ace0dfabd65453557bac79a74dfebacef7396b3098",
+  "spirv_c_names": [
+    {
+      "id": 43,
+      "name": "c1"
+    },
+    {
+      "id": 44,
+      "name": "c3"
+    }
+  ],
+  "glsl_instances": [
+    "c1",
+    "c3_1"
+  ],
+  "note": "c1 is a compiler literal bank; c3_1 suffix must be resolved from compiler identity, not declaration ordinal"
+}

@@ -1,0 +1,24 @@
+{
+  "action": "down",
+  "event_type": 3,
+  "code": 17,
+  "value": 1,
+  "hold_ms": 120,
+  "provider": "/dev/input/event4",
+  "name": "TRIMUI Player1",
+  "capabilities": {
+    "ev": "20002b",
+    "key": "7cdb000000000000 0 0 0 0",
+    "abs": "3003f"
+  },
+  "writes": [
+    24,
+    24,
+    24,
+    24
+  ],
+  "start_ns": 44576420877618,
+  "end_ns": 44576572078999,
+  "released": true,
+  "source": "agent evdev injection, not a physical human press"
+}

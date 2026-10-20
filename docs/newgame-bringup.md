@@ -14,7 +14,24 @@ now refuse by default; their unverified selection logic must not establish gamep
 screen and the control screen, then hits the fragment e1d6ede5/68743131.
 `newgame-10` (build211) instead stops on vertex 84137e66/927f1841.
 `newgame-11` (build212) stops on fragment 6b33f390/a2053408.
-All three have zero cleanup errors: game absent, MainUI restored, unchanged supervisor
+`newgame-12` (build213) admits that program and stops on vertex
+301af8ced90e7e506eb4d5ace0dfabd65453557bac79a74dfebacef7396b3098 /
+1307789791808c82c0b5c7a141f34ef4780a3ec430630b1588b0803e4ffba4fe
+(code 2304 bytes, control 2176). This next blob is saved and translates to Vulkan
+GLSL: literal c1 plus application c3, emitted as `c3_1` by SPIRV-Cross to avoid a
+name collision. Raw SPIR-V OpName identifies it as c3; the suffix must not be
+confused with NVN slot 1. It is NOT yet appended or device-tested. Existing
+literal-bank specialization and exact alias provenance are the next shader task.
+
+Build213 remains installed: SHA-256
+7c5c8e85e55d9b95782900af267787a50b885bfe6290d379dc49814b65eebaca;
+previous executable is retained as `lamentum-nextos.before-213`.
+newgame-12's final serial is 516, sampled MemAvailable minimum 47 MiB; this is a
+diagnostic 32-MiB floor run, not a production memory qualification or FPS benchmark.
+Its input hold floor was reduced 700 ->120 ms to limit navigation repeats; that
+functional run is not a one-variable rendering-performance A/B comparison.
+
+All four have zero cleanup errors: game absent, MainUI restored, unchanged supervisor
 identities and original CPU online mask. These are shader-tail frontiers, not gameplay.
 The first two new translated programs had not yet produced their draw-guard receipts
 before later program setup stopped; catalogue admission is not pixel validation.
