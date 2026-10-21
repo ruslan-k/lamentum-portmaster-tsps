@@ -1,0 +1,19 @@
+{
+  "container": "sha256:e437308c01ce7af4a035c3f0652bc886e258889f66803f805bce53d05af75f0c",
+  "output": "build-228",
+  "elf_sha256": "9f348c6c3ada5a12d71275153ff16e6702ca772da6d7bd8a835d79d7bd0100af",
+  "elf_bytes": 2139120,
+  "helper_sha256": "abe8e4847b18a750c0796af33d887cf43714126c9751ccdc8236715cb752401a",
+  "baseline_verified": 435,
+  "non_root_container": true,
+  "aarch64": true,
+  "deployed": false,
+  "game_run": false,
+  "overlay_sha256": "9229ae5e0e6f1d90b131180216dda0e48495c018134575d5fc50b438e58686a6",
+  "first_attempt_failure": {
+    "step": "compile",
+    "error": "control reaches end of non-void function [-Werror=return-type] in lc2_gl_upload_for",
+    "resolution": "explicit zero-triple return after the non-returning stop(); rebuilt from clean output dir"
+  },
+  "built_at": "2026-10-21T09:49:06.893249+04:00"
+}

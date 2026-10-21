@@ -602,6 +602,95 @@ index 0000000..099c7d0
 +    return (ssize_t)total;
 +}
 +#endif
+diff --git a/native/lc2_gl_format.h b/native/lc2_gl_format.h
+new file mode 100644
+index 0000000..bc1377e
+--- /dev/null
++++ b/native/lc2_gl_format.h
+@@ -0,0 +1,83 @@
++/* GLES upload triples for decoded texture payloads.
++ *
++ * A sized internal format is storage; the last `format`/`type` pair passed to
++ * glTexImage2D/glTexSubImage2D describes the CLIENT array and is never the
++ * internal-format enum. Passing GL_SRGB_ALPHA_EXT (0x8C42) in both places is
++ * not a legal GLES2 or GLES3 call, so this helper keeps the two roles apart.
++ *
++ * Rules (roadmap 32.3):
++ *   decoded 8-bit sRGB RGBA  -> sized sRGB internal, GL_RGBA, GL_UNSIGNED_BYTE
++ *   decoded 8-bit linear RGBA-> sized RGBA8 (ES3) or unsized GL_RGBA (ES2)
++ *   verified float           -> RGBA32F (ES3) or unsized GL_RGBA (ES2), GL_FLOAT
++ * Anything else is refused: this helper never coerces unknown data to RGBA8.
++ *
++ * Storage difference between the two context generations is real: GLES2 has no
++ * sized colour formats, and on GLES2 the only legal sRGB internal format comes
++ * from GL_EXT_sRGB (0x8C42). GL_SRGB8_ALPHA8 (0x8C43) is GLES3-only and must
++ * not be emitted into an ES2 context.
++ */
++#ifndef LC2_GL_FORMAT_H
++#define LC2_GL_FORMAT_H
++#include <stdint.h>
++
++#define LC2_GL_RGBA          0x1908U  /* client format and unsized ES2 storage */
++#define LC2_GL_RGBA8         0x8058U  /* sized, GLES3 */
++#define LC2_GL_SRGB8_ALPHA8  0x8C43U  /* sized sRGB, GLES3 */
++#define LC2_GL_SRGB_ALPHA_EXT 0x8C42U /* sRGB storage, GLES2 + GL_EXT_sRGB */
++#define LC2_GL_RGBA32F       0x8814U  /* sized float, GLES3 */
++#define LC2_GL_UNSIGNED_BYTE 0x1401U
++#define LC2_GL_FLOAT         0x1406U
++
++enum lc2_gl_format_status {
++    LC2_GL_FORMAT_OK = 0,
++    LC2_GL_FORMAT_UNSUPPORTED = 1,      /* no tested triple for this payload */
++    LC2_GL_FORMAT_SRGB_UNAVAILABLE = 2, /* sRGB storage is not expressible here */
++    LC2_GL_FORMAT_CONTEXT_INVALID = 3   /* unknown/unsupported API generation */
++};
++
++struct lc2_gl_upload {
++    uint32_t internal, external, type;
++};
++
++static inline enum lc2_gl_format_status lc2_gl_upload_format(unsigned api_major,
++        unsigned srgb_extension, unsigned source_srgb, unsigned upload_type,
++        struct lc2_gl_upload *out) {
++    if (!out || api_major < 2) return LC2_GL_FORMAT_CONTEXT_INVALID;
++    const int es3 = api_major >= 3;
++    if (source_srgb) {
++        /* sRGB storage decodes on sample, so only 8-bit source data applies. */
++        if (upload_type != LC2_GL_UNSIGNED_BYTE) return LC2_GL_FORMAT_UNSUPPORTED;
++        if (es3) out->internal = LC2_GL_SRGB8_ALPHA8;
++        else if (srgb_extension) out->internal = LC2_GL_SRGB_ALPHA_EXT;
++        else return LC2_GL_FORMAT_SRGB_UNAVAILABLE;
++        out->external = LC2_GL_RGBA;
++        out->type = LC2_GL_UNSIGNED_BYTE;
++        return LC2_GL_FORMAT_OK;
++    }
++    if (upload_type == LC2_GL_UNSIGNED_BYTE) {
++        out->internal = es3 ? LC2_GL_RGBA8 : LC2_GL_RGBA;
++    } else if (upload_type == LC2_GL_FLOAT) {
++        out->internal = es3 ? LC2_GL_RGBA32F : LC2_GL_RGBA;
++    } else {
++        return LC2_GL_FORMAT_UNSUPPORTED;
++    }
++    out->external = LC2_GL_RGBA;
++    out->type = upload_type;
++    return LC2_GL_FORMAT_OK;
++}
++
++/* A subimage only names the client array; storage was fixed by the matching
++ * glTexImage2D. Same refusal rules as above, so an sRGB texture cannot be
++ * updated through a linear client triple by accident. */
++static inline enum lc2_gl_format_status lc2_gl_subimage_format(unsigned source_srgb,
++        unsigned upload_type, struct lc2_gl_upload *out) {
++    if (!out) return LC2_GL_FORMAT_CONTEXT_INVALID;
++    if (source_srgb && upload_type != LC2_GL_UNSIGNED_BYTE) return LC2_GL_FORMAT_UNSUPPORTED;
++    if (!source_srgb && upload_type != LC2_GL_UNSIGNED_BYTE && upload_type != LC2_GL_FLOAT)
++        return LC2_GL_FORMAT_UNSUPPORTED;
++    out->internal = 0; /* unused by glTexSubImage2D */
++    out->external = LC2_GL_RGBA;
++    out->type = upload_type;
++    return LC2_GL_FORMAT_OK;
++}
++#endif
 diff --git a/native/lc2_gl_storage.h b/native/lc2_gl_storage.h
 new file mode 100644
 index 0000000..fe6aa9f
@@ -2907,18 +2996,19 @@ index 0fb14ec..9e2ccfc 100644
              free(premul);free(probe);free(sprite);free(flat);free(scaled);free(awf);free(mipped);free(r8);free(advent);free(lowered);free(wrapped);free(interface_source);
              if(!status){char log[2048]={0};glGetShaderInfoLog(shaders[i],sizeof(log),NULL,log);printf("NVN_SHADER_COMPILE_ERROR %s\n",log);stop("NVN_SHADER_COMPILE_FAILED",nvn_caller,p->sources[i],21);}
 diff --git a/native/nvn_textures.h b/native/nvn_textures.h
-index 0feaef1..f9a4d2a 100644
+index 0feaef1..627a31b 100644
 --- a/native/nvn_textures.h
 +++ b/native/nvn_textures.h
-@@ -6,6 +6,7 @@
+@@ -6,6 +6,8 @@
  #include "aw_float_emu.h"
  #include "megaman_blocklinear.h"
  #include "zero_bc_layout.h"
 +#include "lc2_gl_storage.h" /* checked format-defined payload, NOT driver residency */
++#include "lc2_gl_format.h"  /* GLES upload triples: sized storage vs client format */
  #include "megaman_texture_view.h"
  #include "t2_page_substitution.h"   /* Frente F: core (fingerprint, catalogue, variant); host hooks below */
  struct nvn_texture_builder {
-@@ -23,7 +24,7 @@ struct nvn_texture {
+@@ -23,7 +25,7 @@ struct nvn_texture {
      unsigned depth_constant_known,depth_discarded;GLfloat depth_constant_value; unsigned host_half;
      unsigned composition_initial_uniform,composition_target_seen,composition_other_target;
      unsigned host_scaled,host_width,host_height,host_scaled_sampled,host_scaled_bound,host_scaled_drawn;
@@ -2927,7 +3017,7 @@ index 0feaef1..f9a4d2a 100644
      unsigned aw_clear_valid,aw_clear_mask,aw_clear_known,aw_draws_since_clear,aw_caustic_half;float aw_clear_color[4];GLint aw_clear_scissor[4];
      GLuint zero_mip_masks[2];unsigned zero_mip_tail;unsigned momo_scale_alias_checked,momo_scale_alias_free;
      unsigned zero_depth_valid,zero_stencil_value,zero_depth_discarded;float zero_depth_value;
-@@ -63,6 +64,14 @@ static unsigned nvn_textures_high;
+@@ -63,6 +65,14 @@ static unsigned nvn_textures_high;
  static void zero_texture_storage_require(const struct nvn_texture *t);
  #include "zero_render_scale.h"
  #include "zero_texture_storage.h"
@@ -2942,7 +3032,7 @@ index 0feaef1..f9a4d2a 100644
  /* Cached GPU targets have no fabricated CPU completion. Ordinary GPU
   * sampling uses their live texture; any native CPU/packed-view/alias access
   * requires a separately implemented readback before it can be admitted. */
-@@ -135,7 +144,10 @@ static uint64_t nvn_texture_layout(uint64_t address,struct nvn_texture_builder *
+@@ -135,7 +145,10 @@ static uint64_t nvn_texture_layout(uint64_t address,struct nvn_texture_builder *
              unsigned bc=zero_bc_bytes(b->format);uint64_t face=0;
              for(unsigned i=0;i<b->levels;i++) {
                  struct zero_bc_level m;
@@ -2954,7 +3044,7 @@ index 0feaef1..f9a4d2a 100644
                  levels[i]=m.offset;if(m.offset+m.size>face)face=m.offset+m.size;
              }
              face=(face+511)&~UINT64_C(511);
-@@ -197,7 +209,10 @@ static uint64_t nvn_texture_layout(uint64_t address,struct nvn_texture_builder *
+@@ -197,7 +210,10 @@ static uint64_t nvn_texture_layout(uint64_t address,struct nvn_texture_builder *
          uint64_t size=0;
          for(unsigned i=0;i<b->levels;i++) {
              struct zero_bc_level m;
@@ -2966,7 +3056,7 @@ index 0feaef1..f9a4d2a 100644
              levels[i]=m.offset;size=m.offset+m.size;
          }
          return (size+4095)&~UINT64_C(4095);
-@@ -321,7 +336,7 @@ static struct nvn_texture *momo_texture_alias(uint64_t object,unsigned *index_ou
+@@ -321,7 +337,7 @@ static struct nvn_texture *momo_texture_alias(uint64_t object,unsigned *index_ou
      return NULL;
  }
  #endif
@@ -2975,7 +3065,7 @@ index 0feaef1..f9a4d2a 100644
  static uint64_t zero_texture_record_id(uint64_t object) {return nvn_texture_find(object)->id;}
  static void aw_clear_texture_admit(uint64_t object,uint64_t view,const int32_t *region) {
      struct nvn_texture *t=nvn_texture_find(object);
-@@ -329,6 +344,7 @@ static void aw_clear_texture_admit(uint64_t object,uint64_t view,const int32_t *
+@@ -329,6 +345,7 @@ static void aw_clear_texture_admit(uint64_t object,uint64_t view,const int32_t *
      if(region[0]<0||region[1]<0||region[2]||region[3]<=0||region[4]<=0||region[5]!=1||
         (uint64_t)region[0]+region[3]>t->b.width||(uint64_t)region[1]+region[4]>t->b.height)stop("NVN_CLEAR_TEXTURE_REGION",nvn_caller,object,20);
  }
@@ -2983,7 +3073,7 @@ index 0feaef1..f9a4d2a 100644
  static void zero_record_target_view(uint64_t object,const uint8_t *view,unsigned attachment) {
      struct nvn_texture *t=object?nvn_texture_find(object):NULL;
  #ifdef MOMO_SHADERS
-@@ -450,7 +466,7 @@ static void zero_cube_initialize(struct nvn_texture *t) {
+@@ -450,7 +467,7 @@ static void zero_cube_initialize(struct nvn_texture *t) {
              if(!nvn_texture_decode_upload(t->b.format,t->b.swizzle,type,rgba,mip,(size_t)width*width))stop("ZERO_CUBE_PIXEL_FORMAT",nvn_caller,t->b.format,20);
          }
          else if(!megaman_blocklinear_rgba8_decode(linear,linear_bytes,mip,0x2000-t->levels[level],blocks*4,blocks,0x11) ||
@@ -2992,7 +3082,7 @@ index 0feaef1..f9a4d2a 100644
              stop("ZERO_CUBE_DECODE",nvn_caller,level,24);
          glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+face,level,GL_RGBA,width,width,0,GL_RGBA,type,rgba);
          free(rgba);
-@@ -463,6 +479,58 @@ static void zero_cube_initialize(struct nvn_texture *t) {
+@@ -463,6 +480,58 @@ static void zero_cube_initialize(struct nvn_texture *t) {
      GLenum error=glGetError();if(error)stop("ZERO_CUBE_UPLOAD",nvn_caller,error,21);
      printf("ZERO_CUBE_REAL faces=6 size=%u levels=%u format=0x%x payload=%"PRIu64" per-face=%"PRIu64"\n",t->b.width,t->b.levels,t->b.format,t->size,t->size/6);
  }
@@ -3051,7 +3141,7 @@ index 0feaef1..f9a4d2a 100644
  static void zero_texture_pool_flushed(struct nvn_pool *pool,uint64_t offset,uint64_t bytes) {
      if(!bytes)return;
      for(unsigned i=0;i<4096;i++) {
-@@ -481,11 +549,120 @@ static void zero_texture_bc_pixels(struct nvn_texture *t,unsigned level,const ui
+@@ -481,11 +550,149 @@ static void zero_texture_bc_pixels(struct nvn_texture *t,unsigned level,const ui
      uint8_t *linear=malloc(linear_bytes);if(!linear)stop("ZERO_BC_LINEAR_MEMORY",nvn_caller,linear_bytes,21);
      void *source=nvn_pointer(t->pool->address+t->b.offset+m.offset,m.size,PROT_READ);
      if(!zero_bc_blocks_copy(&m,source,m.size,linear,linear_bytes,x,y,nx,ny,0) ||
@@ -3062,18 +3152,47 @@ index 0feaef1..f9a4d2a 100644
  }
 +/* Preserve full atlas resolution, but bound transient decode storage to 128
 + * rows instead of an entire 128-MiB RGBA atlas plus its linear BC copy. */
++/* GL_VERSION and the extension string are producer-context state, so the
++ * resolved triple is cached per context, never per process. Half and packed
++ * payloads keep their proven unsized RGBA triple; sRGB payloads either resolve
++ * to a legal storage enum or stop - they are never uploaded through a make-
++ * believe client format. */
++static struct lc2_gl_upload lc2_gl_upload_for(const struct nvn_texture *t,unsigned type) {
++    static EGLContext cached_context;static unsigned cached_version,cached_srgb,configured;
++    EGLContext context=eglGetCurrentContext();
++    if(!configured || context!=cached_context) {
++        const char *version=(const char *)glGetString(GL_VERSION);
++        const char *extensions=(const char *)glGetString(GL_EXTENSIONS);
++        unsigned major=0,minor=0;
++        cached_version=(version && sscanf(version,"OpenGL ES %u.%u",&major,&minor)==2)?major:0;
++        cached_srgb=(extensions && strstr(extensions,"GL_EXT_sRGB"))?1U:0U;
++        cached_context=context;configured=1;
++    }
++    unsigned srgb=zero_bc_srgb(t->b.format)?1U:0U;
++    struct lc2_gl_upload upload={0};
++    enum lc2_gl_format_status status=lc2_gl_upload_format(cached_version,cached_srgb,srgb,type,&upload);
++    if(status==LC2_GL_FORMAT_OK)return upload;
++    if(status==LC2_GL_FORMAT_UNSUPPORTED && !srgb) {
++        upload.internal=GL_RGBA;upload.external=GL_RGBA;upload.type=type;return upload;
++    }
++    if(status==LC2_GL_FORMAT_SRGB_UNAVAILABLE)stop("ZERO_SRGB_TEXTURE_BACKEND_REQUIRED",nvn_caller,t->b.format,20);
++    stop("LC2_GL_UPLOAD_FORMAT",nvn_caller,type,24);
++    /* stop() does not return; a zero triple would be an invalid GL call, never a
++     * silent fallback, if this ever became reachable. */
++    upload.internal=upload.external=upload.type=0;return upload;
++}
 +static void lc2_bc_upload_stripes(struct nvn_texture *t,unsigned level,unsigned width,unsigned height,unsigned allocate) {
 +    unsigned type=nvn_cpu_image_upload_type(t),bpp=nvn_texture_upload_bytes(type);
-+    unsigned format=zero_bc_srgb(t->b.format)?0x8c42U:GL_RGBA;
++    struct lc2_gl_upload spec=lc2_gl_upload_for(t,type);
 +    size_t capacity=(size_t)width*128*bpp;
 +    uint8_t *pixels=malloc(capacity);
 +    if(!pixels)stop("LC2_BC_STRIPE_MEMORY",nvn_caller,capacity,21);
-+    if(allocate)glTexImage2D(GL_TEXTURE_2D,level,format,width,height,0,format,type,NULL);
++    if(allocate)glTexImage2D(GL_TEXTURE_2D,level,spec.internal,width,height,0,spec.external,spec.type,NULL);
 +    for(unsigned y=0;y<height;y+=128) {
 +        unsigned rows=height-y;if(rows>128)rows=128;
 +        uint32_t box[6]={0,y,0,width,rows,1};
 +        zero_texture_bc_pixels(t,level,box,pixels,(size_t)width*rows*bpp);
-+        glTexSubImage2D(GL_TEXTURE_2D,level,0,y,width,rows,format,type,pixels);
++        glTexSubImage2D(GL_TEXTURE_2D,level,0,y,width,rows,spec.external,spec.type,pixels);
 +    }
 +    free(pixels);
 +    printf("LC2_BC_STRIPED_UPLOAD id=%"PRIu64" size=%ux%u temporary-bytes=%zu resolution=preserved\n",t->id,width,height,capacity);
@@ -3173,11 +3292,12 @@ index 0feaef1..f9a4d2a 100644
      t=zero_texture_storage_state(t);
      if(!__atomic_exchange_n(&t->zero_cpu_dirty,0,__ATOMIC_ACQ_REL))return;
      t2_page_require_rgba8(t,"T2_PAGE_CPU_REFRESH_REQUIRED");
-@@ -494,8 +671,15 @@ static void zero_texture_refresh(struct nvn_texture *t) {
+@@ -494,8 +701,16 @@ static void zero_texture_refresh(struct nvn_texture *t) {
          stop("ZERO_TEXTURE_CPU_GPU_COHERENCE_REQUIRED",nvn_caller,t->id,20);
      unsigned width=t->b.width,height=t->b.height,bc=zero_bc_bytes(t->b.format);
      unsigned type=nvn_cpu_image_upload_type(t),output_bpp=nvn_texture_upload_bytes(type);
 +    lc2_bc_reserve_first_use(view,t,type,bc);
++    struct lc2_gl_upload spec=lc2_gl_upload_for(t,type);
      glBindTexture(GL_TEXTURE_2D,t->name);GLint alignment;glGetIntegerv(GL_UNPACK_ALIGNMENT,&alignment);glPixelStorei(GL_UNPACK_ALIGNMENT,1);
      for(unsigned level=0;level<t->b.levels;level++) {
 +        if(bc && width>4096 && !t->host_scaled) {
@@ -3189,13 +3309,13 @@ index 0feaef1..f9a4d2a 100644
          uint64_t row=bc?(uint64_t)((width+3)/4)*bc:(uint64_t)width*nvn_texture_format_bytes(t->b.format);
          uint64_t stride=t->b.flags&0x50?t->b.stride:row;
          unsigned rows=bc?(height+3)/4:height;
-@@ -507,12 +691,16 @@ static void zero_texture_refresh(struct nvn_texture *t) {
+@@ -507,12 +722,16 @@ static void zero_texture_refresh(struct nvn_texture *t) {
              zero_texture_bc_pixels(t,level,NULL,pixels,bytes);
          } else for(unsigned y=0;y<height;y++)if(!nvn_texture_decode_upload(t->b.format,t->b.swizzle,type,pixels+(size_t)y*width*output_bpp,source+y*stride,width))
              stop("ZERO_TEXTURE_REFRESH_FORMAT",nvn_caller,t->b.format,20);
 -        glTexSubImage2D(GL_TEXTURE_2D,level,0,0,width,height,zero_bc_srgb(t->b.format)?0x8c42U:GL_RGBA,type,pixels);free(pixels);
-+        if(t->lc2_bc_pending)glTexImage2D(GL_TEXTURE_2D,level,zero_bc_srgb(t->b.format)?0x8c42U:GL_RGBA,width,height,0,zero_bc_srgb(t->b.format)?0x8c42U:GL_RGBA,type,pixels);
-+        else glTexSubImage2D(GL_TEXTURE_2D,level,0,0,width,height,zero_bc_srgb(t->b.format)?0x8c42U:GL_RGBA,type,pixels);
++        if(t->lc2_bc_pending)glTexImage2D(GL_TEXTURE_2D,level,spec.internal,width,height,0,spec.external,spec.type,pixels);
++        else glTexSubImage2D(GL_TEXTURE_2D,level,0,0,width,height,spec.external,spec.type,pixels);
 +        free(pixels);
          if(width>1)width>>=1;
          if(height>1)height>>=1;
@@ -3207,7 +3327,7 @@ index 0feaef1..f9a4d2a 100644
      printf("ZERO_TEXTURE_FLUSH_UPLOADED id=%"PRIu64" format=0x%x native-cpu-bytes=preserved before-sampler\n",t->id,t->b.format);
  }
  #include "zero_texture_writes.h"
-@@ -605,7 +793,8 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -605,7 +824,8 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
          /* Frente F: an eligible page gets no GL storage now (the pool holds nothing yet, MEDIDO pc-008: the
           * copy arrives later) and no budget; the copy decides between the palettized form and RGBA8. */
          t->t2_page.deferred=t2_page_eligible(&b);
@@ -3217,7 +3337,7 @@ index 0feaef1..f9a4d2a 100644
          if(t->t2_budget_bytes)t2_texture_budget_add(size,nvn_caller);
          else if(t2_pages.deferred_logged++<4)printf("T2_PAGE_DEFERRED id=%"PRIu64" size=%ux%u rgba8-bytes=%"PRIu64" pool-flags=0x%x storage=none-until-copy\n",t->id,b.width,b.height,size,pool->flags);
  #ifdef MOMO_SHADERS
-@@ -673,8 +862,21 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -673,8 +893,21 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
                  glTexParameteri(GL_TEXTURE_2D,0x813d,b.levels-1);
  #endif
              unsigned width=b.width,height=b.height;
@@ -3240,7 +3360,27 @@ index 0feaef1..f9a4d2a 100644
                  unsigned upload_type=nvn_cpu_image_upload_type(t),upload_bpp=nvn_texture_upload_bytes(upload_type);
                  size_t bytes=(size_t)width*height*upload_bpp;uint8_t *rgba=malloc(bytes);
                  if(!rgba)stop("NVN_TEXTURE_INITIAL_DATA_MEMORY",nvn_caller,bytes,21);
-@@ -749,7 +951,9 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -697,8 +930,8 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+                 /* Uniformity was checked across the complete original decode.
+                  * The compact upload consumes the same constant pixel value. */
+                 glPixelStorei(GL_UNPACK_ALIGNMENT,1);
+-                unsigned format=zero_bc_srgb(b.format)?0x8c42U:GL_RGBA;
+-                glTexImage2D(GL_TEXTURE_2D,i,format,t->host_scaled?t->host_width:width,t->host_scaled?t->host_height:height,0,format,upload_type,rgba);
++                struct lc2_gl_upload spec=lc2_gl_upload_for(t,upload_type);
++                glTexImage2D(GL_TEXTURE_2D,i,spec.internal,t->host_scaled?t->host_width:width,t->host_scaled?t->host_height:height,0,spec.external,spec.type,rgba);
+ #if MEGAMAN_HOST_DIAGNOSTIC
+                 /* Observation remains an independent RGBA8 reference; packed
+                  * UNORM5 may truthfully differ by one readback code value. */
+@@ -719,7 +952,7 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+                 if(height>1)height>>=1;
+             }
+ #if ZERO_ZX_GAME
+-            zero_mip_complete_storage(t,zero_bc_srgb(b.format)?0x8c42U:GL_RGBA,nvn_cpu_image_upload_type(t));
++            zero_mip_complete_storage(t,lc2_gl_upload_for(t,nvn_cpu_image_upload_type(t)));
+ #endif
+             nvn_texture_parameters(t,GL_NEAREST,GL_NEAREST,GL_CLAMP_TO_EDGE,GL_CLAMP_TO_EDGE);
+             glBindTexture(GL_TEXTURE_2D,0);
+@@ -749,7 +982,9 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
      if(id==NI_nvnTexturePoolRegisterTexture) {
          struct nvn_descriptor_pool *d=NULL;
          for(unsigned i=0;i<32;i++)if(nvn_descriptor_pools[i].live&&nvn_descriptor_pools[i].object==a[0]&&nvn_descriptor_pools[i].type==1)d=&nvn_descriptor_pools[i];
@@ -3502,8 +3642,39 @@ index 71d584f..4058493 100644
      unsigned base_h=zero_bc_default_height((height+3)/4);size_t offset=0;
      for(unsigned i=0;;i++) {
          unsigned nx=(width+3)/4,ny=(height+3)/4,h=base_h;
+diff --git a/native/zero_mip_clamp_runtime.h b/native/zero_mip_clamp_runtime.h
+index aa80bf7..53777f9 100644
+--- a/native/zero_mip_clamp_runtime.h
++++ b/native/zero_mip_clamp_runtime.h
+@@ -17,19 +17,22 @@ static unsigned zero_mip_native_limit(void) {
+     const char *extensions=(const char *)glGetString(GL_EXTENSIONS);
+     return extensions && strstr(extensions,"GL_APPLE_texture_max_level");
+ }
+-static void zero_mip_complete_storage(struct nvn_texture *t,unsigned format,unsigned type) {
++/* `spec` carries the storage enum and the client type separately: the previous
++ * single `format` argument was also passed as the client format, which is not a
++ * legal GLES call for sized or EXT_sRGB storage. */
++static void zero_mip_complete_storage(struct nvn_texture *t,struct lc2_gl_upload spec) {
+     if(!zero_mip_partial(t) || zero_mip_native_limit())return;
+     if(t->host_half || t->host_scaled || t->packaged_lazy || !t->name)
+         stop("ZERO_MIP_STORAGE_CONFLICT",nvn_caller,t->id,20);
+-    unsigned full=zero_mip_full_levels(t->b.width,t->b.height),bpp=nvn_texture_upload_bytes(type);
+-    if(!bpp)stop("ZERO_MIP_STORAGE_FORMAT",nvn_caller,type,20);
++    unsigned full=zero_mip_full_levels(t->b.width,t->b.height),bpp=nvn_texture_upload_bytes(spec.type);
++    if(!bpp)stop("ZERO_MIP_STORAGE_FORMAT",nvn_caller,spec.type,20);
+     for(unsigned level=t->b.levels;level<full;level++) {
+         unsigned width=t->b.width>>level,height=t->b.height>>level;
+         if(!width)width=1;
+         if(!height)height=1;
+         size_t bytes=(size_t)width*height*bpp;void *zero=calloc(1,bytes);
+         if(!zero)stop("ZERO_MIP_STORAGE_MEMORY",nvn_caller,bytes,21);
+-        glTexImage2D(GL_TEXTURE_2D,level,format,width,height,0,format,type,zero);free(zero);
++        glTexImage2D(GL_TEXTURE_2D,level,spec.internal,width,height,0,GL_RGBA,spec.type,zero);free(zero);
+     }
+     t->zero_mip_tail=1;
+ }
 diff --git a/native/zero_texture_writes.h b/native/zero_texture_writes.h
-index 3d23814..a8557c4 100644
+index 3d23814..a281204 100644
 --- a/native/zero_texture_writes.h
 +++ b/native/zero_texture_writes.h
 @@ -5,7 +5,7 @@ static void zero_texture_write(struct nvn_frame *f,unsigned flush) {
@@ -3593,7 +3764,7 @@ index 3d23814..a8557c4 100644
          printf("ZERO_TEXEL_WRITE id=%"PRIu64" level=%u layer=%u region=%u,%u,%u,%u native-bytes=%"PRIu64" CPU-storage-updated\n",
                 t->id,level,layer,box[0],box[1],box[3],box[4],row*rows);return;
      }
-@@ -94,6 +145,7 @@ static void zero_texture_write(struct nvn_frame *f,unsigned flush) {
+@@ -94,12 +145,14 @@ static void zero_texture_write(struct nvn_frame *f,unsigned flush) {
      } else for(unsigned y=0;y<box[4];y++)if(!nvn_texture_decode_upload(t->b.format,t->b.swizzle,type,pixels+(size_t)y*box[3]*pixel_bytes,source+y*stride,box[3]))
          stop("ZERO_TEXEL_DECODE",nvn_caller,t->id,24);
      nvn_gl_acquire();
@@ -3601,3 +3772,11 @@ index 3d23814..a8557c4 100644
      normal_guard_require_clear(t->pool->address+t->b.offset,t->size,nvn_caller);
      __atomic_thread_fence(__ATOMIC_SEQ_CST);
      GLenum binding=t->b.target==8?GL_TEXTURE_CUBE_MAP:GL_TEXTURE_2D;
++    struct lc2_gl_upload spec=lc2_gl_upload_for(t,type);
+     glBindTexture(binding,t->name);GLint alignment;glGetIntegerv(GL_UNPACK_ALIGNMENT,&alignment);glPixelStorei(GL_UNPACK_ALIGNMENT,1);
+     glTexSubImage2D(t->b.target==8?GL_TEXTURE_CUBE_MAP_POSITIVE_X+layer:GL_TEXTURE_2D,level,box[0],box[1],box[3],box[4],
+-                    zero_bc_srgb(t->b.format)?0x8c42U:GL_RGBA,type,pixels);
++                    spec.external,spec.type,pixels);
+     free(pixels);glPixelStorei(GL_UNPACK_ALIGNMENT,alignment);
+     GLenum error=glGetError();if(error)stop("ZERO_TEXEL_UPLOAD",nvn_caller,error,21);
+     nvn_gl_release();

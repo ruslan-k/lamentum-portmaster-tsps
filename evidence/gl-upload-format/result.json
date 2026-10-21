@@ -1,0 +1,70 @@
+{
+  "scope": "self-authored offscreen sRGB upload fixture; not a game frame, not id295 residency and not an FPS result",
+  "es2": {
+    "requested_major": 2,
+    "pass": true,
+    "errors": [],
+    "checks": {
+      "srgb_decode": {
+        "stored": 160,
+        "sampled": 90,
+        "expected": 90,
+        "delta": 0
+      },
+      "linear_control": {
+        "sampled": 160,
+        "stored": 160
+      },
+      "srgb_differs_from_linear": true,
+      "defect_triple": {
+        "rejected": false,
+        "gl_error": null
+      },
+      "mip_level1": {
+        "fbo_complete": true,
+        "bytes_match": true
+      },
+      "context_recreation": {
+        "sampled": 90,
+        "matches_first": true
+      }
+    },
+    "version": "OpenGL ES 3.2 v1.r32p0-01eac1.3634895aa082dda7c3407d9f3e199919",
+    "renderer": "Mali-G57",
+    "ext_srgb": true
+  },
+  "es3": {
+    "requested_major": 3,
+    "pass": true,
+    "errors": [],
+    "checks": {
+      "srgb_decode": {
+        "stored": 160,
+        "sampled": 90,
+        "expected": 90,
+        "delta": 0
+      },
+      "linear_control": {
+        "sampled": 160,
+        "stored": 160
+      },
+      "srgb_differs_from_linear": true,
+      "defect_triple": {
+        "rejected": true,
+        "gl_error": "0x500"
+      },
+      "mip_level1": {
+        "fbo_complete": true,
+        "bytes_match": true
+      },
+      "context_recreation": {
+        "sampled": 90,
+        "matches_first": true
+      }
+    },
+    "version": "OpenGL ES 3.2 v1.r32p0-01eac1.3634895aa082dda7c3407d9f3e199919",
+    "renderer": "Mali-G57",
+    "ext_srgb": true
+  },
+  "pass": true
+}

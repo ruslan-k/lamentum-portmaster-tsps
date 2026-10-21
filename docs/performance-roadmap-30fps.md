@@ -2370,3 +2370,20 @@ Details and receipts: [T1 implementation](t1-owned-log.md), [evidence](../eviden
 - G0 id295 descriptor/residency/lifetime, C0 game qualification, first world and **30 FPS remain unproven**. No cap/floor/swap or `alias_physical` policy changed.
 
 Next source-correctness work follows **§32.3 / PR A**: audit all decoded sRGB/linear upload paths, test exact GLES3 format/type triples with self-authored color/alpha/mip readbacks, then qualify on Mali. Do not use this safety-component publication as a gameplay claim.
+
+## 34. PR A contract half: legal GLES upload triples (2026-10-21)
+
+Owner plan reviewed at **5ed8462**; this section records work under **§32.3 / PR A** and does not change §32's priority order.
+
+### Implemented
+
+- `native/lc2_gl_format.h`: pure, checked mapper from (API generation, `GL_EXT_sRGB`, source sRGB, payload type) to `{internal, external, type}`. sRGB 8-bit → 0x8C43 (ES3) or 0x8C42 + `GL_EXT_sRGB` (ES2), always `GL_RGBA`/`GL_UNSIGNED_BYTE` externally. Linear 8-bit → 0x8058 (ES3) or unsized `GL_RGBA` (ES2). Float → 0x8814 (ES3) or unsized `GL_RGBA` (ES2). sRGB with float/half, and sRGB without expressible storage, are refused rather than coerced.
+- All five decoded/refresh call sites (striped BC upload, non-striped refresh, deferred first-use materialisation, CPU texel flush, partial-mip completion) now pass the client pair explicitly; `zero_mip_complete_storage` takes a resolved spec instead of one format used twice. The double-use value is gone from the overlay entirely.
+- Resolution is cached per **EGLContext** (version and extension strings are context state) and leaves the G0 charge-before-GL ordering intact.
+
+### Verified, and what it does not mean
+
+- **166 host tests PASS** (7 new, compiled mapper + overlay source audit), baseline **435/435**, ARM64 **build228** `9f348c6c…00af`, helper unchanged; **build228 is not deployed** and no game run occurred.
+- Device: surfaceless GBM fixture on **Mali-G57**, driven through the principal flow. Stored byte 160 samples as **90** (exact sRGB→linear) against a **160** linear control; partial final stripe, mip level 1 bytes and post-recreation upload are byte-exact. Receipts: [evidence](../evidence/gl-upload-format/README.md), [report](gl-upload-format.md).
+- The retired triple raises `GL_INVALID_ENUM` in an explicit ES3 context but is **accepted silently** when client version 2 is requested — this driver reports ES3.2 anyway. Therefore the invalid call was latent, not a demonstrated cause of the Loading stop; `COTM_GL_ERROR_IGNORE=0` during a guarded New Game arm is still the way to learn whether it ever executed.
+- Still open in PR A: the same audit for render targets/`t2_page` palette uploads (they already use an unsized `GL_RGBA` pair), and any first-world MRT/composite path once a world frame exists. Still open overall: id295 descriptor/residency (PR B), C0 game qualification (PR D), semantic navigation and scene receipts (PR E), first world and W1/W2 (PR F), and therefore **30 FPS**.
