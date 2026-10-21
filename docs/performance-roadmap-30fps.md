@@ -2428,3 +2428,14 @@ Work under **§32.7 item 3**. Pure host tooling: no adapter change, no build, no
 - **180 host tests PASS** (10 new) covering stale serial, serial stall, overshoot, animated-picture stillness, page-change non-inference, unknown page, zero serial, world non-claim and the row table.
 
 Deliberately open: there is still **no capture-side oracle** turning a KMS frame into `(page, cursor_y)`, so this core drives nothing yet and both legacy navigators remain disabled by default. The next step is the measured extractor plus one real press→serial→row chain on device; only then can a New Game arm measure B1 and id295. No scene, gameplay or FPS claim.
+
+## 38. Measured page/cursor oracle, and the geometry it refuted (2026-10-21)
+
+Work under **§32.7 items 1+3**. One capture arm (`nav-oracle-01`, build229, `COTM_GL_ERROR_IGNORE=0`, `T2_TEXTURE_BUDGET_MIB=300`, diagnostic floor 32 MiB) presented **30 frames, 27 with pixels**, verified its own run identity, cleaned up with no errors, and stopped at `T2_MEMORY_FLOOR`. Two kmsgrab frames were taken **inside** the run.
+
+- `tools/page_oracle.py` classifies a frame as `MAIN_MENU` or `UNKNOWN` (with a reason), and reports the selected row; `tools/navigator.py` then emits exactly one action.
+- The live frame **refuted the recorded geometry**: rows are at y **442/492/542/592** (pitch 50, not 425/475/525/575); the selection is a **cursor glyph left of the row** (ink in x 40..120) that is *dimmer than its own text* (26.6 vs 53.5), so contrast-against-text can never find it; text starts at x 140 and the list lives in y 380..660 (the title at y≈174 otherwise reads as a row). Both modules now carry the measured table, and the superseded navigator verdict is preserved in the receipt.
+- Real-frame results: boot capture → `UNKNOWN` ("no bright rows"); menu capture → **`MAIN_MENU`, `load`, cursor_y 442**, bands `[442,492,542,590]`; core action → **`press down`, serial 55**.
+- **188 host tests PASS** (8 new oracle tests over self-authored frames; the navigator tests now use the measured rows).
+
+Deliberately open: no press was injected in this arm, so the read side is proven and the **press→serial→row chain is still uncaptured**; `NEWGAME_CONFIG`/`CONTROLS`/`LOADING` have no measured features and return `UNKNOWN`; thresholds are calibrated on one frame of this build only. Therefore no navigation result, no New Game, no scene, no id295 and no FPS claim.

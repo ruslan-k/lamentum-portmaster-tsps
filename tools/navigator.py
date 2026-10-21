@@ -16,9 +16,10 @@ rules it enforces are the ones that have already produced wrong answers here:
 """
 from dataclasses import dataclass, field
 
-# Measured on this title's main menu: the highlight band is a bright strip at
-# x 88..124 and its y names the row.
-ROWS_MAIN_MENU = {'load': 425, 'newgame': 475, 'options': 525, 'credits': 575}
+# Measured on a live frame of this build (evidence/nav-oracle-01): rows at
+# y 442/492/542/592 (pitch 50), selection marked by a cursor glyph left of the
+# row. The earlier 425/475/525/575 table came from a different build/scale.
+ROWS_MAIN_MENU = {'load': 442, 'newgame': 492, 'options': 542, 'credits': 592}
 ROW_TOLERANCE = 12
 MAX_ROW_STEP = 1
 STALE_SERIAL_LIMIT = 3

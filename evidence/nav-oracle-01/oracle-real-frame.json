@@ -1,0 +1,83 @@
+{
+  "frames": {
+    "nav-oracle-01-00": {
+      "page": "UNKNOWN",
+      "row": null,
+      "cursor_y": null,
+      "confident": false,
+      "reason": "no bright rows in the text window"
+    },
+    "nav-oracle-01-01": {
+      "page": "MAIN_MENU",
+      "row": "load",
+      "cursor_y": 442,
+      "confident": true,
+      "bands": 4,
+      "centres": [
+        442,
+        492,
+        542,
+        590
+      ],
+      "reason": "measured menu geometry"
+    }
+  },
+  "navigator_action": {
+    "action": "press",
+    "button": "down",
+    "row": "load",
+    "serial": 55
+  },
+  "serial_used": 55,
+  "note": "serial is the present counter observed at capture time, not invented",
+  "arm": {
+    "stops": [
+      "T2_MEMORY_FLOOR"
+    ],
+    "runtime_ok": false,
+    "execution_verified": true,
+    "cleanup_errors": 0,
+    "host_terminated": null,
+    "frames_presented": 30,
+    "pixel_frames": 27
+  },
+  "test_suite": {
+    "rc": 0,
+    "tail": [
+      "Ran 188 tests in 5.948s",
+      "",
+      "OK"
+    ]
+  },
+  "measured_geometry": {
+    "rows": [
+      442,
+      492,
+      542,
+      592
+    ],
+    "pitch": 50,
+    "text_x": [
+      140,
+      340
+    ],
+    "cursor_x": [
+      40,
+      120
+    ],
+    "menu_region_y": [
+      380,
+      660
+    ]
+  },
+  "correction": "previous table 425/475/525/575 with a bright band at x 88..124 does not describe this build",
+  "captures": [
+    "nav-oracle-01-00.png (blank/boot)",
+    "nav-oracle-01-01.png (main menu)"
+  ],
+  "navigator_action_before_row_correction": {
+    "action": "wait",
+    "reason": "cursor not inside a known band",
+    "cause": "the navigator still held the 425/475/525/575 table while the measured rows are 442/492/542/592"
+  }
+}
