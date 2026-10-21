@@ -1,0 +1,16 @@
+LC2_STORAGE_CHANGE ticket=13 kind=texture owner=92 gl=47 level=0 va=0x5ef0c00000 old=0 new=51847168 native=1 attribution=bracket-only
+LC2_STORAGE_CHANGE ticket=13 kind=texture owner=92 gl=47 level=0 va=0x5ef3e00000 old=0 new=55984128 native=1 attribution=bracket-only
+LC2_STORAGE_CHANGE ticket=13 kind=texture owner=92 gl=47 level=0 va=0x5efead8000 old=0 new=421888 native=1 attribution=bracket-only
+LC2_STORAGE_CHANGE ticket=13 kind=texture owner=92 gl=47 level=0 va=0x5efebd1000 old=0 new=421888 native=1 attribution=bracket-only
+LC2_STORAGE_PROBE ticket=13 kind=texture owner=92 gl=47 size=3600x3600 level=0 format=0x44 metadata-valid=1 changed=4 detail-overflow=0 elapsed-ns=168798038 retired-descriptors=not-tracked physical=unproven diagnostic=1
+LC2_STORAGE_CHANGE ticket=14 kind=texture owner=98 gl=52 level=0 va=0x5ef2000000 old=0 new=8298496 native=1 attribution=bracket-only
+LC2_STORAGE_CHANGE ticket=14 kind=texture owner=98 gl=52 level=0 va=0x5ef2800000 old=0 new=8990720 native=1 attribution=bracket-only
+LC2_STORAGE_PROBE ticket=14 kind=texture owner=98 gl=52 size=1920x1080 level=0 format=0x44 metadata-valid=1 changed=2 detail-overflow=0 elapsed-ns=7646558 retired-descriptors=not-tracked physical=unproven diagnostic=1
+LC2_STORAGE_CHANGE ticket=15 kind=texture owner=99 gl=53 level=0 va=0x5ef1600000 old=0 new=8990720 native=1 attribution=bracket-only
+LC2_STORAGE_PROBE ticket=15 kind=texture owner=99 gl=53 size=1920x1080 level=0 format=0x42 metadata-valid=1 changed=1 detail-overflow=0 elapsed-ns=6662556 retired-descriptors=not-tracked physical=unproven diagnostic=1
+LC2_STORAGE_CHANGE ticket=16 kind=texture owner=103 gl=57 level=0 va=0x5ef0200000 old=0 new=5398528 native=1 attribution=bracket-only
+LC2_STORAGE_PROBE ticket=16 kind=texture owner=103 gl=57 size=1120x1120 level=0 format=0x44 metadata-valid=1 changed=1 detail-overflow=0 elapsed-ns=5043053 retired-descriptors=not-tracked physical=unproven diagnostic=1
+LC2_STORAGE_CHANGE ticket=17 kind=texture owner=105 gl=59 level=0 va=0x5eef800000 old=0 new=8990720 native=1 attribution=bracket-only
+LC2_STORAGE_PROBE ticket=17 kind=texture owner=105 gl=59 size=1920x1080 level=0 format=0x44 metadata-valid=1 changed=1 detail-overflow=0 elapsed-ns=12021068 retired-descriptors=not-tracked physical=unproven diagnostic=1
+LC2_STORAGE_CHANGE ticket=18 kind=texture owner=267 gl=93 level=0 va=0x5eec800000 old=0 new=8990720 native=1 attribution=bracket-only
+LC2_STORAGE_PROBE ticket=18 kind=texture owner=267 gl=93 size=1920x1080 level=0 format=0x44 metadata-valid=1 changed=1 detail-overflow=0 elapsed-ns=14723158 retired-descriptors=not-tracked physical=unproven diagnostic=1

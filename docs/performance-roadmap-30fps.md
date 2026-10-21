@@ -3104,3 +3104,13 @@ Owner81 bracket's VA0x5ef6000000 (31109120 B / 29.67 MiB) is present at first po
 The55984128-byte descriptor first appears between snapshots5.017s and5.908s; intervening log window includes a3600x3600 texture GL47 and other allocations. This narrows where to bracket next but establishes no owner from size/proximity.
 
 Runtime STOP T2_MEMORY_FLOOR at frame8, execution verified, cleanup_errors=[]; MainUI/principal/runtime one each, game zero, CPU mask restored, no pending command, debugfs unmounted, DRM shows Spruce home. Four new parser/correlation tests,258 host tests PASS, clean-export verified. Report `docs/storage-descriptor-retention.md`, evidence `evidence/storage-retention-01/`. Next: bracket remaining large allocation and prove retained ownership/lifetime, not heuristic freeing. No physical-headroom/playability/FPS improvement claimed.
+
+## 63. M1: late brackets locate the 55984128-byte descriptor in NVN92 upload (2026-10-21)
+
+Reviewed f3a0c11 / owner §48.5. Build241 b4c8df27e5c9... adds diagnostic-only LC2_STORAGE_PROBE_WINDOW=late (eligible tickets13..24; default still1..12, main probe default-off, unknown windows select none). Boundary/disable C fixture passes. No GL storage, synchronization, content, admission or lifetime policy change.
+
+Owned storage-late-01 uses floor96/cap300/strict GL, no input. Six valid brackets tickets13..18. Ticket13 NVN92 / GL47 /3600x3600 /format0x44 coincides with Native descriptors51847168 B (49.4453125 MiB) and55984128 B (53.390625 MiB), plus two421888 B descriptors. The previously unexplained53.39 MiB descriptor is now tied to this upload WINDOW, not exclusively/permanently to that texture. No duplicate permanent-byte charge or safe-free inference.
+
+Five post-marker snapshots show the first VA absent then reappearing at4263936 B, while the second stays55984128 B. This demonstrates VA is not generation identity; staging, pool retention and reuse remain possible. No GPU fence/completion/physical refund established. Ticket13's168798038 ns includes upload+metadata, not isolated overhead or FPS.
+
+12 owned process samples; verified runtime STOP T2_MEMORY_FLOOR at frame4, cleanup_errors=[]; MainUI/principal/runtime one each, game zero, CPU mask restored, no pending launch, debugfs unmounted, DRM shows Spruce home. Atomic/hash-verified deployment with independent read-back, build240 backup retained; build241 installed default-off probes. Pinned build435 checks and host258 tests PASS; clean-export verification retained. Report docs/storage-late-owner.md and evidence/storage-late-01/. Next: actual storage generation/readers/retirement/physical accounting, not heuristic release or unapproved quality changes. No safe-headroom/gameplay/30 FPS result.

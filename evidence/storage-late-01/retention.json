@@ -1,0 +1,68 @@
+{
+  "observations": [
+    {
+      "t": 21081.002373058,
+      "log_bytes_before": 324454,
+      "context": "13963_60",
+      "commits": {
+        "5ef0c00000": null,
+        "5ef3e00000": 55984128,
+        "5efead8000": 421888,
+        "5efebd1000": 421888
+      }
+    },
+    {
+      "t": 21081.854266183,
+      "log_bytes_before": 369601,
+      "context": "13963_60",
+      "commits": {
+        "5ef0c00000": 4263936,
+        "5ef3e00000": 55984128,
+        "5efead8000": 421888,
+        "5efebd1000": 421888
+      }
+    },
+    {
+      "t": 21082.697900915,
+      "log_bytes_before": 449378,
+      "context": "13963_60",
+      "commits": {
+        "5ef0c00000": 4263936,
+        "5ef3e00000": 55984128,
+        "5efead8000": 421888,
+        "5efebd1000": null
+      }
+    },
+    {
+      "t": 21083.595278724,
+      "log_bytes_before": 453039,
+      "context": "13963_60",
+      "commits": {
+        "5ef0c00000": 4263936,
+        "5ef3e00000": 55984128,
+        "5efead8000": 421888,
+        "5efebd1000": null
+      }
+    },
+    {
+      "t": 21084.486623394,
+      "log_bytes_before": 492767,
+      "context": "13963_60",
+      "commits": {
+        "5ef0c00000": 4263936,
+        "5ef3e00000": 55984128,
+        "5efead8000": 421888,
+        "5efebd1000": 4096
+      }
+    }
+  ],
+  "physical_refund_bytes": null,
+  "limitation": "Same VA may be recycled between samples; absence is not a fence/free/physical-refund proof.",
+  "marker_end": 312316,
+  "addresses": [
+    "5ef0c00000",
+    "5ef3e00000",
+    "5efead8000",
+    "5efebd1000"
+  ]
+}

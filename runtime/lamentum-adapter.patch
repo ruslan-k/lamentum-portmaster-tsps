@@ -1488,10 +1488,10 @@ index 0000000..ff9ab3b
 +#endif
 diff --git a/native/lc2_storage_probe.h b/native/lc2_storage_probe.h
 new file mode 100644
-index 0000000..9d0f7fc
+index 0000000..61fa834
 --- /dev/null
 +++ b/native/lc2_storage_probe.h
-@@ -0,0 +1,93 @@
+@@ -0,0 +1,98 @@
 +/* LC2_STORAGE_PROBE_BEGIN */
 +#ifndef LC2_STORAGE_PROBE_H
 +#define LC2_STORAGE_PROBE_H
@@ -1540,11 +1540,16 @@ index 0000000..9d0f7fc
 +    if(ferror(f))valid=0;
 +    fclose(f);return valid;
 +}
++static int lc2_storage_selected(unsigned ticket,const char *window) {
++    if(!window)return ticket>=1 && ticket<=12;
++    if(!strcmp(window,"late"))return ticket>=13 && ticket<=24;
++    return 0; /* Unknown diagnostic window must not silently change coverage. */
++}
 +static unsigned lc2_storage_begin(unsigned width,unsigned height) {
 +    const char *env=getenv("LC2_STORAGE_PROBE");
 +    if(!env || strcmp(env,"1") || (uint64_t)width*height<1048576ULL)return 0;
 +    unsigned ticket=__atomic_fetch_add(&lc2_storage_tickets,1,__ATOMIC_RELAXED)+1;
-+    if(ticket>12)return 0;
++    if(!lc2_storage_selected(ticket,getenv("LC2_STORAGE_PROBE_WINDOW")))return 0;
 +    lc2_storage_probe.start_ns=lc2_storage_ns();lc2_storage_probe.valid=0;
 +    DIR *dir=opendir("/sys/kernel/debug/mali0/ctx");
 +    if(!dir)return ticket;

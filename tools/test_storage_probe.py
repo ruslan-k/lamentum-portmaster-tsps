@@ -24,6 +24,13 @@ int main(void) {
  if(lc2_storage_previous(old,2,0x9999)!=0)return 4;
  if(lc2_storage_parse("Zone name: SAME_VA:",&r))return 5;
  if(!lc2_storage_parse(" 1000, 8000, 2000, c23e, Imported UMM",&r) || r.native)return 6;
+ for(unsigned ticket=0;ticket<40;ticket++) {
+  if(lc2_storage_selected(ticket,NULL)!=(ticket>=1 && ticket<=12))return 7;
+  if(lc2_storage_selected(ticket,"late")!=(ticket>=13 && ticket<=24))return 8;
+  if(lc2_storage_selected(ticket,"unknown"))return 9;
+ }
+ setenv("LC2_STORAGE_PROBE","0",1);
+ if(lc2_storage_begin(4096,4096))return 10;
  return 0;
 }
 '''
