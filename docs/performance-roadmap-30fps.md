@@ -3008,3 +3008,22 @@ Three corrections to §53. (1) `alias_physical` is **not** part of the pre-first
 Tooling guarantee: class totals print on line-bound overflow and every 64 events, so a truncated window no longer hides totals, and alias unmaps are two-sided (`alias-unmapped`/`alias-live`), though unexercised here because the alias phase was never reached.
 
 Next: one arm recording anon/shmem beside `MemAvailable`; then reach the alias phase deliberately and label it a loading-phase measurement; the 720p ceiling (17.58 MiB) stays a smaller lever.
+
+## 55. The pre-first-frame step is our own RSS (+520 MiB); page cache falls (2026-10-21)
+
+No rebuild needed: `lc2_menu_ledger` already carries `Cached`, `AnonPages`, `Shmem`, `VmRSS`, `VmSwap`.
+
+| quantity | `map-ledger-03` | `menu-early-01` |
+|---|---|---|
+| `MemAvailable` | −471.4 MiB | −433.8 MiB |
+| `Cached` | **−55.6 MiB** | **−52.6 MiB** |
+| `AnonPages` | +240.4 MiB | +241.3 MiB |
+| own `VmRSS` | **+521.0 MiB** | **+519.2 MiB** |
+| `Shmem` / `VmSwap` | +0.0 / +0.0 | +0.0 / +0.0 |
+| charged textures | +107.1 MiB | +107.1 MiB |
+
+Conclusions. (1) **Page cache does not explain the step; it fell ~55 MiB** — §54's caution was right but the direction is opposite: cache was reclaimed into the process. (2) **The owner is our own process: RSS +520 MiB before the first frame**, of which ~241 MiB is anonymous and ~280 MiB file-backed image pages; the adapter's receipts (69.95 MiB of blob mappings) cover only adapter-served mappings, not the runtime's own I/O. (3) At the stop, `VmRSS` 731.7 MiB + `VmSwap` 415.1 MiB ≈ **1.12 GiB footprint on a 963 MiB board** — the floor stop is arithmetic. (4) The +107.1 MiB charge is identical in both arms, so texture accounting is stable if not dominant.
+
+This replaces the "guest reserves N MiB" framing with a measured split: +241 MiB anonymous plus ~280 MiB file-backed inside our RSS. Neither is one declinable allocation; the file-backed half is the cost of reading the game image. Any lever must be judged against 520 MiB, ~30× the 17.58 MiB the 720p experiment could return.
+
+Next: `/proc/self/smaps_rollup` (`RssAnon`, `RssFile`, `RssShmem`) per ledger record, so the file-backed half is a per-frame series rather than a two-point inference.

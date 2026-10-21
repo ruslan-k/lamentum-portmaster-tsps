@@ -1,0 +1,278 @@
+{
+ "arms": [
+  {
+   "arm": "map-ledger-03",
+   "records": [
+    {
+     "why": "gl-init",
+     "frames": 0,
+     "avail": 614272,
+     "cached": 141464,
+     "anon": 137308,
+     "shmem": 828,
+     "rss": 198900,
+     "vmswap": 0,
+     "charged": 0
+    },
+    {
+     "why": "first-present",
+     "frames": 1,
+     "avail": 131508,
+     "cached": 84528,
+     "anon": 383456,
+     "shmem": 852,
+     "rss": 732400,
+     "vmswap": 0,
+     "charged": 112325632
+    },
+    {
+     "why": "interval",
+     "frames": 5,
+     "avail": 92380,
+     "cached": 24220,
+     "anon": 363976,
+     "shmem": 848,
+     "rss": 678056,
+     "vmswap": 22316,
+     "charged": 115278848
+    },
+    {
+     "why": "interval",
+     "frames": 12,
+     "avail": 80480,
+     "cached": 27340,
+     "anon": 328072,
+     "shmem": 848,
+     "rss": 643740,
+     "vmswap": 101748,
+     "charged": 113812480
+    },
+    {
+     "why": "interval",
+     "frames": 18,
+     "avail": 51152,
+     "cached": 29688,
+     "anon": 345212,
+     "shmem": 848,
+     "rss": 732640,
+     "vmswap": 134888,
+     "charged": 126395392
+    },
+    {
+     "why": "interval",
+     "frames": 19,
+     "avail": 62816,
+     "cached": 44912,
+     "anon": 331136,
+     "shmem": 848,
+     "rss": 715204,
+     "vmswap": 171276,
+     "charged": 129975296
+    },
+    {
+     "why": "interval",
+     "frames": 22,
+     "avail": 63808,
+     "cached": 48300,
+     "anon": 348732,
+     "shmem": 848,
+     "rss": 732924,
+     "vmswap": 181480,
+     "charged": 131367936
+    },
+    {
+     "why": "interval",
+     "frames": 25,
+     "avail": 57692,
+     "cached": 29096,
+     "anon": 113024,
+     "shmem": 716,
+     "rss": 609232,
+     "vmswap": 444404,
+     "charged": 164922368
+    },
+    {
+     "why": "interval",
+     "frames": 26,
+     "avail": 59084,
+     "cached": 35132,
+     "anon": 183424,
+     "shmem": 720,
+     "rss": 688624,
+     "vmswap": 423132,
+     "charged": 164922368
+    },
+    {
+     "why": "interval",
+     "frames": 31,
+     "avail": 55908,
+     "cached": 32084,
+     "anon": 232648,
+     "shmem": 720,
+     "rss": 739336,
+     "vmswap": 418664,
+     "charged": 164922368
+    },
+    {
+     "why": "interval",
+     "frames": 42,
+     "avail": 31372,
+     "cached": 15448,
+     "anon": 243968,
+     "shmem": 720,
+     "rss": 749268,
+     "vmswap": 425088,
+     "charged": 164922368
+    }
+   ]
+  },
+  {
+   "arm": "menu-early-01",
+   "records": [
+    {
+     "why": "gl-init",
+     "frames": 0,
+     "avail": 582344,
+     "cached": 138732,
+     "anon": 137036,
+     "shmem": 776,
+     "rss": 198908,
+     "vmswap": 0,
+     "charged": 0
+    },
+    {
+     "why": "first-present",
+     "frames": 1,
+     "avail": 138112,
+     "cached": 84888,
+     "anon": 384080,
+     "shmem": 796,
+     "rss": 730564,
+     "vmswap": 0,
+     "charged": 112325632
+    },
+    {
+     "why": "interval",
+     "frames": 5,
+     "avail": 96324,
+     "cached": 33972,
+     "anon": 369088,
+     "shmem": 800,
+     "rss": 683780,
+     "vmswap": 18052,
+     "charged": 115278848
+    },
+    {
+     "why": "interval",
+     "frames": 12,
+     "avail": 62200,
+     "cached": 38452,
+     "anon": 373244,
+     "shmem": 800,
+     "rss": 731192,
+     "vmswap": 48068,
+     "charged": 121635840
+    },
+    {
+     "why": "interval",
+     "frames": 16,
+     "avail": 56080,
+     "cached": 23164,
+     "anon": 362600,
+     "shmem": 800,
+     "rss": 730200,
+     "vmswap": 77912,
+     "charged": 118006784
+    },
+    {
+     "why": "interval",
+     "frames": 19,
+     "avail": 59944,
+     "cached": 29488,
+     "anon": 351616,
+     "shmem": 800,
+     "rss": 728068,
+     "vmswap": 114288,
+     "charged": 122201088
+    },
+    {
+     "why": "interval",
+     "frames": 22,
+     "avail": 68252,
+     "cached": 31868,
+     "anon": 329412,
+     "shmem": 800,
+     "rss": 723540,
+     "vmswap": 157816,
+     "charged": 130589696
+    },
+    {
+     "why": "interval",
+     "frames": 23,
+     "avail": 75172,
+     "cached": 47988,
+     "anon": 319328,
+     "shmem": 800,
+     "rss": 714500,
+     "vmswap": 178976,
+     "charged": 132072448
+    },
+    {
+     "why": "interval",
+     "frames": 24,
+     "avail": 57708,
+     "cached": 30404,
+     "anon": 128444,
+     "shmem": 720,
+     "rss": 634372,
+     "vmswap": 432688,
+     "charged": 164922368
+    },
+    {
+     "why": "interval",
+     "frames": 25,
+     "avail": 61756,
+     "cached": 34008,
+     "anon": 172652,
+     "shmem": 720,
+     "rss": 679992,
+     "vmswap": 420632,
+     "charged": 164922368
+    },
+    {
+     "why": "interval",
+     "frames": 27,
+     "avail": 59792,
+     "cached": 31348,
+     "anon": 205080,
+     "shmem": 720,
+     "rss": 713756,
+     "vmswap": 415912,
+     "charged": 164922368
+    },
+    {
+     "why": "interval",
+     "frames": 37,
+     "avail": 54764,
+     "cached": 27948,
+     "anon": 215724,
+     "shmem": 720,
+     "rss": 727028,
+     "vmswap": 422316,
+     "charged": 164922368
+    },
+    {
+     "why": "interval",
+     "frames": 44,
+     "avail": 72884,
+     "cached": 12752,
+     "anon": 222712,
+     "shmem": 720,
+     "rss": 725024,
+     "vmswap": 436316,
+     "charged": 164922368
+    }
+   ]
+  }
+ ]
+}
