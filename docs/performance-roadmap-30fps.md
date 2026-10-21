@@ -2439,3 +2439,20 @@ Work under **§32.7 items 1+3**. One capture arm (`nav-oracle-01`, build229, `CO
 - **188 host tests PASS** (8 new oracle tests over self-authored frames; the navigator tests now use the measured rows).
 
 Deliberately open: no press was injected in this arm, so the read side is proven and the **press→serial→row chain is still uncaptured**; `NEWGAME_CONFIG`/`CONTROLS`/`LOADING` have no measured features and return `UNKNOWN`; thresholds are calibrated on one frame of this build only. Therefore no navigation result, no New Game, no scene, no id295 and no FPS claim.
+
+## 39. First press → row chain; hold-length overshoot measured on hardware (2026-10-21)
+
+Arm `nav-chain-02` (build229, `COTM_GL_ERROR_IGNORE=0`, `T2_TEXTURE_BUDGET_MIB=300`, diagnostic floor 32 MiB), frames captured **inside** the run, input injected through the owner-checked pad contract:
+
+| step | oracle |
+|---|---|
+| before (134,434 B) | `MAIN_MENU`, row **`load`**, cursor_y **442** |
+| press `down`, 900 ms | — |
+| after, 7 s later (137,614 B) | `MAIN_MENU`, row **`options`**, cursor_y **542** |
+
+- One 900 ms press moved the selection **two rows**. That is the documented hold-length failure reproduced on hardware: at ~1 fps a 900 ms hold spans more than one guest sample and the tap latch extends the bit. The core already reports this as `overshoot` instead of two presses; the fix is a shorter, frame-paced tap, not different row arithmetic.
+- The oracle read the live menu correctly at **two different cursor positions**, which is the first evidence the calibrated geometry generalises within this menu.
+- The **present serial was not read** in this arm: the helper opened `lamentum-switch/latest.log` while the runtime writes `lamentum-switch/logs/latest.log`. The press is therefore **not serial-qualified**, and `serial: 0` is preserved rather than back-filled. The reader is fixed in `tools/load_metrics.py` (`PORT_LOG`, `present_serial()`, `serial_request()`) with two tests, so the next arm can qualify it.
+- **190 host tests PASS**; arm stopped at `T2_MEMORY_FLOOR` with zero cleanup errors and verified execution identity; device afterwards `MainUI=1, runtime.sh=1, principal.sh=1, port=0`.
+
+Limits: one press, one page, two frames. No config page, no Loading, no scene, no id295, no FPS. Next step is the same chain with the corrected serial reader and a frame-paced tap, then the New Game configuration page measurement.

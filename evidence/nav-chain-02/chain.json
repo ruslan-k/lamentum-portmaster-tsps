@@ -1,0 +1,117 @@
+{
+  "owner": {
+    "boot_id": "d443aa3c-9e62-41fe-a5ba-e05aa4e63a61",
+    "pid": 22809,
+    "starttime": 810176,
+    "elf_dev": 45833,
+    "elf_ino": 6651
+  },
+  "states": [
+    {
+      "phase": "before",
+      "serial": 0,
+      "capture": {
+        "rc": 1,
+        "bytes": 0
+      },
+      "oracle": null
+    },
+    {
+      "phase": "before",
+      "serial": 0,
+      "capture": {
+        "rc": 1,
+        "bytes": 0
+      },
+      "oracle": null
+    },
+    {
+      "phase": "before",
+      "serial": 0,
+      "capture": {
+        "rc": 1,
+        "bytes": 0
+      },
+      "oracle": null
+    },
+    {
+      "phase": "before",
+      "serial": 0,
+      "capture": {
+        "rc": 0,
+        "bytes": 26362
+      },
+      "oracle": {
+        "page": "UNKNOWN",
+        "row": null,
+        "cursor_y": null,
+        "confident": false,
+        "reason": "no bright rows in the text window"
+      }
+    },
+    {
+      "phase": "before",
+      "serial": 0,
+      "capture": {
+        "rc": 0,
+        "bytes": 2759
+      },
+      "oracle": {
+        "page": "UNKNOWN",
+        "row": null,
+        "cursor_y": null,
+        "confident": false,
+        "reason": "no bright rows in the text window"
+      }
+    },
+    {
+      "phase": "before",
+      "serial": 0,
+      "capture": {
+        "rc": 0,
+        "bytes": 134434
+      },
+      "oracle": {
+        "page": "MAIN_MENU",
+        "row": "load",
+        "cursor_y": 442,
+        "confident": true,
+        "bands": 4,
+        "centres": [
+          442,
+          492,
+          542,
+          590
+        ],
+        "reason": "measured menu geometry"
+      },
+      "press": {
+        "button": "down",
+        "hold_ms": 900,
+        "row_before": "load"
+      }
+    },
+    {
+      "phase": "after",
+      "serial": 0,
+      "capture": {
+        "rc": 0,
+        "bytes": 137614
+      },
+      "oracle": {
+        "page": "MAIN_MENU",
+        "row": "options",
+        "cursor_y": 542,
+        "confident": true,
+        "bands": 4,
+        "centres": [
+          442,
+          492,
+          542,
+          590
+        ],
+        "reason": "measured menu geometry"
+      }
+    }
+  ]
+}

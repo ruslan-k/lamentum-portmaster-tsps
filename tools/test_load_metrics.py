@@ -323,3 +323,24 @@ class FoldTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class PresentSerialTests(unittest.TestCase):
+    def test_highest_frame_wins_and_missing_marker_is_zero(self):
+        from load_metrics import present_serial
+        text = ('NVN_PRESENT_PIXELS frame=1 nonblack=0 status=BLACK-SAMPLE\n'
+                'NVN_PRESENT_PIXELS frame=42 nonblack=7 status=PIXELS\n'
+                'NVN_PRESENT_PIXELS frame=9 nonblack=7 status=PIXELS\n'
+                'ZERO_TEXTURE_FLUSH_UPLOADED id=3\n')
+        self.assertEqual(present_serial(text), 42)
+        self.assertEqual(present_serial('no presents here\n'), 0)
+        self.assertEqual(present_serial(''), 0)
+
+    def test_serial_request_reads_the_logs_latest_path(self):
+        from load_metrics import PORT_LOG, serial_request
+        self.assertTrue(PORT_LOG.endswith('/logs/latest.log'), PORT_LOG)
+        self.assertIn(PORT_LOG, serial_request())
+
+
+if __name__ == '__main__':
+    unittest.main()

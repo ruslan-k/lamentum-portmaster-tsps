@@ -203,3 +203,29 @@ if __name__ == '__main__':
     import sys
     with open(sys.argv[1], errors='replace') as handle:
         print(json.dumps(parse_chunk(handle.read()), indent=2))
+
+
+# The port's own log path, in one place: reading a guessed sibling path yields a
+# zero present counter and silently disables press qualification.
+PORT_LOG = '/mnt/SDCARD/Roms/PORTS/lamentum-switch/logs/latest.log'
+PRESENT_MARKER = 'NVN_PRESENT_PIXELS frame='
+
+
+def present_serial(text):
+    """Highest presented-frame counter in a runtime log, or 0 when none is present."""
+    highest = 0
+    for line in text.splitlines():
+        if PRESENT_MARKER in line:
+            tail = line.split(PRESENT_MARKER, 1)[1].split()
+            if tail and tail[0].isdigit():
+                highest = max(highest, int(tail[0]))
+    return highest
+
+
+def serial_request():
+    """Remote snippet: print {"present_frames": N} read from PORT_LOG."""
+    return ("import json,re,pathlib\n"
+            "p=pathlib.Path(%r)\n"
+            "text=p.read_text(errors='replace') if p.exists() else ''\n"
+            "print(json.dumps({'present_frames': max([int(x) for x in re.findall(%r, text)] or [0])}))\n"
+            % (PORT_LOG, PRESENT_MARKER + r"\d+"))
