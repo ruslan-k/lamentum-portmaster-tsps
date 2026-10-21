@@ -336,32 +336,73 @@ class PresentSerialTests(unittest.TestCase):
         self.assertEqual(present_serial('no presents here\n'), 0)
         self.assertEqual(present_serial(''), 0)
 
-    def test_serial_request_reads_the_logs_latest_path(self):
-        from load_metrics import PORT_LOG, serial_request
-        self.assertTrue(PORT_LOG.endswith('/logs/latest.log'), PORT_LOG)
-        self.assertIn(PORT_LOG, serial_request())
 
-    def test_serial_request_executes_and_returns_the_highest_frame(self):
-        import subprocess, sys as _sys, tempfile
-        from pathlib import Path as _Path
-        from load_metrics import serial_request
-        with tempfile.TemporaryDirectory() as folder:
-            log = _Path(folder) / 'latest.log'
-            log.write_text('NVN_PRESENT_PIXELS frame=3 nonblack=0\n'
-                           'NVN_PRESENT_PIXELS frame=57 nonblack=9 status=PIXELS\n')
-            ran = subprocess.run([_sys.executable, '-'], input=serial_request(str(log)),
-                                 text=True, capture_output=True)
-            self.assertEqual(ran.returncode, 0, ran.stderr)
-            self.assertIn('"present_frames": 57', ran.stdout)
+    def test_owned_serial_reads_incrementally_and_refuses_a_rotated_generation(self):
+        from load_metrics import OwnedSerial
+        chunks = [
+            {'status': 'ok', 'chunk_text': 'NVN_PRESENT_PIXELS frame=1 status=PIXELS\n'
+                                           'NVN_PRESENT_PIXELS frame=42 status=PIXELS\n'
+                                           'NVN_PRESENT_PIXELS frame=9 status=PIXELS\n'},
+            {'status': 'ok', 'chunk_text': ''},
+            {'status': 'LOG_GENERATION_CHANGED', 'detail': 'opened-file identity changed'},
+        ]
+        seen = []
 
-    def test_serial_request_with_a_missing_log_returns_zero(self):
-        import subprocess, sys as _sys
-        from load_metrics import serial_request
-        ran = subprocess.run([_sys.executable, '-'], input=serial_request('/nonexistent/latest.log'),
-                             text=True, capture_output=True)
-        self.assertEqual(ran.returncode, 0, ran.stderr)
-        self.assertIn('"present_frames": 0', ran.stdout)
+        def remote(payload):
+            seen.append(payload)
+            return chunks[min(len(seen) - 1, len(chunks) - 1)]
 
+        reader = OwnedSerial()
+        first = reader.poll(remote)
+        self.assertEqual((first['status'], first['serial'], first['fresh']), ('ok', 42, True))
+        second = reader.poll(remote)
+        self.assertEqual((second['serial'], second['fresh']), (42, False))
+        rotated = reader.poll(remote)
+        self.assertEqual(rotated['status'], 'LOG_GENERATION_CHANGED')
+        self.assertIsNone(rotated['serial'], 'a rejected generation must not hand back the old serial')
 
-if __name__ == '__main__':
-    unittest.main()
+    def test_owned_serial_ignores_a_partial_trailing_line(self):
+        from load_metrics import OwnedSerial
+        script = [{'status': 'ok', 'chunk_text': 'NVN_PRESENT_PIXELS frame=7 status=PI'},
+                  {'status': 'ok', 'chunk_text': 'NVN_PRESENT_PIXELS frame=7 status=PIXELS\n'}]
+        reader = OwnedSerial()
+        calls = []
+        first = reader.poll(lambda payload: (calls.append(payload), script[0])[1])
+        self.assertEqual((first['serial'], first['fresh']), (0, False))
+        second = reader.poll(lambda payload: script[1])
+        self.assertEqual(second['serial'], 7)
+
+    def test_a_rotated_run_never_lends_its_serial_to_the_next_generation(self):
+        """Roadmap 40.12: run A at frame 50, rotate to B at frame 1 - refuse, never reuse 50."""
+        from load_metrics import OwnedSerial
+        run_a = {'status': 'ok', 'chunk_text': 'NVN_PRESENT_PIXELS frame=50 status=PIXELS\n',
+                 'offset': 4096}
+        rotation = {'status': 'LOG_GENERATION_CHANGED',
+                    'detail': 'previously owned header was truncated'}
+        reader = OwnedSerial(expected_run={'run_uuid': 'a'})
+        first = reader.poll(lambda payload: run_a)
+        self.assertEqual((first['serial'], first['fresh']), (50, True))
+        refused = reader.poll(lambda payload: rotation)
+        self.assertIsNone(refused['serial'])
+        self.assertEqual(refused['status'], 'LOG_GENERATION_CHANGED')
+        self.assertFalse(refused['fresh'], 'a refused generation must not look like a fresh frame')
+        self.assertEqual(reader.serial, 50, 'the old counter stays as history, not as a usable serial')
+
+    def test_owned_serial_advances_its_cursor_instead_of_rescanning(self):
+        from load_metrics import OwnedSerial
+        states = [{'status': 'ok', 'chunk_text': 'NVN_PRESENT_PIXELS frame=5 status=PIXELS\n',
+                   'offset': 100, 'identity': {'dev': 1, 'ino': 2}}]
+        payloads = []
+        reader = OwnedSerial()
+        reader.poll(lambda payload: (payloads.append(payload), states[0])[1])
+        self.assertEqual(reader.state.get('offset'), 100)
+        second = '[%r]' % reader.state
+        self.assertIn('100', second)
+
+    def test_a_large_backlog_is_parsed_from_the_chunk_only(self):
+        from load_metrics import OwnedSerial
+        text = ''.join('NVN_PRESENT_PIXELS frame=%d status=PIXELS\n' % n for n in range(1, 30001))
+        reader = OwnedSerial()
+        result = reader.poll(lambda payload: {'status': 'ok', 'chunk_text': text})
+        self.assertEqual(result['serial'], 30000)
+        self.assertTrue(result['fresh'])

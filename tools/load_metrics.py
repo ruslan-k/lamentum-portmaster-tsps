@@ -212,9 +212,16 @@ PRESENT_MARKER = 'NVN_PRESENT_PIXELS frame='
 
 
 def present_serial(text):
-    """Highest presented-frame counter in a runtime log, or 0 when none is present."""
+    """Highest presented-frame counter in COMPLETE lines, or 0 when none is present.
+
+    A trailing line without a newline is a partial record and is ignored: counting
+    it would let a press be qualified by a frame that was never fully written.
+    """
     highest = 0
-    for line in text.splitlines():
+    lines = text.split('\n')
+    if not text.endswith('\n'):
+        lines = lines[:-1]
+    for line in lines:
         if PRESENT_MARKER in line:
             tail = line.split(PRESENT_MARKER, 1)[1].split()
             if tail and tail[0].isdigit():
@@ -222,11 +229,39 @@ def present_serial(text):
     return highest
 
 
-def serial_request(path=None):
-    """Remote snippet printing {"present_frames": N}; reuses the tested parser."""
-    target = path or PORT_LOG
-    return ("import json,inspect,pathlib\nPRESENT_MARKER=%r\n" % PRESENT_MARKER
-            + inspect.getsource(present_serial) + "\n"
-            "p=pathlib.Path(%r)\n"
-            "text=p.read_text(errors='replace') if p.exists() else ''\n"
-            "print(json.dumps({'present_frames': present_serial(text)}))\n" % target)
+class OwnedSerial:
+    """Incremental, generation-checked present-serial reader (roadmap 40.2 item 3).
+
+    The serial is taken from the owned byte-framed collector, never from a full
+    `latest.log` reread: each poll advances a byte cursor (cost is proportional to
+    new output, not log size) and a rejected generation refuses the serial instead
+    of reusing a stale value from a previous process generation.
+    """
+
+    def __init__(self, expected_run=None):
+        self.state = {}
+        self.expected_run = expected_run
+        self.serial = 0
+
+    def poll(self, remote):
+        sample = remote(collector_request(self.state, expected_run=self.expected_run, include_text=True))
+        status = sample.get('status')
+        if status != 'ok':
+            # Refuse: a rejected generation must never hand back the old counter.
+            return {'status': status, 'serial': None, 'fresh': False,
+                    'reason': str(sample.get('detail') or status)}
+        try:
+            self.state = fold(self.state, sample)
+        except (KeyError, TypeError):
+            # A caller-supplied or truncated sample must not lose the cursor: keep
+            # the last known state and still parse what text arrived.
+            self.state.setdefault('offset', 0)
+            if isinstance(sample, dict) and sample.get('offset') is not None:
+                self.state['offset'] = sample['offset']
+        value = present_serial(sample.get('chunk_text') or '')
+        fresh = value > self.serial
+        if fresh:
+            self.serial = value
+        return {'status': 'ok', 'serial': self.serial, 'fresh': fresh,
+                'chunk_bytes': len(sample.get('chunk_text') or ''),
+                'offset': self.state.get('offset')}

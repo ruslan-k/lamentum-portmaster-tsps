@@ -2781,3 +2781,16 @@ Therefore this is **not** an adapter defect: `NVN_WINDOW_REAL framebuffer=1280x7
 Consequence: the panel path is already 720p; reducing the 1080p composition family is a **storage policy** decision, and the adapter already ships the switch for it — `ZERO_RENDER_SCALE=2` maps `1920×1080 → 1280×720` and preserves native 720p composition/UI. It stays off by default because the roadmap records it as a measured performance-negative, and it would remove **31.64 MiB** of menu charged storage.
 
 Next is a single-factor A/B: `ZERO_RENDER_SCALE=2` versus default on the same menu screen, gated by `tools/frame_diff.identical()` and reporting both the charged-byte saving and the pixel difference. That needs the owner's go-ahead because it changes image quality.
+
+## 48. N1: owned incremental present serial (owner §40.2 / §40.11 item 1) (2026-10-21)
+
+Roadmap re-read at `a0aa160`; §40 is unchanged and its §40.11 order still starts with N1.
+
+- **Retired**: `serial_request()` and its full-log `re.findall` scan. It would raise `ValueError` on the first present (the match was not a capture group) and every poll cost O(entire growing log) with no generation check, so a rotated log could hand back a previous run's counter.
+- **Replacement**: `load_metrics.OwnedSerial` polls the owned byte-framed collector (`collector_request` + `fold`, `include_text=True`). Cost is proportional to new bytes; the generation/anchor checks that were already tested now gate the serial. A rejected generation returns `serial: None` / `fresh: False` and the old value stays history only.
+- `present_serial()` counts **complete lines only** — a trailing partial record no longer qualifies a press.
+- `tools/nav_chain.py` uses one `OwnedSerial` per chain, so the before-frame and after-press serials share a cursor and a generation.
+
+Tests (**217 host total**): multi-record `frame=1/42/9` → 42 without exception; empty poll keeps the serial with `fresh=False`; **run A at frame 50 → rotation → refuse** (`serial=None`, no reuse); partial trailing line ignored then completed → 7; cursor advances instead of rescanning; 30 000-record backlog parsed from the chunk alone.
+
+Open: the §40.2 item 6 device acceptance (before image → owned serial S → short press → owned serial S+ → after image, same PID/starttime) has not run with the new reader; and `nav_chain` still polls without an `expected_run` UUID, which is the next tightening.

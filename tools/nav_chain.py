@@ -21,7 +21,7 @@ import zlib
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import lamentum_pad_contract as pad          # noqa: E402
 import page_oracle                            # noqa: E402
-from load_metrics import present_serial, serial_request  # noqa: E402
+from load_metrics import OwnedSerial  # noqa: E402  (roadmap 40.2 item 3)
 from navigator import Navigation, observe     # noqa: E402
 
 TAP_MS = 350
@@ -165,12 +165,16 @@ print(json.dumps({"pid":pid,"starttime":start,"elf_dev":e.st_dev,"elf_ino":e.st_
  "boot_id":pathlib.Path("/proc/sys/kernel/random/boot_id").read_text().strip()}))''' % pid)
 
 
-def wait_serial(after, deadline_s=SERIAL_WAIT_S):
+def wait_serial(after, deadline_s=SERIAL_WAIT_S, reader=None):
+    """Wait for a strictly newer present serial from the OWNED incremental reader."""
+    reader = reader or OwnedSerial()
     deadline = time.monotonic() + deadline_s
     while time.monotonic() < deadline:
-        value = pad.remote(serial_request())['present_frames']
-        if value > after:
-            return value
+        sample = reader.poll(pad.remote)
+        if sample['status'] != 'ok':
+            return None
+        if sample['serial'] and sample['serial'] > after:
+            return sample['serial']
         time.sleep(0.7)
     return None
 
@@ -200,7 +204,8 @@ def main():
             record['owner'] = owner
         # A brand-new run can still have an empty/rotated log: wait for the
         # first present line instead of reading 0 and refusing a valid frame.
-        before_serial = wait_serial(0)
+        reader = OwnedSerial()
+        before_serial = wait_serial(0, reader=reader)
         before, capture = grab('nav-chain-a', args.evidence)
         record['states'].append({'phase': 'before', 'serial': before_serial,
                                  'capture': capture, 'oracle': before})
@@ -226,7 +231,7 @@ def main():
                 record['sweep'] = {'attempts': attempts,
                                    'decision': {'done': True, 'outcome': 'arm_ended'}}
                 break
-            after_serial = wait_serial(serial)
+            after_serial = wait_serial(serial, reader=reader)
             after, capture = grab('nav-chain-b-' + str(tap_ms), args.evidence)
             verdict = summarise(serial, before['row'], after_serial,
                                 (after or {}).get('row'), tap_ms)
