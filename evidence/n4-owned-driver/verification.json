@@ -1,0 +1,13 @@
+{
+  "scope": "host fixtures only; NO device input, no gameplay or FPS qualification",
+  "host_tests": 253,
+  "new_tests": 14,
+  "green_rc": 0,
+  "python310_syntax": "pass",
+  "reviewed_revision": "21e40fd2f5af91249b14b6f8813660a04d79512f",
+  "red_observed": [
+    "new integration module initially absent",
+    "slow-capture deadline regression issued press before final deadline guards were added",
+    "absent release receipt produced AttributeError before fail-closed validation"
+  ]
+}

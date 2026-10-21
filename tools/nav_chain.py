@@ -1,28 +1,16 @@
-"""Frame-paced press → row chain, qualified by a new presented frame.
+"""PNG/single-step analysis helpers and the owned row-driver entry point.
 
-This is the wiring roadmap 32.7 asks for: one navigator (`navigator.Navigation`),
-one oracle (`page_oracle.analyse`), the port's own present counter
-(`load_metrics.present_serial`) and the owner-checked pad contract.
-
-Two lessons from the first ad-hoc chain are baked in:
-  * the serial is read from `.../logs/latest.log` (a guessed sibling path returns 0
-    and silently removes the qualification);
-  * a press is SHORT (default 350 ms) because 900 ms at ~1 fps moved two rows.
+CLI now delegates to owned_nav_chain: mandatory expected-run receipt, one reader
+and one Navigation per attempt, explicit release receipts, no blind sweep reset.
+The pure summarise/sweep helpers remain for historical receipt tests only.
 """
-import argparse
-import base64
-import json
-from pathlib import Path
 import struct
 import sys
-import time
+from pathlib import Path
 import zlib
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import lamentum_pad_contract as pad          # noqa: E402
-import page_oracle                            # noqa: E402
-from load_metrics import OwnedSerial  # noqa: E402  (roadmap 40.2 item 3)
-from navigator import Navigation, observe     # noqa: E402
+import page_oracle  # noqa: E402
 
 TAP_MS = 350
 SERIAL_WAIT_S = 25
@@ -126,145 +114,10 @@ def decode_png(data):
     return width, height, channels, b''.join(rows)
 
 
-def grab(tag, owner_dir):
-    remote_dir = '/mnt/SDCARD/Roms/PORTS/lamentum-switch/logs'
-    capture = pad.remote('''import subprocess,pathlib,json
-d=pathlib.Path(%r);d.mkdir(parents=True,exist_ok=True)
-out=d/%r
-r=subprocess.run(["/mnt/SDCARD/spruce/bin64/kmsgrab",str(out)],capture_output=True,text=True)
-print(json.dumps({"rc":r.returncode,"bytes":out.stat().st_size if out.exists() else 0}))'''
-                       % (remote_dir, tag + '.png'))
-    if not capture.get('bytes'):
-        return None, capture
-    data = base64.b64decode(pad.remote('''import base64,pathlib,json
-print(json.dumps({"png":base64.b64encode(pathlib.Path(%r).read_bytes()).decode()}))'''
-                                    % (remote_dir + '/' + tag + '.png'))['png'])
-    owner_dir.mkdir(parents=True, exist_ok=True)
-    (owner_dir / (tag + '.png')).write_bytes(data)
-    width, height, channels, pixels = decode_png(data)
-    grey = bytes(pixels[i] for i in range(0, len(pixels), channels))
-    return page_oracle.analyse(grey, width, height), capture
-
-
-def game_pid():
-    return pad.remote('''import pathlib,os,json
-pid=None
-for d in pathlib.Path("/proc").glob("[0-9]*"):
- try:
-  if os.path.basename(os.readlink(d/"exe"))=="lamentum-nextos": pid=int(d.name)
- except OSError: continue
-print(json.dumps({"pid":pid}))''')['pid']
-
-
-def owner_of(pid):
-    return pad.remote('''import pathlib,os,json
-pid=%d
-s=(pathlib.Path("/proc")/str(pid)/"stat").read_text();start=int(s[s.rindex(")")+2:].split()[19])
-e=os.stat(pathlib.Path("/proc")/str(pid)/"exe")
-print(json.dumps({"pid":pid,"starttime":start,"elf_dev":e.st_dev,"elf_ino":e.st_ino,
- "boot_id":pathlib.Path("/proc/sys/kernel/random/boot_id").read_text().strip()}))''' % pid)
-
-
-def wait_serial(after, deadline_s=SERIAL_WAIT_S, reader=None):
-    """Wait for a strictly newer present serial from the OWNED incremental reader."""
-    reader = reader or OwnedSerial()
-    deadline = time.monotonic() + deadline_s
-    while time.monotonic() < deadline:
-        sample = reader.poll(pad.remote)
-        if sample['status'] != 'ok':
-            return None
-        if sample['serial'] and sample['serial'] > after:
-            return sample['serial']
-        time.sleep(0.7)
-    return None
-
-
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--tap-ms', type=int, default=TAP_MS)
-    parser.add_argument('--sweep', action='store_true',
-                        help='try SWEEP_MS one press at a time, stopping on one row or overshoot')
-    parser.add_argument('--sweep-values', default=None,
-                        help='comma-separated subset of the sweep, e.g. 80,150,250')
-    parser.add_argument('--target', default='newgame')
-    parser.add_argument('--evidence', type=Path, default=EVIDENCE / 'nav-chain-03')
-    parser.add_argument('--wait-game', type=int, default=240)
-    args = parser.parse_args()
-    args.evidence.mkdir(parents=True, exist_ok=True)
-    deadline, owner = time.monotonic() + args.wait_game, None
-    record = {'tap_ms': args.tap_ms, 'target': args.target, 'states': []}
-    while time.monotonic() < deadline:
-        time.sleep(1.5)
-        pid = game_pid()
-        if not pid:
-            continue
-        if owner is None:
-            owner = owner_of(pid)
-            pad.set_expected_owner(owner)
-            record['owner'] = owner
-        # A brand-new run can still have an empty/rotated log: wait for the
-        # first present line instead of reading 0 and refusing a valid frame.
-        reader = OwnedSerial()
-        before_serial = wait_serial(0, reader=reader)
-        before, capture = grab('nav-chain-a', args.evidence)
-        record['states'].append({'phase': 'before', 'serial': before_serial,
-                                 'capture': capture, 'oracle': before})
-        if not before or before['page'] != page_oracle.MAIN_MENU or not before.get('row'):
-            continue
-        navigator = Navigation(target=args.target)
-        action = observe(navigator, before['page'], before['cursor_y'], before_serial)
-        record['navigator_action'] = action
-        if action['action'] != 'press':
-            record['stopped'] = 'navigator did not ask for a press: ' + str(action)
-            break
-        if args.sweep and args.sweep_values:
-            taps = [int(value) for value in args.sweep_values.split(',')]
-        else:
-            taps = list(SWEEP_MS) if args.sweep else [args.tap_ms]
-        attempts, serial = [], before_serial
-        for tap_ms in taps:
-            try:
-                pad.press(action['button'], tap_ms)
-            except RuntimeError as error:
-                attempts.append({'tap_ms': tap_ms, 'verdict': {
-                    'qualified': False, 'reason': 'owned process unavailable before the press: %s' % error}})
-                record['sweep'] = {'attempts': attempts,
-                                   'decision': {'done': True, 'outcome': 'arm_ended'}}
-                break
-            after_serial = wait_serial(serial, reader=reader)
-            after, capture = grab('nav-chain-b-' + str(tap_ms), args.evidence)
-            verdict = summarise(serial, before['row'], after_serial,
-                                (after or {}).get('row'), tap_ms)
-            attempt = {'tap_ms': tap_ms, 'serial_before': serial, 'serial_after': after_serial,
-                       'verdict': verdict, 'capture': capture}
-            attempts.append(attempt)
-            record['states'].append({'phase': 'after', 'tap_ms': tap_ms, 'serial': after_serial,
-                                     'capture': capture, 'oracle': after, 'verdict': verdict})
-            if after_serial:
-                serial = after_serial
-            decision = sweep_decision(attempts) if args.sweep else {
-                'done': True, 'outcome': 'single_tap', 'tap_ms': tap_ms}
-            if decision['done']:
-                record['sweep'] = {'attempts': attempts, 'decision': decision}
-                break
-            before = after or before
-            navigator = Navigation(target=args.target)
-            next_action = observe(navigator, before['page'], before['cursor_y'], serial)
-            if next_action['action'] != 'press':
-                record['sweep'] = {'attempts': attempts,
-                                   'decision': {'done': True, 'outcome': 'navigator_stopped',
-                                                'reason': str(next_action)}}
-                break
-            action = next_action
-        else:
-            record['sweep'] = {'attempts': attempts, 'decision': sweep_decision(attempts)}
-        record['verdict'] = (record['sweep']['attempts'][-1]['verdict']
-                             if record.get('sweep') else None)
-        break
-    (args.evidence / 'chain.json').write_text(json.dumps(record, indent=2) + '\n')
-    print(json.dumps(record, indent=2))
-    return 0 if record.get('verdict', {}).get('qualified') else 1
-
+    # Retired the per-tap reset and unpinned-reader sweep path.
+    from owned_nav_chain import main as owned_main
+    return owned_main()
 
 if __name__ == '__main__':
     raise SystemExit(main())

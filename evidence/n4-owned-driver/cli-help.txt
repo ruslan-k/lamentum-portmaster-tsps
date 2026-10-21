@@ -1,0 +1,21 @@
+usage: nav_chain.py [-h] --expected-run EXPECTED_RUN --evidence EVIDENCE
+                    --response-timeout-s RESPONSE_TIMEOUT_S [--tap-ms TAP_MS]
+                    [--target {load,newgame,options,credits}]
+                    [--diagnostic-input]
+
+Bounded diagnostic row-navigation driver; Confirm intentionally disabled. Does
+not launch a game. Consume the expected-run.json produced by the separately
+bounded principal harness. Requires explicit diagnostic-input opt-in and
+timeout.
+
+options:
+  -h, --help            show this help message and exit
+  --expected-run EXPECTED_RUN
+  --evidence EVIDENCE
+  --response-timeout-s RESPONSE_TIMEOUT_S
+                        explicit bounded diagnostic timeout, not a calibrated
+                        device preset
+  --tap-ms TAP_MS
+  --target {load,newgame,options,credits}
+  --diagnostic-input    opt in to row-only evdev input; not safe-
+                        memory/gameplay qualification
