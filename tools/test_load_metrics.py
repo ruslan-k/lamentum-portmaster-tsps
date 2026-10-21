@@ -341,6 +341,27 @@ class PresentSerialTests(unittest.TestCase):
         self.assertTrue(PORT_LOG.endswith('/logs/latest.log'), PORT_LOG)
         self.assertIn(PORT_LOG, serial_request())
 
+    def test_serial_request_executes_and_returns_the_highest_frame(self):
+        import subprocess, sys as _sys, tempfile
+        from pathlib import Path as _Path
+        from load_metrics import serial_request
+        with tempfile.TemporaryDirectory() as folder:
+            log = _Path(folder) / 'latest.log'
+            log.write_text('NVN_PRESENT_PIXELS frame=3 nonblack=0\n'
+                           'NVN_PRESENT_PIXELS frame=57 nonblack=9 status=PIXELS\n')
+            ran = subprocess.run([_sys.executable, '-'], input=serial_request(str(log)),
+                                 text=True, capture_output=True)
+            self.assertEqual(ran.returncode, 0, ran.stderr)
+            self.assertIn('"present_frames": 57', ran.stdout)
+
+    def test_serial_request_with_a_missing_log_returns_zero(self):
+        import subprocess, sys as _sys
+        from load_metrics import serial_request
+        ran = subprocess.run([_sys.executable, '-'], input=serial_request('/nonexistent/latest.log'),
+                             text=True, capture_output=True)
+        self.assertEqual(ran.returncode, 0, ran.stderr)
+        self.assertIn('"present_frames": 0', ran.stdout)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -2456,3 +2456,18 @@ Arm `nav-chain-02` (build229, `COTM_GL_ERROR_IGNORE=0`, `T2_TEXTURE_BUDGET_MIB=3
 - **190 host tests PASS**; arm stopped at `T2_MEMORY_FLOOR` with zero cleanup errors and verified execution identity; device afterwards `MainUI=1, runtime.sh=1, principal.sh=1, port=0`.
 
 Limits: one press, one page, two frames. No config page, no Loading, no scene, no id295, no FPS. Next step is the same chain with the corrected serial reader and a frame-paced tap, then the New Game configuration page measurement.
+
+## 40. Tap-length A/B and the repeatable chain (2026-10-21)
+
+`tools/nav_chain.py` is now the single wiring (oracle + navigator + `logs/latest.log` present counter + owner-checked pad), with 7 tests on its `summarise()` contract and 4 on the serial reader (including an executed payload test).
+
+| arm | tap | before → after | serial | verdict |
+|---|---|---|---|---|
+| `nav-chain-04` | **350 ms** | `load` → `load` | **19 → 23** | qualified: press did not move the selection |
+| `nav-chain-02` | 900 ms | `load` → `options` | not read (wrong path) | two rows: hold-length overshoot |
+
+The one-row window sits between 350 and 900 ms at ~1 presented frame/s; the next arm should test ~500–600 ms with the same qualification.
+
+Recorded failures, not results: `nav-chain-05` ran the chain **before** the arm in a sequential shell (`;` not `&`) and wrote `states: []` (the arm itself had `stops: []` and verified execution); `nav-chain-06` overlapped correctly and read the menu, but the fresh run's log had no present line yet, so the serial was 0 and the navigator refused. The tool now calls `wait_serial(0)` so a first-frame race cannot masquerade as a refused chain.
+
+**199 host tests PASS.** Limits unchanged: menu only, one press, two frames — no config page, Loading, scene, id295 or FPS claim.

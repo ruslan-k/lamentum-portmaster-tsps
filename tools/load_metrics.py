@@ -222,10 +222,11 @@ def present_serial(text):
     return highest
 
 
-def serial_request():
-    """Remote snippet: print {"present_frames": N} read from PORT_LOG."""
-    return ("import json,re,pathlib\n"
+def serial_request(path=None):
+    """Remote snippet printing {"present_frames": N}; reuses the tested parser."""
+    target = path or PORT_LOG
+    return ("import json,inspect,pathlib\nPRESENT_MARKER=%r\n" % PRESENT_MARKER
+            + inspect.getsource(present_serial) + "\n"
             "p=pathlib.Path(%r)\n"
             "text=p.read_text(errors='replace') if p.exists() else ''\n"
-            "print(json.dumps({'present_frames': max([int(x) for x in re.findall(%r, text)] or [0])}))\n"
-            % (PORT_LOG, PRESENT_MARKER + r"\d+"))
+            "print(json.dumps({'present_frames': present_serial(text)}))\n" % target)

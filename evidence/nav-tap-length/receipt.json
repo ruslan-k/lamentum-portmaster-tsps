@@ -1,0 +1,119 @@
+{
+  "chains": [
+    {
+      "arm": "nav-chain-04",
+      "tap_ms": 350,
+      "navigator_action": {
+        "action": "press",
+        "button": "down",
+        "row": "load",
+        "serial": 19
+      },
+      "states": [
+        {
+          "phase": "before",
+          "serial": 0,
+          "page": null,
+          "row": null,
+          "bytes": 0
+        },
+        {
+          "phase": "before",
+          "serial": 0,
+          "page": null,
+          "row": null,
+          "bytes": 0
+        },
+        {
+          "phase": "before",
+          "serial": 0,
+          "page": "UNKNOWN",
+          "row": null,
+          "bytes": 25800
+        },
+        {
+          "phase": "before",
+          "serial": 19,
+          "page": "MAIN_MENU",
+          "row": "load",
+          "bytes": 126850
+        },
+        {
+          "phase": "after",
+          "serial": 23,
+          "page": "MAIN_MENU",
+          "row": "load",
+          "bytes": 135705
+        }
+      ],
+      "verdict": {
+        "qualified": true,
+        "reason": "press did not move the selection",
+        "step": 0,
+        "serial_delta": 4,
+        "hint": "check the button role"
+      }
+    },
+    {
+      "arm": "nav-chain-02",
+      "missing": true
+    },
+    {
+      "arm": "nav-chain-05",
+      "tap_ms": 550,
+      "navigator_action": null,
+      "states": [],
+      "verdict": null
+    },
+    {
+      "arm": "nav-chain-06",
+      "tap_ms": 550,
+      "navigator_action": {
+        "action": "refuse",
+        "reason": "present serial not established"
+      },
+      "states": [
+        {
+          "phase": "before",
+          "serial": 0,
+          "page": "MAIN_MENU",
+          "row": "load",
+          "bytes": 126850
+        }
+      ],
+      "verdict": null
+    }
+  ],
+  "arms": {
+    "nav-chain-04": {
+      "stops": [
+        "T2_MEMORY_FLOOR"
+      ],
+      "execution_verified": true,
+      "cleanup_errors": [],
+      "runtime_ok": false
+    },
+    "nav-chain-05": {
+      "stops": [],
+      "execution_verified": true,
+      "cleanup_errors": [],
+      "runtime_ok": false
+    },
+    "nav-chain-06": {
+      "stops": [
+        "T2_MEMORY_FLOOR"
+      ],
+      "execution_verified": true,
+      "cleanup_errors": [],
+      "runtime_ok": false
+    }
+  },
+  "test_suite": {
+    "rc": 0,
+    "tail": [
+      "Ran 199 tests in 6.360s",
+      "",
+      "OK"
+    ]
+  }
+}
