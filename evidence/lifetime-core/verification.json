@@ -1,0 +1,10 @@
+{
+  "reviewed_revision": "d8474fa",
+  "existing_overlay_sections_identical": true,
+  "header_sha256": "0adb56ece4ad63cd9001b34edfd7233b58cfee3749ea10ef507b1f7222edcc9e",
+  "c_assert_sites": 57,
+  "runtime_integrated": false,
+  "device_run": false,
+  "physical_savings_claimed": false,
+  "sanitizer": "undefined + trap-on-error"
+}
