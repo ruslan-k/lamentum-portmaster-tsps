@@ -2417,3 +2417,14 @@ What the second arm establishes:
 What it does not establish: no navigation, no New Game, no Loading, no scene, no world draw, no id295 descriptor, no gameplay and no frame-rate figure. The attached kmsgrab was taken **after** the run (Spruce restored) and is cleanup evidence only — the picture claim rests on the runtime's own present readback, not on a panel capture. The 32 MiB floor stays explicitly diagnostic; production keeps the safe floor and the 300 MiB texture guard untouched.
 
 Memory fact worth carrying forward: the **menu alone** drives `MemAvailable` from 90 MiB to 29 MiB (VmSwap 496 MB) in ~55 frames, so any next arm must budget for the menu before it can ever afford Loading. Next step remains a verified navigator (§32.7), which is what makes a New Game arm — and therefore B1 and id295 — measurable at all.
+
+## 37. Navigation core, deliberately not yet wired (2026-10-21)
+
+Work under **§32.7 item 3**. Pure host tooling: no adapter change, no build, no device run.
+
+- `tools/navigator.py` is the single decision core: it takes `(page, cursor_y, present_serial)` observations and returns exactly one action (`press down`, `press confirm`, `wait`, `refuse`, `done`), with `overshoot` events preserved.
+- Enforced rules, each already a measured failure mode here: one press per **strictly newer** serial; refusal after more than three observations without a new serial; a row move of more than one row reported as overshoot instead of triggering extra presses; a changed picture never treated as a page change; unbanded cursor waits, unknown page refuses; `WORLD_VISIBLE` never reported as verified.
+- Rows come from the measured highlight band (`load 425 / newgame 475 / options 525 / credits 575`, tolerance 12), with pitch derived from those numbers.
+- **180 host tests PASS** (10 new) covering stale serial, serial stall, overshoot, animated-picture stillness, page-change non-inference, unknown page, zero serial, world non-claim and the row table.
+
+Deliberately open: there is still **no capture-side oracle** turning a KMS frame into `(page, cursor_y)`, so this core drives nothing yet and both legacy navigators remain disabled by default. The next step is the measured extractor plus one real press→serial→row chain on device; only then can a New Game arm measure B1 and id295. No scene, gameplay or FPS claim.
