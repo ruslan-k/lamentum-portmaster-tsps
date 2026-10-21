@@ -1,0 +1,8 @@
+{
+  "sha256": "846ef10c3850ec245c702243b3c82b59ca398a863506a78cf1e76d62522ae314",
+  "backup_sha256": "f35b935224ae13df643c14fe2f95df01a2fada5a0bb3c644730b4549e5130574",
+  "deployed_sha256": "846ef10c3850ec245c702243b3c82b59ca398a863506a78cf1e76d62522ae314",
+  "previous_backup_dir": ".before-245",
+  "previous_sha256": "f35b935224ae13df643c14fe2f95df01a2fada5a0bb3c644730b4549e5130574",
+  "method": "staged file + fsync + os.replace + independent read-back"
+}

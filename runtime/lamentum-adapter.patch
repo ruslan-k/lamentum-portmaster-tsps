@@ -1185,10 +1185,10 @@ index 0000000..fbe5673
 +#endif
 diff --git a/native/lc2_life_events.h b/native/lc2_life_events.h
 new file mode 100644
-index 0000000..e7a7d5b
+index 0000000..48f7cf5
 --- /dev/null
 +++ b/native/lc2_life_events.h
-@@ -0,0 +1,110 @@
+@@ -0,0 +1,137 @@
 +/* Bounded OBSERVATION ledger for GL storage events. Diagnostic only, default off.
 + *
 + * It answers design questions before any lifetime policy is integrated:
@@ -1212,6 +1212,7 @@ index 0000000..e7a7d5b
 +    struct lc2_life_event entries[LC2_LIFE_EVENT_CAP];
 +    uint64_t storage_calls,extends,deletes,delete_with_views,name_reuse,overflow;
 +    uint64_t retained_bytes,peak_bytes,live,alias_views;
++    uint64_t kind_bytes[4],kind_live[4],respecs;
 +};
 +static struct lc2_life_events_state lc2_life_events_state_storage;
 +static inline struct lc2_life_events_state *lc2_life_events_state(void) {return &lc2_life_events_state_storage;}
@@ -1237,6 +1238,7 @@ index 0000000..e7a7d5b
 +        e->bytes+=bytes;e->mips++;
 +        if(bytes>UINT64_MAX-s->retained_bytes) {s->overflow++;return;}
 +        s->retained_bytes+=bytes;s->extends++;
++        if(kind<4)s->kind_bytes[kind]+=bytes;
 +        if(s->retained_bytes>s->peak_bytes)s->peak_bytes=s->retained_bytes;
 +        return;
 +    }
@@ -1246,6 +1248,23 @@ index 0000000..e7a7d5b
 +    if(lc2_life_event_find(name,kind,0))s->name_reuse++;
 +    s->entries[slot]=(struct lc2_life_event){.name=name,.kind=kind,.bytes=bytes,.mips=1,.nvn_id=nvn_id,.live=1};
 +    s->retained_bytes+=bytes;s->live++;
++    if(kind<4){s->kind_bytes[kind]+=bytes;s->kind_live[kind]++;}
++    if(s->retained_bytes>s->peak_bytes)s->peak_bytes=s->retained_bytes;
++}
++/* A buffer store (glBufferData on an existing name) REPLACES the payload; adding
++ * it would double count every re-upload of the same vertex buffer. */
++static inline void lc2_life_events_respec(uint64_t nvn_id,uint64_t name,uint64_t kind,uint64_t bytes) {
++    if(!lc2_life_events_on() || !name || !kind)return;
++    struct lc2_life_events_state *s=lc2_life_events_state();
++    if(!bytes)return;
++    struct lc2_life_event *e=lc2_life_event_find(name,kind,1);
++    if(!e) {lc2_life_events_storage(nvn_id,name,kind,bytes);return;}
++    uint64_t old=e->bytes;
++    s->retained_bytes=(old<=s->retained_bytes)?s->retained_bytes-old:0;
++    if(kind<4)s->kind_bytes[kind]=(old<=s->kind_bytes[kind])?s->kind_bytes[kind]-old:0;
++    e->bytes=bytes;e->nvn_id=nvn_id;e->mips++;
++    s->retained_bytes+=bytes;if(kind<4)s->kind_bytes[kind]+=bytes;
++    s->respecs++;
 +    if(s->retained_bytes>s->peak_bytes)s->peak_bytes=s->retained_bytes;
 +}
 +static inline void lc2_life_events_alias(uint64_t name,uint64_t kind,int delta) {
@@ -1264,6 +1283,10 @@ index 0000000..e7a7d5b
 +    if(views)s->delete_with_views++;
 +    if(!e)return;
 +    s->retained_bytes=(e->bytes<=s->retained_bytes)?s->retained_bytes-e->bytes:0;
++    if(e->kind<4) {
++        s->kind_bytes[e->kind]=(e->bytes<=s->kind_bytes[e->kind])?s->kind_bytes[e->kind]-e->bytes:0;
++        if(s->kind_live[e->kind])s->kind_live[e->kind]--;
++    }
 +    e->live=0;
 +    if(s->live)s->live--;
 +}
@@ -1280,12 +1303,16 @@ index 0000000..e7a7d5b
 +    struct lc2_life_events_state *s=lc2_life_events_state();
 +    if(!lc2_life_events_on() || (!s->storage_calls && !s->deletes))return;
 +    static const char head[]="LC2_LIFE_SUMMARY share-group=unverified bytes=declared-payload completion=unobserved";
-+    char tail[512];size_t used=0;
++    char tail[768];size_t used=0;
 +    const struct {const char *name;uint64_t *value;} fields[]={
 +        {" storage-calls=",&s->storage_calls},{" extends=",&s->extends},{" deletes=",&s->deletes},
 +        {" delete-with-views=",&s->delete_with_views},{" name-reuse=",&s->name_reuse},
 +        {" retained=",&s->retained_bytes},{" peak=",&s->peak_bytes},{" live=",&s->live},
-+        {" alias-views=",&s->alias_views},{" overflow=",&s->overflow}};
++        {" alias-views=",&s->alias_views},{" overflow=",&s->overflow},
++        {" tex-bytes=",&s->kind_bytes[1]},{" tex-live=",&s->kind_live[1]},
++        {" rb-bytes=",&s->kind_bytes[2]},{" rb-live=",&s->kind_live[2]},
++        {" buf-bytes=",&s->kind_bytes[3]},{" buf-live=",&s->kind_live[3]},
++        {" respecs=",&s->respecs}};
 +    for(unsigned i=0;i<sizeof(fields)/sizeof(fields[0]);i++) {
 +        size_t length=strlen(fields[i].name);
 +        if(used+length+21>sizeof(tail))break;
@@ -3809,7 +3836,7 @@ index 0fb14ec..9e2ccfc 100644
              free(premul);free(probe);free(sprite);free(flat);free(scaled);free(awf);free(mipped);free(r8);free(advent);free(lowered);free(wrapped);free(interface_source);
              if(!status){char log[2048]={0};glGetShaderInfoLog(shaders[i],sizeof(log),NULL,log);printf("NVN_SHADER_COMPILE_ERROR %s\n",log);stop("NVN_SHADER_COMPILE_FAILED",nvn_caller,p->sources[i],21);}
 diff --git a/native/nvn_textures.h b/native/nvn_textures.h
-index 0feaef1..dea1970 100644
+index 0feaef1..dc09f11 100644
 --- a/native/nvn_textures.h
 +++ b/native/nvn_textures.h
 @@ -6,6 +6,14 @@
@@ -4158,7 +4185,7 @@ index 0feaef1..dea1970 100644
          if(t->t2_budget_bytes)t2_texture_budget_add(size,nvn_caller);
          else if(t2_pages.deferred_logged++<4)printf("T2_PAGE_DEFERRED id=%"PRIu64" size=%ux%u rgba8-bytes=%"PRIu64" pool-flags=0x%x storage=none-until-copy\n",t->id,b.width,b.height,size,pool->flags);
  #ifdef MOMO_SHADERS
-@@ -649,7 +877,11 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -649,7 +877,13 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
              const char *extensions=(const char *)glGetString(GL_EXTENSIONS);
              if(!extensions || !strstr(extensions,b.format==0x35?"GL_OES_packed_depth_stencil":"GL_OES_depth24"))stop("NVN_DEPTH_BACKEND_REQUIRED",nvn_caller,b.format,20);
              glGenRenderbuffers(1,&t->depth_buffer);glBindRenderbuffer(GL_RENDERBUFFER,t->depth_buffer);
@@ -4167,10 +4194,12 @@ index 0feaef1..dea1970 100644
 +            lc2_storage_end(lc2_probe_ticket,"renderbuffer",t->id,t->depth_buffer,nvn_rt_storage_width(t),nvn_rt_storage_height(t),0,b.format);
 +            lc2_alloc_note("renderbuffer",(uint64_t)nvn_rt_storage_width(t)*nvn_rt_storage_height(t)*(b.format==0x35?4U:4U),
 +                           nvn_rt_storage_width(t),nvn_rt_storage_height(t),b.format);
++            lc2_life_events_storage(t->id,t->depth_buffer,2,
++                (uint64_t)nvn_rt_storage_width(t)*nvn_rt_storage_height(t)*4U);
              glBindRenderbuffer(GL_RENDERBUFFER,0);
              if(b.format==0x34)printf("NVN_DEPTH_CONVERSION guest=DEPTH32F host=DEPTH24 precision-reduced rendering-validation-pending\n");
          } else {
-@@ -664,6 +896,7 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -664,6 +898,7 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
                  const char *extensions=(const char *)glGetString(GL_EXTENSIONS);
                  if(!extensions || !strstr(extensions,"GL_EXT_sRGB"))stop("ZERO_SRGB_TEXTURE_BACKEND_REQUIRED",nvn_caller,b.format,20);
              }
@@ -4178,7 +4207,7 @@ index 0feaef1..dea1970 100644
              glGenTextures(1,&t->name);if(!t->name)stop("NVN_TEXTURE_GL_NAME",nvn_caller,t->id,21);glBindTexture(GL_TEXTURE_2D,t->name);
  #if ZERO_ZX_GAME
              /* This backend exposes NVN's storage-level limit directly. Mali
-@@ -673,8 +906,22 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -673,8 +908,22 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
                  glTexParameteri(GL_TEXTURE_2D,0x813d,b.levels-1);
  #endif
              unsigned width=b.width,height=b.height;
@@ -4203,7 +4232,7 @@ index 0feaef1..dea1970 100644
                  unsigned upload_type=nvn_cpu_image_upload_type(t),upload_bpp=nvn_texture_upload_bytes(upload_type);
                  size_t bytes=(size_t)width*height*upload_bpp;uint8_t *rgba=malloc(bytes);
                  if(!rgba)stop("NVN_TEXTURE_INITIAL_DATA_MEMORY",nvn_caller,bytes,21);
-@@ -697,8 +944,12 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -697,8 +946,12 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
                  /* Uniformity was checked across the complete original decode.
                   * The compact upload consumes the same constant pixel value. */
                  glPixelStorei(GL_UNPACK_ALIGNMENT,1);
@@ -4218,7 +4247,7 @@ index 0feaef1..dea1970 100644
  #if MEGAMAN_HOST_DIAGNOSTIC
                  /* Observation remains an independent RGBA8 reference; packed
                   * UNORM5 may truthfully differ by one readback code value. */
-@@ -719,7 +970,7 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -719,7 +972,7 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
                  if(height>1)height>>=1;
              }
  #if ZERO_ZX_GAME
@@ -4227,7 +4256,7 @@ index 0feaef1..dea1970 100644
  #endif
              nvn_texture_parameters(t,GL_NEAREST,GL_NEAREST,GL_CLAMP_TO_EDGE,GL_CLAMP_TO_EDGE);
              glBindTexture(GL_TEXTURE_2D,0);
-@@ -749,7 +1000,9 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -749,7 +1002,9 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
      if(id==NI_nvnTexturePoolRegisterTexture) {
          struct nvn_descriptor_pool *d=NULL;
          for(unsigned i=0;i<32;i++)if(nvn_descriptor_pools[i].live&&nvn_descriptor_pools[i].object==a[0]&&nvn_descriptor_pools[i].type==1)d=&nvn_descriptor_pools[i];
@@ -4238,7 +4267,7 @@ index 0feaef1..dea1970 100644
          struct nvn_texture *t=nvn_texture_find(a[2]);struct nvn_descriptor *slot=&d->entries[a[1]];
          if(a[3] && !megaman_texture_view_identity(nvn_pointer(a[3],MEGAMAN_TEXTURE_VIEW_BYTES,PROT_READ),t->b.levels) &&
             !aw_texture_view_identity_native(nvn_pointer(a[3],MEGAMAN_TEXTURE_VIEW_BYTES,PROT_READ),&t->b,t->aw_native_format))
-@@ -802,9 +1055,10 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -802,9 +1057,10 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
          unsigned delete_storage=zero_texture_storage_release(t);
          if(delete_storage) {
              zero_depth_framebuffer_forget(storage->id);
@@ -4246,29 +4275,39 @@ index 0feaef1..dea1970 100644
              if(storage->name)glDeleteTextures(1,&storage->name);
              glDeleteTextures(2,storage->zero_mip_masks);
 -            if(storage->depth_buffer)glDeleteRenderbuffers(1,&storage->depth_buffer);
-+            if(storage->depth_buffer){lc2_alloc_retired("renderbuffer",(uint64_t)nvn_rt_storage_width(storage)*nvn_rt_storage_height(storage)*4U,nvn_rt_storage_width(storage),nvn_rt_storage_height(storage),storage->b.format);glDeleteRenderbuffers(1,&storage->depth_buffer);}
++            if(storage->depth_buffer){lc2_life_events_delete(storage->depth_buffer,2,0);lc2_alloc_retired("renderbuffer",(uint64_t)nvn_rt_storage_width(storage)*nvn_rt_storage_height(storage)*4U,nvn_rt_storage_width(storage),nvn_rt_storage_height(storage),storage->b.format);glDeleteRenderbuffers(1,&storage->depth_buffer);}
              for(unsigned i=0;i<3;i++)if(storage->cpu_views[i])glDeleteTextures(1,&storage->cpu_views[i]);
              free(storage->cpu_snapshot);storage->cpu_snapshot=NULL;
          }
 diff --git a/native/nvn_vertex_stream.h b/native/nvn_vertex_stream.h
-index 9562779..615ef3f 100644
+index 9562779..e11bf24 100644
 --- a/native/nvn_vertex_stream.h
 +++ b/native/nvn_vertex_stream.h
-@@ -24,7 +24,7 @@ static unsigned nvn_vertex_stream_pointer(unsigned index,GLint size,GLenum type,
+@@ -2,6 +2,7 @@
+  * streaming-buffer data store. No guest bytes survive as a cache source.
+  * BufferData replaces the store while GL retains prior draws' old storage;
+  * no CPU wait, BufferSubData overwrite or element-buffer binding is added. */
++#include "lc2_life_events.h" /* §67: buffer stores are respecifications, not additions */
+ static struct {
+     unsigned enabled,after_frame;EGLContext context;GLuint buffers[16];
+     uint64_t uploads,bytes,created;
+@@ -24,7 +25,8 @@ static unsigned nvn_vertex_stream_pointer(unsigned index,GLint size,GLenum type,
      GLuint *buffer=&nvn_vertex_stream.buffers[index];
      if(!*buffer){glGenBuffers(1,buffer);if(!*buffer)stop("NVN_VERTEX_STREAM_MEMORY",nvn_caller,index,21);nvn_vertex_stream.created++;}
      glBindBuffer(GL_ARRAY_BUFFER,*buffer);nvn_render_state.client_buffers_known=0;
 -    glBufferData(GL_ARRAY_BUFFER,(GLsizeiptr)bytes,data,GL_STREAM_DRAW);
 +    glBufferData(GL_ARRAY_BUFFER,(GLsizeiptr)bytes,data,GL_STREAM_DRAW);lc2_alloc_note("buffer",(uint64_t)bytes,1,0,0);
++    lc2_life_events_respec(0,*buffer,3,(uint64_t)bytes);
      nvn_render_vertex_pointer_buffer(index,size,type,normalized,stride,NULL,*buffer);
      nvn_vertex_stream.uploads++;nvn_vertex_stream.bytes+=bytes;return 1;
  }
-@@ -152,7 +152,7 @@ static unsigned nvn_stable_vbo_pointer(unsigned index,GLint size,GLenum type,GLb
+@@ -152,7 +154,8 @@ static unsigned nvn_stable_vbo_pointer(unsigned index,GLint size,GLenum type,GLb
      if(!entry->uploaded) {
          if(!entry->buffer){glGenBuffers(1,&entry->buffer);if(!entry->buffer)stop("NVN_STABLE_VBO_MEMORY",nvn_caller,0,21);}
          glBindBuffer(GL_ARRAY_BUFFER,entry->buffer);nvn_render_state.client_buffers_known=0;
 -        glBufferData(GL_ARRAY_BUFFER,(GLsizeiptr)bytes,entry->shadow,GL_STATIC_DRAW);
 +        glBufferData(GL_ARRAY_BUFFER,(GLsizeiptr)bytes,entry->shadow,GL_STATIC_DRAW);lc2_alloc_note("buffer",(uint64_t)bytes,0,0,0);
++        lc2_life_events_respec(0,entry->buffer,3,(uint64_t)bytes);
          entry->uploaded=1;nvn_stable_vbo.uploads++;nvn_stable_vbo.upload_bytes+=bytes;
      } else {glBindBuffer(GL_ARRAY_BUFFER,entry->buffer);nvn_render_state.client_buffers_known=0;nvn_stable_vbo.hits++;}
      nvn_render_vertex_pointer_buffer(index,size,type,normalized,stride,(const void *)(uintptr_t)attribute_offset,entry->buffer);

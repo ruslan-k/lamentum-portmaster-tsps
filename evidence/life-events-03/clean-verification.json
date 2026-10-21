@@ -1,0 +1,6 @@
+{
+  "staged_tree": "de402da0b41dbcb079f2a4f2be7be986ef14f5c4",
+  "host_tests": 266,
+  "python310_ast": true,
+  "respec_and_renderbuffer_hooks_in_exported_patch": true
+}

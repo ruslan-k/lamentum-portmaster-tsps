@@ -36,12 +36,19 @@ int main(void) {
  assert(lc2_life_events_state()->name_reuse==1);
  lc2_life_events_delete(10,1,2);               /* reported, never hidden */
  assert(lc2_life_events_state()->delete_with_views==1);
+ lc2_life_events_respec(3,77,3,900);
+ lc2_life_events_respec(3,77,3,400);           /* glBufferData replaces the store */
+ assert(lc2_life_events_state()->respecs==1);  /* the first store was an allocation */
+ lc2_life_events_respec(3,77,3,100);
+ assert(lc2_life_events_state()->respecs==2);
+ assert(lc2_life_events_state()->kind_bytes[3]==100);
+ assert(lc2_life_events_state()->kind_live[3]==1);
  for(unsigned i=0;i<LC2_LIFE_EVENT_CAP+3;i++)lc2_life_events_storage(100+i,1000+i,1,1);
  assert(lc2_life_events_state()->overflow>=3);
  /* The stop-path formatter must agree with printf digit-for-digit: a stray leading
   * or trailing digit silently misreports every counter by 10x. */
- char expect[256];
- snprintf(expect,sizeof expect," storage-calls=%llu extends=%llu deletes=%llu delete-with-views=%llu name-reuse=%llu retained=%llu peak=%llu live=%llu alias-views=%llu overflow=%llu",
+ char expect[512];
+ snprintf(expect,sizeof expect," storage-calls=%llu extends=%llu deletes=%llu delete-with-views=%llu name-reuse=%llu retained=%llu peak=%llu live=%llu alias-views=%llu overflow=%llu tex-bytes=%llu tex-live=%llu rb-bytes=%llu rb-live=%llu buf-bytes=%llu buf-live=%llu respecs=%llu",
   (unsigned long long)lc2_life_events_state()->storage_calls,
   (unsigned long long)lc2_life_events_state()->extends,
   (unsigned long long)lc2_life_events_state()->deletes,
@@ -51,7 +58,14 @@ int main(void) {
   (unsigned long long)lc2_life_events_state()->peak_bytes,
   (unsigned long long)lc2_life_events_state()->live,
   (unsigned long long)lc2_life_events_state()->alias_views,
-  (unsigned long long)lc2_life_events_state()->overflow);
+  (unsigned long long)lc2_life_events_state()->overflow,
+  (unsigned long long)lc2_life_events_state()->kind_bytes[1],
+  (unsigned long long)lc2_life_events_state()->kind_live[1],
+  (unsigned long long)lc2_life_events_state()->kind_bytes[2],
+  (unsigned long long)lc2_life_events_state()->kind_live[2],
+  (unsigned long long)lc2_life_events_state()->kind_bytes[3],
+  (unsigned long long)lc2_life_events_state()->kind_live[3],
+  (unsigned long long)lc2_life_events_state()->respecs);
  printf("EXPECT%s\n",expect);
  lc2_life_events_report_fd(1);
  return 0;
