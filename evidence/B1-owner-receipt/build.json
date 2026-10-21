@@ -1,0 +1,14 @@
+{
+  "container": "sha256:e437308c01ce7af4a035c3f0652bc886e258889f66803f805bce53d05af75f0c",
+  "output": "build-229",
+  "elf_sha256": "b164cffd80bd0284fb6f86907db3825d63c0e1bf2d3f5a7a90f703fa0db4e82f",
+  "elf_bytes": 2143280,
+  "helper_sha256": "abe8e4847b18a750c0796af33d887cf43714126c9751ccdc8236715cb752401a",
+  "baseline_verified": 435,
+  "aarch64": true,
+  "non_root_container": true,
+  "deployed": false,
+  "game_run": false,
+  "receipt_enabled_by_default": false,
+  "overlay_sha256": "f66a0967f81d250fcf2cdd8b46878e41fd2bde3166aa6a26be8e2d9dedaeb608"
+}

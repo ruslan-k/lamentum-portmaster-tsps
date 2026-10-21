@@ -258,6 +258,93 @@ index 7389a4e..544fbc0 100644
      if(zero_friends_dispatch(buffer,s,&req,endpoint,state,pc))return;
      if(endpoint==EP_SETTINGS && req.command==8) {
          /* libnx setGetQuestFlag: output u8. This is a normal application,
+diff --git a/native/lc2_bc_owner_receipt.h b/native/lc2_bc_owner_receipt.h
+new file mode 100644
+index 0000000..ff23bbb
+--- /dev/null
++++ b/native/lc2_bc_owner_receipt.h
+@@ -0,0 +1,81 @@
++/* B1 pre-refusal receipt for a deferred-BC first-use owner.
++ *
++ * Emitted BEFORE the budget charge, because a refusal terminates the process and
++ * the descriptor is exactly what the refusal destroys. It is opt-in
++ * (LC2_BC_OWNER_RECEIPT=1), bounded (8 owners per run) and reads only host-side
++ * adapter metadata: no guest memory is touched while the process is under
++ * memory pressure, and no content hash is computed here.
++ *
++ * Facts and hypotheses are kept apart on purpose:
++ *   immutable=unproven, source-hash=not-read, gl-allocation=not-attempted,
++ *   driver-physical=unknown, present-serial/phase=unavailable in this build.
++ * A field that was not measured says so instead of carrying a zero.
++ */
++#ifndef LC2_BC_OWNER_RECEIPT_H
++#define LC2_BC_OWNER_RECEIPT_H
++/* Emission and budget locking live outside the tested block so the receipt body
++ * itself can be compiled against stubs (tools/test_bc_owner_receipt.py). */
++static void lc2_bc_receipt_emit(const char *text,uint64_t owner) {
++    printf("LC2_BC_OWNER_RECEIPT owner-id=%llu %s\n",(unsigned long long)owner,text);
++    fflush(stdout);
++}
++static void t2_texture_budget_lock(void) {pthread_mutex_lock(&t2_texture_budget_mutex);}
++static void t2_texture_budget_unlock(void) {pthread_mutex_unlock(&t2_texture_budget_mutex);}
++/* LC2_BC_OWNER_RECEIPT_BEGIN */
++static struct {uint64_t seen[8];unsigned count,overflow,configured,enabled;} lc2_bc_receipts;
++static void lc2_bc_owner_receipt(const struct nvn_texture *view,const struct nvn_texture *t,
++        unsigned bc,unsigned type,unsigned bpp,uint64_t prospective) {
++    if(!lc2_bc_receipts.configured) {
++        const char *option=getenv("LC2_BC_OWNER_RECEIPT");
++        lc2_bc_receipts.enabled=option && !strcmp(option,"1");
++        lc2_bc_receipts.configured=1;
++    }
++    if(!lc2_bc_receipts.enabled)return;
++    for(unsigned i=0;i<lc2_bc_receipts.count;i++)if(lc2_bc_receipts.seen[i]==t->id)return;
++    if(lc2_bc_receipts.count==8) {lc2_bc_receipts.overflow=1;return;}
++    lc2_bc_receipts.seen[lc2_bc_receipts.count++]=t->id;
++    const char *run=getenv("LAMENTUM_RUN_UUID");
++    t2_texture_budget_lock();
++    uint64_t charged=t->t2_budget_bytes,live=t2_texture_budget.live_bytes,
++             peak=t2_texture_budget.peak_bytes,count=t2_texture_budget.count;
++    t2_texture_budget_unlock();
++    char text[1024];
++    int n=snprintf(text,sizeof text,
++        "mode=pre-refusal run-uuid=%s phase=unavailable present-serial=unavailable"
++        " view-id=%llu owner-object=0x%llx view-object=0x%llx alias=%u"
++        " levels=%u width=%u height=%u depth=%u target=%u format=0x%x srgb=%u"
++        " swizzle=%u,%u,%u,%u flags=0x%x samples=%u block-bytes=%u upload-type=0x%x output-bpp=%u"
++        " prospective-charge-bytes=%llu charged-owner-bytes=%llu budget-live-bytes=%llu"
++        " budget-peak-bytes=%llu budget-charges=%llu"
++        " guest-storage-bytes=%llu pool-object=0x%llx pool-address=0x%llx pool-bytes=%llu"
++        " pool-generation=%llu pool-flags=0x%x pool-offset=%llu snapshot-generation=%u"
++        " gl-name=%u depth-buffer=%u pending=%u draws=%u target-seen=%u references=%u caller=0x%llx"
++        " storage-generation=untracked immutable=unproven source-hash=not-read"
++        " gl-allocation=not-attempted driver-physical=unknown guest-memory-read=none",
++        run?run:"unavailable",(unsigned long long)view->id,
++        (unsigned long long)t->object,(unsigned long long)view->object,(unsigned)(view!=t),
++        t->b.levels,t->b.width,t->b.height,t->b.depth,t->b.target,t->b.format,bc?1U:0U,
++        t->b.swizzle[0],t->b.swizzle[1],t->b.swizzle[2],t->b.swizzle[3],t->b.flags,t->b.samples,bc,type,bpp,
++        (unsigned long long)prospective,(unsigned long long)charged,(unsigned long long)live,
++        (unsigned long long)peak,(unsigned long long)count,
++        (unsigned long long)t->size,(unsigned long long)(t->pool?t->pool->object:0),
++        (unsigned long long)(t->pool?t->pool->address:0),(unsigned long long)(t->pool?t->pool->size:0),
++        (unsigned long long)(t->pool?t->pool->generation:0),t->pool?t->pool->flags:0U,
++        (unsigned long long)t->b.offset,(unsigned)t->lc2_bc_pending,t->name,t->depth_buffer,
++        t->lc2_bc_pending,t->draws,t->composition_target_seen,t->references,
++        (unsigned long long)nvn_caller);
++    if(n<0) {lc2_bc_receipts.overflow=1;return;}
++    unsigned width=t->b.width,height=t->b.height;
++    for(unsigned level=0;level<t->b.levels && level<14 && n>0 && (size_t)n<sizeof text;level++) {
++        uint64_t bytes=(uint64_t)width*height*bpp;
++        int added=snprintf(text+n,sizeof text-(size_t)n," level=%u width=%u height=%u decoded-bytes=%llu",
++                           level,width,height,(unsigned long long)bytes);
++        if(added<0 || (size_t)added>=sizeof text-(size_t)n)break;
++        n+=added;
++        if(width>1)width>>=1;
++        if(height>1)height>>=1;
++    }
++    lc2_bc_receipt_emit(text,t->id);
++}
++/* LC2_BC_OWNER_RECEIPT_END */
++#endif
 diff --git a/native/lc2_cbuf_units.h b/native/lc2_cbuf_units.h
 new file mode 100644
 index 0000000..6f3885e
@@ -2996,7 +3083,7 @@ index 0fb14ec..9e2ccfc 100644
              free(premul);free(probe);free(sprite);free(flat);free(scaled);free(awf);free(mipped);free(r8);free(advent);free(lowered);free(wrapped);free(interface_source);
              if(!status){char log[2048]={0};glGetShaderInfoLog(shaders[i],sizeof(log),NULL,log);printf("NVN_SHADER_COMPILE_ERROR %s\n",log);stop("NVN_SHADER_COMPILE_FAILED",nvn_caller,p->sources[i],21);}
 diff --git a/native/nvn_textures.h b/native/nvn_textures.h
-index 0feaef1..627a31b 100644
+index 0feaef1..ac97479 100644
 --- a/native/nvn_textures.h
 +++ b/native/nvn_textures.h
 @@ -6,6 +6,8 @@
@@ -3141,7 +3228,7 @@ index 0feaef1..627a31b 100644
  static void zero_texture_pool_flushed(struct nvn_pool *pool,uint64_t offset,uint64_t bytes) {
      if(!bytes)return;
      for(unsigned i=0;i<4096;i++) {
-@@ -481,11 +550,149 @@ static void zero_texture_bc_pixels(struct nvn_texture *t,unsigned level,const ui
+@@ -481,11 +550,151 @@ static void zero_texture_bc_pixels(struct nvn_texture *t,unsigned level,const ui
      uint8_t *linear=malloc(linear_bytes);if(!linear)stop("ZERO_BC_LINEAR_MEMORY",nvn_caller,linear_bytes,21);
      void *source=nvn_pointer(t->pool->address+t->b.offset+m.offset,m.size,PROT_READ);
      if(!zero_bc_blocks_copy(&m,source,m.size,linear,linear_bytes,x,y,nx,ny,0) ||
@@ -3256,6 +3343,7 @@ index 0feaef1..627a31b 100644
 +    }
 +}
 +/* LC2_LARGE_BC_AUDIT_END */
++#include "lc2_bc_owner_receipt.h" /* B1: opt-in pre-refusal owner descriptor */
 +/* Reserve the complete decoded payload before ANY first-use GL storage call.
 + * This is an admission safety correction, not a new lazy/mip policy: eligibility
 + * remains single-level. Sized payload intent does NOT certify the legacy unsized
@@ -3281,6 +3369,7 @@ index 0feaef1..627a31b 100644
 +        return;
 +    }
 +    lc2_large_bc_reserve_audit(view,t,nvn_texture_upload_bytes(type),bc,type,srgb,layout.bytes);
++    lc2_bc_owner_receipt(view,t,bc,type,nvn_texture_upload_bytes(type),layout.bytes);
 +    t2_texture_budget_add(layout.bytes,nvn_caller);
 +    t->t2_budget_bytes=layout.bytes;
 +    printf("LC2_BC_GPU_RESERVE id=%"PRIu64" bytes=%"PRIu64" levels=%u materialization=first-use"
@@ -3292,7 +3381,7 @@ index 0feaef1..627a31b 100644
      t=zero_texture_storage_state(t);
      if(!__atomic_exchange_n(&t->zero_cpu_dirty,0,__ATOMIC_ACQ_REL))return;
      t2_page_require_rgba8(t,"T2_PAGE_CPU_REFRESH_REQUIRED");
-@@ -494,8 +701,16 @@ static void zero_texture_refresh(struct nvn_texture *t) {
+@@ -494,8 +703,16 @@ static void zero_texture_refresh(struct nvn_texture *t) {
          stop("ZERO_TEXTURE_CPU_GPU_COHERENCE_REQUIRED",nvn_caller,t->id,20);
      unsigned width=t->b.width,height=t->b.height,bc=zero_bc_bytes(t->b.format);
      unsigned type=nvn_cpu_image_upload_type(t),output_bpp=nvn_texture_upload_bytes(type);
@@ -3309,7 +3398,7 @@ index 0feaef1..627a31b 100644
          uint64_t row=bc?(uint64_t)((width+3)/4)*bc:(uint64_t)width*nvn_texture_format_bytes(t->b.format);
          uint64_t stride=t->b.flags&0x50?t->b.stride:row;
          unsigned rows=bc?(height+3)/4:height;
-@@ -507,12 +722,16 @@ static void zero_texture_refresh(struct nvn_texture *t) {
+@@ -507,12 +724,16 @@ static void zero_texture_refresh(struct nvn_texture *t) {
              zero_texture_bc_pixels(t,level,NULL,pixels,bytes);
          } else for(unsigned y=0;y<height;y++)if(!nvn_texture_decode_upload(t->b.format,t->b.swizzle,type,pixels+(size_t)y*width*output_bpp,source+y*stride,width))
              stop("ZERO_TEXTURE_REFRESH_FORMAT",nvn_caller,t->b.format,20);
@@ -3327,7 +3416,7 @@ index 0feaef1..627a31b 100644
      printf("ZERO_TEXTURE_FLUSH_UPLOADED id=%"PRIu64" format=0x%x native-cpu-bytes=preserved before-sampler\n",t->id,t->b.format);
  }
  #include "zero_texture_writes.h"
-@@ -605,7 +824,8 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -605,7 +826,8 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
          /* Frente F: an eligible page gets no GL storage now (the pool holds nothing yet, MEDIDO pc-008: the
           * copy arrives later) and no budget; the copy decides between the palettized form and RGBA8. */
          t->t2_page.deferred=t2_page_eligible(&b);
@@ -3337,7 +3426,7 @@ index 0feaef1..627a31b 100644
          if(t->t2_budget_bytes)t2_texture_budget_add(size,nvn_caller);
          else if(t2_pages.deferred_logged++<4)printf("T2_PAGE_DEFERRED id=%"PRIu64" size=%ux%u rgba8-bytes=%"PRIu64" pool-flags=0x%x storage=none-until-copy\n",t->id,b.width,b.height,size,pool->flags);
  #ifdef MOMO_SHADERS
-@@ -673,8 +893,21 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -673,8 +895,21 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
                  glTexParameteri(GL_TEXTURE_2D,0x813d,b.levels-1);
  #endif
              unsigned width=b.width,height=b.height;
@@ -3360,7 +3449,7 @@ index 0feaef1..627a31b 100644
                  unsigned upload_type=nvn_cpu_image_upload_type(t),upload_bpp=nvn_texture_upload_bytes(upload_type);
                  size_t bytes=(size_t)width*height*upload_bpp;uint8_t *rgba=malloc(bytes);
                  if(!rgba)stop("NVN_TEXTURE_INITIAL_DATA_MEMORY",nvn_caller,bytes,21);
-@@ -697,8 +930,8 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -697,8 +932,8 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
                  /* Uniformity was checked across the complete original decode.
                   * The compact upload consumes the same constant pixel value. */
                  glPixelStorei(GL_UNPACK_ALIGNMENT,1);
@@ -3371,7 +3460,7 @@ index 0feaef1..627a31b 100644
  #if MEGAMAN_HOST_DIAGNOSTIC
                  /* Observation remains an independent RGBA8 reference; packed
                   * UNORM5 may truthfully differ by one readback code value. */
-@@ -719,7 +952,7 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -719,7 +954,7 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
                  if(height>1)height>>=1;
              }
  #if ZERO_ZX_GAME
@@ -3380,7 +3469,7 @@ index 0feaef1..627a31b 100644
  #endif
              nvn_texture_parameters(t,GL_NEAREST,GL_NEAREST,GL_CLAMP_TO_EDGE,GL_CLAMP_TO_EDGE);
              glBindTexture(GL_TEXTURE_2D,0);
-@@ -749,7 +982,9 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -749,7 +984,9 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
      if(id==NI_nvnTexturePoolRegisterTexture) {
          struct nvn_descriptor_pool *d=NULL;
          for(unsigned i=0;i<32;i++)if(nvn_descriptor_pools[i].live&&nvn_descriptor_pools[i].object==a[0]&&nvn_descriptor_pools[i].type==1)d=&nvn_descriptor_pools[i];

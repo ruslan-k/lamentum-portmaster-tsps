@@ -2387,3 +2387,14 @@ Owner plan reviewed at **5ed8462**; this section records work under **§32.3 / P
 - Device: surfaceless GBM fixture on **Mali-G57**, driven through the principal flow. Stored byte 160 samples as **90** (exact sRGB→linear) against a **160** linear control; partial final stripe, mip level 1 bytes and post-recreation upload are byte-exact. Receipts: [evidence](../evidence/gl-upload-format/README.md), [report](gl-upload-format.md).
 - The retired triple raises `GL_INVALID_ENUM` in an explicit ES3 context but is **accepted silently** when client version 2 is requested — this driver reports ES3.2 anyway. Therefore the invalid call was latent, not a demonstrated cause of the Loading stop; `COTM_GL_ERROR_IGNORE=0` during a guarded New Game arm is still the way to learn whether it ever executed.
 - Still open in PR A: the same audit for render targets/`t2_page` palette uploads (they already use an unsized `GL_RGBA` pair), and any first-world MRT/composite path once a world frame exists. Still open overall: id295 descriptor/residency (PR B), C0 game qualification (PR D), semantic navigation and scene receipts (PR E), first world and W1/W2 (PR F), and therefore **30 FPS**.
+
+## 35. B1 pre-refusal owner receipt (2026-10-21)
+
+Work under **§32.4 / PR B1**; §32's order is unchanged. Owner plan reviewed at **5ed8462**.
+
+- `native/lc2_bc_owner_receipt.h` emits one bounded, opt-in (`LC2_BC_OWNER_RECEIPT=1`) descriptor per owner **immediately before** `t2_texture_budget_add()`, so the refusal that ends the process no longer destroys the id295 evidence. Max 8 owners per run, then `overflow=1`; at most one record per owner id.
+- It reads no guest memory (`nvn_pointer`/`memcmp` absent from the body by test) and keeps hypotheses labelled: `immutable=unproven`, `source-hash=not-read`, `gl-allocation=not-attempted`, `driver-physical=unknown`, with `phase`/`present-serial` reported as `unavailable` in this build instead of a fabricated value.
+- Recorded fields: run UUID, owner/view id+object, alias, NVN target/format/swizzle/flags/samples/dims/levels, block bytes, upload type, output bpp, prospective charge, charged owner bytes, budget live/peak/charges, guest storage bytes, pool object/address/size/generation/flags/offset, snapshot generation, GL name, depth buffer, draws, target-seen, references, caller, and per-level decoded bytes.
+- **170 host tests PASS** (4 new: opt-in by value, once-per-owner with full field set, 40 owners → 8 records + overflow, no guest reads, receipt-before-charge ordering), **435/435** baseline, ARM64 **build229** `b164cffd…4e82f` **not deployed**.
+
+Honest limits: the receipt cannot fire until a run reaches id295 first use, which needs the guarded New Game arm (§32.2) plus a verified navigator (§32.7); content identity/immutability still require offline owner-private hashing; B2's all-class ledger and transactional lifetimes are untouched. No game run, no id295 resolution, no scene and no FPS result.

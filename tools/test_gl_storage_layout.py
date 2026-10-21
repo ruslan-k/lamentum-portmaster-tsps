@@ -179,6 +179,11 @@ static void lc2_large_bc_reserve_audit(const struct nvn_texture *view,const stru
  unsigned bpp,unsigned bc,unsigned type,unsigned srgb,uint64_t bytes) {
  (void)view;(void)t;(void)bpp;(void)bc;(void)type;(void)srgb;(void)bytes;audits++;
 }
+static unsigned receipts;
+static void lc2_bc_owner_receipt(const struct nvn_texture *view,const struct nvn_texture *t,
+ unsigned bc,unsigned type,unsigned bpp,uint64_t prospective) {
+ (void)view;(void)t;(void)bc;(void)type;(void)bpp;(void)prospective;receipts++;
+}
 ''' + added[start:end] + r'''
 int main(void) {
  struct nvn_texture t={.id=295,.lc2_bc_pending=1,

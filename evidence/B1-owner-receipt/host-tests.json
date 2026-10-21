@@ -1,0 +1,5 @@
+{
+  "returncode": 0,
+  "output": "{\"harness_rc\": 4, \"samples\": 1, \"process_identity\": {\"boot_id\": \"fixture-boot\", \"pid\": 17, \"starttime\": 42}, \"scope\": \"CPU diagnostics, not gameplay FPS\"}\n..........................................................................................................................................................................\n----------------------------------------------------------------------\nRan 170 tests in 5.968s\n\nOK\n",
+  "new_tests": "tools/test_bc_owner_receipt.py (4)"
+}
