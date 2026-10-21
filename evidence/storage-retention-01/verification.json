@@ -1,0 +1,10 @@
+{
+  "reviewed_revision": "4f5f8dc",
+  "header_run_matches": true,
+  "all_sample_owners_match": true,
+  "samples": 13,
+  "post_marker_samples": 8,
+  "host_tests": 258,
+  "runtime_unchanged_sha256": "474d17adaa1288e112203195820f883be638850263f450062ce29bb7d0286e6f",
+  "scope": "descriptor observations, no physical refund/lifetime or FPS proof"
+}

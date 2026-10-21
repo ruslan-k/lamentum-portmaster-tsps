@@ -1,0 +1,109 @@
+{
+  "observations": [
+    {
+      "t": 20696.958118107,
+      "log_bytes_before": 296194,
+      "context": "12395_58",
+      "commits": {
+        "5ef6000000": 31109120,
+        "5ef7e00000": 32821248,
+        "5eff3c0000": 262144,
+        "5effe3b000": 262144
+      }
+    },
+    {
+      "t": 20697.810174882,
+      "log_bytes_before": 332595,
+      "context": "12395_58",
+      "commits": {
+        "5ef6000000": null,
+        "5ef7e00000": 32821248,
+        "5eff3c0000": 262144,
+        "5effe3b000": 262144
+      }
+    },
+    {
+      "t": 20698.70187562,
+      "log_bytes_before": 351106,
+      "context": "12395_58",
+      "commits": {
+        "5ef6000000": null,
+        "5ef7e00000": 32821248,
+        "5eff3c0000": 262144,
+        "5effe3b000": 262144
+      }
+    },
+    {
+      "t": 20699.550134969,
+      "log_bytes_before": 391281,
+      "context": "12395_58",
+      "commits": {
+        "5ef6000000": null,
+        "5ef7e00000": 32821248,
+        "5eff3c0000": 262144,
+        "5effe3b000": 262144
+      }
+    },
+    {
+      "t": 20700.383510119,
+      "log_bytes_before": 472340,
+      "context": "12395_58",
+      "commits": {
+        "5ef6000000": null,
+        "5ef7e00000": 32821248,
+        "5eff3c0000": 262144,
+        "5effe3b000": 262144
+      }
+    },
+    {
+      "t": 20701.270632472,
+      "log_bytes_before": 475357,
+      "context": "12395_58",
+      "commits": {
+        "5ef6000000": null,
+        "5ef7e00000": 32821248,
+        "5eff3c0000": 262144,
+        "5effe3b000": 262144
+      }
+    },
+    {
+      "t": 20702.237042751,
+      "log_bytes_before": 518842,
+      "context": "12395_58",
+      "commits": {
+        "5ef6000000": null,
+        "5ef7e00000": 32821248,
+        "5eff3c0000": 262144,
+        "5effe3b000": 262144
+      }
+    },
+    {
+      "t": 20703.150224787,
+      "log_bytes_before": 560077,
+      "context": "12395_58",
+      "commits": {
+        "5ef6000000": null,
+        "5ef7e00000": 32821248,
+        "5eff3c0000": 262144,
+        "5effe3b000": 262144
+      }
+    }
+  ],
+  "physical_refund_bytes": null,
+  "limitation": "Same VA may be recycled between samples; absence is not a fence/free/physical-refund proof.",
+  "marker_end": 290101,
+  "addresses": [
+    "5ef6000000",
+    "5ef7e00000",
+    "5eff3c0000",
+    "5effe3b000"
+  ],
+  "scope": "same-run descriptor observations only",
+  "bracket_lines": [
+    "LC2_STORAGE_CHANGE ticket=10 kind=texture owner=81 gl=39 level=0 va=0x5ef6000000 old=0 new=31109120 native=1 attribution=bracket-only",
+    "LC2_STORAGE_CHANGE ticket=10 kind=texture owner=81 gl=39 level=0 va=0x5ef7e00000 old=0 new=32821248 native=1 attribution=bracket-only",
+    "LC2_STORAGE_CHANGE ticket=10 kind=texture owner=81 gl=39 level=0 va=0x5eff3c0000 old=0 new=262144 native=1 attribution=bracket-only",
+    "LC2_STORAGE_CHANGE ticket=10 kind=texture owner=81 gl=39 level=0 va=0x5effe3b000 old=0 new=262144 native=1 attribution=bracket-only",
+    "LC2_STORAGE_PROBE ticket=10 kind=texture owner=81 gl=39 size=3600x2160 level=0 format=0x44 metadata-valid=1 changed=4 detail-overflow=0 elapsed-ns=49966819 retired-descriptors=not-tracked physical=unproven diagnostic=1"
+  ]
+}
