@@ -1,0 +1,53 @@
+{
+  "floor_96": {
+    "analysable": true,
+    "start_available_mib": 129.3,
+    "low_available_mib": 54.7,
+    "low_at_frame": 16,
+    "low_at_s": 4.5,
+    "drawn_mib": 74.6,
+    "floor_mib": 96,
+    "margin_mib": 33.3,
+    "projection": {
+      "seconds": 2.02,
+      "frames": 6.7,
+      "rate_mib_per_s": 16.46,
+      "fps": 3.31
+    },
+    "measured_stop_frame": 2,
+    "floor_reached_in_window": true,
+    "cma_start_mib": 24.33,
+    "cma_low_mib": 0.0,
+    "swap_start_mib": 0.0,
+    "swap_end_mib": 422.4,
+    "charged_delta_mib": 50.2
+  },
+  "floor_32": {
+    "analysable": true,
+    "start_available_mib": 129.3,
+    "low_available_mib": 54.7,
+    "low_at_frame": 16,
+    "low_at_s": 4.5,
+    "drawn_mib": 74.6,
+    "floor_mib": 32,
+    "margin_mib": 97.3,
+    "projection": {
+      "seconds": 5.91,
+      "frames": 19.6,
+      "rate_mib_per_s": 16.46,
+      "fps": 3.31
+    },
+    "measured_stop_frame": 55,
+    "floor_reached_in_window": false,
+    "cma_start_mib": 24.33,
+    "cma_low_mib": 0.0,
+    "swap_start_mib": 0.0,
+    "swap_end_mib": 422.4,
+    "charged_delta_mib": 50.2
+  },
+  "saving_arithmetic": {
+    "bytes_1080p": 33177600,
+    "bytes_720p": 14745600,
+    "saving_mib": 17.58
+  }
+}

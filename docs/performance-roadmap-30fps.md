@@ -2933,3 +2933,22 @@ Roadmap re-read at `a0aa160`; §40 is unchanged and its §40.11 order still star
 Tests (**217 host total**): multi-record `frame=1/42/9` → 42 without exception; empty poll keeps the serial with `fresh=False`; **run A at frame 50 → rotation → refuse** (`serial=None`, no reuse); partial trailing line ignored then completed → 7; cursor advances instead of rescanning; 30 000-record backlog parsed from the chunk alone.
 
 Open: the §40.2 item 6 device acceptance (before image → owned serial S → short press → owned serial S+ → after image, same PID/starttime) has not run with the new reader; and `nav_chain` still polls without an `expected_run` UUID, which is the next tightening.
+
+## 50. M1 arithmetic: the 96 MiB floor cannot survive this menu (2026-10-21)
+
+Owner §48 / M1. `tools/floor_analysis.py` (5 tests, 223 host tests total) computes drawdown, rate and floor-crossing projection from a measured ledger series without inventing values.
+
+Measured shape (build230 `menu-ledger-01`, 41 presents / 20.5 s): start **129.3 MiB**, low **54.7 MiB at frame 16 (4.5 s)**, drawdown **74.6 MiB** = **16.46 MiB/s at 3.31 fps**; in the same window CMA 24.3 → 0.0 MiB, game `VmSwap` 0 → 422 MiB, charged textures **+50.2 MiB**.
+
+| floor | margin | projected crossing | measured stop |
+|---|---|---|---|
+| **96 MiB** | 33.3 MiB | 2.02 s (~6.7 frames) | **frame 2** |
+| 32 MiB | 97.3 MiB | 5.91 s (~19.6 frames) | frame 55 |
+
+The projection is a linear upper bound on time, and the data shows a burst → plateau → decline shape: it agrees with the frame-2 stop (the first burst exceeds the 33 MiB margin) and under-predicts the 32 MiB case (19.6 vs 55 frames) because swap/reclaim recovers most of the early loss. Conclusion: the 96 MiB floor is not survivable by this menu beyond the first frames, so a longer timeout or a lower floor is not a fix — the menu's own allocation must shrink before any New Game attempt.
+
+Ranked drawdown: (1) CMA exhaustion 24.3 → 0.0 MiB; (2) guest pages to swap +422 MiB; (3) charged textures +50.2 MiB; (4) three more colour targets ≈ +15.9 MiB with depth renderbuffers constant at 22.9 MiB; (5) buffers/EGL/driver storage untracked.
+
+Recomputed from bytes, the four 1080p images are 31.64 MiB and still need 14.06 MiB at 720p, so the maximum **nominal** saving is **17.58 MiB** — matching the owner's correction, and at most a quarter of the observed drawdown.
+
+Consequences: raising the floor, extending the run, or expecting the 720p scaling to fix the menu are all ruled out by these numbers. The live candidates are the CMA consumer and retained colour targets (B2 ownership/last-reader ledger) plus, with approval, the reversible 720p A/B as one factor gated by `frame_diff.equivalent()` with the exact comparison alongside.
