@@ -60,6 +60,6 @@ size/time and missing/truncated metadata. Four host tests, full suite 258 PASS.
 A clean-export test run is recorded alongside the evidence. Raw smaps remain
 owner-local; samples.json contains driver metadata and pathname aggregates.
 
-Next: bracket the narrowed 55 MiB allocation window, and establish retained
+Next: bracket the narrowed 55,984,128-byte (53.39 MiB) allocation window, and establish retained
 storage/lifetime ownership before any resource-policy change. No new physical
 headroom, gameplay or 30 FPS result has been obtained.
