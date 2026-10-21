@@ -1,0 +1,52 @@
+{
+  "scope": "read-only capability and old-log rejection; no game launch or port deployment",
+  "cross_toolchain_syscalls": [
+    "#define __NR_pidfd_send_signal 424",
+    "#define __NR_pidfd_open 434"
+  ],
+  "target_pidfd_probe": {
+    "pidfd_open_self": true,
+    "pidfd_signal_zero_returncode": 0,
+    "no_process_terminated": true,
+    "no_device_file_written": true
+  },
+  "strict_old_log_rejection": {
+    "counters": {
+      "presents": 0,
+      "romfs": 0,
+      "textures": 0,
+      "bc_deferred": 0,
+      "bc_fileback": 0,
+      "budget_adds": 0
+    },
+    "frame": null,
+    "stops": [],
+    "budget_last": null,
+    "killed": false,
+    "offset": 0,
+    "size": 6642407,
+    "identity": [
+      45833,
+      6650
+    ],
+    "rotated": false,
+    "strict": true,
+    "status": "LOG_HEADER_INVALID",
+    "log_identity_qualified": false,
+    "run_header": null,
+    "expected_run": {
+      "run_uuid": "f53270c3-2825-464a-ba94-46e4a3a45a73"
+    },
+    "header_sha256": null,
+    "anchor": null,
+    "reason": "owned header must be the first record",
+    "mem": {
+      "MemTotal": 986064,
+      "MemFree": 476200,
+      "MemAvailable": 703136,
+      "SwapFree": 2065884,
+      "CmaFree": 130412
+    }
+  },
+  "final_collector_module_sha256": "55d01340d788f08ca3eb1324e9de1f12ac02606bdbab42efb3c3f20d570296fa"
+}

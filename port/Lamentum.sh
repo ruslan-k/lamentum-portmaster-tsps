@@ -1,13 +1,13 @@
 #!/bin/bash
 # Lamentum — experimental native Horizon runtime launcher (Switch ARM64 -> TSPS/SpruceOS).
 # Launch only through the Spruce/PortMaster principal flow; never beside another game.
+LAUNCHER_PATH=$(readlink -f -- "${BASH_SOURCE[0]}") || exit 1
 GAMEDIR=/mnt/SDCARD/Roms/PORTS/lamentum-switch
 cd "$GAMEDIR" || exit 1
 mkdir -p logs save-laboratory
 LOG="$GAMEDIR/logs/latest.log"
 exec >"$LOG" 2>&1
-printf 'LAMENTUM_LAUNCH native-horizon budget=%ss shader-catalogue=draft-with-TEST-substitutes\n' "${LAMENTUM_PROBE_SECONDS:-120}"
-printf 'LAMENTUM_BUILD_ID sha256=%s\n' "$(sha256sum ./lamentum-nextos 2>/dev/null | cut -d ' ' -f1)"
+[ -r ./run_identity.py ] || { printf 'LAMENTUM_RUN_HELPER_MISSING\n'; exit 1; }
 
 # The recovered runtime pins its threads to cores 0-3, which Spruce keeps offline.
 # Remember each file's original state and restore it on exit.
@@ -36,7 +36,8 @@ export SDL_VIDEODRIVER=kmsdrm SDL_AUDIODRIVER=alsa
 export SDL_NO_SIGNAL_HANDLERS=1
 # TSPS trimsui virtual pad: SDL GUID carries a CRC16 of the device name.
 export SDL_GAMECONTROLLERCONFIG='0300a3845e0400008e02000014010000,TRIMUI Player1,a:b0,b:b1,back:b6,dpdown:h0.4,dpleft:h0.8,dpright:h0.2,dpup:h0.1,guide:b8,leftshoulder:b4,leftstick:b9,lefttrigger:a2,leftx:a0,lefty:a1,rightshoulder:b5,rightstick:b10,righttrigger:a5,rightx:a3,righty:a4,start:b7,x:b2,y:b3,platform:Linux,'
-export COTM_RUN_ID=$(date +%s)
+# The exec helper accepts the principal-owned UUID or obtains a fresh kernel
+# UUID. It retains <=12-digit COTM_RUN_ID only as a legacy capture/audio label.
 # The baseline's lazy-mesh IL2CPP patch is keyed to another title's main module (segment size
 # and text SHA-256 pins); on this title it fail-closes as T2_LAZY_MESH_SEGMENT. It is a load-time
 # optimisation only, so it stays off here.
@@ -53,6 +54,8 @@ export LC2_TEXTURE_PAGEOUT="${LC2_TEXTURE_PAGEOUT:-0}"
 export T2_MEMORY_FLOOR_MIB="${T2_MEMORY_FLOOR_MIB:-96}"
 
 # Do not exec: replacing this shell prevents its EXIT trap from restoring CPU state.
-./lamentum-nextos
+run_args=()
+if [ "${LAMENTUM_RUN_UUID+x}" ]; then run_args+=(--run-uuid "$LAMENTUM_RUN_UUID"); fi
+python3 ./run_identity.py exec --runtime ./lamentum-nextos --launcher "$LAUNCHER_PATH" "${run_args[@]}"
 status=$?
 exit "$status"

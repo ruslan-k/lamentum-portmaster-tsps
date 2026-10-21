@@ -14,6 +14,22 @@ class PadContractTests(unittest.TestCase):
         self.assertEqual(ACTIONS['back'], (1, back['code'], 1))
         self.assertNotEqual(ACTIONS['confirm'], ACTIONS['back'])
 
+    def test_owned_input_and_capture_reject_a_changed_process_before_action(self):
+        import lamentum_pad_contract as pad
+        from unittest.mock import patch
+        self.assertTrue(hasattr(pad, 'set_expected_owner'), 'owned control boundary is missing')
+        owner = {'boot_id': 'fixture-boot', 'pid': 77, 'starttime': 42, 'elf_dev': 1, 'elf_ino': 2}
+        pad.set_expected_owner(owner)
+        try:
+            for action in (lambda: pad.press('confirm', 700), lambda: pad.capture('/unused/no-image.png')):
+                with patch.object(pad, 'remote', return_value={'running': False, 'sample_status': 'identity_mismatch'}) as rpc:
+                    with self.assertRaisesRegex(RuntimeError, 'owned process'):
+                        action()
+                    self.assertEqual(rpc.call_count, 1)
+                    self.assertIn('collect_proc', rpc.call_args.args[0])
+        finally:
+            pad.set_expected_owner(None)
+
     def test_stat_name_with_spaces_and_parentheses(self):
         s = '123 (a (b) c) ' + ' '.join(['S'] + ['0'] * 18 + ['456'] + ['0'] * 5)
         self.assertEqual(parse_stat(s), {'pid': 123, 'starttime': 456})

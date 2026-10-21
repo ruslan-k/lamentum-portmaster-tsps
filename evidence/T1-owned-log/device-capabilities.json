@@ -1,0 +1,32 @@
+{
+  "scope": "read-only capability query, no launch or device write",
+  "python": "3.10.4",
+  "execve_fd": true,
+  "pidfd_open_api": false,
+  "pidfd_signal_api": false,
+  "boot_id": "d443aa3c-9e62-41fe-a5ba-e05aa4e63a61",
+  "online": "4-7",
+  "processes": {
+    "runtime.sh": [
+      {
+        "pid": 1217,
+        "starttime": 653
+      }
+    ],
+    "principal.sh": [
+      {
+        "pid": 2203,
+        "starttime": 1039
+      }
+    ],
+    "MainUI": [
+      {
+        "pid": 5994,
+        "starttime": 113628
+      }
+    ]
+  },
+  "helper_installed": false,
+  "elf_sha256": "86649c51854e4017fdbaddab16b7c53d327fb6a138c45c1106275c67a1727815",
+  "launcher_sha256": "ae7622b858c1481ca73bfc6026b2dc317255d8f8d947373d0692297a531f978d"
+}

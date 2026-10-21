@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Bounded load probe: reach New Game, then sample memory/frames/shaders every few seconds.
+"""Legacy bounded load probe; disabled by default pending a semantic page oracle.
 
+This explicit diagnostic opt-in does NOT qualify T1 or a game phase.
 Navigation uses the measured cursor row for the main menu and a bounded content-change gate
 for the configuration transition. Content change alone does not prove the controls-screen identity;
 page-specific semantic navigation validation remains open. Metrics are sampled from the device
@@ -20,13 +21,46 @@ from pathlib import Path
 
 from PIL import Image
 
-from lamentum_pad_contract import capture, press, remote, snapshot
+from lamentum_pad_contract import capture, press, remote, snapshot, set_expected_owner
 from load_metrics import collector_request, fold
+from proc_metrics import sample_request
 from newgame_navigate import changed, cursor_row, grid
 
 NEWGAME_ROW_Y = (475, 503)
 CONTROLS_CHANGE_CELLS = 120      # a real content change, not a value toggle or a cursor move
 POLL_S = 5
+
+def wait_owned_start(out, harness, timeout_s=90):
+    """Attach only to the principal UUID and a live post-exec dev/inode match."""
+    deadline = time.monotonic()+timeout_s
+    while harness.poll() is None and time.monotonic() < deadline:
+        path = out / 'expected-run.json'
+        if not path.is_file():
+            time.sleep(1)
+            continue
+        try:
+            expected = json.loads(path.read_text())
+        except json.JSONDecodeError:
+            time.sleep(1)
+            continue
+        sample = remote(collector_request(expected_run=expected))
+        if sample.get('status') != 'ok':
+            time.sleep(1)  # stale pre-launch latest.log is never consumed
+            continue
+        state = fold(None, sample)
+        if not state.get('log_identity_qualified'):
+            time.sleep(1)
+            continue
+        header = state['run_header']
+        owner = {key: header[key] for key in ('boot_id', 'pid', 'starttime', 'elf_dev', 'elf_ino')}
+        process = remote(sample_request(expected=owner))
+        if process.get('running'):
+            set_expected_owner(owner)
+            return state
+        time.sleep(1)
+    if harness.poll() is not None:
+        return None
+    raise RuntimeError('owned header/executable attachment timed out')
 
 def bright(png):
     """Count lit samples on a 320x180 grid (same sampling as the 4-pixel step used before)."""
@@ -128,7 +162,11 @@ def main():
     ap.add_argument('--evidence', type=Path, required=True)
     ap.add_argument('--budget', type=int, default=900)
     ap.add_argument('--env', action='append', default=[])
+    ap.add_argument('--allow-unverified-navigation', action='store_true',
+                    help='diagnostic only: legacy config/controls oracle is not phase-qualified')
     a = ap.parse_args()
+    if not a.allow_unverified_navigation:
+        ap.error('legacy navigation is disabled until a semantic page-state oracle is verified')
     a.evidence.mkdir(parents=True, exist_ok=True)
     argv = [sys.executable, '-u', 'tools/device_principal_test.py', '--budget', str(a.budget),
             '--wait', str(a.budget + 80), '--evidence', str(a.evidence)]
@@ -136,19 +174,25 @@ def main():
         argv += ['--env', e]
     with (a.evidence / 'harness.log').open('w') as harness_log:
         harness = subprocess.Popen(argv, stdout=harness_log, stderr=subprocess.STDOUT)
-    transitions = {'navigate': 'pending'}
+    transitions: dict = {'navigate': 'pending'}
     try:
+        running = wait_owned_start(a.evidence, harness)
+        if running is None:
+            transitions = {'navigate': 'not started; harness exited before owned attachment'}
+            return harness.wait()
         transitions = navigate(a.evidence)
         (a.evidence / 'transitions.json').write_text(json.dumps(transitions, indent=2) + '\n')
         rows = []
-        running = {}
         while harness.poll() is None:
             try:
                 # Incremental: the device sends only the bytes appended since the last poll.
                 sample = remote(collector_request(running))
                 running = fold(running, sample)
                 rows.append(dict(running, t=round(time.time(), 1)))
-            except Exception as exc:                     # device busy or SSH hiccup: keep the series
+            except RuntimeError as exc:
+                transitions['observer_error'] = str(exc)
+                raise  # never resume counters after a log-generation failure
+            except Exception as exc:                     # transport gap: preserve baseline, not a reset
                 rows.append({'error': str(exc), 't': round(time.time(), 1)})
             (a.evidence / 'samples.jsonl').write_text(''.join(json.dumps(r) + '\n' for r in rows))
             time.sleep(POLL_S)
@@ -157,6 +201,7 @@ def main():
         # still leaves its reason on disk instead of an empty evidence directory.
         (a.evidence / 'transitions.json').write_text(json.dumps(transitions, indent=2) + '\n')
         rc = harness.wait()
+        set_expected_owner(None)
         print(json.dumps({'harness_rc': rc, 'transitions': transitions}))
     return rc
 

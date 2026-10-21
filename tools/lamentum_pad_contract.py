@@ -4,6 +4,8 @@ import argparse
 import json
 import pathlib
 import subprocess
+import os
+from proc_metrics import sample_request
 
 CONFIRM = (1, 305, 1)
 BACK = (1, 304, 1)
@@ -12,13 +14,35 @@ DOWN = (3, 17, 1)
 ACTIONS = dict(confirm=CONFIRM, back=BACK, up=UP, down=DOWN,
                stick_down=(3, 1, 32767), stick_up=(3, 1, -32767),
                stick_right=(3, 0, 32767), stick_left=(3, 0, -32767))
-HOST = 'root@192.168.50.135'
 PORT = '/mnt/SDCARD/Roms/PORTS/lamentum-switch'
+_EXPECTED_OWNER = None
+
+
+def set_expected_owner(owner):
+    global _EXPECTED_OWNER
+    keys = ('boot_id', 'pid', 'starttime', 'elf_dev', 'elf_ino')
+    if owner is not None and any(key not in owner for key in keys):
+        raise ValueError('complete owned process identity required')
+    _EXPECTED_OWNER = dict(owner) if owner is not None else None
+
+
+def require_owner():
+    if _EXPECTED_OWNER is not None:
+        seen = remote(sample_request(expected=_EXPECTED_OWNER))
+        if not seen.get('running'):
+            raise RuntimeError('owned process unavailable or changed: ' + str(seen.get('sample_status')))
+
+
+def device_host():
+    value = os.environ.get('LAMENTUM_DEVICE')
+    if not value:
+        raise RuntimeError('LAMENTUM_DEVICE must select the intended SSH target')
+    return value
 
 
 def remote(source, timeout=45):
     r = subprocess.run(['ssh', '-o', 'BatchMode=yes', '-o', 'ControlMaster=no',
-                        '-o', 'ConnectTimeout=10', HOST, 'python3 -'],
+                        '-o', 'ControlPath=none', '-o', 'ConnectTimeout=10', device_host(), 'python3 -'],
                        input=source, text=True, capture_output=True, timeout=timeout)
     r.check_returncode()
     return json.loads(r.stdout)
@@ -75,6 +99,7 @@ def snapshot():
 def press(action, hold_ms):
     if action not in ACTIONS or not 1 <= hold_ms <= 2000:
         raise ValueError('unknown action or unsafe hold')
+    require_owner()
     t, code, value = ACTIONS[action]
     return remote('''import os,struct,time,json
 from pathlib import Path
@@ -100,6 +125,7 @@ print(json.dumps({'action':%r,'event_type':%d,'code':%d,'value':%d,'hold_ms':%d,
 
 
 def capture(out):
+    require_owner()
     before = snapshot()
     if len(before['game']) != 1 or before['processes'].get('MainUI'):
         raise RuntimeError('capture refused: no unique game or MainUI owns display')
@@ -111,6 +137,7 @@ b=open(p,'rb').read()
 print(json.dumps({'kmsgrab':r.stdout+r.stderr,'sha256':hashlib.sha256(b).hexdigest(),'png':base64.b64encode(b).decode()}))
 ''')
     after = snapshot()
+    require_owner()
     if before['game'] != after['game'] or after['processes'].get('MainUI'):
         raise RuntimeError('capture refused: game identity changed during capture')
     import base64

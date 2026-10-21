@@ -84,6 +84,16 @@ class CollectorExecutionTests(unittest.TestCase):
         self.assertIn(str(os.getpid()), out['threads'])
         self.assertIn('schedstat', out['threads'][str(os.getpid())])
 
+    def test_expected_exec_inode_is_checked_even_when_pid_generation_matches(self):
+        actual = collect_proc(pid=os.getpid())
+        metadata = os.stat('/proc/self/exe')
+        expected = {k: actual[k] for k in ('boot_id', 'pid', 'starttime')}
+        expected.update(elf_dev=metadata.st_dev, elf_ino=metadata.st_ino)
+        accepted = collect_proc(expected=expected)
+        self.assertEqual(accepted.get('elf_ino'), metadata.st_ino)
+        expected['elf_ino'] += 1
+        self.assertEqual(collect_proc(expected=expected)['sample_status'], 'identity_mismatch')
+
     def test_expected_process_identity_is_enforced(self):
         first = collect_proc(pid=os.getpid())
         expected = {k: first[k] for k in ('boot_id', 'pid', 'starttime')}

@@ -60,6 +60,11 @@ def collect_proc(pid=None, expected=None, proc_root='/proc',
             return dict(identity, running=False, sample_status='identity_mismatch', target_hz=hz)
         if first['state'] in ('Z', 'X', 'x'):
             return dict(identity, running=False, sample_status='exited', target_hz=hz)
+        if expected is not None and any(key in expected for key in ('elf_dev', 'elf_ino')):
+            executable = os.stat(base / 'exe')
+            identity.update(elf_dev=executable.st_dev, elf_ino=executable.st_ino)
+            if any(expected.get(key) != identity[key] for key in ('elf_dev', 'elf_ino')):
+                return dict(identity, running=False, sample_status='identity_mismatch', target_hz=hz)
         threads = {}
         for thread in (base / 'task').iterdir():
             try:
@@ -83,6 +88,10 @@ def collect_proc(pid=None, expected=None, proc_root='/proc',
         wchan = optional(base / 'wchan')
         last = parse_stat((base / 'stat').read_text())
         final_boot = (root / 'sys/kernel/random/boot_id').read_text().strip()
+        if 'elf_ino' in identity:
+            executable = os.stat(base / 'exe')
+            if (executable.st_dev, executable.st_ino) != (identity['elf_dev'], identity['elf_ino']):
+                return dict(identity, running=False, sample_status='changed_during_read', target_hz=hz)
         if last['starttime'] != first['starttime'] or final_boot != boot:
             return dict(identity, running=False, sample_status='changed_during_read', target_hz=hz)
         if last['state'] in ('Z', 'X', 'x'):
@@ -108,7 +117,7 @@ def cpu_delta(previous, current) -> dict[str, Any]:
     """Use process total ticks (including exited threads), target HZ and target monotonic time."""
     if not previous or not previous.get('running') or not current.get('running'):
         return {'delta_status': 'no_live_pair'}
-    if any(previous.get(k) != current.get(k) for k in ('boot_id', 'pid', 'starttime', 'target_hz')):
+    if any(previous.get(k) != current.get(k) for k in ('boot_id', 'pid', 'starttime', 'target_hz', 'elf_dev', 'elf_ino')):
         return {'delta_status': 'identity_changed'}
     dt = current['monotonic_s'] - previous['monotonic_s']
     hz = current['target_hz']

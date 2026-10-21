@@ -75,6 +75,145 @@ class ByteFramingTests(unittest.TestCase):
         self.assertEqual(run.returncode, 0, run.stderr)
         return json.loads(run.stdout)
 
+    def owned_header(self, run='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', pid=77):
+        return {'schema': 1, 'run_uuid': run,
+                'launch_nonce': 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+                'boot_id': 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', 'pid': pid, 'starttime': 42,
+                'elf_dev': 1, 'elf_ino': 2, 'elf_sha256': 'a'*64,
+                'launcher_sha256': 'b'*64, 'helper_sha256': 'c'*64,
+                'image_sha256': None, 'catalogue_sha256': None, 'content_bindings_complete': False}
+
+    def write_owned(self, header, body):
+        self.log.write_bytes(b'LAMENTUM_RUN_HEADER ' + json.dumps(header, sort_keys=True).encode() + b'\n' + body)
+
+    def owned_poll(self, previous=None, expected=None):
+        self.assertIn('expected_run', __import__('inspect').signature(load_metrics.collector_request).parameters,
+                      'collector has no owned-run contract')
+        source = load_metrics.collector_request(previous, expected_run=expected).replace(
+            "Path('/mnt/SDCARD/Roms/PORTS/lamentum-switch/logs/latest.log')", 'Path(%r)' % str(self.log))
+        source = source.replace("Path('/proc/meminfo').read_text().splitlines()", '[]')
+        run = subprocess.run([sys.executable, '-c', source], capture_output=True, text=True, timeout=10)
+        self.assertEqual(run.returncode, 0, run.stderr)
+        return json.loads(run.stdout)
+
+    def test_owned_same_inode_restart_at_greater_size_is_rejected(self):
+        header = self.owned_header()
+        self.write_owned(header, b'NVN_PRESENT_PIXELS frame=99 x\n')
+        state = load_metrics.fold(None, self.owned_poll(expected={'run_uuid': header['run_uuid']}))
+        inode = self.log.stat().st_ino
+        newer = self.owned_header('dddddddd-dddd-4ddd-8ddd-dddddddddddd')
+        self.write_owned(newer, b'NVN_PRESENT_PIXELS frame=3 x\n' + b'padding\n'*100)
+        self.assertEqual(inode, self.log.stat().st_ino)
+        sample = self.owned_poll(state)
+        self.assertEqual(sample['status'], 'LOG_GENERATION_CHANGED')
+        self.assertEqual(sample['counters']['presents'], 0)
+        with self.assertRaisesRegex(RuntimeError, 'LOG_GENERATION_CHANGED'):
+            load_metrics.fold(state, sample)
+        self.assertEqual(state['presents'], 1)
+        self.assertEqual(state['frame'], 99)
+
+    def test_owned_new_inode_never_silently_resets_counter_baseline(self):
+        header = self.owned_header()
+        self.write_owned(header, b'NVN_PRESENT_PIXELS frame=9 x\n')
+        state = load_metrics.fold(None, self.owned_poll(expected={'run_uuid': header['run_uuid']}))
+        self.log.rename(self.log.with_suffix('.old'))
+        self.write_owned(header, b'NVN_PRESENT_PIXELS frame=10 x\n')
+        self.assertEqual(self.owned_poll(state)['status'], 'LOG_GENERATION_CHANGED')
+
+    def test_owned_unchanged_header_but_rewritten_cursor_anchor_is_rejected(self):
+        header = self.owned_header()
+        self.write_owned(header, b'ROMFS_READ before\nNVN_PRESENT_PIXELS frame=99 x\n')
+        state = load_metrics.fold(None, self.owned_poll(expected={'run_uuid': header['run_uuid']}))
+        self.write_owned(header, b'ROMFS_READ after!\nNVN_PRESENT_PIXELS frame=88 x\n' + b'padding\n'*100)
+        self.assertEqual(self.owned_poll(state)['status'], 'LOG_GENERATION_CHANGED')
+
+    def test_owned_partial_records_preserve_identity_and_byte_cursor(self):
+        header = self.owned_header()
+        self.write_owned(header, b'\xff ROMFS_READ first\nNVN_PRESENT_PIXELS frame=8')
+        state = load_metrics.fold(None, self.owned_poll(expected={'run_uuid': header['run_uuid']}))
+        self.assertTrue(state['log_identity_qualified'])
+        self.assertEqual(state['presents'], 0)
+        with self.log.open('ab') as handle:
+            handle.write(b'06 x\n')
+        state = load_metrics.fold(state, self.owned_poll(state))
+        self.assertEqual(state['presents'], 1)
+        self.assertEqual(state['frame'], 806)
+        self.assertEqual(state['run_header'], header)
+        self.assertFalse(state['run_header']['content_bindings_complete'])
+
+    def test_partial_replacement_header_cannot_downgrade_an_owned_cursor_to_pending(self):
+        header = self.owned_header()
+        self.write_owned(header, b'NVN_PRESENT_PIXELS frame=9 x\n')
+        state = load_metrics.fold(None, self.owned_poll(expected={'run_uuid': header['run_uuid']}))
+        self.log.write_bytes(b'LAMENTUM_RUN_HEADER ' + json.dumps(header).encode() + b' '*2048)
+        result = self.owned_poll(state)
+        self.assertEqual(result['status'], 'LOG_GENERATION_CHANGED')
+        with self.assertRaisesRegex(RuntimeError, 'LOG_GENERATION_CHANGED'):
+            load_metrics.fold(state, result)
+
+    def test_owned_incomplete_header_is_pending_not_legacy_metrics(self):
+        header = self.owned_header()
+        raw = b'LAMENTUM_RUN_HEADER ' + json.dumps(header).encode()
+        self.log.write_bytes(raw)
+        sample = self.owned_poll(expected={'run_uuid': header['run_uuid']})
+        self.assertEqual(sample['status'], 'LOG_HEADER_PENDING')
+        self.assertEqual(sample['offset'], 0)
+        self.assertEqual(sample['counters']['presents'], 0)
+        with self.log.open('ab') as handle:
+            handle.write(b'\nNVN_PRESENT_PIXELS frame=3 x\n')
+        self.assertEqual(self.owned_poll(expected={'run_uuid': header['run_uuid']})['frame'], 3)
+
+    def test_owned_same_uuid_but_reused_pid_generation_or_changed_elf_is_rejected(self):
+        header = self.owned_header()
+        for key, value in (('pid', 78), ('starttime', 43), ('elf_ino', 3), ('elf_sha256', 'd'*64)):
+            with self.subTest(field=key):
+                self.write_owned(header, b'NVN_PRESENT_PIXELS frame=9 x\n')
+                state = load_metrics.fold(None, self.owned_poll(expected={'run_uuid': header['run_uuid']}))
+                changed = dict(header, **{key: value})
+                self.write_owned(changed, b'NVN_PRESENT_PIXELS frame=10 x\n' + b'padding\n'*100)
+                self.assertEqual(self.owned_poll(state)['status'], 'LOG_GENERATION_CHANGED')
+
+    def test_bounded_poll_reports_backlog_separately_from_split_line(self):
+        from load_metrics import collect_log
+        header = self.owned_header()
+        self.write_owned(header, b'ROMFS_READ fixture\n' * 30000)
+        first = collect_log(self.log, expected_run={'run_uuid': header['run_uuid']})
+        self.assertLess(first['offset'], first['size'])
+        self.assertIn('unconsumed_bytes', first, 'backlog and partial line bytes are conflated')
+        self.assertGreater(first['unconsumed_bytes'], first['partial_bytes'])
+        self.assertLess(first['partial_bytes'], len(b'ROMFS_READ fixture\n'))
+        state = load_metrics.fold(None, dict(first, mem={}))
+        for _ in range(10):
+            if state['offset'] == state['size']:
+                break
+            second = collect_log(self.log, offset=state['offset'], expected_identity=state['identity'],
+                                 expected_run=state['expected_run'], expected_header=state['header_sha256'],
+                                 previous_anchor=state['anchor'])
+            state = load_metrics.fold(state, dict(second, mem={}))
+        self.assertEqual(state['romfs'], 30000)
+        self.assertEqual(state['offset'], state['size'])
+
+    def test_final_owned_read_returns_only_complete_current_run_text(self):
+        import inspect
+        self.assertIn('include_text', inspect.signature(load_metrics.collector_request).parameters,
+                      'verified final log read is missing')
+        header = self.owned_header()
+        self.write_owned(header, b'NVN_PRESENT_PIXELS frame=7 x\nSTOP status=TIME_')
+        source = load_metrics.collector_request(expected_run={'run_uuid': header['run_uuid']},
+                                                include_text=True).replace(
+            "Path('/mnt/SDCARD/Roms/PORTS/lamentum-switch/logs/latest.log')", 'Path(%r)' % str(self.log))
+        source = source.replace("Path('/proc/meminfo').read_text().splitlines()", '[]')
+        run = subprocess.run([sys.executable, '-c', source], text=True, capture_output=True, timeout=10)
+        self.assertEqual(run.returncode, 0, run.stderr)
+        result = json.loads(run.stdout)
+        self.assertIn('frame=7', result['chunk_text'])
+        self.assertNotIn('STOP status=', result['chunk_text'])
+        self.assertEqual(result['partial_bytes'], len(b'STOP status=TIME_'))
+
+    def test_legacy_parser_does_not_claim_owned_identity(self):
+        self.log.write_text(SYNTH)
+        self.assertIs(self.poll().get('log_identity_qualified'), False)
+
     def test_partial_present_not_counted_twice(self):
         prefix = b'ROMFS_READ a\n'
         self.log.write_bytes(prefix + b'NVN_PRESENT_PIXELS frame=80')

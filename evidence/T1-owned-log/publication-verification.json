@@ -1,0 +1,42 @@
+{
+  "curated_tree": "6b0de3b56757353deb2b42bd8c8764af1745395d",
+  "clean_export_host_tests_rc": 0,
+  "clean_export_host_tests_output": "{\"harness_rc\": 4, \"samples\": 1, \"process_identity\": {\"boot_id\": \"fixture-boot\", \"pid\": 17, \"starttime\": 42}, \"scope\": \"CPU diagnostics, not gameplay FPS\"}\n...............................................................................................................................................................\n----------------------------------------------------------------------\nRan 159 tests in 4.828s\n\nOK\n",
+  "initial_export_failure": {
+    "reason": "mandatory helper fixture update omitted from curated staging",
+    "failed_test": "test_defaults_exit_and_cpu_restore",
+    "observed_exit": 1,
+    "expected_exit": 7,
+    "resolution": "staged tools/test_launcher.py fixture/helper update and reran clean export; no product guard was bypassed"
+  },
+  "build_rc": 0,
+  "baseline_verified": 435,
+  "non_root_container": true,
+  "aarch64": true,
+  "glibc_max": "2.27",
+  "primary_elf_sha256": "58b2ae65e5a98541995582f0a6d1e47c27954dab7dec041e77ad2a40cceb8f5e",
+  "export_elf_sha256": "24fbf60f170bdbd394b1d9cb7ecbf35470f60bddecab93da6abb7936a53e818d",
+  "whole_elf_identical": false,
+  "all_PT_LOAD_segments_identical": true,
+  "PT_LOAD_segments": [
+    {
+      "file_offset": 0,
+      "bytes": 1080144,
+      "flags": 5,
+      "sha256": "f31b00ca3bbe01b730ba3ce1e9cd61cf5db34cdfdf0d845d08006acff11bccce"
+    },
+    {
+      "file_offset": 1083920,
+      "bytes": 886624,
+      "flags": 6,
+      "sha256": "2323820a5ebc48426c6ba58302fcfa144c7cb177235e979d874fdd4972171ade"
+    }
+  ],
+  "packaged_helper_matches": true,
+  "native_overlay_unchanged": true,
+  "review": {
+    "standards": "self-review only; curated public source/metadata and paired fixtures; no independent reviewer invoked",
+    "spec": "partial \u00a729.6 identity/safety; content binding, semantic navigation and device principal acceptance remain open"
+  },
+  "no_device_deployment_or_game_launch": true
+}

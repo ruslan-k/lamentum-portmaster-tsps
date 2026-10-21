@@ -53,4 +53,6 @@ export TMPDIR="$output/scratch"
 mkdir -p "$TMPDIR"
 bash "$work/native/build.sh" "$image" "$output/native-build"
 mv "$output/native-build/terminator2d-nextos" "$output/$output_name"
-sha256sum "$output/$output_name"
+# Mandatory paired launcher helper; the launcher refuses an incomplete install.
+cp "$recipe/tools/run_identity.py" "$output/run_identity.py"
+sha256sum "$output/$output_name" "$output/run_identity.py"

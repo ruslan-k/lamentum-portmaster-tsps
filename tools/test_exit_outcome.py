@@ -71,43 +71,76 @@ class ExitEvidenceTests(unittest.TestCase):
 
 class HarnessEvidenceIntegrationTests(unittest.TestCase):
     def test_kernel_receipts_and_owner_control_exit_code(self):
-        # All SSH/process boundaries below are synthetic; no game or kernel OOM is induced.
-        state = {'game': [], 'processes': {k: [{'pid': n, 'starttime': 1}]
-                 for k, n in (('MainUI', 100), ('principal.sh', 101), ('runtime.sh', 102))},
+        # Synthetic RPC/supervisor boundaries ONLY. No game, OOM or MainUI signal.
+        import hashlib
+        from load_metrics import parse_chunk
+        state = {'game': [], 'processes': {key: [{'pid': value, 'starttime': 1}]
+                 for key, value in (('MainUI', 100), ('principal.sh', 101), ('runtime.sh', 102))},
                  'online': '0-7'}
-        log = 'STOP status=TIME_LIMIT\n' + KILL + 'exit status 137\n'
-
-        def fake_ssh(cmd, timeout=60):
-            text = ('1' if cmd.startswith('ps | grep -cE') else
-                    '100' if cmd.startswith("ps | grep '[M]ainUI'") else
-                    log if cmd.startswith(('tail -c', 'cat ')) else '')
-            return subprocess.CompletedProcess(cmd, 0, stdout=text, stderr='')
-
-        for receipt, expected_code, expected_kind in ((kernel(130, OOM), 8, 'kernel_oom_sigkill'),
-                                                       (kernel(130, '', ok=False), 7, 'sigkill_unknown')):
+        run_uuid = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+        repo = Path(__file__).resolve().parents[1]
+        preflight = {'boot_id': OWNER['boot_id'], 'runtime': {'dev': 1, 'ino': 2, 'sha256': 'a'*64},
+                     'launcher': {'sha256': hashlib.sha256((repo/'port/Lamentum.sh').read_bytes()).hexdigest()},
+                     'helper': {'sha256': hashlib.sha256((repo/'tools/run_identity.py').read_bytes()).hexdigest()}}
+        for receipt, expected_code, expected_kind, killed, changed_generation in (
+                (kernel(130, OOM), 8, 'kernel_oom_sigkill', True, False),
+                (kernel(130, '', ok=False), 7, 'sigkill_unknown', True, False),
+                (kernel(130), 0, 'runtime_timeout', False, False),
+                (kernel(130), 9, 'exit_unknown', False, True)):
             with self.subTest(kind=expected_kind), tempfile.TemporaryDirectory() as directory:
-                argv = ['device_principal_test.py', '--evidence', directory]
-                owner = dict(OWNER, running=True, sample_status='ok')
-                with patch.object(harness.sys, 'argv', argv), \
-                     patch.object(harness, 'ssh', side_effect=fake_ssh), \
+                log = 'STOP status=TIME_LIMIT\n' + (KILL + 'exit status 137\n' if killed else '')
+                owned = dict(OWNER, elf_dev=1, elf_ino=2)
+                kernel_polls = []
+                def fake_remote(source):
+                    if source == harness.KERNEL_PAYLOAD:
+                        kernel_polls.append(1)
+                        return kernel(100) if len(kernel_polls) == 1 else receipt
+                    if source.startswith('import os,stat,hashlib,json'):
+                        return preflight
+                    if 'print(json.dumps({"run_uuid":new_run_uuid()}))' in source:
+                        return {'run_uuid': run_uuid}
+                    if 'p.write_text(text)' in source:
+                        return {'command': harness.launch_command(run_uuid, 90, [])}
+                    if 'assert (p/"comm").read_text().strip()=="MainUI"' in source:
+                        return {'pid': 100, 'starttime': 1, 'boot_id': OWNER['boot_id'], 'elf_dev': 1, 'elf_ino': 3}
+                    if 'print(json.dumps(terminate_owned(' in source:
+                        return {'outcome': 'pidfd_TERM'}
+                    if source.startswith('import sys\nsys.argv='):
+                        expected = json.loads((Path(directory)/'expected-run.json').read_text())
+                        if changed_generation and '_include_text=True' in source:
+                            return dict(parse_chunk(''), strict=True, status='LOG_GENERATION_CHANGED',
+                                        expected_run=expected, reason='synthetic final-log replacement')
+                        header = dict(expected, **{key: value for key, value in owned.items() if key not in expected},
+                                      launch_nonce='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb')
+                        return dict(parse_chunk(log), strict=True, status='ok', rotated=False,
+                                    offset=len(log), size=len(log), identity=[1, 4], mem={},
+                                    log_identity_qualified=True, run_header=header, expected_run=expected,
+                                    header_sha256='c'*64, anchor=None, chunk_text=log, partial_bytes=0)
+                    if 'collect_proc(pid=' in source:
+                        return dict(owned, running=True, sample_status='ok')
+                    raise RuntimeError('unexpected synthetic RPC boundary')
+                with patch.object(harness.sys, 'argv', ['device_principal_test.py', '--evidence', directory]), \
                      patch.object(harness, 'snapshot', return_value=state), \
-                     patch.object(harness, 'remote', side_effect=[kernel(100), owner, receipt]), \
+                     patch.object(harness, 'remote', side_effect=fake_remote), \
                      patch.object(harness.time, 'sleep'), contextlib.redirect_stdout(io.StringIO()):
                     self.assertEqual(harness.main(), expected_code)
-                result = json.loads((Path(directory) / 'cleanup.json').read_text())
+                result = json.loads((Path(directory)/'cleanup.json').read_text())
                 self.assertEqual(result['termination']['kind'], expected_kind)
-                self.assertEqual(result['process_identity'], OWNER)
+                self.assertEqual(result['process_identity'], owned)
                 self.assertEqual(result['cleanup_errors'], [])
-                self.assertTrue((Path(directory) / 'kernel-before.json').exists())
-                self.assertTrue((Path(directory) / 'kernel-after.json').exists())
+                self.assertTrue(result['execution_verified'])
+                self.assertFalse(result['content_bindings_complete'])
+                self.assertTrue((Path(directory)/'kernel-before.json').exists())
+                self.assertTrue((Path(directory)/'kernel-after.json').exists())
 
-    def test_busy_preflight_does_not_truncate_old_log(self):
+    def test_busy_preflight_does_not_touch_old_log_or_device(self):
         with patch.object(harness.sys, 'argv', ['device_principal_test.py']), \
-             patch.object(harness, 'ssh', return_value=subprocess.CompletedProcess('ssh', 0, stdout='1')) as ssh, \
+             patch.object(harness, 'remote') as remote, \
              patch.object(harness, 'snapshot', return_value={'game': [{'pid': 1}], 'processes': {}}), \
              contextlib.redirect_stderr(io.StringIO()):
             self.assertEqual(harness.main(), 2)
-            self.assertFalse(any('truncate' in call.args[0] for call in ssh.call_args_list))
+            remote.assert_not_called()
+
 
 
 if __name__ == '__main__':

@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Drive Lamentum's New Game entry from live captures, never from an assumed highlight.
+"""Legacy New Game diagnostic walker, DISABLED by default until a semantic oracle.
+
+The retained bottom/content-change algorithm is not proof of page identity or T1
+acceptance. Explicit diagnostic opt-in cannot qualify a game phase.
 
 The measured ground truth (read from live KMS captures in evidence/newgame-19):
 
@@ -132,7 +135,11 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--evidence', type=Path, required=True)
     ap.add_argument('--menu-timeout', type=int, default=600)
+    ap.add_argument('--allow-unverified-navigation', action='store_true',
+                    help='diagnostic only: old bottom/content-change walker is not a page oracle')
     a = ap.parse_args()
+    if not a.allow_unverified_navigation:
+        ap.error('legacy navigation is disabled until the shared semantic page-state oracle is verified')
     a.evidence.mkdir(parents=True, exist_ok=True)
     wait_for_menu(a.menu_timeout)
     capture(a.evidence / 'menu.png')
@@ -142,7 +149,8 @@ def main():
     base = goto_row(a.evidence, 'page', base, *NEWGAME_PAGE)
     base, _ = press_capture(a.evidence, 'controls', 'confirm', 1500, base, MENU_TRANSITION_CELLS)
     base, _ = press_capture(a.evidence, 'loading', 'confirm', 1200, base, MENU_TRANSITION_CELLS)
-    print(json.dumps({'reachable': True, 'phase': 'controls accepted; loading follows'}))
+    print(json.dumps({'reachable': None, 'phase': 'unverified legacy content-change navigation',
+                      'scene_verified': False}))
 
 
 if __name__ == '__main__':

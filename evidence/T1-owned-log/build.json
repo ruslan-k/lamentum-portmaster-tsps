@@ -1,0 +1,18 @@
+{
+  "returncode": 0,
+  "baseline_verified": 435,
+  "elapsed_s": 29.732776653952897,
+  "non_root_builder": true,
+  "game_executable_deployed": false,
+  "launcher_helper_deployed": false,
+  "sha256": {
+    "build-227/lamentum-nextos": "58b2ae65e5a98541995582f0a6d1e47c27954dab7dec041e77ad2a40cceb8f5e",
+    "build-227/run_identity.py": "abe8e4847b18a750c0796af33d887cf43714126c9751ccdc8236715cb752401a",
+    "port/Lamentum.sh": "63bfac5bddd45b7a5e3176d4094f804756992bf264f19a9e419225c1b9804948",
+    "tools/run_identity.py": "abe8e4847b18a750c0796af33d887cf43714126c9751ccdc8236715cb752401a",
+    "runtime/lamentum-adapter.patch": "34a52abe3d57de9f39ecbb6942a05f1216ea310f3eb0c4187f257f166c3d15bf",
+    "runtime/lamentum-shaders-draft.h": "1ad4baeb4c73675f002e96d29360877ea4d1e44972e691f5ed1ffb7ca63ebdc9"
+  },
+  "native_overlay_unchanged": true,
+  "packaged_helper_matches": true
+}

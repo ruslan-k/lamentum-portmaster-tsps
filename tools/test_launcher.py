@@ -5,6 +5,7 @@ import pathlib
 import subprocess
 import tempfile
 import unittest
+import json
 
 class LauncherTests(unittest.TestCase):
     def test_defaults_exit_and_cpu_restore(self):
@@ -13,6 +14,7 @@ class LauncherTests(unittest.TestCase):
             root = pathlib.Path(root)
             game, cpu = root / 'game', root / 'cpu'
             game.mkdir()
+            (game / 'run_identity.py').write_bytes((pathlib.Path(__file__).parents[1] / 'tools/run_identity.py').read_bytes())
             for index, state in enumerate(('0', '1', '0', '1')):
                 p = cpu / ('cpu%d' % index) / 'online'
                 p.parent.mkdir(parents=True)
@@ -32,6 +34,16 @@ class LauncherTests(unittest.TestCase):
             result = subprocess.run(['bash', str(launcher)], env=env)
             self.assertEqual(result.returncode, 7)
             self.assertEqual((game / 'defaults.txt').read_text().strip(), '1 0 0 0 0 96')
+            self.assertEqual(''.join((cpu / ('cpu%d' % i) / 'online').read_text()
+                                    for i in range(4)), '0101')
+            lines = (game / 'logs/latest.log').read_text().splitlines()
+            self.assertTrue(lines[0].startswith('LAMENTUM_RUN_HEADER '), lines[:2])
+            first = json.loads(lines[0].split(' ', 1)[1])
+            self.assertFalse(first['content_bindings_complete'])
+            again = subprocess.run(['bash', str(launcher)], env=env)
+            self.assertEqual(again.returncode, 7)
+            second = json.loads((game / 'logs/latest.log').read_text().splitlines()[0].split(' ', 1)[1])
+            self.assertNotEqual(first['run_uuid'], second['run_uuid'])
             self.assertEqual(''.join((cpu / ('cpu%d' % i) / 'online').read_text()
                                     for i in range(4)), '0101')
 

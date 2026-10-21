@@ -3,6 +3,24 @@ from newgame_navigate import changed, rows_to_bottom
 
 
 class NavigationGateTests(unittest.TestCase):
+    def test_legacy_cli_requires_explicit_unverified_opt_in(self):
+        import contextlib
+        import io
+        import newgame_navigate as navigator
+        from unittest.mock import patch
+        import tempfile
+        with tempfile.TemporaryDirectory() as temporary, \
+             patch.object(navigator.sys, 'argv', ['newgame_navigate.py', '--evidence', temporary]), \
+             patch.object(navigator, 'wait_for_menu', side_effect=RuntimeError('legacy navigator entered')) as wait, \
+             contextlib.redirect_stderr(io.StringIO()):
+            try:
+                with self.assertRaises(SystemExit) as caught:
+                    navigator.main()
+            except RuntimeError:
+                self.fail('legacy navigation is still enabled by default')
+            self.assertEqual(caught.exception.code, 2)
+            wait.assert_not_called()
+
     def test_cursor_move_is_below_screen_transition(self):
         a = [0] * 100
         b = list(a)

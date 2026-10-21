@@ -1,0 +1,16 @@
+{
+  "returncode": 0,
+  "output": "{\"harness_rc\": 4, \"samples\": 1, \"process_identity\": {\"boot_id\": \"fixture-boot\", \"pid\": 17, \"starttime\": 42}, \"scope\": \"CPU diagnostics, not gameplay FPS\"}\n...............................................................................................................................................................\n----------------------------------------------------------------------\nRan 159 tests in 5.370s\n\nOK\n",
+  "python_3_10_syntax_checked": [
+    "run_identity.py",
+    "load_metrics.py",
+    "device_principal_test.py",
+    "proc_metrics.py",
+    "load_probe.py",
+    "lamentum_pad_contract.py",
+    "newgame_navigate.py"
+  ],
+  "launcher_and_build_bash_syntax_ok": true,
+  "reviewed_upstream": "0caf5159a9de6e029208fd8959f990181b67113f",
+  "reviewed_at": "2026-10-21T09:27:41.343896+04:00"
+}
