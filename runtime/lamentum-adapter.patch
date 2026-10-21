@@ -1118,10 +1118,10 @@ index 0000000..fbe5673
 +#endif
 diff --git a/native/lc2_menu_ledger.h b/native/lc2_menu_ledger.h
 new file mode 100644
-index 0000000..f5465f6
+index 0000000..00a7d9c
 --- /dev/null
 +++ b/native/lc2_menu_ledger.h
-@@ -0,0 +1,111 @@
+@@ -0,0 +1,130 @@
 +/* MENU_MEMORY_LEDGER (owner roadmap 40.5 M0): measurement without behaviour change.
 + *
 + * One line at most once per second while enabled, plus a forced line at the
@@ -1172,11 +1172,24 @@ index 0000000..f5465f6
 +    unsigned long rss,swap;lc2_menu_ledger_status(&rss,&swap);
 +    unsigned long available=lc2_menu_ledger_meminfo("MemAvailable");
 +    if(!lc2_menu_ledger.base_available_kib)lc2_menu_ledger.base_available_kib=available;
-+    uint64_t live_textures=0,charged=0;
++    /* Per-class attribution from adapter state only (B2-lite): every value is a
++     * format-defined estimate for a class we actually create, never driver
++     * residency. Classes the adapter cannot see stay `untracked`. */
++    uint64_t live_textures=0,charged=0,guest_storage=0;
++    uint64_t depth_buffers=0,depth_bytes=0,color_targets=0,color_target_bytes=0;
++    uint64_t scaled_textures=0,scaled_bytes=0,half_textures=0,bc_pending=0,joined=0;
 +    for(unsigned i=0;i<4096;i++) {
-+        if(!nvn_textures[i].live)continue;
-+        live_textures++;
-+        charged+=nvn_textures[i].t2_budget_bytes;
++        struct nvn_texture *t=&nvn_textures[i];
++        if(!t->live)continue;
++        live_textures++;charged+=t->t2_budget_bytes;guest_storage+=t->size;
++        unsigned width=t->host_scaled?t->host_width:t->b.width;
++        unsigned height=t->host_scaled?t->host_height:t->b.height;
++        uint64_t pixels=(uint64_t)width*height;
++        if(t->depth_buffer) {depth_buffers++;depth_bytes+=pixels*(t->b.format==0x35?8U:4U);}
++        if(t->composition_target_seen||t->draws) {color_targets++;color_target_bytes+=pixels*4U;}
++        if(t->host_scaled||t->host_half) {scaled_textures++;scaled_bytes+=pixels*4U;}
++        if(t->b.format>=0x41 && t->b.format<=0x50 && t->lc2_bc_pending)bc_pending++;
++        if(zero_texture_storage_state(t)!=t)joined++;
 +    }
 +    pthread_mutex_lock(&t2_texture_budget_mutex);
 +    uint64_t budget_live=t2_texture_budget.live_bytes,budget_peak=t2_texture_budget.peak_bytes,
@@ -1189,7 +1202,9 @@ index 0000000..f5465f6
 +           " cached-kib=%lu anonpages-kib=%lu shmem-kib=%lu swapfree-kib=%lu"
 +           " vmrss-kib=%lu vmswap-kib=%lu"
 +           " budget-live-bytes=%llu budget-peak-bytes=%llu budget-charges=%llu"
-+           " textures-live=%llu textures-charged-bytes=%llu"
++           " textures-live=%llu textures-charged-bytes=%llu guest-storage-bytes=%llu"
++           " depth-renderbuffers=%llu depth-estimate-bytes=%llu color-targets=%llu color-target-estimate-bytes=%llu"
++           " scaled-textures=%llu scaled-estimate-bytes=%llu half-textures=%llu bc-pending=%llu joined-views=%llu"
 +           " renderbuffers=untracked buffers=untracked egl-surfaces=untracked"
 +           " driver-physical=unknown guest-heap=untracked"
 +           " scope=host-observable diagnostic=1 behaviour=unchanged\n",
@@ -1200,7 +1215,11 @@ index 0000000..f5465f6
 +           lc2_menu_ledger_meminfo("AnonPages"),lc2_menu_ledger_meminfo("Shmem"),
 +           lc2_menu_ledger_meminfo("SwapFree"),rss,swap,
 +           (unsigned long long)budget_live,(unsigned long long)budget_peak,(unsigned long long)budget_count,
-+           (unsigned long long)live_textures,(unsigned long long)charged);
++           (unsigned long long)live_textures,(unsigned long long)charged,(unsigned long long)guest_storage,
++           (unsigned long long)depth_buffers,(unsigned long long)depth_bytes,
++           (unsigned long long)color_targets,(unsigned long long)color_target_bytes,
++           (unsigned long long)scaled_textures,(unsigned long long)scaled_bytes,
++           (unsigned long long)half_textures,(unsigned long long)bc_pending,(unsigned long long)joined);
 +    lc2_menu_ledger.lines++;fflush(stdout);
 +}
 +

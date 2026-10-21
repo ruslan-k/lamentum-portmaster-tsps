@@ -1,0 +1,39 @@
+{
+  "frames": 31,
+  "available": {
+    "start_mib": 126.8,
+    "low_mib": 50.5,
+    "drop_mib": 76.3
+  },
+  "cma": {
+    "start_mib": 27.3,
+    "low_mib": 0.83
+  },
+  "swap_used_mib": 407.4,
+  "classes": {
+    "textures_charged": {
+      "start_mib": 107.1,
+      "low_mib": 157.3
+    },
+    "depth_renderbuffers": {
+      "count": 2,
+      "start_mib": 22.9,
+      "low_mib": 22.9
+    },
+    "color_targets": {
+      "count_start": 16,
+      "count_low": 19,
+      "start_mib": 27.5,
+      "low_mib": 43.4
+    },
+    "scaled": 0,
+    "half": 0,
+    "bc_pending": 0,
+    "joined_views": 0
+  },
+  "untracked": [
+    "buffers",
+    "egl-surfaces",
+    "driver-retained"
+  ]
+}

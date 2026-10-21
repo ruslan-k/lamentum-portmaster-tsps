@@ -2745,3 +2745,13 @@ Interpretation: the menu halves available RAM in **4.5 s** before any world cont
 Limits: renderbuffers/buffer objects/EGL surfaces and driver-retained storage are untracked; the first line is `arm-start` (no pre-launch baseline); the pre-floor line did not fire, so the last interval line plus `T2_MEMORY_FLOOR_HIT` bracket the refusal; one arm, one build, diagnostic floor.
 
 Next: attribute the CMA exhaustion to specific GL/EGL classes and decide whether any of it is retainable menu-only storage (owner §40.6 / B2 ledger), not another press experiment.
+
+## 45. Class attribution of the menu loss (owner §40.6 / B2-lite) (2026-10-21)
+
+Build231 `41d6b4f8…c682` adds per-class estimates to `LC2_MENU_LEDGER`. Arm `menu-ledger-02` (same opts, one arm): at the low point (frame 31) `MemAvailable` **51.8 MiB (−78.1)**, `CmaFree` **0.85 MiB** (from 28.0), game `VmSwap` **417 MiB**, charged textures **157.3 MiB (+50.1)**, colour targets **19 (+3, +15.9 MiB estimate)**, depth renderbuffers **2 / 22.9 MiB constant**, and `scaled/half/bc-pending/joined` all **0**.
+
+- The depth/stencil pair is allocated once and does **not** grow while 78 MiB disappears; the visible growth is textures plus three colour targets (~66 MiB estimate), leaving the rest in `buffers`/`egl-surfaces`/`driver-retained`, which the ledger labels untracked rather than zero.
+- **CMA is a 28 MiB pool and the menu alone drains it to 0.85 MiB** — reproduced on a second build, so the earlier `CmaFree` collapse is not a one-off.
+- Experiment paths that could have explained it (`scaled`, `half`, `bc-pending`, `joined`) are measurably absent in the menu.
+
+Next: the transactional ownership ledger from §40.6 B2 — which of the 19 colour targets is retained after the menu stops needing it, and whether depth renderbuffers are reallocated per target elsewhere. Estimates remain estimates: no scene, id295 or FPS claim.
