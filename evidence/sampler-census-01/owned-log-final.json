@@ -1,0 +1,67 @@
+{
+  "presents": 13,
+  "romfs": 163,
+  "textures": 120,
+  "bc_deferred": 0,
+  "bc_fileback": 0,
+  "budget_adds": 11,
+  "frame": 13,
+  "stops": [
+    "T2_MEMORY_FLOOR"
+  ],
+  "budget_last": "T2_TEXTURE_BUDGET add-bytes=65536 live-MiB=94 count=64 budget-MiB=300",
+  "killed": false,
+  "mem": {
+    "MemTotal": 986064,
+    "MemFree": 539284,
+    "MemAvailable": 676152,
+    "SwapFree": 2030140,
+    "CmaFree": 67924
+  },
+  "offset": 760868,
+  "size": 760868,
+  "identity": [
+    45833,
+    6650
+  ],
+  "status": "ok",
+  "log_identity_qualified": true,
+  "run_header": {
+    "boot_id": "d443aa3c-9e62-41fe-a5ba-e05aa4e63a61",
+    "catalogue_sha256": null,
+    "content_bindings_complete": false,
+    "elf_bytes": 2156352,
+    "elf_dev": 45833,
+    "elf_ino": 334992,
+    "elf_sha256": "b4c8df27e5c9ea18d2dac8a13f563863844b2e311d6ee0282256923e488c47e5",
+    "execution_contract": "execve-open-fd; observer must verify /proc/PID/exe after exec",
+    "helper_sha256": "abe8e4847b18a750c0796af33d887cf43714126c9751ccdc8236715cb752401a",
+    "image_sha256": null,
+    "launch_nonce": "a4bac2bb-d5fd-46a1-86b9-a719c1509b55",
+    "launcher_sha256": "63bfac5bddd45b7a5e3176d4094f804756992bf264f19a9e419225c1b9804948",
+    "pid": 15458,
+    "run_uuid": "a0b66728-3a1e-4296-91b9-4b93a8efcdb6",
+    "schema": 1,
+    "starttime": 2146607
+  },
+  "expected_run": {
+    "run_uuid": "a0b66728-3a1e-4296-91b9-4b93a8efcdb6",
+    "boot_id": "d443aa3c-9e62-41fe-a5ba-e05aa4e63a61",
+    "elf_dev": 45833,
+    "elf_ino": 334992,
+    "elf_sha256": "b4c8df27e5c9ea18d2dac8a13f563863844b2e311d6ee0282256923e488c47e5",
+    "launcher_sha256": "63bfac5bddd45b7a5e3176d4094f804756992bf264f19a9e419225c1b9804948",
+    "helper_sha256": "abe8e4847b18a750c0796af33d887cf43714126c9751ccdc8236715cb752401a",
+    "pid": 15458,
+    "starttime": 2146607,
+    "launch_nonce": "a4bac2bb-d5fd-46a1-86b9-a719c1509b55"
+  },
+  "header_sha256": "eecec107f0453310d341b7919461e41e1ff75f22a3de08583a4ffb4d310e1449",
+  "anchor": {
+    "offset": 760612,
+    "bytes": 256,
+    "sha256": "4bc99a2d2e28fcc972d62abd1560cf73d5b17be8516994f5d6109850a2dffe50"
+  },
+  "partial_bytes": 0,
+  "unconsumed_bytes": 0
+}

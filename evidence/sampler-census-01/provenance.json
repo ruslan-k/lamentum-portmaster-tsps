@@ -1,0 +1,8 @@
+{
+  "full_log_sha256": "c53981024c2debb19a270f1501c0cf0619cdefbe6dd0cecdd51d4e06442d8c3b",
+  "full_log_bytes": 760868,
+  "sampler_events_sha256": "a6c7ed2efd3804ff04b84a6ca3482a8aa73cdf65de739a14930b3fe398f36aa2",
+  "reviewed_revision": "0896412",
+  "runtime_patch_unchanged": true,
+  "new_runtime_build": false
+}

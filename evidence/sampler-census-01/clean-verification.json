@@ -1,0 +1,8 @@
+{
+  "staged_tree": "d2b0664d875181589a71ec609f8cf928dbc958d7",
+  "host_tests": 264,
+  "python310_ast": true,
+  "cli_help": true,
+  "clean_cli_same_census": true,
+  "runtime_patch_changed": false
+}

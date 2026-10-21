@@ -1,0 +1,4 @@
+LC2_BC_DIRECT_WRITE id=81 avoided-transient-bytes=7776000 source=disjoint-read-only
+ZERO_TEXEL_WRITE id=81 level=0 layer=0 region=0,0,3600,2160 native-bytes=7776000 CPU-storage-updated
+LC2_BC_DIRECT_WRITE id=92 avoided-transient-bytes=12960000 source=disjoint-read-only
+ZERO_TEXEL_WRITE id=92 level=0 layer=0 region=0,0,3600,3600 native-bytes=12960000 CPU-storage-updated
