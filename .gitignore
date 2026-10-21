@@ -37,3 +37,9 @@ __pycache__/
 *.pam
 *.png
 !docs/**/*.png
+
+# owner-local raw dumps: publication policy keeps full kernel/log dumps off the repo
+evidence/**/kernel-before.json
+evidence/**/kernel-after.json
+evidence/**/owned-log-final.json
+build-*-home/
