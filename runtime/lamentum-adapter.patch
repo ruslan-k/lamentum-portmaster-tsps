@@ -1466,7 +1466,7 @@ index 0000000..ff9ab3b
 +}
 +#endif
 diff --git a/native/loader.c b/native/loader.c
-index 8018af5..fb2d533 100644
+index 8018af5..9d1e204 100644
 --- a/native/loader.c
 +++ b/native/loader.c
 @@ -30,7 +30,9 @@
@@ -1480,7 +1480,57 @@ index 8018af5..fb2d533 100644
  #define HOST_ADDRESS_LIMIT (8192ULL << 20)
  #define HEAP_BASE 0x1000000000ULL
  #define HEAP_LIMIT MEMORY_BUDGET
-@@ -125,11 +127,13 @@ static void location(struct line *b,uint64_t pc) {
+@@ -49,6 +51,49 @@ static struct region regions[MAX_REGIONS];
+ static size_t nregions, nbridges;
+ static struct bridge bridges[MAX_TRAPS];
+ #include "trap_lookup.h"
++/* LC2_MAP_LEDGER=1 (owner roadmap 48 / M1): which guest calls reserve how much.
++ * Bounded receipts (first 48 lines) plus running class totals; no behaviour change.
++ * The -433.8 MiB step between gl-init and the first present has no owner without
++ * this: main-heap reservation, alias_physical mappings and blob mappings look alike
++ * in /proc. Sizes are the requested ranges; RSS commitment stays `unknown`. */
++static struct {unsigned configured,enabled,lines,overflow;
++                uint64_t heap_bytes,alias_bytes,blob_bytes;
++                unsigned heap_calls,alias_calls,blob_calls;} lc2_map_ledger;
++static void lc2_map_note(const char *cls,uint64_t bytes,uint64_t pc,uint64_t address) {
++    if(!lc2_map_ledger.configured) {
++        const char *option=getenv("LC2_MAP_LEDGER");
++        lc2_map_ledger.enabled=option && !strcmp(option,"1");
++        lc2_map_ledger.configured=1;
++        if(lc2_map_ledger.enabled)
++            printf("LC2_MAP_LEDGER enabled=1 bounded-lines=48 classes=main-heap,alias-physical,blob"
++                   " sizes=requested-range rss=unknown behaviour=unchanged\n");
++    }
++    if(!lc2_map_ledger.enabled)return;
++    if(!strcmp(cls,"main-heap")) {lc2_map_ledger.heap_bytes+=bytes;lc2_map_ledger.heap_calls++;}
++    else if(!strcmp(cls,"alias-physical")) {lc2_map_ledger.alias_bytes+=bytes;lc2_map_ledger.alias_calls++;}
++    else {lc2_map_ledger.blob_bytes+=bytes;lc2_map_ledger.blob_calls++;}
++    int quota=!strcmp(cls,"blob") ? lc2_map_ledger.blob_calls>12 : 0; /* blob floods; totals still counted */
++    if(quota || lc2_map_ledger.lines>=48) {
++        if(!lc2_map_ledger.overflow) {
++            lc2_map_ledger.overflow=1;
++            printf("LC2_MAP_SUMMARY heap-bytes=%llu/%u alias-bytes=%llu/%u blob-bytes=%llu/%u"
++                   " note=blob-lines-capped-at-12 rss=unknown\n",
++                   (unsigned long long)lc2_map_ledger.heap_bytes,lc2_map_ledger.heap_calls,
++                   (unsigned long long)lc2_map_ledger.alias_bytes,lc2_map_ledger.alias_calls,
++                   (unsigned long long)lc2_map_ledger.blob_bytes,lc2_map_ledger.blob_calls);
++        }
++        return;
++    }
++    lc2_map_ledger.lines++;
++    printf("LC2_MAP class=%s bytes=%llu pc=0x%llx address=0x%llx heap-bytes=%llu/%u"
++           " alias-bytes=%llu/%u blob-bytes=%llu/%u overflow=%u rss=unknown\n",
++           cls,(unsigned long long)bytes,(unsigned long long)pc,(unsigned long long)address,
++           (unsigned long long)lc2_map_ledger.heap_bytes,lc2_map_ledger.heap_calls,
++           (unsigned long long)lc2_map_ledger.alias_bytes,lc2_map_ledger.alias_calls,
++           (unsigned long long)lc2_map_ledger.blob_bytes,lc2_map_ledger.blob_calls,
++           lc2_map_ledger.overflow);
++}
++
+ static uint64_t svc_counts[256], entropy[4];
+ static _Thread_local uint64_t virtual_tpidr,guest_tls_base=0x70000000ULL;
+ static _Thread_local unsigned guest_thread_index;
+@@ -125,11 +170,13 @@ static void location(struct line *b,uint64_t pc) {
      hex(b,pc);
  }
  static void momo_thread_census(void);
@@ -1494,7 +1544,7 @@ index 8018af5..fb2d533 100644
      if(current_guest_context)trace_frames(current_guest_context);
      /* Only async-signal-safe syscalls: this path also runs after guest faults. */
      int memory_fd=open("/proc/self/status",O_RDONLY|O_CLOEXEC);
-@@ -184,21 +188,25 @@ static void trace_frames(ucontext_t *ctx) {
+@@ -184,21 +231,25 @@ static void trace_frames(ucontext_t *ctx) {
      emit(&b);
  }
  static void t2_gzram_touch(uint64_t,uint64_t); /* Frente J: guest zram, t2_guest_memory.h */
@@ -1520,7 +1570,7 @@ index 8018af5..fb2d533 100644
  /* Stall census: what every live guest thread was doing at its last system call. Printed by stop(),
   * so a time limit or a fault always says who is waiting on what (MEDIDO need, run momo-076). */
  static void momo_thread_census(void) {
-@@ -302,6 +310,7 @@ static void signal_dispatch(int sig,siginfo_t *info,void *opaque) {
+@@ -302,6 +353,7 @@ static void signal_dispatch(int sig,siginfo_t *info,void *opaque) {
      uint32_t instruction=bridge_instruction(pc);
      if(!instruction || *(const uint32_t *)(uintptr_t)pc!=TRAP_OPCODE)stop("UNKNOWN_TRAP",pc,0,23);
      if(graphics_trace_entry(pc,instruction,ctx))return;
@@ -1528,7 +1578,23 @@ index 8018af5..fb2d533 100644
      if(megaman_movie_handle(pc,instruction,ctx))return;
      if(megaman_memory_handle(pc,instruction,ctx))return;
      if(local_register_trap(ctx,instruction))return;
-@@ -560,8 +569,8 @@ static void signal_dispatch(int sig,siginfo_t *info,void *opaque) {
+@@ -400,6 +452,7 @@ static void signal_dispatch(int sig,siginfo_t *info,void *opaque) {
+         struct line b={0};text(&b,"SET_MEMORY_ATTRIBUTE address=");hex(&b,address);text(&b," size=");hex(&b,size);text(&b," attr=");hex(&b,attr);emit(&b);
+         r[0]=0;ctx->uc_mcontext.pc+=4;return;
+     }
++
+     if(svc==1) {
+         trace_frames(ctx);
+         uint64_t requested=r[1];
+@@ -480,6 +533,7 @@ static void signal_dispatch(int sig,siginfo_t *info,void *opaque) {
+                 }
+                 region_insert((struct region){cursor,extent,3,5,"alias_physical",0},pc);
+                 alias_mapped+=extent;changed+=extent;
++                lc2_map_note("alias-physical",extent,pc,cursor);
+             } else if(svc==0x2c && !owned) {
+                 region_write_end(pc);pthread_mutex_unlock(&regions_mutex);
+                 stop("PHYSICAL_MEMORY_CONFLICT",pc,cursor,24);
+@@ -560,8 +614,8 @@ static void signal_dispatch(int sig,siginfo_t *info,void *opaque) {
          if(!r[0])r[1]=index;
          ctx->uc_mcontext.pc+=4;return;
      }
@@ -1539,7 +1605,7 @@ index 8018af5..fb2d533 100644
      if(svc==0x1c) {
          emit_svc(&b,svc);
          /* Bounded diagnostic for a stalled boot: who is waiting on which process-wide key. */
-@@ -626,6 +635,8 @@ static void signal_handler(int sig,siginfo_t *info,void *opaque) {
+@@ -626,6 +680,8 @@ static void signal_handler(int sig,siginfo_t *info,void *opaque) {
          return;
      }
      if(sig==SIGSEGV && t2_gzram_fault(info,opaque))return; /* Frente J: compressed guest block, restored; retry */
@@ -1548,7 +1614,15 @@ index 8018af5..fb2d533 100644
      ucontext_t *previous=current_guest_context;
      signal_handler_depth++;
      if(sig!=SIGTRAP){signal_dispatch(sig,info,opaque);return;}
-@@ -723,6 +734,9 @@ int main(int argc,char **argv) {
+@@ -681,6 +737,7 @@ static void *map_region_fd(uint64_t base,uint64_t size,unsigned perm,unsigned st
+     if(nregions==MAX_REGIONS || !size || base%PAGE || size%PAGE) {fprintf(stderr,"bad mapping\n");exit(1);}
+     /* fd>=0: private (copy-on-write) file mapping of a read-only image segment; see t2_image_file_map.h. */
+     void *p=mmap((void *)(uintptr_t)base,size,PROT_READ|PROT_WRITE,fd>=0?MAP_PRIVATE:MAP_PRIVATE|MAP_ANONYMOUS,fd,0);
++    lc2_map_note("blob",size,(uint64_t)__builtin_return_address(0),(uint64_t)(uintptr_t)base);
+     /* Old NextOS kernels lack MAP_FIXED_NOREPLACE; a hint plus exact-address check never clobbers existing mappings. */
+     if(p==MAP_FAILED || (uint64_t)(uintptr_t)p!=base) {fprintf(stderr,"mapping unavailable %s: %s\n",name,strerror(errno));exit(1);}
+     regions[nregions++]=(struct region){base,size,perm,state,name,0};
+@@ -723,6 +780,9 @@ int main(int argc,char **argv) {
          if(dladdr((void *)(uintptr_t)main,&info) && info.dli_fbase)
              printf("HOST_BASE address=%p file=%s\n",info.dli_fbase,info.dli_fname?info.dli_fname:"");
      }
@@ -1558,7 +1632,7 @@ index 8018af5..fb2d533 100644
      struct rlimit no_core={0,0};setrlimit(RLIMIT_CORE,&no_core);
      struct rlimit address_limit={HOST_ADDRESS_LIMIT,HOST_ADDRESS_LIMIT};
      if(setrlimit(RLIMIT_AS,&address_limit)){perror("diagnostic memory quota");return 1;}
-@@ -741,6 +755,7 @@ int main(int argc,char **argv) {
+@@ -741,6 +801,7 @@ int main(int argc,char **argv) {
      }
      t2_lazy_mesh_apply(images,sizeof(images)/sizeof(images[0])); /* Frente L: lazy quad meshes, T2_LAZY_MESH=0 disables */
      t2_image_file_map_report();
@@ -1566,7 +1640,7 @@ index 8018af5..fb2d533 100644
      /* Build and staging pin the original main NSO and segment hashes. The
       * optional movie handler also checks each relevant native instruction. */
      /* Historical LC2 hooks stay off: their code and object layouts are not
-@@ -756,6 +771,7 @@ int main(int argc,char **argv) {
+@@ -756,6 +817,7 @@ int main(int argc,char **argv) {
       * until the hook is re-pinned for 19.3.9. Off by default. */
      megaman_memory_configure(LC2_SDK_BASE,LC2_SDK_SHA256,LC2_RTLD_BASE,LC2_RTLD_SHA256);
      tls_stubs_initialize();
@@ -1574,7 +1648,7 @@ index 8018af5..fb2d533 100644
      aw_prof_thread=0;aw_prof_start();
      int tls_fast=tls_stubs_install(images,sizeof(images)/sizeof(images[0]));
      printf("TLS_READ_STUBS sites=%zu bytes=%zu offsets=0x%"PRIx64",0x%"PRIx64" fallback=%s; tls_trap_reads counts only remaining traps\n",
-@@ -769,7 +785,7 @@ int main(int argc,char **argv) {
+@@ -769,7 +831,7 @@ int main(int argc,char **argv) {
                  if(v!=graphics_entries[j].opcode)stop("GRAPHICS_IMAGE_IDENTITY",s->base+off,v,24);
                  graphics_entry=1;
              }
@@ -1583,7 +1657,7 @@ index 8018af5..fb2d533 100644
                 megaman_memory_entry(s->base+off,v) ||
                 (v&0xffe0001fU)==0xd4000001U || (v&0xffffffe0U)==0xd53bd060U ||
                 (v&0xffffffe0U)==0xd53bd040U || (v&0xffffffe0U)==0xd51bd040U ||
-@@ -815,7 +831,10 @@ int main(int argc,char **argv) {
+@@ -815,7 +877,10 @@ int main(int argc,char **argv) {
      const char *budget=getenv("MEGAMAN_PROBE_SECONDS");
      if(budget) {
          char *end=NULL;unsigned long seconds=strtoul(budget,&end,10);

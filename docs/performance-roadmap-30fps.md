@@ -2978,3 +2978,15 @@ Two corrections to my own earlier conclusions:
 Consequences: intervention must target that reservation or what the guest keeps resident; 36 MB of GL images cannot explain it, and the 720p experiment keeps its 17.58 MiB nominal ceiling. CMA attribution now needs the pre-GL state (measured here) rather than post-hoc correlation.
 
 Open: retire receipts produced no events in this phase, so allocate/free balance is unproven; the EGL surface (SDL path) and buffers (no vertex streams) remain unaccounted; the guest reservation is a delta without an owner.
+
+## 53. Map receipts: the reservation is alias_physical, not a main heap (2026-10-21)
+
+Build236 `5a1c04148c65` adds `LC2_MAP_LEDGER=1` for three mapping classes (main heap `svc 1`, `alias_physical` `svc 0x2c/0x2d`, blob/file).
+
+Arm `map-ledger-01` is recorded as a **tooling defect**: its 48-line bound was consumed by blob mappings before the first alias line, so it reported `heap=0/0 alias=0/0`. Fixed with a per-class quota (12 blob lines, totals still counted) plus `LC2_MAP_SUMMARY`.
+
+Arm `map-ledger-02` **ended in a kernel OOM kill** (`kernel_oom_sigkill`, `HARNESS_RC=8`, empty STOP taxonomy) — a failed arm, labelled as such. Its data: **blob/file 73,359,360 B = 69.95 MiB over 13 maps** (largest 29.4 MiB, totals complete); **`alias_physical` ≥130,654,208 B = 124.6 MiB over ≥36 maps**, still growing when the window closed, so a floor; **main heap 0 — `svc 1` is never used by this title**. The alias class includes one 64 MiB and one 32 MiB mapping plus a 1 MiB/256 KiB/8 KiB tail.
+
+Established: the −433.8 MiB step is not a main-heap reservation, and two owners are measured (~70 MiB blob, ≥124.6 MiB alias). Not established: the remaining ~240 MiB, because alias totals are truncated by the line window and blob **unmaps** are not receipted, so the balance is one-sided. Not claimed: that `alias_physical` leaks — its `svc 0x2d` unmaps are uninstrumented.
+
+Next: periodic summaries plus unmap receipts for both classes, one clean arm for a full alias total, then compare against the measured 568.7 → 134.9 MiB step. The 720p ceiling (17.58 MiB) remains the smaller lever.
