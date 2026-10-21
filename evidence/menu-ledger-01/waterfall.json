@@ -1,0 +1,202 @@
+{
+  "frames": 41,
+  "seconds": 20.5,
+  "available": {
+    "start_mib": 129.3,
+    "low_mib": 54.7,
+    "end_mib": 71.7,
+    "drop_mib": 74.6,
+    "low_at_frame": 16,
+    "low_at_s": 4.5
+  },
+  "cma": {
+    "start_mib": 24.3,
+    "low_kib": 980,
+    "end_kib": 12836
+  },
+  "swap": {
+    "start_used_mib": 0.0,
+    "end_used_mib": 422.4
+  },
+  "charged_textures": {
+    "start_mib": 107.1,
+    "end_mib": 157.3,
+    "growth_mib": 50.2,
+    "count_start": 91,
+    "count_end": 101
+  },
+  "rss_mib": {
+    "start": 714.9,
+    "end": 719.6
+  },
+  "series": [
+    {
+      "why": "arm-start",
+      "t_ms": 0,
+      "frames": 1,
+      "available_kib": 132368,
+      "cmafree_kib": 24916,
+      "anon_kib": 389012,
+      "swapfree_kib": 2032288,
+      "vmrss_kib": 732108,
+      "vmswap_kib": 0,
+      "budget_live": 112325632,
+      "textures_live": 91,
+      "charged": 112325632
+    },
+    {
+      "why": "interval",
+      "t_ms": 147,
+      "frames": 2,
+      "available_kib": 119928,
+      "cmafree_kib": 53864,
+      "anon_kib": 393664,
+      "swapfree_kib": 2032288,
+      "vmrss_kib": 704604,
+      "vmswap_kib": 0,
+      "budget_live": 112329728,
+      "textures_live": 92,
+      "charged": 112329728
+    },
+    {
+      "why": "interval",
+      "t_ms": 1312,
+      "frames": 7,
+      "available_kib": 111032,
+      "cmafree_kib": 43428,
+      "anon_kib": 373600,
+      "swapfree_kib": 2003616,
+      "vmrss_kib": 682652,
+      "vmswap_kib": 22264,
+      "budget_live": 115278848,
+      "textures_live": 93,
+      "charged": 115278848
+    },
+    {
+      "why": "interval",
+      "t_ms": 3524,
+      "frames": 12,
+      "available_kib": 79292,
+      "cmafree_kib": 892,
+      "anon_kib": 337068,
+      "swapfree_kib": 1937568,
+      "vmrss_kib": 672460,
+      "vmswap_kib": 88748,
+      "budget_live": 113812480,
+      "textures_live": 95,
+      "charged": 113812480
+    },
+    {
+      "why": "interval",
+      "t_ms": 4530,
+      "frames": 16,
+      "available_kib": 56024,
+      "cmafree_kib": 980,
+      "anon_kib": 371428,
+      "swapfree_kib": 1929120,
+      "vmrss_kib": 725004,
+      "vmswap_kib": 96336,
+      "budget_live": 122201088,
+      "textures_live": 99,
+      "charged": 122201088
+    },
+    {
+      "why": "interval",
+      "t_ms": 5650,
+      "frames": 17,
+      "available_kib": 63352,
+      "cmafree_kib": 8012,
+      "anon_kib": 355652,
+      "swapfree_kib": 1898912,
+      "vmrss_kib": 729108,
+      "vmswap_kib": 126672,
+      "budget_live": 126395392,
+      "textures_live": 100,
+      "charged": 126395392
+    },
+    {
+      "why": "interval",
+      "t_ms": 7417,
+      "frames": 19,
+      "available_kib": 63792,
+      "cmafree_kib": 860,
+      "anon_kib": 335368,
+      "swapfree_kib": 1846176,
+      "vmrss_kib": 744016,
+      "vmswap_kib": 177464,
+      "budget_live": 131367936,
+      "textures_live": 100,
+      "charged": 131367936
+    },
+    {
+      "why": "interval",
+      "t_ms": 15867,
+      "frames": 21,
+      "available_kib": 56832,
+      "cmafree_kib": 128,
+      "anon_kib": 116872,
+      "swapfree_kib": 1565944,
+      "vmrss_kib": 612740,
+      "vmswap_kib": 454232,
+      "budget_live": 164922368,
+      "textures_live": 101,
+      "charged": 164922368
+    },
+    {
+      "why": "interval",
+      "t_ms": 17276,
+      "frames": 22,
+      "available_kib": 56396,
+      "cmafree_kib": 28,
+      "anon_kib": 163936,
+      "swapfree_kib": 1567224,
+      "vmrss_kib": 667720,
+      "vmswap_kib": 438040,
+      "budget_live": 164922368,
+      "textures_live": 101,
+      "charged": 164922368
+    },
+    {
+      "why": "interval",
+      "t_ms": 18334,
+      "frames": 26,
+      "available_kib": 63472,
+      "cmafree_kib": 896,
+      "anon_kib": 197000,
+      "swapfree_kib": 1567260,
+      "vmrss_kib": 712628,
+      "vmswap_kib": 431320,
+      "budget_live": 164922368,
+      "textures_live": 101,
+      "charged": 164922368
+    },
+    {
+      "why": "interval",
+      "t_ms": 19430,
+      "frames": 31,
+      "available_kib": 63412,
+      "cmafree_kib": 0,
+      "anon_kib": 223656,
+      "swapfree_kib": 1563908,
+      "vmrss_kib": 731240,
+      "vmswap_kib": 426716,
+      "budget_live": 164922368,
+      "textures_live": 101,
+      "charged": 164922368
+    },
+    {
+      "why": "interval",
+      "t_ms": 20465,
+      "frames": 41,
+      "available_kib": 73464,
+      "cmafree_kib": 12836,
+      "anon_kib": 228928,
+      "swapfree_kib": 1550544,
+      "vmrss_kib": 736848,
+      "vmswap_kib": 432560,
+      "budget_live": 164922368,
+      "textures_live": 101,
+      "charged": 164922368
+    }
+  ]
+}

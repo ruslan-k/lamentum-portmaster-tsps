@@ -2727,3 +2727,21 @@ The sweep could not complete because the menu run survives only ~30–55 present
 Tooling: `--sweep` / `--sweep-values` with a pure `sweep_decision()` (one row = success, two rows = immediate overshoot stop, no movement = next declared value), and a dead arm is recorded as `arm_ended` instead of raising. **210 host tests PASS.**
 
 Next: the §40.5 menu-memory waterfall (absolute deltas from before launch, 1 Hz plus first-frame and pre-refusal points, GL/RB/buffer/EGL storage with live-vs-deferred and generation, per-event waterfall of the first 55 presents). No scene, id295 or FPS claim.
+
+## 44. Menu-phase memory waterfall (owner §40.5 M0) (2026-10-21)
+
+Opt-in `LC2_MENU_LEDGER=1` (≤1 Hz, first-frame line, host-observable only, no admission/budget/floor/swap change), build230 `8a19df13…0be6` deployed with a `.before-230` backup. Arm `menu-ledger-01`: **41 presents in 20.5 s**, verified identity, zero cleanup errors, stopped at `T2_MEMORY_FLOOR`.
+
+| quantity | start | low / end | delta |
+|---|---|---|---|
+| `MemAvailable` | 129.3 MiB | **54.7 MiB at frame 16 (4.5 s)** / 71.7 MiB | **−74.6 MiB** |
+| `CmaFree` | 24.3 MiB | **1.0 MiB** (end 12.5) | exhausted in the menu |
+| game `VmSwap` | 0 | **422.4 MiB** | guest pages to swap |
+| charged textures | 107.1 MiB / 91 | 157.3 MiB / 101 | **+52.6 MiB** |
+| game `VmRSS` | 714.9 MiB | 719.6 MiB | +4.7 MiB |
+
+Interpretation: the menu halves available RAM in **4.5 s** before any world content; **CMA exhausts first**, and charged texture storage accounts for only about a fifth of the loss while guest pages move to swap. A texture-only ledger would have reported "nothing much happened", which is why the ledger reports classes it cannot measure as `untracked` rather than as zero.
+
+Limits: renderbuffers/buffer objects/EGL surfaces and driver-retained storage are untracked; the first line is `arm-start` (no pre-launch baseline); the pre-floor line did not fire, so the last interval line plus `T2_MEMORY_FLOOR_HIT` bracket the refusal; one arm, one build, diagnostic floor.
+
+Next: attribute the CMA exhaustion to specific GL/EGL classes and decide whether any of it is retainable menu-only storage (owner §40.6 / B2 ledger), not another press experiment.

@@ -1116,6 +1116,123 @@ index 0000000..fbe5673
 +}
 +
 +#endif
+diff --git a/native/lc2_menu_ledger.h b/native/lc2_menu_ledger.h
+new file mode 100644
+index 0000000..f5465f6
+--- /dev/null
++++ b/native/lc2_menu_ledger.h
+@@ -0,0 +1,111 @@
++/* MENU_MEMORY_LEDGER (owner roadmap 40.5 M0): measurement without behaviour change.
++ *
++ * One line at most once per second while enabled, plus a forced line at the
++ * first presented frame and immediately before a memory-floor refusal. Reads only
++ * host-side files and in-process counters: no guest memory, no allocation, no
++ * change to admission, budgets, floors or swap policy.
++ *
++ * Deliberately labelled: values that are not measured say `untracked` instead of
++ * carrying a zero, because a zero in a ledger is read as "nothing allocated".
++ */
++#ifndef LC2_MENU_LEDGER_H
++#define LC2_MENU_LEDGER_H
++#include <time.h>
++
++static struct {
++    unsigned configured, enabled, lines, forced_first, forced_floor;
++    uint64_t last_ns, first_present_ns;
++    uint64_t base_available_kib;
++} lc2_menu_ledger;
++
++static uint64_t lc2_menu_ledger_now_ns(void) {
++    struct timespec ts;clock_gettime(CLOCK_MONOTONIC,&ts);
++    return (uint64_t)ts.tv_sec*1000000000ULL+(uint64_t)ts.tv_nsec;
++}
++
++static unsigned long lc2_menu_ledger_meminfo(const char *key) {
++    FILE *file=fopen("/proc/meminfo","r");if(!file)return 0;
++    char line[256];unsigned long value=0;
++    size_t length=strlen(key);
++    while(fgets(line,sizeof line,file)) {
++        if(!strncmp(line,key,length) && line[length]==':') {value=strtoul(line+length+1,NULL,10);break;}
++    }
++    fclose(file);return value;
++}
++
++static void lc2_menu_ledger_status(unsigned long *rss_kib,unsigned long *swap_kib) {
++    *rss_kib=0;*swap_kib=0;
++    FILE *file=fopen("/proc/self/status","r");if(!file)return;
++    char line[256];
++    while(fgets(line,sizeof line,file)) {
++        if(!strncmp(line,"VmRSS:",6))*rss_kib=strtoul(line+6,NULL,10);
++        else if(!strncmp(line,"VmSwap:",7))*swap_kib=strtoul(line+7,NULL,10);
++    }
++    fclose(file);
++}
++
++static void lc2_menu_ledger_emit(const char *why,unsigned frames) {
++    unsigned long rss,swap;lc2_menu_ledger_status(&rss,&swap);
++    unsigned long available=lc2_menu_ledger_meminfo("MemAvailable");
++    if(!lc2_menu_ledger.base_available_kib)lc2_menu_ledger.base_available_kib=available;
++    uint64_t live_textures=0,charged=0;
++    for(unsigned i=0;i<4096;i++) {
++        if(!nvn_textures[i].live)continue;
++        live_textures++;
++        charged+=nvn_textures[i].t2_budget_bytes;
++    }
++    pthread_mutex_lock(&t2_texture_budget_mutex);
++    uint64_t budget_live=t2_texture_budget.live_bytes,budget_peak=t2_texture_budget.peak_bytes,
++             budget_count=t2_texture_budget.count;
++    pthread_mutex_unlock(&t2_texture_budget_mutex);
++    uint64_t now=lc2_menu_ledger_now_ns();
++    if(!lc2_menu_ledger.first_present_ns)lc2_menu_ledger.first_present_ns=now;
++    printf("LC2_MENU_LEDGER why=%s t-ms=%llu frames=%u line=%u"
++           " available-kib=%lu base-available-kib=%llu delta-kib=%lld cmafree-kib=%lu"
++           " cached-kib=%lu anonpages-kib=%lu shmem-kib=%lu swapfree-kib=%lu"
++           " vmrss-kib=%lu vmswap-kib=%lu"
++           " budget-live-bytes=%llu budget-peak-bytes=%llu budget-charges=%llu"
++           " textures-live=%llu textures-charged-bytes=%llu"
++           " renderbuffers=untracked buffers=untracked egl-surfaces=untracked"
++           " driver-physical=unknown guest-heap=untracked"
++           " scope=host-observable diagnostic=1 behaviour=unchanged\n",
++           why,(unsigned long long)((now-lc2_menu_ledger.first_present_ns)/1000000ULL),frames,
++           lc2_menu_ledger.lines,available,(unsigned long long)lc2_menu_ledger.base_available_kib,
++           (long long)((long long)available-(long long)lc2_menu_ledger.base_available_kib),
++           lc2_menu_ledger_meminfo("CmaFree"),lc2_menu_ledger_meminfo("Cached"),
++           lc2_menu_ledger_meminfo("AnonPages"),lc2_menu_ledger_meminfo("Shmem"),
++           lc2_menu_ledger_meminfo("SwapFree"),rss,swap,
++           (unsigned long long)budget_live,(unsigned long long)budget_peak,(unsigned long long)budget_count,
++           (unsigned long long)live_textures,(unsigned long long)charged);
++    lc2_menu_ledger.lines++;fflush(stdout);
++}
++
++/* Called from the present path. `first` marks the first presented frame of the run. */
++static void lc2_menu_ledger_tick(unsigned frames,unsigned first) {
++    if(!lc2_menu_ledger.configured) {
++        const char *option=getenv("LC2_MENU_LEDGER");
++        lc2_menu_ledger.enabled=option && !strcmp(option,"1");
++        lc2_menu_ledger.configured=1;
++        if(lc2_menu_ledger.enabled) {
++            lc2_menu_ledger.first_present_ns=lc2_menu_ledger_now_ns();
++            lc2_menu_ledger_emit("arm-start",frames);
++            return;
++        }
++    }
++    if(!lc2_menu_ledger.enabled)return;
++    uint64_t now=lc2_menu_ledger_now_ns();
++    if(first && !lc2_menu_ledger.forced_first) {
++        lc2_menu_ledger.forced_first=1;lc2_menu_ledger_emit("first-present",frames);
++        lc2_menu_ledger.last_ns=now;return;
++    }
++    if(now-lc2_menu_ledger.last_ns<1000000000ULL)return;
++    lc2_menu_ledger.last_ns=now;
++    lc2_menu_ledger_emit("interval",frames);
++}
++
++/* Called where the floor decides to stop the run: the ledger must survive the exit. */
++static void lc2_menu_ledger_floor(void) {
++    if(!lc2_menu_ledger.enabled || lc2_menu_ledger.forced_floor)return;
++    lc2_menu_ledger.forced_floor=1;lc2_menu_ledger_emit("pre-floor-stop",0);
++}
++#endif
 diff --git a/native/lc2_menu_trace.h b/native/lc2_menu_trace.h
 new file mode 100644
 index 0000000..b39d919
@@ -1945,11 +2062,14 @@ index 410deb4..7269206 100644
  }
  /* Called after Submit, outside the producer/regions locks. A quick atomic
 diff --git a/native/nvn_present.h b/native/nvn_present.h
-index 8c0254b..6306f63 100644
+index 8c0254b..31ebb65 100644
 --- a/native/nvn_present.h
 +++ b/native/nvn_present.h
-@@ -13,6 +13,44 @@
+@@ -11,8 +11,47 @@
+ #include "nvn_frame_timing.h"
+ #include "nvn_gpu_frame_gate.h"
  #include "nvn_capture_request.h"
++#include "lc2_menu_ledger.h" /* 40.5 M0: opt-in host-observable menu ledger */
  #include "nxgl_frame_proof_adapter.h"
  #include "t2_present_pace.h"
 +#include "nvn_fb_present.h"
@@ -1993,7 +2113,7 @@ index 8c0254b..6306f63 100644
  static struct {EGLContext context;GLuint program,vertices;GLint image_scale,image_offset;unsigned frames,black_streak,proved,sampled_pixels,full_readback,sample_y,sample_rows;
      unsigned sparse_readback,sample_frame_logs;struct nvn_pixel_band band;} nvn_present;
  static void nvn_present_receipt(const char *status,unsigned nonblack,unsigned maximum,unsigned draws) {
-@@ -97,8 +135,8 @@ static void nvn_present_setup(void) {
+@@ -97,8 +136,8 @@ static void nvn_present_setup(void) {
      if(nvn_present.sample_frame_logs)printf("NVN_VIDEO_LOG_CADENCE measured=always unmeasured=journal-only journal=one-per-frame\n");
      const EGLint attrs[]={EGL_CONTEXT_CLIENT_VERSION,2,EGL_NONE};
      nvn_present.context=nvn_single_enabled()?nvn_device.context:eglCreateContext(nvn_device.display,nvn_device.config,nvn_device.context,attrs);
@@ -2004,7 +2124,7 @@ index 8c0254b..6306f63 100644
      const char *gl_extensions=(const char *)glGetString(GL_EXTENSIONS),*egl_extensions=eglQueryString(nvn_device.display,EGL_EXTENSIONS);
      EGLint proof_width=0,proof_height=0;
      (void)eglQuerySurface(nvn_device.display,nvn_window.surface,EGL_WIDTH,&proof_width);
-@@ -170,6 +208,7 @@ static unsigned nvn_present_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -170,6 +209,7 @@ static unsigned nvn_present_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
           * per-60-logic-frame profile line consumed by the automation. */
          nvn_present.frames++;nvn_replay.last_frame=nvn_present.frames;nvn_window.acquired[index]=0;
          uint64_t now=nvn_nanoseconds();nvn_profile.present_ns+=now-started;nvn_profile.frames++;
@@ -2012,7 +2132,7 @@ index 8c0254b..6306f63 100644
          if(nvn_profile.start && nvn_profile.frames>=60) {
              double ms=1e-6/nvn_profile.frames;
              printf("NVN_PROFILE frame=%u count=%u elapsed-ms=%.3f replay-ms=%.3f present-ms=%.3f readback-ms=%.3f replay-cpu-ms=%.3f scope=wall-time-per-frame frameskip=%u rendered=%"PRIu64" skipped=%"PRIu64"\n",nvn_present.frames,nvn_profile.frames,
-@@ -186,7 +225,7 @@ static unsigned nvn_present_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -186,7 +226,7 @@ static unsigned nvn_present_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
      if(!nvn_async_frame_enabled())nvn_async_present_wait_locked(q,single);
      if(!single)nvn_egl_present_reader_wait();
      if(single) {
@@ -2021,7 +2141,7 @@ index 8c0254b..6306f63 100644
          /* This is a logical context use even though its physical binding is
           * retained. Do not reuse a completion proof from before the quad. */
          if(!++nvn_gl_completion.use_serial)stop("NVN_GL_SERIAL_WRAP",nvn_caller,0,24);
-@@ -198,16 +237,23 @@ static unsigned nvn_present_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -198,16 +238,23 @@ static unsigned nvn_present_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
          if(pd_enabled&&nvn_render.framebuffer&&nvn_render.depth&&nvn_normal_discard_resolve()){const GLenum attachment=GL_DEPTH_ATTACHMENT;nvn_normal_discard_state.discard(GL_FRAMEBUFFER,1,&attachment);}
      }
      nvn_present_setup();
@@ -2047,7 +2167,7 @@ index 8c0254b..6306f63 100644
  #endif
      const nxcompat_video_owner_decision *video=t2_video_layout(
          (int)((uint64_t)nvn_window.crop[2]*nvn_low_render_width(t)/t->b.width),
-@@ -231,6 +277,39 @@ static unsigned nvn_present_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -231,6 +278,39 @@ static unsigned nvn_present_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
      glUniform2f(nvn_present.image_scale,scale*nvn_window.crop[2]/t->b.width,scale_y*nvn_window.crop[3]/t->b.height);
      glUniform2f(nvn_present.image_offset,scale*nvn_window.crop[0]/t->b.width,scale_y*nvn_window.crop[1]/t->b.height);
      glDrawArrays(GL_TRIANGLE_STRIP,0,4);nvn_present.frames++;
@@ -2087,7 +2207,15 @@ index 8c0254b..6306f63 100644
      if(t2_video_needs_readback()) {
          GLint viewport[4];EGLint measured_w=0,measured_h=0;
          glGetIntegerv(GL_VIEWPORT,viewport);
-@@ -308,12 +387,29 @@ static unsigned nvn_present_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -270,6 +350,7 @@ static unsigned nvn_present_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+     cadence_pixel_proof=proof;
+     const char *status=proof?"PIXELS":nonblack?"INCONCLUSIVE":"BLACK-SAMPLE";
+     printf("NVN_PRESENT_PIXELS frame=%u nonblack=%u max=%u white=%u texture-draws=%u status=%s\n",nvn_present.frames,nonblack,maximum,readback.measure.white,t->draws,status);
++    lc2_menu_ledger_tick(nvn_present.frames,nvn_present.frames==1);
+     /* Native54 frame381 proves a black atlas background, RGB0 glyph vertices
+      * and a transparent final overlay in the color layer; the normal target
+      * still renders. Twelve samples were insufficient to observe this native
+@@ -308,12 +389,29 @@ static unsigned nvn_present_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
  #ifdef ANIMAL_WELL_SHADERS
      if(aw_fbcopy_enabled())aw_fbcopy_present();else {
          nxgl_frame_proof_before_present(width,height);
@@ -2118,7 +2246,7 @@ index 8c0254b..6306f63 100644
      if(nxgl_frame_proof_consume_fatal())stop("NVN_FRAME_PROOF_FATAL",nvn_caller,nvn_present.frames,22);
      uint64_t swap_finished=nvn_nanoseconds();nvn_profile.swap_ns+=swap_finished-swap_started;
      t2_runtime_health_after_present(cadence_pixel_proof);
-@@ -341,12 +437,14 @@ static unsigned nvn_present_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -341,12 +439,14 @@ static unsigned nvn_present_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
      pthread_mutex_unlock(&nvn_gl_completion.mutex);
      if(!nvn_present_from_job)nvn_window.acquired[index]=0;
      uint64_t now=nvn_nanoseconds();nvn_profile.present_ns+=now-started;nvn_profile.frames++;
@@ -2135,7 +2263,7 @@ index 8c0254b..6306f63 100644
          printf("NVN_PROFILE_DETAIL frame=%u counter-ms=%.3f finish-ms=%.3f receipt-ms=%.3f swap-ms=%.3f elided-waits=%"PRIu64" real-final-waits=%"PRIu64"\n",
              nvn_present.frames,nvn_profile.counter_ns*ms,nvn_profile.finish_ns*ms,nvn_profile.receipt_ns*ms,nvn_profile.swap_ns*ms,
              nvn_gl_completion.skipped_waits,nvn_gl_completion.real_waits);
-@@ -376,3 +474,8 @@ static unsigned nvn_present_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -376,3 +476,8 @@ static unsigned nvn_present_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
      megaman_frame_cadence_end_present(1,cadence_pixel_proof);
      return 1;
  }
