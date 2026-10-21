@@ -1,0 +1,1424 @@
+[
+  {
+    "pid": 7073,
+    "starttime": "1886099",
+    "run_uuid": "406f39ae-c73d-4fae-92bd-3c7881122cc5",
+    "boot_id": "d443aa3c-9e62-41fe-a5ba-e05aa4e63a61",
+    "status": "Name:\tterminator2d-ne\nUmask:\t0022\nState:\tR (running)\nTgid:\t7073\nNgid:\t0\nPid:\t7073\nPPid:\t7056\nTracerPid:\t0\nUid:\t0\t0\t0\t0\nGid:\t0\t0\t0\t0\nFDSize:\t256\nGroups:\t \nNStgid:\t7073\nNSpid:\t7073\nNSpgid:\t7056\nNSsid:\t7056\nVmPeak:\t  140580 kB\nVmSize:\t  140580 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t   31840 kB\nVmRSS:\t   31840 kB\nRssAnon:\t    6552 kB\nRssFile:\t   25288 kB\nRssShmem:\t       0 kB\nVmData:\t   85044 kB\nVmStk:\t     136 kB\nVmExe:\t    1064 kB\nVmLib:\t   51376 kB\nVmPTE:\t     176 kB\nVmSwap:\t       0 kB\nCoreDumping:\t0\nTHP_enabled:\t0\nThreads:\t1\nSigQ:\t1/3331\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000000\nSigIgn:\t0000000001001006\nSigCgt:\t0000000180000000\nCapInh:\t0000000000000000\nCapPrm:\t000001ffffffffff\nCapEff:\t000001ffffffffff\nCapBnd:\t000001ffffffffff\nCapAmb:\t0000000000000000\nNoNewPrivs:\t0\nSeccomp:\t0\nSeccomp_filters:\t0\nSpeculation_Store_Bypass:\tnot vulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\tff\nCpus_allowed_list:\t0-7\nMems_allowed:\t1\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t262\nnonvoluntary_ctxt_switches:\t239\n",
+    "t": 18861.662934506,
+    "summary": {
+      "units": "KiB",
+      "scope": "one smaps read; non-atomic",
+      "limitations": "Pathname is not allocator identity; file VMAs can contain anonymous COW pages. Device mappings are not ordinary reclaimable files. No drop safety inferred.",
+      "owners": [
+        {
+          "path": "/usr/lib/libmali.so.0.32.0",
+          "mappings": 4,
+          "Rss": 13840,
+          "Pss": 13840,
+          "Anonymous": 2396,
+          "Swap": 0,
+          "Private_Clean": 11444,
+          "Private_Dirty": 2396
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/main.text.seg",
+          "mappings": 1,
+          "Rss": 10468,
+          "Pss": 10468,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 10468,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "[anonymous]",
+          "mappings": 12,
+          "Rss": 3552,
+          "Pss": 3552,
+          "Anonymous": 3552,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 3552
+        },
+        {
+          "path": "/usr/lib/libstdc++.so.6.0.28",
+          "mappings": 4,
+          "Rss": 1248,
+          "Pss": 1248,
+          "Anonymous": 56,
+          "Swap": 0,
+          "Private_Clean": 1192,
+          "Private_Dirty": 56
+        },
+        {
+          "path": "/lib/libc-2.33.so",
+          "mappings": 4,
+          "Rss": 1052,
+          "Pss": 111,
+          "Anonymous": 24,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 24
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/lamentum-nextos",
+          "mappings": 3,
+          "Rss": 740,
+          "Pss": 740,
+          "Anonymous": 184,
+          "Swap": 0,
+          "Private_Clean": 556,
+          "Private_Dirty": 184
+        },
+        {
+          "path": "/usr/lib/libSDL2-2.0.so.0.3200.6",
+          "mappings": 4,
+          "Rss": 248,
+          "Pss": 248,
+          "Anonymous": 56,
+          "Swap": 0,
+          "Private_Clean": 192,
+          "Private_Dirty": 56
+        },
+        {
+          "path": "[heap]",
+          "mappings": 1,
+          "Rss": 172,
+          "Pss": 172,
+          "Anonymous": 172,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 172
+        },
+        {
+          "path": "/lib/ld-linux-aarch64.so.1",
+          "mappings": 3,
+          "Rss": 156,
+          "Pss": 33,
+          "Anonymous": 16,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 16
+        },
+        {
+          "path": "/lib/libpthread-2.33.so",
+          "mappings": 4,
+          "Rss": 92,
+          "Pss": 18,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/lib/libm-2.33.so",
+          "mappings": 4,
+          "Rss": 72,
+          "Pss": 31,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libdrm.so.2.4.0",
+          "mappings": 4,
+          "Rss": 72,
+          "Pss": 72,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 64,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libgcc_s.so.1",
+          "mappings": 4,
+          "Rss": 72,
+          "Pss": 72,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 64,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libz.so.1.2.12",
+          "mappings": 4,
+          "Rss": 68,
+          "Pss": 68,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 60,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/lib/librt-2.33.so",
+          "mappings": 4,
+          "Rss": 36,
+          "Pss": 36,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 28,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "[stack]",
+          "mappings": 1,
+          "Rss": 24,
+          "Pss": 24,
+          "Anonymous": 24,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 24
+        },
+        {
+          "path": "/lib/libdl-2.33.so",
+          "mappings": 4,
+          "Rss": 20,
+          "Pss": 10,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libEGL.so.1.4.0",
+          "mappings": 4,
+          "Rss": 12,
+          "Pss": 12,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 4,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libGLESv2.so.2.1.0",
+          "mappings": 4,
+          "Rss": 12,
+          "Pss": 12,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 4,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/rtld.text.seg",
+          "mappings": 1,
+          "Rss": 8,
+          "Pss": 8,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 8,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "[vdso]",
+          "mappings": 1,
+          "Rss": 4,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/main.rodata.seg",
+          "mappings": 1,
+          "Rss": 0,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/rtld.rodata.seg",
+          "mappings": 1,
+          "Rss": 0,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/sdk.rodata.seg",
+          "mappings": 1,
+          "Rss": 0,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/sdk.text.seg",
+          "mappings": 1,
+          "Rss": 0,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/subsdk0.rodata.seg",
+          "mappings": 1,
+          "Rss": 0,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/subsdk0.text.seg",
+          "mappings": 1,
+          "Rss": 0,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "[vvar]",
+          "mappings": 1,
+          "Rss": 0,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        }
+      ],
+      "totals": {
+        "Rss": 31968,
+        "Pss": 30775,
+        "Anonymous": 6552,
+        "Swap": 0,
+        "Private_Clean": 24084,
+        "Private_Dirty": 6552
+      }
+    }
+  },
+  {
+    "pid": 7073,
+    "starttime": "1886099",
+    "run_uuid": "406f39ae-c73d-4fae-92bd-3c7881122cc5",
+    "boot_id": "d443aa3c-9e62-41fe-a5ba-e05aa4e63a61",
+    "status": "Name:\tterminator2d-ne\nUmask:\t0022\nState:\tS (sleeping)\nTgid:\t7073\nNgid:\t0\nPid:\t7073\nPPid:\t7056\nTracerPid:\t0\nUid:\t0\t0\t0\t0\nGid:\t0\t0\t0\t0\nFDSize:\t256\nGroups:\t \nNStgid:\t7073\nNSpid:\t7073\nNSpgid:\t7056\nNSsid:\t7056\nVmPeak:\t 1158784 kB\nVmSize:\t 1115236 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t  285924 kB\nVmRSS:\t  285924 kB\nRssAnon:\t  166176 kB\nRssFile:\t  119636 kB\nRssShmem:\t     112 kB\nVmData:\t  513692 kB\nVmStk:\t     136 kB\nVmExe:\t    1064 kB\nVmLib:\t   91660 kB\nVmPTE:\t    1308 kB\nVmSwap:\t       0 kB\nCoreDumping:\t0\nTHP_enabled:\t0\nThreads:\t45\nSigQ:\t1/3331\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000010\nSigIgn:\t0000000001001006\nSigCgt:\t0000000980002cd8\nCapInh:\t0000000000000000\nCapPrm:\t000001ffffffffff\nCapEff:\t000001ffffffffff\nCapBnd:\t000001ffffffffff\nCapAmb:\t0000000000000000\nNoNewPrivs:\t0\nSeccomp:\t0\nSeccomp_filters:\t0\nSpeculation_Store_Bypass:\tnot vulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\t01\nCpus_allowed_list:\t0\nMems_allowed:\t1\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t1119\nnonvoluntary_ctxt_switches:\t1322\n",
+    "t": 18864.144520227,
+    "summary": {
+      "units": "KiB",
+      "scope": "one smaps read; non-atomic",
+      "limitations": "Pathname is not allocator identity; file VMAs can contain anonymous COW pages. Device mappings are not ordinary reclaimable files. No drop safety inferred.",
+      "owners": [
+        {
+          "path": "[anonymous]",
+          "mappings": 241,
+          "Rss": 140168,
+          "Pss": 140168,
+          "Anonymous": 140168,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 140168
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/main.text.seg",
+          "mappings": 1,
+          "Rss": 30132,
+          "Pss": 30132,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 30132,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "[heap]",
+          "mappings": 1,
+          "Rss": 24112,
+          "Pss": 24112,
+          "Anonymous": 24112,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 24112
+        },
+        {
+          "path": "/usr/lib/libmali.so.0.32.0",
+          "mappings": 4,
+          "Rss": 11412,
+          "Pss": 11412,
+          "Anonymous": 2396,
+          "Swap": 0,
+          "Private_Clean": 9016,
+          "Private_Dirty": 2396
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/main.rodata.seg",
+          "mappings": 1,
+          "Rss": 8372,
+          "Pss": 8372,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 8372,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/sdk.text.seg",
+          "mappings": 1,
+          "Rss": 5644,
+          "Pss": 5644,
+          "Anonymous": 84,
+          "Swap": 0,
+          "Private_Clean": 5560,
+          "Private_Dirty": 84
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/sdk.rodata.seg",
+          "mappings": 1,
+          "Rss": 5120,
+          "Pss": 5120,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 5120,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/subsdk0.text.seg",
+          "mappings": 1,
+          "Rss": 3412,
+          "Pss": 3412,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 3412,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/subsdk0.rodata.seg",
+          "mappings": 1,
+          "Rss": 1504,
+          "Pss": 1504,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 1504,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/lamentum-nextos",
+          "mappings": 3,
+          "Rss": 1372,
+          "Pss": 1372,
+          "Anonymous": 336,
+          "Swap": 0,
+          "Private_Clean": 1036,
+          "Private_Dirty": 336
+        },
+        {
+          "path": "/usr/lib/libstdc++.so.6.0.28",
+          "mappings": 4,
+          "Rss": 844,
+          "Pss": 844,
+          "Anonymous": 56,
+          "Swap": 0,
+          "Private_Clean": 788,
+          "Private_Dirty": 56
+        },
+        {
+          "path": "/lib/libc-2.33.so",
+          "mappings": 4,
+          "Rss": 832,
+          "Pss": 111,
+          "Anonymous": 24,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 24
+        },
+        {
+          "path": "/usr/lib/libSDL2-2.0.so.0.3200.6",
+          "mappings": 4,
+          "Rss": 764,
+          "Pss": 764,
+          "Anonymous": 56,
+          "Swap": 0,
+          "Private_Clean": 708,
+          "Private_Dirty": 56
+        },
+        {
+          "path": "/usr/lib/libasound.so.2.0.0",
+          "mappings": 4,
+          "Rss": 632,
+          "Pss": 632,
+          "Anonymous": 36,
+          "Swap": 0,
+          "Private_Clean": 596,
+          "Private_Dirty": 36
+        },
+        {
+          "path": "/tmp/cotm-switch-shm-RqTKmD (deleted)",
+          "mappings": 2,
+          "Rss": 160,
+          "Pss": 160,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 160
+        },
+        {
+          "path": "/lib/ld-linux-aarch64.so.1",
+          "mappings": 3,
+          "Rss": 156,
+          "Pss": 33,
+          "Anonymous": 16,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 16
+        },
+        {
+          "path": "/lib/libpthread-2.33.so",
+          "mappings": 4,
+          "Rss": 92,
+          "Pss": 18,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/lib/libudev.so.1.6.3",
+          "mappings": 4,
+          "Rss": 88,
+          "Pss": 88,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 80,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libgcc_s.so.1",
+          "mappings": 4,
+          "Rss": 72,
+          "Pss": 72,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 64,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libz.so.1.2.12",
+          "mappings": 4,
+          "Rss": 68,
+          "Pss": 68,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 60,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/lib/libm-2.33.so",
+          "mappings": 4,
+          "Rss": 60,
+          "Pss": 27,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libdrm.so.2.4.0",
+          "mappings": 4,
+          "Rss": 56,
+          "Pss": 56,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 48,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "[stack]",
+          "mappings": 1,
+          "Rss": 52,
+          "Pss": 52,
+          "Anonymous": 52,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 52
+        },
+        {
+          "path": "/lib/librt-2.33.so",
+          "mappings": 4,
+          "Rss": 24,
+          "Pss": 24,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 16,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/lib/libdl-2.33.so",
+          "mappings": 4,
+          "Rss": 16,
+          "Pss": 9,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libEGL.so.1.4.0",
+          "mappings": 4,
+          "Rss": 12,
+          "Pss": 12,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 4,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libGLESv2.so.2.1.0",
+          "mappings": 4,
+          "Rss": 12,
+          "Pss": 12,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 4,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libgbm.so.1.0.0",
+          "mappings": 4,
+          "Rss": 12,
+          "Pss": 12,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 4,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/rtld.text.seg",
+          "mappings": 1,
+          "Rss": 8,
+          "Pss": 8,
+          "Anonymous": 4,
+          "Swap": 0,
+          "Private_Clean": 4,
+          "Private_Dirty": 4
+        },
+        {
+          "path": "/tmp/cotm-switch-shm-HVXxSM (deleted)",
+          "mappings": 2,
+          "Rss": 8,
+          "Pss": 4,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/rtld.rodata.seg",
+          "mappings": 1,
+          "Rss": 4,
+          "Pss": 4,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 4,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "[vdso]",
+          "mappings": 1,
+          "Rss": 4,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/dev/mali0",
+          "mappings": 59,
+          "Rss": 0,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/dev/snd/pcmC0D0p",
+          "mappings": 1,
+          "Rss": 0,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "[vvar]",
+          "mappings": 1,
+          "Rss": 0,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        }
+      ],
+      "totals": {
+        "Rss": 235224,
+        "Pss": 234258,
+        "Anonymous": 167428,
+        "Swap": 0,
+        "Private_Clean": 66532,
+        "Private_Dirty": 167588
+      }
+    }
+  },
+  {
+    "pid": 7073,
+    "starttime": "1886099",
+    "run_uuid": "406f39ae-c73d-4fae-92bd-3c7881122cc5",
+    "boot_id": "d443aa3c-9e62-41fe-a5ba-e05aa4e63a61",
+    "status": "Name:\tterminator2d-ne\nUmask:\t0022\nState:\tS (sleeping)\nTgid:\t7073\nNgid:\t0\nPid:\t7073\nPPid:\t7056\nTracerPid:\t0\nUid:\t0\t0\t0\t0\nGid:\t0\t0\t0\t0\nFDSize:\t256\nGroups:\t \nNStgid:\t7073\nNSpid:\t7073\nNSpgid:\t7056\nNSsid:\t7056\nVmPeak:\t 1659016 kB\nVmSize:\t 1654452 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t  555944 kB\nVmRSS:\t  554248 kB\nRssAnon:\t  344268 kB\nRssFile:\t  209868 kB\nRssShmem:\t     112 kB\nVmData:\t  729832 kB\nVmStk:\t     136 kB\nVmExe:\t    1064 kB\nVmLib:\t   91660 kB\nVmPTE:\t    1800 kB\nVmSwap:\t       0 kB\nCoreDumping:\t0\nTHP_enabled:\t0\nThreads:\t47\nSigQ:\t1/3331\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000010\nSigIgn:\t0000000001001006\nSigCgt:\t0000000980002cd8\nCapInh:\t0000000000000000\nCapPrm:\t000001ffffffffff\nCapEff:\t000001ffffffffff\nCapBnd:\t000001ffffffffff\nCapAmb:\t0000000000000000\nNoNewPrivs:\t0\nSeccomp:\t0\nSeccomp_filters:\t0\nSpeculation_Store_Bypass:\tnot vulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\t01\nCpus_allowed_list:\t0\nMems_allowed:\t1\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t1558\nnonvoluntary_ctxt_switches:\t1403\n",
+    "t": 18866.6181026,
+    "summary": {
+      "units": "KiB",
+      "scope": "one smaps read; non-atomic",
+      "limitations": "Pathname is not allocator identity; file VMAs can contain anonymous COW pages. Device mappings are not ordinary reclaimable files. No drop safety inferred.",
+      "owners": [
+        {
+          "path": "[anonymous]",
+          "mappings": 264,
+          "Rss": 334124,
+          "Pss": 334124,
+          "Anonymous": 334124,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 334124
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/main.text.seg",
+          "mappings": 1,
+          "Rss": 30132,
+          "Pss": 30132,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 30132,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/usr/lib/libmali.so.0.32.0",
+          "mappings": 4,
+          "Rss": 11412,
+          "Pss": 11412,
+          "Anonymous": 2396,
+          "Swap": 0,
+          "Private_Clean": 9016,
+          "Private_Dirty": 2396
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/main.rodata.seg",
+          "mappings": 1,
+          "Rss": 8680,
+          "Pss": 8680,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 8680,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "[heap]",
+          "mappings": 1,
+          "Rss": 8088,
+          "Pss": 8088,
+          "Anonymous": 8088,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 8088
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/sdk.text.seg",
+          "mappings": 1,
+          "Rss": 5644,
+          "Pss": 5644,
+          "Anonymous": 84,
+          "Swap": 0,
+          "Private_Clean": 5560,
+          "Private_Dirty": 84
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/sdk.rodata.seg",
+          "mappings": 1,
+          "Rss": 5120,
+          "Pss": 5120,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 5120,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/subsdk0.text.seg",
+          "mappings": 1,
+          "Rss": 3412,
+          "Pss": 3412,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 3412,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/subsdk0.rodata.seg",
+          "mappings": 1,
+          "Rss": 1504,
+          "Pss": 1504,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 1504,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/lamentum-nextos",
+          "mappings": 3,
+          "Rss": 1380,
+          "Pss": 1380,
+          "Anonymous": 344,
+          "Swap": 0,
+          "Private_Clean": 1036,
+          "Private_Dirty": 344
+        },
+        {
+          "path": "/usr/lib/libstdc++.so.6.0.28",
+          "mappings": 4,
+          "Rss": 844,
+          "Pss": 844,
+          "Anonymous": 56,
+          "Swap": 0,
+          "Private_Clean": 788,
+          "Private_Dirty": 56
+        },
+        {
+          "path": "/lib/libc-2.33.so",
+          "mappings": 4,
+          "Rss": 832,
+          "Pss": 115,
+          "Anonymous": 24,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 24
+        },
+        {
+          "path": "/usr/lib/libSDL2-2.0.so.0.3200.6",
+          "mappings": 4,
+          "Rss": 764,
+          "Pss": 764,
+          "Anonymous": 56,
+          "Swap": 0,
+          "Private_Clean": 708,
+          "Private_Dirty": 56
+        },
+        {
+          "path": "/usr/lib/libasound.so.2.0.0",
+          "mappings": 4,
+          "Rss": 632,
+          "Pss": 632,
+          "Anonymous": 36,
+          "Swap": 0,
+          "Private_Clean": 596,
+          "Private_Dirty": 36
+        },
+        {
+          "path": "/tmp/cotm-switch-shm-RqTKmD (deleted)",
+          "mappings": 2,
+          "Rss": 160,
+          "Pss": 160,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 160
+        },
+        {
+          "path": "/lib/ld-linux-aarch64.so.1",
+          "mappings": 3,
+          "Rss": 156,
+          "Pss": 33,
+          "Anonymous": 16,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 16
+        },
+        {
+          "path": "/lib/libpthread-2.33.so",
+          "mappings": 4,
+          "Rss": 92,
+          "Pss": 19,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/lib/libudev.so.1.6.3",
+          "mappings": 4,
+          "Rss": 88,
+          "Pss": 88,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 80,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libgcc_s.so.1",
+          "mappings": 4,
+          "Rss": 72,
+          "Pss": 72,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 64,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libz.so.1.2.12",
+          "mappings": 4,
+          "Rss": 68,
+          "Pss": 68,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 60,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/lib/libm-2.33.so",
+          "mappings": 4,
+          "Rss": 60,
+          "Pss": 27,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libdrm.so.2.4.0",
+          "mappings": 4,
+          "Rss": 56,
+          "Pss": 56,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 48,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "[stack]",
+          "mappings": 1,
+          "Rss": 52,
+          "Pss": 52,
+          "Anonymous": 52,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 52
+        },
+        {
+          "path": "/lib/librt-2.33.so",
+          "mappings": 4,
+          "Rss": 24,
+          "Pss": 24,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 16,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/lib/libdl-2.33.so",
+          "mappings": 4,
+          "Rss": 16,
+          "Pss": 9,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libEGL.so.1.4.0",
+          "mappings": 4,
+          "Rss": 12,
+          "Pss": 12,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 4,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libGLESv2.so.2.1.0",
+          "mappings": 4,
+          "Rss": 12,
+          "Pss": 12,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 4,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libgbm.so.1.0.0",
+          "mappings": 4,
+          "Rss": 12,
+          "Pss": 12,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 4,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/rtld.text.seg",
+          "mappings": 1,
+          "Rss": 8,
+          "Pss": 8,
+          "Anonymous": 4,
+          "Swap": 0,
+          "Private_Clean": 4,
+          "Private_Dirty": 4
+        },
+        {
+          "path": "/tmp/cotm-switch-shm-HVXxSM (deleted)",
+          "mappings": 2,
+          "Rss": 8,
+          "Pss": 4,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/rtld.rodata.seg",
+          "mappings": 1,
+          "Rss": 4,
+          "Pss": 4,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 4,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "[vdso]",
+          "mappings": 1,
+          "Rss": 4,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/dev/mali0",
+          "mappings": 51,
+          "Rss": 0,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/dev/snd/pcmC0D0p",
+          "mappings": 1,
+          "Rss": 0,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "[vvar]",
+          "mappings": 1,
+          "Rss": 0,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        }
+      ],
+      "totals": {
+        "Rss": 413472,
+        "Pss": 412511,
+        "Anonymous": 345368,
+        "Swap": 0,
+        "Private_Clean": 66840,
+        "Private_Dirty": 345528
+      }
+    }
+  },
+  {
+    "pid": 7073,
+    "starttime": "1886099",
+    "run_uuid": "406f39ae-c73d-4fae-92bd-3c7881122cc5",
+    "boot_id": "d443aa3c-9e62-41fe-a5ba-e05aa4e63a61",
+    "status": "Name:\tterminator2d-ne\nUmask:\t0022\nState:\tS (sleeping)\nTgid:\t7073\nNgid:\t0\nPid:\t7073\nPPid:\t7056\nTracerPid:\t0\nUid:\t0\t0\t0\t0\nGid:\t0\t0\t0\t0\nFDSize:\t256\nGroups:\t \nNStgid:\t7073\nNSpid:\t7073\nNSpgid:\t7056\nNSsid:\t7056\nVmPeak:\t 1887268 kB\nVmSize:\t 1887268 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t  714380 kB\nVmRSS:\t  710072 kB\nRssAnon:\t  371452 kB\nRssFile:\t  338348 kB\nRssShmem:\t     272 kB\nVmData:\t  716612 kB\nVmStk:\t     136 kB\nVmExe:\t    1064 kB\nVmLib:\t   91660 kB\nVmPTE:\t    1960 kB\nVmSwap:\t       0 kB\nCoreDumping:\t0\nTHP_enabled:\t0\nThreads:\t49\nSigQ:\t1/3331\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000010\nSigIgn:\t0000000001001006\nSigCgt:\t0000000980002cd8\nCapInh:\t0000000000000000\nCapPrm:\t000001ffffffffff\nCapEff:\t000001ffffffffff\nCapBnd:\t000001ffffffffff\nCapAmb:\t0000000000000000\nNoNewPrivs:\t0\nSeccomp:\t0\nSeccomp_filters:\t0\nSpeculation_Store_Bypass:\tnot vulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\t01\nCpus_allowed_list:\t0\nMems_allowed:\t1\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t2416\nnonvoluntary_ctxt_switches:\t4526\n",
+    "t": 18869.100316864,
+    "summary": {
+      "units": "KiB",
+      "scope": "one smaps read; non-atomic",
+      "limitations": "Pathname is not allocator identity; file VMAs can contain anonymous COW pages. Device mappings are not ordinary reclaimable files. No drop safety inferred.",
+      "owners": [
+        {
+          "path": "[anonymous]",
+          "mappings": 274,
+          "Rss": 361912,
+          "Pss": 361912,
+          "Anonymous": 361912,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 361912
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/main.text.seg",
+          "mappings": 1,
+          "Rss": 30132,
+          "Pss": 30132,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 30132,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/usr/lib/libmali.so.0.32.0",
+          "mappings": 4,
+          "Rss": 20320,
+          "Pss": 20320,
+          "Anonymous": 2396,
+          "Swap": 0,
+          "Private_Clean": 17924,
+          "Private_Dirty": 2396
+        },
+        {
+          "path": "[heap]",
+          "mappings": 1,
+          "Rss": 8100,
+          "Pss": 8100,
+          "Anonymous": 8100,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 8100
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/sdk.text.seg",
+          "mappings": 1,
+          "Rss": 5644,
+          "Pss": 5644,
+          "Anonymous": 84,
+          "Swap": 0,
+          "Private_Clean": 5560,
+          "Private_Dirty": 84
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/sdk.rodata.seg",
+          "mappings": 1,
+          "Rss": 4764,
+          "Pss": 4764,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 4764,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/main.rodata.seg",
+          "mappings": 1,
+          "Rss": 4448,
+          "Pss": 4448,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 4448,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/subsdk0.text.seg",
+          "mappings": 1,
+          "Rss": 3412,
+          "Pss": 3412,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 3412,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/lamentum-nextos",
+          "mappings": 3,
+          "Rss": 1452,
+          "Pss": 1452,
+          "Anonymous": 348,
+          "Swap": 0,
+          "Private_Clean": 1104,
+          "Private_Dirty": 348
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/subsdk0.rodata.seg",
+          "mappings": 1,
+          "Rss": 1360,
+          "Pss": 1360,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 1360,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/usr/lib/libstdc++.so.6.0.28",
+          "mappings": 4,
+          "Rss": 844,
+          "Pss": 844,
+          "Anonymous": 56,
+          "Swap": 0,
+          "Private_Clean": 788,
+          "Private_Dirty": 56
+        },
+        {
+          "path": "/usr/lib/libSDL2-2.0.so.0.3200.6",
+          "mappings": 4,
+          "Rss": 760,
+          "Pss": 760,
+          "Anonymous": 56,
+          "Swap": 0,
+          "Private_Clean": 704,
+          "Private_Dirty": 56
+        },
+        {
+          "path": "/lib/libc-2.33.so",
+          "mappings": 4,
+          "Rss": 756,
+          "Pss": 97,
+          "Anonymous": 24,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 24
+        },
+        {
+          "path": "/usr/lib/libasound.so.2.0.0",
+          "mappings": 4,
+          "Rss": 580,
+          "Pss": 580,
+          "Anonymous": 36,
+          "Swap": 0,
+          "Private_Clean": 544,
+          "Private_Dirty": 36
+        },
+        {
+          "path": "/tmp/cotm-switch-shm-RqTKmD (deleted)",
+          "mappings": 2,
+          "Rss": 320,
+          "Pss": 160,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/lib/ld-linux-aarch64.so.1",
+          "mappings": 3,
+          "Rss": 144,
+          "Pss": 32,
+          "Anonymous": 16,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 16
+        },
+        {
+          "path": "/lib/libpthread-2.33.so",
+          "mappings": 4,
+          "Rss": 92,
+          "Pss": 19,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/lib/libudev.so.1.6.3",
+          "mappings": 4,
+          "Rss": 88,
+          "Pss": 88,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 80,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libgcc_s.so.1",
+          "mappings": 4,
+          "Rss": 72,
+          "Pss": 72,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 64,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libz.so.1.2.12",
+          "mappings": 4,
+          "Rss": 68,
+          "Pss": 68,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 60,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/lib/libm-2.33.so",
+          "mappings": 4,
+          "Rss": 60,
+          "Pss": 27,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libdrm.so.2.4.0",
+          "mappings": 4,
+          "Rss": 56,
+          "Pss": 56,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 48,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "[stack]",
+          "mappings": 1,
+          "Rss": 52,
+          "Pss": 52,
+          "Anonymous": 52,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 52
+        },
+        {
+          "path": "/lib/librt-2.33.so",
+          "mappings": 4,
+          "Rss": 24,
+          "Pss": 24,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 16,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/lib/libdl-2.33.so",
+          "mappings": 4,
+          "Rss": 16,
+          "Pss": 9,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libEGL.so.1.4.0",
+          "mappings": 4,
+          "Rss": 12,
+          "Pss": 12,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 4,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libGLESv2.so.2.1.0",
+          "mappings": 4,
+          "Rss": 12,
+          "Pss": 12,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 4,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libgbm.so.1.0.0",
+          "mappings": 4,
+          "Rss": 12,
+          "Pss": 12,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 4,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/rtld.text.seg",
+          "mappings": 1,
+          "Rss": 8,
+          "Pss": 8,
+          "Anonymous": 4,
+          "Swap": 0,
+          "Private_Clean": 4,
+          "Private_Dirty": 4
+        },
+        {
+          "path": "/tmp/cotm-switch-shm-HVXxSM (deleted)",
+          "mappings": 2,
+          "Rss": 8,
+          "Pss": 4,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/rtld.rodata.seg",
+          "mappings": 1,
+          "Rss": 4,
+          "Pss": 4,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 4,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "[vdso]",
+          "mappings": 1,
+          "Rss": 4,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/dev/mali0",
+          "mappings": 94,
+          "Rss": 0,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/dev/snd/pcmC0D0p",
+          "mappings": 1,
+          "Rss": 0,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "[vvar]",
+          "mappings": 1,
+          "Rss": 0,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        }
+      ],
+      "totals": {
+        "Rss": 445536,
+        "Pss": 444484,
+        "Anonymous": 373172,
+        "Swap": 0,
+        "Private_Clean": 71028,
+        "Private_Dirty": 373172
+      }
+    }
+  }
+]

@@ -1,5 +1,7 @@
 # The pre-first-frame step is our own RSS (+520 MiB), not page cache
 
+> ATTRIBUTION RETRACTED: see [same-run reconciliation](smaps-owner-reconciliation.md). System AnonPages cannot be subtracted from process VmRSS to derive a file-backed owner. Observed counters remain valid; the image-page ownership claim is not.
+
 No rebuild was needed: `lc2_menu_ledger` already records `Cached`, `AnonPages`,
 `Shmem`, `VmRSS` and `VmSwap` per record. The data settles the §54 caveat.
 

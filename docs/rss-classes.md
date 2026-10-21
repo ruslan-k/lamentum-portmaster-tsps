@@ -1,5 +1,7 @@
 # RSS by class: half guest heap, half image pages (build239)
 
+> ATTRIBUTION RETRACTED: see [same-run reconciliation](smaps-owner-reconciliation.md). Status RssFile does not establish an ordinary image working set; low RssShmem does not rule out driver/DMA memory. Preserve the raw status values, not these causal conclusions. No drop A/B is justified by them.
+
 `LC2_MENU_RSS` now prints `RssAnon`/`RssFile`/`RssShmem` from `/proc/self/status` on
 every ledger record (`source=proc-self-status`), with `-1` for "unknown" so a missing key
 can never read as zero. Arm `rss-split-02`: clean `T2_MEMORY_FLOOR` stop at frame 61,

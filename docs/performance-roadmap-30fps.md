@@ -3028,7 +3028,19 @@ This replaces the "guest reserves N MiB" framing with a measured split: +241 MiB
 
 Next: `/proc/self/smaps_rollup` (`RssAnon`, `RssFile`, `RssShmem`) per ledger record, so the file-backed half is a per-frame series rather than a two-point inference.
 
+## 57. M1 same-run smaps reconciliation rejects the image-page attribution (2026-10-21)
+
+Reviewed c2227d1 / owner §48.4–48.5. Fresh owned arm `smaps-owners-02` uses installed build239, original 96 MiB floor and 300 MiB texture budget; execution verified, STOP T2_MEMORY_FLOOR at frame 2, no cleanup errors. No storage-policy change or drop hint.
+
+Four UUID/boot/PID/starttime/executable-inode-bound samples. Last sample (KiB): status VmRSS=710072, RssAnon=371452, RssFile=338348; summed smaps Rss=445536, Anonymous=373172. The 264536 KiB status/smaps gap is not ordinary image-file residency. Anonymous VMAs lead with 361912 KiB RSS, main.text.seg=30132, libmali.so=20320; /dev/mali0 VMAs show smaps Rss=0, which does not prove zero driver storage. Non-atomic samples; overhead not qualified.
+
+**Retraction of §§55–56:** measured status values stand, but their attribution to game-image pages and the proposed reclaim/drop lever do not. System AnonPages cannot be subtracted from process RSS to assign owners. Small RssShmem does not rule out driver/DMA memory. Need same-window driver counters and accounting reconciliation, not page-dropping speculation.
+
+Parser `tools/smaps_owners.py`, four tests (227 total PASS), per-path receipts and method in `docs/smaps-owner-reconciliation.md`. First attempt `smaps-owners-01` failed before owned execution (LOG_GENERATION_CHANGED); pending launch removed by UUID, exact acknowledge child recovery and synthetic shell acknowledgment recorded separately. Final state after retry: MainUI/principal/runtime each one, game zero, CPU mask restored, no pending command; real DRM screenshot shows Spruce. No gameplay or FPS improvement claimed.
+
 ## 56. RSS by class: 241 MiB guest heap + 255 MiB image pages before the first frame (2026-10-21)
+
+> RETRACTED attribution: see §57. RssFile is not proof of ordinary game-image residency; small RssShmem does not exclude driver/DMA accounting. Do not implement the proposed drop A/B on this premise.
 
 Build239 `b4edd887274a` prints `RssAnon`/`RssFile`/`RssShmem` from `/proc/self/status` on every ledger record (`-1` when unknown, so "missing" never reads as zero). Arm `rss-split-02`: clean stop at frame 61, verified identity, zero cleanup errors.
 
