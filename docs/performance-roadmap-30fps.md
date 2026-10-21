@@ -2456,3 +2456,228 @@ Arm `nav-chain-02` (build229, `COTM_GL_ERROR_IGNORE=0`, `T2_TEXTURE_BUDGET_MIB=3
 - **190 host tests PASS**; arm stopped at `T2_MEMORY_FLOOR` with zero cleanup errors and verified execution identity; device afterwards `MainUI=1, runtime.sh=1, principal.sh=1, port=0`.
 
 Limits: one press, one page, two frames. No config page, no Loading, no scene, no id295, no FPS. Next step is the same chain with the corrected serial reader and a frame-paced tap, then the New Game configuration page measurement.
+## 40. HEAD 0a8b1b05: New Audit — Navigation Bugs, Menu Memory Survival, First World, Then FPS (2026-10-21)
+
+> **LATEST EXECUTION PLAN. Audited source/evidence against main at [0a8b1b05](https://github.com/ruslan-k/lamentum-portmaster-tsps/commit/0a8b1b05f821fbc66c2472f6ad007827abf28aca).** This section supersedes the order of §§32–39 while retaining their technical contracts. This is a **read-only source/evidence audit and roadmap revision**: no new TSPS run, ELF deployment, host regression execution, new game build, or frame-rate measurement was performed. The game remains **NOT PLAYABLE**. The immediate blocker is now twofold: current menu runs exhaust RAM *before* New Game; the navigation loop has independently identifiable correctness defects. Do not spend more 520–1800 second runs on guessed controls or make a 30 FPS claim from menu/Loading frames.
+
+### 40.1. Reconcile the previous 110 commits: completed work versus the actual frontier
+
+The previous English baseline section 0 was written at build202. Comparison of main with [the earlier translation commit](https://github.com/ruslan-k/lamentum-portmaster-tsps/commit/a4d0a2e5a07dc3a652149ef6592977e7344a6011) finds **110 subsequent commits**, including many incremental docs/evidence and tool repairs. Commit count is not a performance metric.
+
+| Area | Confirmed checked into current main | Evidence and limitations | Next genuine acceptance step |
+|---|---|---|---|
+| Shader pipeline | 46 catalogue entries, indices 0–45; seven explicit TEST substitutes; fragment45 links | build218 newgame-20 link receipt, **not** a verified visible world draw | Establish scene draw and exact 4-MRT/attachment semantic output, then census TEST use |
+| GL upload format | New native/lc2_gl_format.h; five decoded sRGB/linear upload sites no longer misuse 0x8C42 as both storage and external format | 166 host tests and real Mali-G57 surfaceless ramp/stripe/mip/context fixture; build229 menu hit the corrected 8192x4096 id291 path under strict GL; **not** a demonstrated Loading fix | End-to-end real world rendering, partial update and attachment checks |
+| Guest memory layout | native/lc2_gl_storage.h checked payload geometry before deferred BC first-use; eligibility still requires one mip | 138 host tests, randomized and UB fixtures, ARM64 build; **not** a physical GPU memory measurement | Read actual id295 descriptor and all-class allocation ledger |
+| BC diagnostic | native/lc2_bc_owner_receipt.h records up to eight bounded owner descriptors before texture-budget refusal, without large guest reads | build229 tested with no owner receipt: **menu did not reach deferred BC first use** | A safe owned New Game run that actually reaches id295 or another definitive frontier |
+| Run ownership | Mandatory tools/run_identity.py, fresh kernel UUID/nonce, hash-verified executable, generation-bound byte collector and pidfd cleanup | Host and separate target component tests, build229 installed with helper; no proven scene-phase oracle | Bind actual capture/page/serial and phase receipts to same verified run generation |
+| CPU profiler | Native lc2_cost V2 128-generation registry, nested wall/CPU accounting and short-call tails; isolated CPU-only fixture | Older 1.98ms/present / 0.293%-of-core / C1-closed estimate explicitly withdrawn | Scope and overhead-qualified **real-game** CPU/wait/AudioOut observations |
+| Page/cursor | tools/page_oracle.py identifies MAIN_MENU from real in-run capture; y=442/492/542/592; tools/navigator.py pure state machine | Two real cursor positions on build229; **one 900ms down moved load -> options, skipping newgame** | Fix below code defects; qualify press against new present serial, one-row response and semantic config/controls/Loading page |
+| Memory survival | 300MiB charged-texture stop avoids one historical correlated Mali/kernel OOM | build229 default 96MiB floor stops at **frame 2**; diagnostic 32MiB floor stops at **frame 55**, MemAvailable **29MiB**, VmSwap about **496MiB** | Attribute **early menu** physical/resident memory; obtain safe headroom *before* a full New Game attempt |
+| First world | Earlier build218–219 navigated menu -> New Game config -> controls -> Loading | id295 expected 8192x8192, one decoded level would be 256MiB; complete format/mips, usage and actual resident allocation still **unproven** | Reach Loading again safely, distinguish memory/CPU loading from invisible world |
+| Measured FPS | Historical menu/Loading frame times, generic resolution and cbuf A/B evidence | CBUF subimage already default, no demonstrated improvement; 720p rendering experiment inconclusive; **no real gameplay FPS** | After correct first world and persistence: controlled presented-frame timing |
+
+**Do not regress solved work:** no wholesale shader catalogue regeneration; preserve source/code/control hashes and c4 -> UBO1 bank mapping. Do not redo the sRGB mapper, the pure memory-layout helper, old CBUF TexSubImage change, T1 UUID collector or V2 registry as if absent. They need integration tests, not replacement.
+
+### 40.2. P0-N1 — Fix a reproducible Python bug in the new present-serial request
+
+**New source finding, verified from current tools/load_metrics.py:** the appended serial_request() builds a remote program equivalent to:
+
+~~~python
+marker = "NVN_PRESENT_PIXELS frame="
+# Current expression (broken for any positive match):
+[int(x) for x in re.findall(marker + r"\d+", text)]
+~~~
+
+Python re.findall with that expression returns strings such as **"NVN_PRESENT_PIXELS frame=42"**, **not** the integer substring "42". int(x) therefore raises **ValueError** as soon as a present is logged. The current new tests only assert that the correct **path string** appears in serial_request; they do **not execute its returned script** against a matching log. The direct Python present_serial(text) helper parses correctly, but that does not qualify the separate remote code.
+
+**Required patch and tests:**
+
+1. Add a failing test in tools/test_load_metrics.py which executes the **actual returned serial_request() text** with a temporary current-run log substituted for PORT_LOG. Include zero lines, a valid frame=1, multiple records frame=1/42/9, a malformed frame, a partial trailing line, a stale log and a changed generation.
+2. If keeping this helper temporarily, use a **capturing regex** and parse only captured digits, e.g.:
+
+~~~python
+matches = re.findall(r"NVN_PRESENT_PIXELS frame=(\d+)(?=\s|$)", text)
+serial = max((int(n) for n in matches), default=0)
+~~~
+
+3. **Preferred permanent fix:** retire the full-file serial_request() from the control path. Use existing tools/load_metrics.py **owned incremental byte-framed** collector (collector_request/fold) and its verified expected_run header to obtain each new present serial. No full latest.log reread per capture: each poll is otherwise O(entire growing log) and may read stale generations. The current collector's 262144-byte bounded reads, record boundaries and generation checks are already implemented.
+4. Couple a frame receipt to one run UUID, boot ID, executable identity, process starttime, collector cursor and actual capture window. A serial extracted independently from latest.log is **not** enough when a process restarts or the log is replaced.
+5. Host fixture: run A UUID/frame50; rotate/restart to B UUID/frame1; an old polling cursor must return LOG_GENERATION_CHANGED, never allow a fresh input on B because A reported serial50. Add a partial-line split and 30000-line backlog case.
+6. End-to-end acceptance on the owner device: before image -> owned serial S -> injected short press -> **new** owned serial S+ (strictly greater) -> after image, same PID/starttime and context; stop without a press if the serial cannot be qualified.
+
+**PASS:** executable remote-script tests and owned-run integration both pass; log growth does not cause increasing O(log-size) polling cost. **STOP:** ValueError, serial=0 after proven presents, log rotation, unqualified serial or mismatched image owner.
+
+### 40.3. P0-N2 — Fix the navigator's overshoot/direction bug before more device presses
+
+**Second concrete current-source finding, tools/navigator.py lines approximately 102–115:**
+
+- After observing load (442), then options (542), Navigation.observe emits an **overshoot event**, but continues to update last_row and returns **press down** whenever row != target. Target newgame (492) is **above** options. A further Down heads toward credits and increases the risk of a wrong Confirm. The implementation is **not fail-closed on overshoot**, despite the doc claiming that the core refuses.
+- confirmed_serial is set when Confirm is emitted, but issued_serial is not updated there; use one uniform action-outstanding/acknowledgment contract rather than separate ad-hoc row and confirm paths.
+- Three repeated polls without a new serial use a fixed attempt count, not elapsed time or known render latency. When the title takes ~0.5–1.2s to present, a rapid poll loop can refuse healthy work. Use both bounded wall-time and serial progress, never unlimited retries.
+
+**Required state-machine correction:**
+
+1. Add explicit state **IDLE -> ACTION_ISSUED(serial, button, hold) -> AWAIT_NEW_PRESENT -> OBSERVED_EFFECT -> IDLE/DONE/REFUSED**. A press is not an observation. Never issue a second press while the first action is unacknowledged.
+2. Compute direction from ordered row indices. If selected index < target index, Down; if selected index > target index, Up. Do not use the hardcoded unconditional Down branch. A row move >1 in the direction of an action must **refuse/require explicit recovery** by default, not just emit a side-event and continue.
+3. If recovery is explicitly enabled for a diagnostic arm, release all held buttons and require two stable, same-generation post-action observations before a *single* opposite-direction microtap; never auto-confirm on an ambiguous row.
+4. Confirm only if **two independent, newer present observations** agree on MAIN_MENU/newgame with reliable cursor geometry, after button release. A later page must be observed, and it must match the expected next state. If the config page is still UNKNOWN, stop there instead of treating arbitrary changed pixels as confirmation.
+5. Determine the pad's hold-to-frame behavior with bounded **short press sweep** (proposed 80 / 150 / 250 / 400ms; **not pre-proven device-safe values**), released between attempts, one accepted row and serial per attempt. Capture edge/hold/adapter latch flags, client button release, and guest HID sample counts. Do not assume 900ms is safe: hardware demonstrated two-row overshoot.
+6. Pure tests in tools/test_navigator.py for load->options overshoot; options->newgame direction=Up; single-row movement; stale serial; repeated same-frame polls; Confirm acknowledgment; wrong config page; genuine unseen/lagged frame; two identical animation frames; first observed row already at newgame; normal step count vs a held latch. Ensure tests assert **no additional press** after overshoot in fail-closed mode.
+7. Integrate only one navigation driver in tools/load_probe.py and tools/newgame_navigate.py via the pure core. Both legacy paths currently remain disabled unless an explicitly unsafe diagnostic flag is supplied; do not reactivate their 700–1500ms blind holds/content-change gates.
+
+**PASS:** one short press yields exactly one measured row transition, target entry selected and confirmed only after a serial-qualified screenshot, with no wrong-menu actions. **STOP:** a second row on one press, unknown page, missing release receipt, generation change, or stale serial.
+
+### 40.4. P0-N3 — Add semantic state detection for New Game configuration and controls
+
+Current tools/page_oracle.py recognizes **only MAIN_MENU or UNKNOWN**. Other page-name strings in tools/navigator.py are **not** evidence that those pages can currently be detected. The existing launcher/probe needs a verified transition chain.
+
+1. On verified owner-local captures, record a separate **page fingerprint** for MAIN_MENU, NEWGAME_CONFIG, CONTROLS, LOADING and candidate WORLD using small ROIs, menu landmark arrangement, and background-normalized pixel statistics; do not label content solely by global changed-pixel counts. Record image width, height, RGB/gray channel interpretation, stride, rotation, and sample provenance.
+2. For New Game config (historically Limited save / Difficulty / New game / Return), track selected row and actual enabled/disabled state. Do not reuse main-menu y values. For controls use independently measured title-specific graphical landmarks; reject UNKNOWN if contrast or page identity is insufficient.
+3. Calibrate on **at least two independent frames per state** of the same executable with different animation times and different cursor positions where possible. Hold out a third frame for a false-positive test. A live observation contradicting historical geometry must update only the identity-pinned profile, never silently fall back to the old 425/475/525/575 table.
+4. For LOADING, combine a visible Loading motif **with** same-run New Game confirm, RomFS/scene-progress receipts and a later serial. A persistent spinner does not prove scene activation; a nonblack frame does not prove a world.
+5. In tools/lamentum_pad_contract.py and principal harness, require **press-owner + capture-owner + log-owner** invariants for every action. Save one machine-readable transition graph with serials, rows, screenshot hashes, exact input (code, press/release/hold), page confidence and refusal reason.
+6. Qualify **physical-pad mapping separately** from an agent's evdev injection. Use already established game-specific Button 305=Confirm and 304=Back evidence; do not silently swap them when moving between pages or assume input injection establishes physical controller success.
+7. Provide a smoke test with **early intentional stop at New Game configuration** before attempting long Loading. Only after accurate controls/Loading receipts and adequate safe memory headroom should a full game-load arm be permitted.
+
+### 40.5. P0-M0 — New immediate bottleneck: the MENU itself exhausts available RAM
+
+**Critical recent evidence:** build229 menu-229-01 with the launcher default **T2_MEMORY_FLOOR_MIB=96** stopped at frame **2**, available-MiB=54. menu-229-02 using diagnostic floor **32** rendered 55 presents, then stopped with available-MiB=29, VmSwap=495996 KiB. nav-oracle-01 and nav-chain-02 were also bounded by the 32MiB floor. No one should interpret these clean diagnostic stops as evidence that a 96MiB production memory floor can reach New Game.
+
+The next guarded arm must **first** explain this menu-phase loss of headroom, *not* immediately allocate the id295 world atlas.
+
+**M0 implementation details (measurement without behavioral changes):**
+
+1. Add an opt-in **MENU_MEMORY_LEDGER** with at most 1Hz snapshots, + extra at main-menu first frame / each first-use GL allocation / pre-floor refusal. Include run/phase/serial and CPU clock, **MemAvailable, CmaFree, Cached, AnonPages, Shmem, SwapFree, PSI memory**, game VmRSS/VmSwap/SmapsRollup, other-process RSS where permission permits, GPU driver's exposed memory counters, guest managed allocation/dirty/compression/fault totals, and fileback live reservations. Use a small fixed ring rather than logging every texture upload.
+2. Compare absolute changes from **just before the launch**, not from a snapshot after the game had already reserved substantial memory. Explicitly distinguish cold boot versus a second attempt with unreclaimed driver/guest storage. Check MainUI cleanup and original CPU mask between runs.
+3. Instrument independently **GL texture image storage**, GL renderbuffers (including depth/stencil), buffer objects, EGL surfaces/images, framebuffer attachment owners and MSAA samples, **live versus deferred**, resource generation and retirement. A framebuffer name alone allocates no attachment storage. Use format-defined bytes as an estimate, not as asserted Mali physical residency. Count CPU/guest allocations separately; do not subtract aliased memory twice.
+4. Produce a **waterfall per event**: e.g. boot EGL create, first full-screen UI offscreen FBO, id291 8192x4096 stripe materialization, first shader cache, BC fileback setup, guest heap/ZRAM escalation, driver retained allocations. Identify the top 5 storage lifetimes dominating the first 55 presents.
+5. Check for **retained title-logo/menu targets and textures** that can be released when the world loads; **only** release after the last proved sampler/FBO/GPU reader and a completed synchronization epoch. Do not use unverified "no draw in past N frames" heuristics as lifetime proof.
+6. Guarded A/B interventions, one at a time after measurement: replace duplicate immutable GL storage by a single generation-safe owner; avoid re-uploading known-unchanged atlas stripes; reclaim a verified dead temporary FBO/CPU staging region; shorten the lifetime of read-only guest decompression intermediates; move an identified immutable GPU asset to a validated compressed representation; change a verified oversized offscreen target via an exact title-specific owner. Each intervention needs before/after peak **MemAvailable and driver usage**, not just a smaller charged-texture tally.
+7. **Do not turn off guest ZRAM** or turn the floor below 32 to extend the run. Fileback and guest compression can move cost between memory types; no 300MiB texture-budget counter can enforce a board-wide memory ceiling.
+8. If menu memory still cannot maintain a **sustained safe margin above the existing 96MiB release floor**, treat playability as blocked before experimenting with larger New Game allocations. Reassess with the specific owner, not unbounded pressure or a longer timeout.
+
+**PASS M0:** an owned, reproducible menu memory waterfall and a correctly attributed dominant allocation family. **PASS M1:** menu survives its relevant observation window with the intended safe floor, no kernel OOM, no unacceptable swap thrash, and identical actual display output. The latter is not yet demonstrated.
+
+### 40.6. P0-M1 — Complete G0/B2 memory accounting and capture the id295 first-use truth
+
+The helper native/lc2_bc_owner_receipt.h is already merged. Its cap of eight owner records is appropriate for a one-off high-pressure arm; do **not** expand it to hash hundreds of MiB of guest memory during Loading.
+
+1. First obtain **M0 menu headroom** and qualified semantic navigation. Only then arrange one guarded New Game arm with unchanged owner-private image/catalogue, strict GL errors, current 300MiB charged-texture budget, verified executable and the smallest essential opt-in owner receipt.
+2. Capture the native receipt **before** t2_texture_budget_add: id/object, NVN target, format, swizzle, sample count, 8192-square logical dimensions, real mip count, pixel type and realized format, pool object/offset/size/generation, aliases, charged owner count, first sampler/program/draw, previous same-pool views and any render-target use. Current fields explicitly marked **unavailable/unproven** must remain so until source data is added.
+3. Correlate guest source block identity with the **owner's offline content hash** and write epochs, not an enormous runtime memcpy/hash. Confirm BC3 block validity, transparency, sampling-only status, mip chain and immutability **independently**, not by assuming every id=295 is the same content across runs.
+4. Make GL storage charging **transactional**: reserve an owner-generation, attempt allocation, publish charge only once valid GL storage is acquired; refund/retire on failed allocation, deletion, replacement, EGL context loss and alias invalidation; fence-retire in-flight readers. Add an independent ledger for texture, renderbuffer, buffer and EGL classes plus a reconciliation gap with driver measurements. Never report driver physical bytes from nominal GLSizedInternalFormat alone.
+5. Add pure host fixtures for view aliases, same GL-name reuse, failed TexImage allocation with glGetError, context recreation, a replaced pool, a not-yet-complete fence, 4 MRT color attachments + depth, MSAA, multiple mips and cross-context shared objects. Verify charge invariants and exact one-time retirement.
+6. **Fork the diagnosis** based on the actual run: texture-budget stop with id295 -> evaluate M2 below; memory-floor stop before first-use -> return to M0; world loads but is invisible -> W0; no scene progress and no allocations -> C0/Unity scene barrier; new pinned shader stop -> append verified shader only.
+
+**PASS:** one owned receipt with enough original-source facts to select a real intervention, plus correct all-class accounting. **STOP:** owner unknown, early system floor, unclassified GL object, GPU failure, or incomplete source identity. Do not raise the 300MiB guard to force progress.
+
+### 40.7. P1-M2 — Conditional *real* GPU compression for the first large immutable atlas
+
+**Why test:** a **single one-level** 8192x8192 RGBA8 intent requires 268435456 bytes (256 MiB). If the id295 content is truly a sampled immutable BC3 atlas, transcoding offline and uploading a driver-supported compressed format may avoid the intermediate expanded GPU allocation. Format-defined examples, **not physical device measurements**:
+
+| 8192², one mip | Expected payload | Relative to RGBA8 | Limit |
+|---|---:|---:|---|
+| RGBA8 / sRGBA8 | 256 MiB | 100% | Current full-decoded intent |
+| ETC2 RGBA8/EAC or ASTC 4x4 | ~64 MiB | 25% | Only if alpha/color/quality and device support pass |
+| ASTC 6x6 | ~28.4 MiB | ~11% | Lossy and potentially visible at text/edge regions |
+| Halve each dimension to 4096² RGBA8 | 64 MiB | 25% | Lossy downscale; changes image detail, not a transparent substitution |
+
+1. First build a **self-authored Mali GLES3 fixture**: allocate representative compressed ETC2/EAC and optionally ASTC data, perform glCompressedTexImage2D and sampling from an owned FBO, check glGetError, verify the returned pattern/colors/alpha, and *measure actual* MemAvailable/CmaFree and any available driver memory signal. Discover GL extensions and explicit format support on this exact Spruce driver. Do not assume ASTC support from a GPU marketing name.
+2. Keep alpha semantics exact. ETC2 RGBA8 + EAC stores both color and alpha; ETC2 RGB / punch-through is **not** a drop-in equivalent for arbitrary BC3 alpha. Verify premultiplication, sRGB conversion, mip filtering and border/clamp seams.
+3. Read the original BC3 data only in the **owner's private workspace** after mapping the exact source and guest lifetime. Transcode **offline** to content-addressed compressed mips; store source hash, dimensions, per-level offsets, swizzle, color-space flags and encoder settings in an owner-private cache. No proprietary images or compressed byte arrays in Git.
+4. Add an opt-in runtime path keyed by **original exact owner hash + texture generation + complete descriptor**, using direct compressed upload and a strictly validated memory charge for the **entire mip tree**. Reject stale/partial cache; fall back to original BC decode path if format unsupported, asset mutable, hash mismatch, or driver storage allocation fails. Do not allocate the 256MiB decoded GPU copy *as well as* the compressed copy and count the latter as a saving.
+5. Run a 1024² self-authored integration fixture first, then small allowlisted original atlases, and only then id295 in a bounded, guarded real-game arm. Measure **physical** memory delta, compilation/loading latency, CPU overhead, all-class storage, actual game screenshot and identical sampler/mip result. This is a major quality intervention; keep original graphics as default unless the owner explicitly accepts a reversible performance mode.
+6. If id295 turns out **mutable, renderable, an alias of a writeable resource, not BC3, or not requested at all**, **reject this path**. Consider verified RT lifetime reuse, carefully isolated render-resolution reduction, or exact partial-update strategies instead. A direct compressed path cannot preserve arbitrary render-target writes.
+
+**PASS:** measured safe physical-headroom improvement and correct first-world visuals. Size arithmetic alone does not pass.
+
+### 40.8. P0-C0 — Qualify real-game CPU ownership, AudioOut/SVC cost and loading progress
+
+The old main-thread Loading sample of **0.836 CPU seconds per presented frame** is a separate historical phase; older profiler claims that AudioOut is cheap were withdrawn because TLS workers/tails were omitted. V2 is a **tested component**, not a valid current game result.
+
+1. On a safe M0-qualified run, turn on V2 narrow instrumentation for **exactly one Loading/early-world interval**, with matched disabled-control run in the same scene. Persist begin/end reports and all retired thread generations; reject registry overflow, incomplete snapshots and missing final rows. Measure profiler overhead with the same owner image and ELF build variant.
+2. Extend narrow scopes to the **complete** SIGTRAP/SVC dispatch, real guest mutex 0x1A/0x1B handlers, IPC parse/dispatch/return and the **audout:u child** (endpoint0x40 commands 7/8). Keep inner/outer inclusive and exclusive CPU/wall timing separate, including waits outside current AudioOut handlers. A count of 5506/5389 arbitration calls does not establish their CPU cost.
+3. Correlate TID/starttime and native-PC/guest-PC with the **same-run** ELF maps, plus CLOCK_THREAD_CPUTIME_ID, /proc/TID/schedstat and coarse page fault/guest-ZRAM restore rates. Distinguish CPU executing guest IL2CPP from sleeping, runnable starvation, GPU waits and decompression. Do not attribute round-robin sampled PC counts to CPU percentages.
+4. Add bounded Unity progress evidence through verified owner-private image metadata: scene load request, AsyncOperation progress, allowSceneActivation, activation, player/camera Update and first world draw. Do **not** patch game code, forge percent progress or skip Unity thread synchronization based on guesses.
+5. If AudioOut is a hot path, inspect buffer-release polling: whether cmd8 retries an unchanged state and whether blocked vs nonblocking semantics match the Switch IPC contract. Optimize only proven redundant host I/O/allocations or incorrect wait scheduling. Never coalesce/drop audio samples or fake buffer-consumed completion for higher FPS. Verify audible quality in the final game.
+6. If guest ZRAM is the bottleneck, repeat *controlled* cold-age experiments (10/100/250/500ms only within guarded RAM headroom), calculating true thread CPU via CLOCK_THREAD_CPUTIME_ID; prior cpu-compress-ms field names were wall-clock elapsed time in selected paths. Stop if faults, resident usage, input latency or scene progress regress.
+7. Preserve a full-frame clock ledger: guest present-to-next-submit gap, replay CPU vs GPU wait, present/swap, page faults, host compression, scene I/O; aim for **>=95% exclusive accounting**, and avoid adding overlapping thread durations as elapsed wall time.
+
+**PASS:** a measured dominant CPU class and scene-progress delta, with >=95% thread-generation coverage and <=5% profiler overhead. **STOP:** missing reports or mismatched run/scene identities; do not optimize the hottest log counter.
+
+### 40.9. P0-W0/W1 — Detect first-world activation and correct the *rendering*, not just the spinner
+
+Even after all budget stops are resolved, **New Game -> Loading is not gameplay**. A linked fragment45 and changing present serials do not prove any corresponding pixels were drawn.
+
+1. Introduce a per-run **scene transition receipt**: last config Confirm, controls dismiss, first genuine Loading serial, new scene load request/activation, first camera/player update, new world NVN draw, and first **actual pixel-visible** world frame. Emit source confidence for each event; unknown fields stay null.
+2. For **first-world draw**, log exact original pair/program identity (0..45), shader stage, count of real draws versus links, vertex/index ranges, UBO bank/size and sampler slots, target/FBO ID and dimensions, blend/depth/stencil state, viewport/scissor, output attachments, and GL error status. Specifically validate fragment45's half arithmetic and **four MRT outputs** (GL_MAX_DRAW_BUFFERS and GL_MAX_COLOR_ATTACHMENTS with actual FBO completeness).
+3. Audit all seven TEST substitutes on the **world path**: first real bind/draw, affected geometry/pixels, required MSAA/SSBO/skin functions, and whether the substituted semantics are genuinely sufficient. A game that loads and renders black/incorrect lighting **fails W1**, even if menus were correct.
+4. Distinguish four outcomes with evidence: **no scene activation** (Unity/progress/SVC); **scene active but no world draws** (guest camera/pipeline scheduling); **world draws but hidden** (FBO/attachment/MRT, wrong composition, depth/stencil, viewport or shader); **world pixels visible but input ineffective** (HID/player state). Use sparse readbacks of a single intermediate attachment **outside steady-state FPS runs**, compared against in-run KMS capture.
+5. Before changing complex MRT logic, create a self-authored **four-attachment ES3 FBO fixture** with half-float and sRGB/linear attachments, independent output colors, clipping/depth/stencil and sampler checks. Verify storage type, glDrawBuffers, glReadBuffer and readback values and test the same exact Mali driver. Do not assume successful program link means its MRT outputs are routed correctly.
+6. For layout, inspect the **source-verified** original game screen/reference resolution and per-pass 1920x1080 targets. Generic ZERO_RENDER_SCALE=2 already showed no reliable full-frame improvement; do not reinstate it as a fix for scene correctness. Owner-specific scaling is a subsequent option only after identifying matrices, texture readers and UI layout contracts.
+7. Only after a correct world frame, verify camera/player coordinate changes following physical controller input, inventory/dialogue/interaction, audible sound, then save -> quit -> cold boot -> load. Keep scene and save data private, back up owner saves, and verify MainUI/CPU restoration.
+
+**PASS W0:** verified game scene activation and world draw. **PASS W1:** correct visible world pixels + physical player movement. **PASS PLAYABLE:** W1 + interactions, audible audio and cold save/load. **HARD STOP:** missing source-backed shader, black/incorrect scene, undefined MRT output, memory floor or kernel OOM.
+
+### 40.10. P1-F0/F1 — Real 30 FPS program *only after* world correctness
+
+30 FPS gives a **33.33ms complete-frame budget**, not 33.33ms replay alone. An old build209 **Loading/menu** diagnostic interval reported ~572.7ms total, with ~249.6ms replay and ~316.4ms guest gap; its phase, instrumentation and build are not current gameplay performance. CBUF subimage already exists and the historical A/B does not demonstrate a gain. A generic reduction of 1920x1080 targets to smaller storage gave essentially no whole-frame benefit. Any assertion that these features can alone reach 30 FPS would be misleading.
+
+Once W1/W2 pass, run the following **separate ranked experiments**, each with its own reversible flag and 3 matched A/B repetitions:
+
+1. **F0 — genuine FPS capture.** Collect continuous present serial/timestamps (including **all** presented frames, not only T2P_SLOW_FRAME outliers), CPU total and render submit, skipped/repeated serials, p50/p90/p95/p99/max, effective frames/s, frametime variance, thermal/clocks and audio underruns. Separate 60–120s stationary, walking, dark lighting, inventory/dialogue, and transition windows.
+2. **F1 — eliminate pathological stalls.** Before shader micro-tuning, find >100ms frame tails and correlate with guest-ZRAM restores, fileback pread, BC materialization, GL first-use shader/program creation, and memory pressure. Prewarm **only verified near-future resources** with strict headroom; avoid unbounded staging or preloading everything.
+3. **F2 — GPU memory and texture bandwidth.** If atlas sampling/upload is dominant, use the proven M2 compressed immutable cache, exact dirty-region upload, source-generation-aware GL object reuse, and clamp redundant format conversion. A texture cache without invalidation is a visual correctness bug.
+4. **F3 — CPU trap/IPC hot path.** If C0 confirms a hot SVC/Audout/lock/host-copy loop, optimize one source-verified handler; test request/release and lock correctness, measured CPU time and audible audio. Avoid replacing nontrivial Horizon synchronization with a spin or fake signal.
+5. **F4 — render targets and bloom.** Measure per-pass GPU times with a real supported timer query or a safely isolated A/B, not glFinish after every draw. If fragments dominate, test **owner-attributed** 1920x1080 -> 1280x720 for *scene targets* while retaining sharp native UI, or an opt-in bloom tier. Validate MRT attachments and UI matrices before claiming savings.
+6. **F5 — render replay overhead.** If the native replay bucket is large, revisit cbuf padded 1024x1 float uploads (instead of merely replacing TexImage with TexSubImage), redundant texture resolution, GL state shadows, VBO copies, FBO transitions and shader location caches. Instrument would-skip counts first; invalidate on context/resource-generation changes. Benchmark whole-frame time, not local CPU savings.
+7. **F6 — submission/parallelism.** Async NVN queue and glFlush can shift blocking and cause resource-reuse races; require serial/fence/GL-context lifetime proofs before any test. Prior NVN_COMMAND_REUSE_BEFORE_COMPLETION and EGL_BAD_SURFACE are **hard stop** conditions.
+8. **F7 — compiler/quality ceilings.** If correct gameplay remains >33.33ms after removing dominant avoidable costs, state its measured sustainable ceiling and consider clearly labeled lower-resolution/effects presets. Do not hide missing world features for a higher FPS counter.
+
+Report intermediate **5 -> 10 -> 15 -> 20 -> 30 real gameplay FPS** milestones; no milestone is achieved yet. Stable 30 FPS acceptance remains three independent >=60s scenes with frame P50 and P95 <=33.33ms, preferably P99<=50ms, plus correct visuals, player input, sound, saves, memory and cleanup. A sustained lower number is an honest outcome on this ~1GiB device.
+
+### 40.11. Strict next PR order, measurable gates and abort conditions
+
+| Order | PR | Exact changes | Minimum acceptance / evidence | Abort or replan if |
+|---:|---|---|---|---|
+| **1** | **N1** | Fix/retire serial_request regex/full-log scan; add executed-script and owned-generation tests | Valid numeric present series, no mixed generations, no O(log-size) poll | ValueError, fake zero, stale log |
+| **2** | **N2** | Correct overshoot state/direction, atomic press+ack, short input sweep | load -> newgame one-row **serial-qualified** move, no duplicate button, exact same run | load -> options/credits, missing release or serial |
+| **3** | **M0** | Bounded menu RAM/GPU life ledger, safe-floor preflight | Identify and rank top 5 menu consumers; precise 96MiB-floor disposition | Cannot survive menu without unsafe floor |
+| **4** | **N3** | Semantic NEWGAME_CONFIG / CONTROLS / LOADING oracle; retire legacy navigators | One screen-state transition per new owned serial; correct page before every Confirm | Page UNKNOWN / ambiguous input |
+| **5** | **B2** | Transactional texture/GL residency ledger and id295 owner receipt | Bounded pre-refusal owner in real Loading, or **explicit earlier stop cause** | Unattributed GL allocation or kernel OOM |
+| **6** | **M2 (conditional)** | Independent Mali compression fixture + owner-local atlas cache | Real physical memory improvement, correct alpha, safe new allocation | Mutable/renderable id295, unsupported extension |
+| **7** | **C0** | Complete real-game CPU/AudioOut/SVC and Unity wait/scene progress attribution | Thread coverage+matched disabled profile, reproducible hot path | Incomplete TLS/tail/identity, overhead >5% |
+| **8** | **W0/W1** | Exact Unity activation, first world draw, 4-MRT fixture, pixel/input parity | Actual world scene and physical controls, no TEST semantic regressions | Loading-only, corrupted world, memory floor |
+| **9** | **W2** | Gameplay audio, interaction, persistence and exit | Audibly correct sound and cold save/load, clean MainUI and CPU mask | Missing save or incorrect audio |
+| **10** | **F0–F7** | World benchmark; one measured CPU/GPU/memory optimization per PR | Correctly rendered complete-frame P50/P95, A/B and thermal/headroom evidence | Apparent speedup from reduced correctness or shifted GPU wait |
+
+**Dependencies matter more than order numbers:** N1/N2 can be developed and host-tested alongside read-only M0 fixture construction. The next **on-device** run should be M0 memory-safe (no need to press) rather than a blind navigation-to-Loading attempt. If a safe menu window and qualified serial become available, N2/N3 can proceed. B2 cannot obtain its id295 pre-refusal receipt without real Loading. M2 is strictly conditional on B2. C0's narrow isolated fixture does not need a world, but a real-game CPU hot-path claim needs an owned game phase.
+
+**Per-PR evidence contract:** base commit, exact owned ELF SHA-256, owner-private image/catalogue hash (or explicit unavailable), 435-file baseline validation, actual changed source+unit tests, isolated host fixture, target Mali test when relevant, env defaults vs diagnostic overrides, run UUID/PID/starttime, continuous monitor window, before/after frames from *inside* the run, observed physical RAM/GPU resources, exit taxonomy and MainUI/CPU cleanup. Never silently treat the earlier build218–219 Loading runs as build229 evidence. Never publish copyrighted original game data, user saves or private executable images.
+
+### 40.12. Immediate test specification and achievable next checkpoint
+
+**First PR's red/green targets, with no handheld required:**
+
+~~~python
+# Actual serial_request() script must be executed, not just inspected as text:
+sample = ("NVN_PRESENT_PIXELS frame=1 status=PIXELS\n"
+          "NVN_PRESENT_PIXELS frame=42 status=PIXELS\n"
+          "NVN_PRESENT_PIXELS frame=9 status=PIXELS\n")
+# Remote result: {"present_frames": 42}; no ValueError.
+# Rotation or UUID mismatch: REFUSE; never use 42 for another process generation.
+
+# Navigation must be fail-closed:
+# observe MAIN_MENU/load at serial 55 -> one Down tap
+# observe MAIN_MENU/options at serial 56 -> overshoot, REFUSE/RECOVER_REQUIRED
+# absolutely NO automatic Down or Confirm to credits
+# separate recovery arm with stable options observation -> one Up microtap
+# observe MAIN_MENU/newgame at a new serial twice -> one Confirm
+~~~
+
+**Second PR's device checkpoint:** owner-qualified first-boot MAIN_MENU under the **intended safe floor**, one short press with released-button and new-present receipt, resulting in row newgame rather than options/credits; stop there and restore Spruce. Do not add 1800 seconds to the timeout as a substitute for RAM headroom.
+
+**Third PR's target:** a memory waterfall explaining why **the menu** goes from the prelaunch state to floor=96 refusal at frame2 and later floor=32 refusal at frame55, with a ranked physical resource ledger and a *specific* safe intervention. Only after that should the navigation arm proceed through New Game config/controls to capture either the first genuine world draw or the actual id295 descriptor.
+
+**Decision:** The repository's engineering progress in reproducibility and GPU-correctness is real. However, reaching gameplay is currently constrained by **early whole-system memory exhaustion plus incomplete reliable navigation**; 30 FPS is a much larger, unmeasured second problem. The next highest-value change is a tested navigation/serial correction together with menu-phase memory ownership, not another shader-catalogue entry or unconditional GPU async flag.
