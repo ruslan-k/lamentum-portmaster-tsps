@@ -1,0 +1,36 @@
+LC2_STORAGE_CHANGE ticket=1 kind=texture owner=2 gl=1 level=0 va=0x5efec00000 old=0 new=8298496 native=1 attribution=bracket-only
+LC2_STORAGE_CHANGE ticket=1 kind=texture owner=2 gl=1 level=0 va=0x5eff400000 old=0 new=8990720 native=1 attribution=bracket-only
+LC2_STORAGE_CHANGE ticket=1 kind=texture owner=2 gl=1 level=0 va=0x5effdba000 old=0 new=135168 native=1 attribution=bracket-only
+LC2_STORAGE_CHANGE ticket=1 kind=texture owner=2 gl=1 level=0 va=0x5effddb000 old=0 new=131072 native=1 attribution=bracket-only
+LC2_STORAGE_CHANGE ticket=1 kind=texture owner=2 gl=1 level=0 va=0x5effdfb000 old=0 new=262144 native=1 attribution=bracket-only
+LC2_STORAGE_CHANGE ticket=1 kind=texture owner=2 gl=1 level=0 va=0x5effe3b000 old=0 new=262144 native=1 attribution=bracket-only
+LC2_STORAGE_PROBE ticket=1 kind=texture owner=2 gl=1 size=1920x1080 level=0 format=0x25 metadata-valid=1 changed=6 detail-overflow=0 elapsed-ns=7508392 retired-descriptors=not-tracked physical=unproven diagnostic=1
+LC2_STORAGE_CHANGE ticket=2 kind=texture owner=3 gl=2 level=0 va=0x5efe200000 old=0 new=8990720 native=1 attribution=bracket-only
+LC2_STORAGE_PROBE ticket=2 kind=texture owner=3 gl=2 size=1920x1080 level=0 format=0x25 metadata-valid=1 changed=1 detail-overflow=0 elapsed-ns=4698053 retired-descriptors=not-tracked physical=unproven diagnostic=1
+LC2_STORAGE_CHANGE ticket=3 kind=texture owner=4 gl=3 level=0 va=0x5efd800000 old=0 new=8990720 native=1 attribution=bracket-only
+LC2_STORAGE_PROBE ticket=3 kind=texture owner=4 gl=3 size=1920x1080 level=0 format=0x25 metadata-valid=1 changed=1 detail-overflow=0 elapsed-ns=4677761 retired-descriptors=not-tracked physical=unproven diagnostic=1
+LC2_STORAGE_CHANGE ticket=4 kind=renderbuffer owner=28 gl=1 level=0 va=0x5efce00000 old=0 new=8990720 native=1 attribution=bracket-only
+LC2_STORAGE_PROBE ticket=4 kind=renderbuffer owner=28 gl=1 size=1920x1080 level=0 format=0x35 metadata-valid=1 changed=1 detail-overflow=0 elapsed-ns=1280503 retired-descriptors=not-tracked physical=unproven diagnostic=1
+LC2_STORAGE_CHANGE ticket=5 kind=texture owner=60 gl=25 level=0 va=0x5efbc00000 old=0 new=8523776 native=1 attribution=bracket-only
+LC2_STORAGE_PROBE ticket=5 kind=texture owner=60 gl=25 size=955x2048 level=0 format=0x25 metadata-valid=1 changed=1 detail-overflow=0 elapsed-ns=5006928 retired-descriptors=not-tracked physical=unproven diagnostic=1
+LC2_STORAGE_CHANGE ticket=6 kind=texture owner=61 gl=26 level=0 va=0x5efb600000 old=0 new=5595136 native=1 attribution=bracket-only
+LC2_STORAGE_PROBE ticket=6 kind=texture owner=61 gl=26 size=800x1500 level=0 format=0x42 metadata-valid=1 changed=1 detail-overflow=0 elapsed-ns=4531385 retired-descriptors=not-tracked physical=unproven diagnostic=1
+LC2_STORAGE_CHANGE ticket=7 kind=texture owner=77 gl=35 level=0 va=0x5efac00000 old=0 new=8990720 native=1 attribution=bracket-only
+LC2_STORAGE_CHANGE ticket=7 kind=texture owner=77 gl=35 level=0 va=0x5efeadf000 old=0 new=262144 native=1 attribution=bracket-only
+LC2_STORAGE_PROBE ticket=7 kind=texture owner=77 gl=35 size=1920x1080 level=0 format=0x44 metadata-valid=1 changed=2 detail-overflow=0 elapsed-ns=11556484 retired-descriptors=not-tracked physical=unproven diagnostic=1
+LC2_STORAGE_CHANGE ticket=8 kind=texture owner=78 gl=36 level=0 va=0x5efa400000 old=0 new=6660096 native=1 attribution=bracket-only
+LC2_STORAGE_PROBE ticket=8 kind=texture owner=78 gl=36 size=1280x1280 level=0 format=0x44 metadata-valid=1 changed=1 detail-overflow=0 elapsed-ns=8498228 retired-descriptors=not-tracked physical=unproven diagnostic=1
+LC2_STORAGE_CHANGE ticket=9 kind=texture owner=80 gl=38 level=0 va=0x5ef9e00000 old=0 new=5398528 native=1 attribution=bracket-only
+LC2_STORAGE_PROBE ticket=9 kind=texture owner=80 gl=38 size=1120x1120 level=0 format=0x44 metadata-valid=1 changed=1 detail-overflow=0 elapsed-ns=6953599 retired-descriptors=not-tracked physical=unproven diagnostic=1
+LC2_STORAGE_CHANGE ticket=10 kind=texture owner=81 gl=39 level=0 va=0x5ef6000000 old=0 new=31109120 native=1 attribution=bracket-only
+LC2_STORAGE_CHANGE ticket=10 kind=texture owner=81 gl=39 level=0 va=0x5ef7e00000 old=0 new=32821248 native=1 attribution=bracket-only
+LC2_STORAGE_CHANGE ticket=10 kind=texture owner=81 gl=39 level=0 va=0x5eff3c0000 old=0 new=262144 native=1 attribution=bracket-only
+LC2_STORAGE_CHANGE ticket=10 kind=texture owner=81 gl=39 level=0 va=0x5effe3b000 old=0 new=262144 native=1 attribution=bracket-only
+LC2_STORAGE_PROBE ticket=10 kind=texture owner=81 gl=39 size=3600x2160 level=0 format=0x44 metadata-valid=1 changed=4 detail-overflow=0 elapsed-ns=50376448 retired-descriptors=not-tracked physical=unproven diagnostic=1
+LC2_STORAGE_CHANGE ticket=11 kind=texture owner=82 gl=40 level=0 va=0x5ef5a00000 old=0 new=4673536 native=1 attribution=bracket-only
+LC2_STORAGE_CHANGE ticket=11 kind=texture owner=82 gl=40 level=0 va=0x5efee00000 old=0 new=5398528 native=1 attribution=bracket-only
+LC2_STORAGE_PROBE ticket=11 kind=texture owner=82 gl=40 size=1032x1122 level=0 format=0x25 metadata-valid=1 changed=2 detail-overflow=0 elapsed-ns=10228899 retired-descriptors=not-tracked physical=unproven diagnostic=1
+LC2_STORAGE_CHANGE ticket=12 kind=texture owner=88 gl=44 level=0 va=0x5ef6c00000 old=0 new=8298496 native=1 attribution=bracket-only
+LC2_STORAGE_CHANGE ticket=12 kind=texture owner=88 gl=44 level=0 va=0x5ef7400000 old=0 new=8990720 native=1 attribution=bracket-only
+LC2_STORAGE_CHANGE ticket=12 kind=texture owner=88 gl=44 level=0 va=0x5eff380000 old=0 new=262144 native=1 attribution=bracket-only
+LC2_STORAGE_PROBE ticket=12 kind=texture owner=88 gl=44 size=1920x1080 level=0 format=0x44 metadata-valid=1 changed=3 detail-overflow=0 elapsed-ns=7913143 retired-descriptors=not-tracked physical=unproven diagnostic=1

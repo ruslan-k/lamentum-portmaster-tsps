@@ -1,0 +1,10 @@
+{
+  "staged_tree": "8adb8994cbf42f794945f0bc698a5382ec5240d4",
+  "host_tests": 254,
+  "baseline_checks": 435,
+  "rebuild_rc": 0,
+  "original_sha256": "474d17adaa1288e112203195820f883be638850263f450062ce29bb7d0286e6f",
+  "clean_sha256": "f064cdce6f13d44a8950dea8bbb5af5b80238519b940f860a7a4b493f1e5dc35",
+  "PT_LOAD_identical": true,
+  "prior_attempt": "different-output-path clean-build attempt failed PT_LOAD equality; same-output-path /work/build-240 rebuild matches all PT_LOAD; exact cause of first mismatch not isolated"
+}
