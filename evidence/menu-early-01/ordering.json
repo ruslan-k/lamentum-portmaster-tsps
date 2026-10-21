@@ -1,0 +1,156 @@
+{
+  "arm": "menu-early-01",
+  "build": "build-234 571463a494a9",
+  "ordering": [
+    {
+      "event": "ledger",
+      "why": "gl-init",
+      "frames": 0,
+      "available_mib": 568.7,
+      "cma_mib": 0.75,
+      "swap_mib": 0.0,
+      "charged_mib": 0.0,
+      "depth_rb": 0
+    },
+    {
+      "event": "alloc",
+      "class": "renderbuffer",
+      "bytes": 8294400,
+      "dims": "1920x1080"
+    },
+    {
+      "event": "alloc",
+      "class": "renderbuffer",
+      "bytes": 3686400,
+      "dims": "1280x720"
+    },
+    {
+      "event": "ledger",
+      "why": "first-present",
+      "frames": 1,
+      "available_mib": 134.9,
+      "cma_mib": 23.5,
+      "swap_mib": 0.0,
+      "charged_mib": 107.1,
+      "depth_rb": 2
+    },
+    {
+      "event": "ledger",
+      "why": "interval",
+      "frames": 5,
+      "available_mib": 94.1,
+      "cma_mib": 0.34,
+      "swap_mib": 17.6,
+      "charged_mib": 109.9,
+      "depth_rb": 2
+    },
+    {
+      "event": "ledger",
+      "why": "interval",
+      "frames": 12,
+      "available_mib": 60.7,
+      "cma_mib": 13.66,
+      "swap_mib": 46.9,
+      "charged_mib": 116.0,
+      "depth_rb": 2
+    },
+    {
+      "event": "ledger",
+      "why": "interval",
+      "frames": 16,
+      "available_mib": 54.8,
+      "cma_mib": 19.5,
+      "swap_mib": 76.1,
+      "charged_mib": 112.5,
+      "depth_rb": 2
+    },
+    {
+      "event": "ledger",
+      "why": "interval",
+      "frames": 19,
+      "available_mib": 58.5,
+      "cma_mib": 4.05,
+      "swap_mib": 111.6,
+      "charged_mib": 116.5,
+      "depth_rb": 2
+    },
+    {
+      "event": "ledger",
+      "why": "interval",
+      "frames": 22,
+      "available_mib": 66.7,
+      "cma_mib": 3.29,
+      "swap_mib": 154.1,
+      "charged_mib": 124.5,
+      "depth_rb": 2
+    },
+    {
+      "event": "ledger",
+      "why": "interval",
+      "frames": 23,
+      "available_mib": 73.4,
+      "cma_mib": 0.13,
+      "swap_mib": 174.8,
+      "charged_mib": 126.0,
+      "depth_rb": 2
+    },
+    {
+      "event": "ledger",
+      "why": "interval",
+      "frames": 24,
+      "available_mib": 56.4,
+      "cma_mib": 0.0,
+      "swap_mib": 422.5,
+      "charged_mib": 157.3,
+      "depth_rb": 2
+    },
+    {
+      "event": "ledger",
+      "why": "interval",
+      "frames": 25,
+      "available_mib": 60.3,
+      "cma_mib": 0.0,
+      "swap_mib": 410.8,
+      "charged_mib": 157.3,
+      "depth_rb": 2
+    },
+    {
+      "event": "ledger",
+      "why": "interval",
+      "frames": 27,
+      "available_mib": 58.4,
+      "cma_mib": 0.69,
+      "swap_mib": 406.2,
+      "charged_mib": 157.3,
+      "depth_rb": 2
+    },
+    {
+      "event": "ledger",
+      "why": "interval",
+      "frames": 37,
+      "available_mib": 53.5,
+      "cma_mib": 9.35,
+      "swap_mib": 412.4,
+      "charged_mib": 157.3,
+      "depth_rb": 2
+    },
+    {
+      "event": "ledger",
+      "why": "interval",
+      "frames": 44,
+      "available_mib": 71.2,
+      "cma_mib": 11.21,
+      "swap_mib": 426.1,
+      "charged_mib": 157.3,
+      "depth_rb": 2
+    }
+  ],
+  "finding": {
+    "gl_init_available_mib": 568.7,
+    "gl_init_cma_mib": 0.75,
+    "first_present_available_mib": 134.9,
+    "first_present_cma_mib": 23.5,
+    "guest_reservation_mib": 433.8,
+    "cma_already_exhausted_before_gl": true
+  }
+}

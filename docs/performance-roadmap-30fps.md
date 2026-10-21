@@ -2963,3 +2963,18 @@ Build233 `4c818517…b80c` adds `LC2_ALLOC_LEDGER=1` (bounded 64 lines, opt-in b
 - **Unmeasured classes, labelled as such:** EGL window surface (this configuration uses the SDL surface path, so the `eglCreateWindowSurface` branch never ran) and buffers (the menu issues no vertex-stream draws).
 
 Next: emit the first ledger record at GL/texture init so the 1080p step appears inside the series instead of being baked into the baseline; then add retire receipts, which is the minimum before any "release retained targets" claim (owner §48 B2). The 720p storage question keeps its **17.58 MiB** nominal upper bound.
+
+## 52. Early ledger: the pre-first-frame step is the guest heap, and CMA is exhausted before our GL (2026-10-21)
+
+Build234 `571463a494a9` emits the first ledger record at **GL/texture init** (`why=gl-init`) instead of the first present, and adds retire receipts. Arm `menu-early-01`: `T2_MEMORY_FLOOR`, verified identity, zero cleanup errors.
+
+Ordering: `gl-init` shows **available 568.7 MiB / CMA 0.75 MiB / charged 0**; the 1920×1080 depth renderbuffer (8,294,400 B) and the 1280×720 one (3,686,400 B) follow; `first-present` shows **available 134.9 MiB / CMA 23.5 MiB / charged 107.1 MiB**.
+
+Two corrections to my own earlier conclusions:
+
+1. **CMA was already exhausted before the 1080p family existed**, then recovered to 23.5 MiB and churned (0.3 → 13.7 → 19.5 MiB). The earlier "the menu drains CMA" was an artifact of a series that began after the reservation; CMA is contended at process start (MainUI hand-off, DRM/EGL init), not consumed by our GL images.
+2. **The dominant step happens before the first frame**: −433.8 MiB between `gl-init` and `first-present`, of which the three 1080p colour targets plus two depth buffers are ~35 MiB of format-defined storage. The remainder is the guest's own reservation — invisible to the old series because its first record came after it. The previously reported 16.46 MiB/s describes only the post-reservation phase.
+
+Consequences: intervention must target that reservation or what the guest keeps resident; 36 MB of GL images cannot explain it, and the 720p experiment keeps its 17.58 MiB nominal ceiling. CMA attribution now needs the pre-GL state (measured here) rather than post-hoc correlation.
+
+Open: retire receipts produced no events in this phase, so allocate/free balance is unproven; the EGL surface (SDL path) and buffers (no vertex streams) remain unaccounted; the guest reservation is a delta without an owner.
