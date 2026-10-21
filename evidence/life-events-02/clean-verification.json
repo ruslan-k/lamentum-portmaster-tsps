@@ -1,0 +1,6 @@
+{
+  "staged_tree": "f89f8867ad353826e066904ee4e802dcb7ca1bf8",
+  "host_tests": 266,
+  "python310_ast": true,
+  "header_and_stop_hook_in_exported_patch": true
+}

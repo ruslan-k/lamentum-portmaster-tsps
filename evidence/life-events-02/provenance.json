@@ -1,0 +1,9 @@
+{
+  "log_sha256": "31764380ef591c7d3548b87c917800d350ee8a97f861080c8c83fea9b233c5df",
+  "log_bytes": 536843,
+  "summaries": 1,
+  "stop": [
+    "STOP status=T2_MEMORY_FLOOR pc=0x0 detail=0x5b query_memory_calls=0xfc tls_trap_reads=0x0"
+  ],
+  "summary": "LC2_LIFE_SUMMARY share-group=unverified bytes=declared-payload completion=unobserved storage-calls=162 extends=50 deletes=24 delete-with-views=0 name-reuse=24 retained=232834352 peak=232834352 live=88 alias-views=0 overflow=0"
+}
