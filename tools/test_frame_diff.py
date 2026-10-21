@@ -11,21 +11,26 @@ def uniform(value, channels=3):
 
 
 class FrameDiffTests(unittest.TestCase):
-    def test_identical_frames_pass(self):
+    def test_identical_frames_pass_both_gates(self):
         verdict = frame_diff.compare(uniform(10), uniform(10), W, H)
         self.assertTrue(verdict['comparable'])
-        self.assertTrue(verdict['identical'])
+        self.assertTrue(verdict['exact'])
+        self.assertTrue(verdict['within_tolerance'])
         self.assertEqual(verdict['differing'], 0)
         self.assertTrue(frame_diff.identical(verdict))
+        self.assertTrue(frame_diff.equivalent(verdict))
 
-    def test_a_delta_inside_tolerance_is_not_a_difference(self):
+    def test_a_delta_inside_tolerance_is_equivalent_but_not_identical(self):
         verdict = frame_diff.compare(uniform(10), uniform(12), W, H, tolerance=2)
         self.assertEqual(verdict['differing'], 0)
         self.assertEqual(verdict['max_delta'], 2)
-        self.assertTrue(frame_diff.identical(verdict))
+        self.assertTrue(frame_diff.equivalent(verdict))
+        self.assertFalse(frame_diff.identical(verdict),
+                         'a tolerance match must never be reported as identical')
 
     def test_a_delta_above_tolerance_is_a_difference(self):
         verdict = frame_diff.compare(uniform(10), uniform(13), W, H, tolerance=2)
+        self.assertFalse(frame_diff.equivalent(verdict))
         self.assertFalse(frame_diff.identical(verdict))
         self.assertEqual(verdict['differing'], W * H)
         self.assertEqual(verdict['ratio'], 1.0)

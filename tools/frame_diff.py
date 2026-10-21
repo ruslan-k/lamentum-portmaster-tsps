@@ -47,14 +47,24 @@ def compare(first, second, width, height, channels=3, tolerance=2, bands=8):
         if delta > tolerance:
             differing += 1
             band_differing[band] += 1
-    return {'comparable': True, 'pixels': total, 'differing': differing,
+    exact = worst == 0
+    return {'comparable': True, 'pixels': total, 'differing': differing, 'exact': exact,
             'ratio': round(differing / total, 6), 'max_delta': worst,
             'mean_delta': round(sum_delta / total, 4), 'tolerance': tolerance,
             'bands': [round(band_differing[i] / band_pixels[i], 6) if band_pixels[i] else 0.0
                       for i in range(bands)],
-            'identical': differing == 0}
+            'within_tolerance': differing == 0}
 
 
 def identical(verdict):
-    """An A/B passes only when the comparison ran and nothing differed."""
-    return bool(verdict.get('comparable')) and verdict.get('identical') is True
+    """True only when the comparison ran and NO pixel differs by even one level.
+
+    A tolerance match is `equivalent()`, not identical: "within tolerance" and
+    "byte-for-byte the same picture" are different claims and must not share a word.
+    """
+    return bool(verdict.get('comparable')) and verdict.get('exact') is True
+
+
+def equivalent(verdict):
+    """True when the comparison ran and every pixel is inside the tolerance."""
+    return bool(verdict.get('comparable')) and verdict.get('within_tolerance') is True
