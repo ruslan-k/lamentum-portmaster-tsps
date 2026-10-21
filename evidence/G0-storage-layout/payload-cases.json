@@ -1,0 +1,723 @@
+{
+  "scope": "self-authored host arithmetic fixture, not GL allocation or physical GPU residency",
+  "header_sha256": "db2c2915f7287c190f29d736ff808758c8465cbd3e307ae031291114c0c20f28",
+  "cases": [
+    {
+      "name": "rgba8-8192-single",
+      "descriptor": {
+        "target": 3553,
+        "internal_format": 32856,
+        "width": 8192,
+        "height": 8192,
+        "depth": 1,
+        "layers": 1,
+        "levels": 1,
+        "samples": 1
+      },
+      "calculated": {
+        "status": "ok",
+        "bytes": 268435456,
+        "levels": [
+          {
+            "width": 8192,
+            "height": 8192,
+            "depth": 1,
+            "slices": 1,
+            "offset": 0,
+            "bytes": 268435456
+          }
+        ]
+      }
+    },
+    {
+      "name": "rgba8-8192-full-chain",
+      "descriptor": {
+        "target": 3553,
+        "internal_format": 32856,
+        "width": 8192,
+        "height": 8192,
+        "depth": 1,
+        "layers": 1,
+        "levels": 14,
+        "samples": 1
+      },
+      "calculated": {
+        "status": "ok",
+        "bytes": 357913940,
+        "levels": [
+          {
+            "width": 8192,
+            "height": 8192,
+            "depth": 1,
+            "slices": 1,
+            "offset": 0,
+            "bytes": 268435456
+          },
+          {
+            "width": 4096,
+            "height": 4096,
+            "depth": 1,
+            "slices": 1,
+            "offset": 268435456,
+            "bytes": 67108864
+          },
+          {
+            "width": 2048,
+            "height": 2048,
+            "depth": 1,
+            "slices": 1,
+            "offset": 335544320,
+            "bytes": 16777216
+          },
+          {
+            "width": 1024,
+            "height": 1024,
+            "depth": 1,
+            "slices": 1,
+            "offset": 352321536,
+            "bytes": 4194304
+          },
+          {
+            "width": 512,
+            "height": 512,
+            "depth": 1,
+            "slices": 1,
+            "offset": 356515840,
+            "bytes": 1048576
+          },
+          {
+            "width": 256,
+            "height": 256,
+            "depth": 1,
+            "slices": 1,
+            "offset": 357564416,
+            "bytes": 262144
+          },
+          {
+            "width": 128,
+            "height": 128,
+            "depth": 1,
+            "slices": 1,
+            "offset": 357826560,
+            "bytes": 65536
+          },
+          {
+            "width": 64,
+            "height": 64,
+            "depth": 1,
+            "slices": 1,
+            "offset": 357892096,
+            "bytes": 16384
+          },
+          {
+            "width": 32,
+            "height": 32,
+            "depth": 1,
+            "slices": 1,
+            "offset": 357908480,
+            "bytes": 4096
+          },
+          {
+            "width": 16,
+            "height": 16,
+            "depth": 1,
+            "slices": 1,
+            "offset": 357912576,
+            "bytes": 1024
+          },
+          {
+            "width": 8,
+            "height": 8,
+            "depth": 1,
+            "slices": 1,
+            "offset": 357913600,
+            "bytes": 256
+          },
+          {
+            "width": 4,
+            "height": 4,
+            "depth": 1,
+            "slices": 1,
+            "offset": 357913856,
+            "bytes": 64
+          },
+          {
+            "width": 2,
+            "height": 2,
+            "depth": 1,
+            "slices": 1,
+            "offset": 357913920,
+            "bytes": 16
+          },
+          {
+            "width": 1,
+            "height": 1,
+            "depth": 1,
+            "slices": 1,
+            "offset": 357913936,
+            "bytes": 4
+          }
+        ]
+      }
+    },
+    {
+      "name": "bc3-8192x4096-full-chain",
+      "descriptor": {
+        "target": 3553,
+        "internal_format": 33779,
+        "width": 8192,
+        "height": 4096,
+        "depth": 1,
+        "layers": 1,
+        "levels": 14,
+        "samples": 1
+      },
+      "calculated": {
+        "status": "ok",
+        "bytes": 44739280,
+        "levels": [
+          {
+            "width": 8192,
+            "height": 4096,
+            "depth": 1,
+            "slices": 1,
+            "offset": 0,
+            "bytes": 33554432
+          },
+          {
+            "width": 4096,
+            "height": 2048,
+            "depth": 1,
+            "slices": 1,
+            "offset": 33554432,
+            "bytes": 8388608
+          },
+          {
+            "width": 2048,
+            "height": 1024,
+            "depth": 1,
+            "slices": 1,
+            "offset": 41943040,
+            "bytes": 2097152
+          },
+          {
+            "width": 1024,
+            "height": 512,
+            "depth": 1,
+            "slices": 1,
+            "offset": 44040192,
+            "bytes": 524288
+          },
+          {
+            "width": 512,
+            "height": 256,
+            "depth": 1,
+            "slices": 1,
+            "offset": 44564480,
+            "bytes": 131072
+          },
+          {
+            "width": 256,
+            "height": 128,
+            "depth": 1,
+            "slices": 1,
+            "offset": 44695552,
+            "bytes": 32768
+          },
+          {
+            "width": 128,
+            "height": 64,
+            "depth": 1,
+            "slices": 1,
+            "offset": 44728320,
+            "bytes": 8192
+          },
+          {
+            "width": 64,
+            "height": 32,
+            "depth": 1,
+            "slices": 1,
+            "offset": 44736512,
+            "bytes": 2048
+          },
+          {
+            "width": 32,
+            "height": 16,
+            "depth": 1,
+            "slices": 1,
+            "offset": 44738560,
+            "bytes": 512
+          },
+          {
+            "width": 16,
+            "height": 8,
+            "depth": 1,
+            "slices": 1,
+            "offset": 44739072,
+            "bytes": 128
+          },
+          {
+            "width": 8,
+            "height": 4,
+            "depth": 1,
+            "slices": 1,
+            "offset": 44739200,
+            "bytes": 32
+          },
+          {
+            "width": 4,
+            "height": 2,
+            "depth": 1,
+            "slices": 1,
+            "offset": 44739232,
+            "bytes": 16
+          },
+          {
+            "width": 2,
+            "height": 1,
+            "depth": 1,
+            "slices": 1,
+            "offset": 44739248,
+            "bytes": 16
+          },
+          {
+            "width": 1,
+            "height": 1,
+            "depth": 1,
+            "slices": 1,
+            "offset": 44739264,
+            "bytes": 16
+          }
+        ]
+      }
+    },
+    {
+      "name": "rgba8-8192x4096-full-chain",
+      "descriptor": {
+        "target": 3553,
+        "internal_format": 32856,
+        "width": 8192,
+        "height": 4096,
+        "depth": 1,
+        "layers": 1,
+        "levels": 14,
+        "samples": 1
+      },
+      "calculated": {
+        "status": "ok",
+        "bytes": 178956972,
+        "levels": [
+          {
+            "width": 8192,
+            "height": 4096,
+            "depth": 1,
+            "slices": 1,
+            "offset": 0,
+            "bytes": 134217728
+          },
+          {
+            "width": 4096,
+            "height": 2048,
+            "depth": 1,
+            "slices": 1,
+            "offset": 134217728,
+            "bytes": 33554432
+          },
+          {
+            "width": 2048,
+            "height": 1024,
+            "depth": 1,
+            "slices": 1,
+            "offset": 167772160,
+            "bytes": 8388608
+          },
+          {
+            "width": 1024,
+            "height": 512,
+            "depth": 1,
+            "slices": 1,
+            "offset": 176160768,
+            "bytes": 2097152
+          },
+          {
+            "width": 512,
+            "height": 256,
+            "depth": 1,
+            "slices": 1,
+            "offset": 178257920,
+            "bytes": 524288
+          },
+          {
+            "width": 256,
+            "height": 128,
+            "depth": 1,
+            "slices": 1,
+            "offset": 178782208,
+            "bytes": 131072
+          },
+          {
+            "width": 128,
+            "height": 64,
+            "depth": 1,
+            "slices": 1,
+            "offset": 178913280,
+            "bytes": 32768
+          },
+          {
+            "width": 64,
+            "height": 32,
+            "depth": 1,
+            "slices": 1,
+            "offset": 178946048,
+            "bytes": 8192
+          },
+          {
+            "width": 32,
+            "height": 16,
+            "depth": 1,
+            "slices": 1,
+            "offset": 178954240,
+            "bytes": 2048
+          },
+          {
+            "width": 16,
+            "height": 8,
+            "depth": 1,
+            "slices": 1,
+            "offset": 178956288,
+            "bytes": 512
+          },
+          {
+            "width": 8,
+            "height": 4,
+            "depth": 1,
+            "slices": 1,
+            "offset": 178956800,
+            "bytes": 128
+          },
+          {
+            "width": 4,
+            "height": 2,
+            "depth": 1,
+            "slices": 1,
+            "offset": 178956928,
+            "bytes": 32
+          },
+          {
+            "width": 2,
+            "height": 1,
+            "depth": 1,
+            "slices": 1,
+            "offset": 178956960,
+            "bytes": 8
+          },
+          {
+            "width": 1,
+            "height": 1,
+            "depth": 1,
+            "slices": 1,
+            "offset": 178956968,
+            "bytes": 4
+          }
+        ]
+      }
+    },
+    {
+      "name": "etc2-rgba8-8192-full-chain",
+      "descriptor": {
+        "target": 3553,
+        "internal_format": 37496,
+        "width": 8192,
+        "height": 8192,
+        "depth": 1,
+        "layers": 1,
+        "levels": 14,
+        "samples": 1
+      },
+      "calculated": {
+        "status": "ok",
+        "bytes": 89478512,
+        "levels": [
+          {
+            "width": 8192,
+            "height": 8192,
+            "depth": 1,
+            "slices": 1,
+            "offset": 0,
+            "bytes": 67108864
+          },
+          {
+            "width": 4096,
+            "height": 4096,
+            "depth": 1,
+            "slices": 1,
+            "offset": 67108864,
+            "bytes": 16777216
+          },
+          {
+            "width": 2048,
+            "height": 2048,
+            "depth": 1,
+            "slices": 1,
+            "offset": 83886080,
+            "bytes": 4194304
+          },
+          {
+            "width": 1024,
+            "height": 1024,
+            "depth": 1,
+            "slices": 1,
+            "offset": 88080384,
+            "bytes": 1048576
+          },
+          {
+            "width": 512,
+            "height": 512,
+            "depth": 1,
+            "slices": 1,
+            "offset": 89128960,
+            "bytes": 262144
+          },
+          {
+            "width": 256,
+            "height": 256,
+            "depth": 1,
+            "slices": 1,
+            "offset": 89391104,
+            "bytes": 65536
+          },
+          {
+            "width": 128,
+            "height": 128,
+            "depth": 1,
+            "slices": 1,
+            "offset": 89456640,
+            "bytes": 16384
+          },
+          {
+            "width": 64,
+            "height": 64,
+            "depth": 1,
+            "slices": 1,
+            "offset": 89473024,
+            "bytes": 4096
+          },
+          {
+            "width": 32,
+            "height": 32,
+            "depth": 1,
+            "slices": 1,
+            "offset": 89477120,
+            "bytes": 1024
+          },
+          {
+            "width": 16,
+            "height": 16,
+            "depth": 1,
+            "slices": 1,
+            "offset": 89478144,
+            "bytes": 256
+          },
+          {
+            "width": 8,
+            "height": 8,
+            "depth": 1,
+            "slices": 1,
+            "offset": 89478400,
+            "bytes": 64
+          },
+          {
+            "width": 4,
+            "height": 4,
+            "depth": 1,
+            "slices": 1,
+            "offset": 89478464,
+            "bytes": 16
+          },
+          {
+            "width": 2,
+            "height": 2,
+            "depth": 1,
+            "slices": 1,
+            "offset": 89478480,
+            "bytes": 16
+          },
+          {
+            "width": 1,
+            "height": 1,
+            "depth": 1,
+            "slices": 1,
+            "offset": 89478496,
+            "bytes": 16
+          }
+        ]
+      }
+    },
+    {
+      "name": "srgb8-alpha8-8192-full-chain",
+      "descriptor": {
+        "target": 3553,
+        "internal_format": 35907,
+        "width": 8192,
+        "height": 8192,
+        "depth": 1,
+        "layers": 1,
+        "levels": 14,
+        "samples": 1
+      },
+      "calculated": {
+        "status": "ok",
+        "bytes": 357913940,
+        "levels": [
+          {
+            "width": 8192,
+            "height": 8192,
+            "depth": 1,
+            "slices": 1,
+            "offset": 0,
+            "bytes": 268435456
+          },
+          {
+            "width": 4096,
+            "height": 4096,
+            "depth": 1,
+            "slices": 1,
+            "offset": 268435456,
+            "bytes": 67108864
+          },
+          {
+            "width": 2048,
+            "height": 2048,
+            "depth": 1,
+            "slices": 1,
+            "offset": 335544320,
+            "bytes": 16777216
+          },
+          {
+            "width": 1024,
+            "height": 1024,
+            "depth": 1,
+            "slices": 1,
+            "offset": 352321536,
+            "bytes": 4194304
+          },
+          {
+            "width": 512,
+            "height": 512,
+            "depth": 1,
+            "slices": 1,
+            "offset": 356515840,
+            "bytes": 1048576
+          },
+          {
+            "width": 256,
+            "height": 256,
+            "depth": 1,
+            "slices": 1,
+            "offset": 357564416,
+            "bytes": 262144
+          },
+          {
+            "width": 128,
+            "height": 128,
+            "depth": 1,
+            "slices": 1,
+            "offset": 357826560,
+            "bytes": 65536
+          },
+          {
+            "width": 64,
+            "height": 64,
+            "depth": 1,
+            "slices": 1,
+            "offset": 357892096,
+            "bytes": 16384
+          },
+          {
+            "width": 32,
+            "height": 32,
+            "depth": 1,
+            "slices": 1,
+            "offset": 357908480,
+            "bytes": 4096
+          },
+          {
+            "width": 16,
+            "height": 16,
+            "depth": 1,
+            "slices": 1,
+            "offset": 357912576,
+            "bytes": 1024
+          },
+          {
+            "width": 8,
+            "height": 8,
+            "depth": 1,
+            "slices": 1,
+            "offset": 357913600,
+            "bytes": 256
+          },
+          {
+            "width": 4,
+            "height": 4,
+            "depth": 1,
+            "slices": 1,
+            "offset": 357913856,
+            "bytes": 64
+          },
+          {
+            "width": 2,
+            "height": 2,
+            "depth": 1,
+            "slices": 1,
+            "offset": 357913920,
+            "bytes": 16
+          },
+          {
+            "width": 1,
+            "height": 1,
+            "depth": 1,
+            "slices": 1,
+            "offset": 357913936,
+            "bytes": 4
+          }
+        ]
+      }
+    },
+    {
+      "name": "rgba8-8192-two-levels",
+      "descriptor": {
+        "target": 3553,
+        "internal_format": 32856,
+        "width": 8192,
+        "height": 8192,
+        "depth": 1,
+        "layers": 1,
+        "levels": 2,
+        "samples": 1
+      },
+      "calculated": {
+        "status": "ok",
+        "bytes": 335544320,
+        "levels": [
+          {
+            "width": 8192,
+            "height": 8192,
+            "depth": 1,
+            "slices": 1,
+            "offset": 0,
+            "bytes": 268435456
+          },
+          {
+            "width": 4096,
+            "height": 4096,
+            "depth": 1,
+            "slices": 1,
+            "offset": 268435456,
+            "bytes": 67108864
+          }
+        ]
+      }
+    }
+  ]
+}

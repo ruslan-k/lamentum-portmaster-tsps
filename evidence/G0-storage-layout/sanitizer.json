@@ -1,0 +1,10 @@
+{
+  "first_attempt": {
+    "result": "link failure, not code execution",
+    "reason": "host libubsan.so.1.0.0 missing"
+  },
+  "alternative": "compiler trap-on-UB instrumentation, no libubsan runtime dependency",
+  "flags": "-fsanitize=undefined -fsanitize-undefined-trap-on-error -O1 -g",
+  "returncode": 0,
+  "output": "............\n----------------------------------------------------------------------\nRan 12 tests in 1.480s\n\nOK\n"
+}

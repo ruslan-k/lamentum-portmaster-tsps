@@ -1,0 +1,7 @@
+{
+  "returncode": 0,
+  "output": "{\"harness_rc\": 4, \"samples\": 1, \"process_identity\": {\"boot_id\": \"fixture-boot\", \"pid\": 17, \"starttime\": 42}, \"scope\": \"CPU diagnostics, not gameplay FPS\"}\n..........................................................................................................................................\n----------------------------------------------------------------------\nRan 138 tests in 3.511s\n\nOK\n",
+  "reviewed_head": "14d8f801a549b4bf0921b891ec2da9f9b046b51a",
+  "reviewed_roadmap_sha256": "1bc5ec104739c6ecc71cb1a36d03e7188b6b29c0ba16ec50ddc86d71943466fc",
+  "timestamp": "2026-10-21T08:50:03.980725+04:00"
+}

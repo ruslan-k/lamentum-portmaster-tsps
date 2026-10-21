@@ -2156,3 +2156,36 @@ profiler OFF/ON overhead qualification. The independent CPU fixture is not that 
 No new world scene, physical player movement, audible audio, cold save/load or gameplay FPS
 is demonstrated. Re-fetch/read roadmap updates every **30–60 minutes of active work** and
 before the next experimental phase; record revisions and detailed results in the repo.
+
+## 31. G0 component follow-up — checked payload/admission, not G0 acceptance (2026-10-21)
+
+Reviewed upstream **14d8f80** and **§29.3 / §30**. Detailed source, tests, scope and
+remaining gates: [G0 storage layout](g0-storage-layout.md); executed artifacts:
+[evidence/G0-storage-layout](../evidence/G0-storage-layout/README.md).
+
+- Added host-pure checked uint64 format-defined layouts across NPOT mips, layers,
+  cube faces, 3D depth, realized sample count, BC3 source rounding, expanded RGBA
+  and explicitly sized ETC2/ASTC formats. Unknown/unsized formats and overflows
+  reject without publishing a partial result. This is **not physical residency**
+  and does not certify driver format support.
+- Deferred-BC first-use admission now calculates the complete decoded mip payload
+  before the existing budget check/first GL bind; repeated identical reservations
+  do not double charge. **Eligibility still requires one mip**. The two-mip
+  refusal is a synthetic safety regression, not proof id295 actually has mips.
+- Compiled C: 8192-square RGBA8 = **268435456 bytes** for one level,
+  **335544320** for two, **357913940** for the complete chain. The two-level
+  fixture refuses under **300 MiB**, before its simulated GL site.
+- **138 host tests PASS**, including 12 G0 tests / 1024 randomized reference
+  cases. All 12 also pass compiler trap-on-UB instrumentation. The initial
+  ordinary UBSan link failure (missing host runtime library) is retained, not
+  reported as execution. **435/435** baseline files and pinned AArch64 build226
+  pass; source/header and shader-catalogue identity are recorded.
+- **Build226 is not deployed. No device/game/FPS test in this step.** Original
+  assets, GL API triples, texture policy/eligibility, floors, swap and shader
+  catalogue are not changed. The §29.2 sRGB issue remains unresolved.
+
+**Still open:** exact id295 source/descriptor and T1 run/phase identity, complete
+transactional GL generations/refund/alias/context lifetime and all-class ledger,
+G1 physical/visual driver proof, real world/render/input/audio/save gates and
+stable gameplay **30 FPS**. This narrow arithmetic guard does not close G0 or
+justify an unguarded allocation/OOM retry.

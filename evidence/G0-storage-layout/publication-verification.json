@@ -1,0 +1,42 @@
+{
+  "scope": "clean staged-tree export; host tests do not use private adapter checkout",
+  "staged_tree": "51341ac9429c3b652f63de1ff427c84c18cb1817",
+  "host_tests_returncode": 0,
+  "host_tests_output": "{\"harness_rc\": 4, \"samples\": 1, \"process_identity\": {\"boot_id\": \"fixture-boot\", \"pid\": 17, \"starttime\": 42}, \"scope\": \"CPU diagnostics, not gameplay FPS\"}\n..........................................................................................................................................\n----------------------------------------------------------------------\nRan 138 tests in 3.606s\n\nOK\n",
+  "build_returncode": 0,
+  "baseline_verified": 435,
+  "aarch64": true,
+  "glibc_max": "2.27",
+  "primary_elf_sha256": "1a8a242eab1f15cb9fbc550fee19c3ee8cd72d2ef6b58fd06941b4e58f669e32",
+  "export_elf_sha256": "4dae18f949100f5742f4958e96a7b6d1406b9152d2cb86865b8a8c3d156d6c86",
+  "whole_elf_identical": false,
+  "all_PT_LOAD_segments_identical": true,
+  "PT_LOAD_segments": [
+    {
+      "file_offset": 0,
+      "file_bytes": 1080144,
+      "flags": 5,
+      "sha256": "f352b3b7337454646c7281b0d92dcfc5398a134c2c0bc4bb351188260eb03f3f"
+    },
+    {
+      "file_offset": 1083920,
+      "file_bytes": 886624,
+      "flags": 6,
+      "sha256": "2323820a5ebc48426c6ba58302fcfa144c7cb177235e979d874fdd4972171ade"
+    }
+  ],
+  "initial_checker_failure": {
+    "reason": "over-strong full-ELF identity assertion",
+    "different_bytes": 11,
+    "only_changed_section": ".strtab (not SHF_ALLOC)",
+    "observed_difference": "compiler temporary object basenames in STT_FILE names; actual byte windows inspected",
+    "cleanup": "root-owned container build directory caused tempfile cleanup PermissionError; exact disposable build path cleaned separately"
+  },
+  "built_source_matches_adapter": true,
+  "shader_catalogue_unchanged": true,
+  "no_game_executable_deployed": true,
+  "review": {
+    "standards": "self-review only; no independent reviewer invoked; overlay-only code, curated staging, checked pure arithmetic",
+    "spec": "partial \u00a729.3 arithmetic/admission; full G0 lifetimes/ledger/id295, T1, G1 and 30 FPS remain open"
+  }
+}

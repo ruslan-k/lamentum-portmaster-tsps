@@ -1,0 +1,15 @@
+{
+  "returncode": 0,
+  "elapsed_seconds": 29.80624389089644,
+  "baseline_verified": 435,
+  "container_image_id": "sha256:e437308c01ce7af4a035c3f0652bc886e258889f66803f805bce53d05af75f0c",
+  "deployed": false,
+  "sha256": {
+    "build-226/lamentum-nextos": "1a8a242eab1f15cb9fbc550fee19c3ee8cd72d2ef6b58fd06941b4e58f669e32",
+    "build-226/source/native/lc2_gl_storage.h": "db2c2915f7287c190f29d736ff808758c8465cbd3e307ae031291114c0c20f28",
+    "build-226/source/native/nvn_textures.h": "868bb56e4ecee5ed1d2f9e2234054a3bcc55ade90bde552c9d5779041a68f324",
+    "runtime/lamentum-adapter.patch": "34a52abe3d57de9f39ecbb6942a05f1216ea310f3eb0c4187f257f166c3d15bf",
+    "runtime/lamentum-shaders-draft.h": "1ad4baeb4c73675f002e96d29360877ea4d1e44972e691f5ed1ffb7ca63ebdc9"
+  },
+  "source_parity": true
+}
