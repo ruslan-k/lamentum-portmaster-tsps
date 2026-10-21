@@ -1,0 +1,13 @@
+LC2_MENU_RSS why=gl-init frames=0 rss-anon-kib=125232 rss-file-kib=73984 rss-shmem-kib=116 source=proc-self-status scope=host-observable diagnostic=1 behaviour=unchanged
+LC2_MENU_RSS why=first-present frames=1 rss-anon-kib=371828 rss-file-kib=335084 rss-shmem-kib=276 source=proc-self-status scope=host-observable diagnostic=1 behaviour=unchanged
+LC2_MENU_RSS why=interval frames=6 rss-anon-kib=337228 rss-file-kib=324372 rss-shmem-kib=276 source=proc-self-status scope=host-observable diagnostic=1 behaviour=unchanged
+LC2_MENU_RSS why=interval frames=11 rss-anon-kib=341080 rss-file-kib=359280 rss-shmem-kib=276 source=proc-self-status scope=host-observable diagnostic=1 behaviour=unchanged
+LC2_MENU_RSS why=interval frames=16 rss-anon-kib=361748 rss-file-kib=367984 rss-shmem-kib=276 source=proc-self-status scope=host-observable diagnostic=1 behaviour=unchanged
+LC2_MENU_RSS why=interval frames=19 rss-anon-kib=335024 rss-file-kib=394376 rss-shmem-kib=276 source=proc-self-status scope=host-observable diagnostic=1 behaviour=unchanged
+LC2_MENU_RSS why=interval frames=21 rss-anon-kib=340792 rss-file-kib=386092 rss-shmem-kib=276 source=proc-self-status scope=host-observable diagnostic=1 behaviour=unchanged
+LC2_MENU_RSS why=interval frames=22 rss-anon-kib=139060 rss-file-kib=505740 rss-shmem-kib=264 source=proc-self-status scope=host-observable diagnostic=1 behaviour=unchanged
+LC2_MENU_RSS why=interval frames=24 rss-anon-kib=180624 rss-file-kib=511420 rss-shmem-kib=264 source=proc-self-status scope=host-observable diagnostic=1 behaviour=unchanged
+LC2_MENU_RSS why=interval frames=31 rss-anon-kib=215008 rss-file-kib=512144 rss-shmem-kib=264 source=proc-self-status scope=host-observable diagnostic=1 behaviour=unchanged
+LC2_MENU_RSS why=interval frames=44 rss-anon-kib=230644 rss-file-kib=512880 rss-shmem-kib=264 source=proc-self-status scope=host-observable diagnostic=1 behaviour=unchanged
+LC2_MENU_RSS why=interval frames=53 rss-anon-kib=212908 rss-file-kib=509840 rss-shmem-kib=264 source=proc-self-status scope=host-observable diagnostic=1 behaviour=unchanged
+LC2_MENU_RSS why=interval frames=61 rss-anon-kib=224164 rss-file-kib=504008 rss-shmem-kib=264 source=proc-self-status scope=host-observable diagnostic=1 behaviour=unchanged

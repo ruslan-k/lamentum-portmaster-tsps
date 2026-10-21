@@ -1185,10 +1185,10 @@ index 0000000..fbe5673
 +#endif
 diff --git a/native/lc2_menu_ledger.h b/native/lc2_menu_ledger.h
 new file mode 100644
-index 0000000..e901882
+index 0000000..1f2b6b2
 --- /dev/null
 +++ b/native/lc2_menu_ledger.h
-@@ -0,0 +1,175 @@
+@@ -0,0 +1,196 @@
 +/* MENU_MEMORY_LEDGER (owner roadmap 40.5 M0): measurement without behaviour change.
 + *
 + * One line at most once per second while enabled, plus a forced line at the
@@ -1215,6 +1215,26 @@ index 0000000..e901882
 +    return (uint64_t)ts.tv_sec*1000000000ULL+(uint64_t)ts.tv_nsec;
 +}
 +
++/* RSS split (owner roadmap 55): the aggregate says our RSS grows ~520 MiB before
++ * the first frame, but not whether that is anonymous guest heap or file-backed image
++ * pages. RssAnon/RssFile/RssShmem live in /proc/self/status (not smaps_rollup, which
++ * carries Rss/Pss), so this reads status and prints its own line to leave the big
++ * format untouched. A missing file or key prints -1, never 0: "unknown" and "zero"
++ * must not look alike in a receipt. */
++static long lc2_menu_ledger_status_key(const char *key) {
++    FILE *file=fopen("/proc/self/status","r");if(!file)return -1;
++    char line[256];long value=-1;size_t key_len=strlen(key);
++    while(fgets(line,sizeof line,file)) {
++        if(!strncmp(line,key,key_len) && line[key_len]==':') {value=strtol(line+key_len+1,NULL,10);break;}
++    }
++    fclose(file);return value;
++}
++static void lc2_menu_ledger_emit_rss(const char *why,unsigned long long frames) {
++    printf("LC2_MENU_RSS why=%s frames=%llu rss-anon-kib=%ld rss-file-kib=%ld rss-shmem-kib=%ld"
++           " source=proc-self-status scope=host-observable diagnostic=1 behaviour=unchanged\n",
++           why,frames,lc2_menu_ledger_status_key("RssAnon"),
++           lc2_menu_ledger_status_key("RssFile"),lc2_menu_ledger_status_key("RssShmem"));
++}
 +static unsigned long lc2_menu_ledger_meminfo(const char *key) {
 +    FILE *file=fopen("/proc/meminfo","r");if(!file)return 0;
 +    char line[256];unsigned long value=0;
@@ -1317,6 +1337,7 @@ index 0000000..e901882
 +           (unsigned long long)scaled_textures,(unsigned long long)scaled_bytes,
 +           (unsigned long long)half_textures,(unsigned long long)bc_pending,(unsigned long long)joined);
 +    lc2_menu_ledger.lines++;fflush(stdout);
++    lc2_menu_ledger_emit_rss(why,frames);
 +}
 +
 +/* Called once from GL/texture initialisation: the biggest GL images (three

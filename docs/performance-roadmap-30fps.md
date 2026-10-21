@@ -3027,3 +3027,22 @@ Conclusions. (1) **Page cache does not explain the step; it fell ~55 MiB** — �
 This replaces the "guest reserves N MiB" framing with a measured split: +241 MiB anonymous plus ~280 MiB file-backed inside our RSS. Neither is one declinable allocation; the file-backed half is the cost of reading the game image. Any lever must be judged against 520 MiB, ~30× the 17.58 MiB the 720p experiment could return.
 
 Next: `/proc/self/smaps_rollup` (`RssAnon`, `RssFile`, `RssShmem`) per ledger record, so the file-backed half is a per-frame series rather than a two-point inference.
+
+## 56. RSS by class: 241 MiB guest heap + 255 MiB image pages before the first frame (2026-10-21)
+
+Build239 `b4edd887274a` prints `RssAnon`/`RssFile`/`RssShmem` from `/proc/self/status` on every ledger record (`-1` when unknown, so "missing" never reads as zero). Arm `rss-split-02`: clean stop at frame 61, verified identity, zero cleanup errors.
+
+| record | frames | anon | file | shmem |
+|---|---|---|---|---|
+| `gl-init` | 0 | 122.3 MiB | 72.2 MiB | 0.11 MiB |
+| `first-present` | 1 | 363.1 MiB | 327.2 MiB | 0.27 MiB |
+| interval | 53 | 207.9 MiB | 497.9 MiB | 0.26 MiB |
+| stop | 61 | 218.9 MiB | 492.2 MiB | 0.26 MiB |
+
+`gl-init → first-present`: **anon +240.8 MiB, file +255.0 MiB**, reproducing the earlier aggregate `VmRSS` step within a few MiB, now split by class. So the pre-first-frame cost is half guest arenas, half game image pages.
+
+At steady state the halves diverge: anon falls 363 → 219 MiB (`VmSwap` ~415 MiB) while file rises to ~492 MiB. The steady footprint is a small anonymous core plus a large resident image working set; `shmem` is negligible (~0.26 MiB), which rules out shared-memory/dma-buf accounting for the RSS gap.
+
+Consequence: the file half is the larger addressable term at steady state (~492 MiB). Nothing in the adapter advises dropping consumed image pages, and no receipt shows whether the runtime re-reads them — a concrete, testable question. The 720p item stays at 17.58 MiB, one thirtieth of the file half. No FPS claim is made: dropping image pages would change memory pressure, which is what stops the run at frame ~61.
+
+Next: instrument the image read path (touched, re-read, drop hints) and measure one reversible A/B of dropping already-consumed image pages.

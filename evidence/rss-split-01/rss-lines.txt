@@ -1,0 +1,7 @@
+LC2_MENU_RSS why=gl-init frames=0 rss-anon-kib=-1 rss-file-kib=-1 rss-shmem-kib=-1 scope=host-observable diagnostic=1 behaviour=unchanged
+LC2_MENU_RSS why=first-present frames=1 rss-anon-kib=-1 rss-file-kib=-1 rss-shmem-kib=-1 scope=host-observable diagnostic=1 behaviour=unchanged
+LC2_MENU_RSS why=interval frames=7 rss-anon-kib=-1 rss-file-kib=-1 rss-shmem-kib=-1 scope=host-observable diagnostic=1 behaviour=unchanged
+LC2_MENU_RSS why=interval frames=12 rss-anon-kib=-1 rss-file-kib=-1 rss-shmem-kib=-1 scope=host-observable diagnostic=1 behaviour=unchanged
+LC2_MENU_RSS why=interval frames=17 rss-anon-kib=-1 rss-file-kib=-1 rss-shmem-kib=-1 scope=host-observable diagnostic=1 behaviour=unchanged
+LC2_MENU_RSS why=interval frames=19 rss-anon-kib=-1 rss-file-kib=-1 rss-shmem-kib=-1 scope=host-observable diagnostic=1 behaviour=unchanged
+LC2_MENU_RSS why=interval frames=21 rss-anon-kib=-1 rss-file-kib=-1 rss-shmem-kib=-1 scope=host-observable diagnostic=1 behaviour=unchanged
