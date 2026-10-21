@@ -57,12 +57,10 @@ families: its 1080p composition trio (plus depth) and the 720p window/present fa
   the physical 720p framebuffer".
 - That switch is **off by default**, and the owner roadmap already records
   `ZERO_RENDER_SCALE=2` as a *measured performance-negative* (fill/switch cost), not a
-  memory win — which is why it is not a default. Memory-wise it would remove
-  31.64 MiB of the menu's charged storage (three colour + one depth at 1080p).
+  memory win — which is why it is not a default. Those targets use **31.64 MiB before resizing** (three colour plus one depth-equivalent at 1080p), but still need **14.06 MiB at 1280×720**. The **maximum nominal saving is 17.58 MiB**, not 31.64 MiB, and driver physical savings have not been measured.
 
 ## Consequence for the next step
 
-No new scaling code is needed: the A/B is one environment variable plus the frame
-gate in `tools/frame_diff.py` (`identical()` on the same menu screen). The decision to
+No new scaling code is needed: the A/B is one environment variable plus phase-matched in-run capture comparisons. `tools/frame_diff.py` defaults to tolerance=2, so its `identical()` verdict is **not byte-exact**; require tolerance=0 for exact matches and report a separate tolerant comparison for animation noise. The decision to
 run it stays with the owner, because it changes image quality; the measurement will
 report both what it saves in charged bytes and what it costs in pixels.
