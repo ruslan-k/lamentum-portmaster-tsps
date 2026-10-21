@@ -52,3 +52,30 @@ class SummariseTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class SweepTests(unittest.TestCase):
+    def attempt(self, tap, step, qualified=True):
+        return {'tap_ms': tap, 'verdict': {'qualified': qualified, 'step': step}}
+
+    def test_one_row_ends_the_sweep_as_success(self):
+        decision = nav_chain.sweep_decision([self.attempt(80, 0), self.attempt(150, 1)])
+        self.assertEqual((decision['done'], decision['outcome'], decision['tap_ms']),
+                         (True, 'one_row', 150))
+
+    def test_a_two_row_move_stops_the_sweep_immediately(self):
+        decision = nav_chain.sweep_decision([self.attempt(250, 2)])
+        self.assertEqual((decision['done'], decision['outcome']), (True, 'overshoot'))
+        self.assertEqual(decision['step'], 2)
+
+    def test_no_movement_advances_through_the_declared_values_only(self):
+        decision = nav_chain.sweep_decision([self.attempt(80, 0)])
+        self.assertEqual((decision['done'], decision['next_tap_ms']), (False, 150))
+        exhausted = nav_chain.sweep_decision([self.attempt(v, 0) for v in nav_chain.SWEEP_MS])
+        self.assertEqual((exhausted['done'], exhausted['outcome']),
+                         (True, 'no_movement_across_sweep'))
+
+    def test_an_unqualified_attempt_does_not_advance_the_sweep_as_success(self):
+        decision = nav_chain.sweep_decision([self.attempt(80, None, qualified=False)])
+        self.assertEqual(decision['done'], False)
+        self.assertEqual(decision['next_tap_ms'], 150)

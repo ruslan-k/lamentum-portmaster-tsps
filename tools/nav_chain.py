@@ -63,6 +63,28 @@ def summarise(serial_before, row_before, serial_after, row_after, tap_ms=TAP_MS)
     return verdict
 
 
+def sweep_decision(attempts, values=SWEEP_MS):
+    """Next hold length to try, or why the sweep stops. Pure.
+
+    Stop rules from roadmap 40.3: one row on a newer frame ends the sweep as
+    SUCCESS; a two-row move ends it immediately as OVERSHOOT (never continue past
+    it); no movement at all keeps trying shorter/longer values until exhausted.
+    """
+    for attempt in attempts:
+        verdict = attempt.get('verdict') or {}
+        if verdict.get('qualified') and verdict.get('step') == 1:
+            return {'done': True, 'outcome': 'one_row', 'tap_ms': attempt['tap_ms'],
+                    'row_before': verdict.get('row_before'), 'row_after': verdict.get('row_after')}
+        if verdict.get('step') is not None and verdict['step'] > 1:
+            return {'done': True, 'outcome': 'overshoot', 'tap_ms': attempt['tap_ms'],
+                    'step': verdict['step'], 'reason': verdict.get('reason')}
+    tried = [attempt['tap_ms'] for attempt in attempts]
+    remaining = [value for value in values if value not in tried]
+    if not remaining:
+        return {'done': True, 'outcome': 'no_movement_across_sweep', 'tried': tried}
+    return {'done': False, 'next_tap_ms': remaining[0], 'tried': tried}
+
+
 def decode_png(data):
     pos, idat = 8, b''
     width = height = depth = colour = interlace = None
@@ -156,6 +178,10 @@ def wait_serial(after, deadline_s=SERIAL_WAIT_S):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--tap-ms', type=int, default=TAP_MS)
+    parser.add_argument('--sweep', action='store_true',
+                        help='try SWEEP_MS one press at a time, stopping on one row or overshoot')
+    parser.add_argument('--sweep-values', default=None,
+                        help='comma-separated subset of the sweep, e.g. 80,150,250')
     parser.add_argument('--target', default='newgame')
     parser.add_argument('--evidence', type=Path, default=EVIDENCE / 'nav-chain-03')
     parser.add_argument('--wait-game', type=int, default=240)
@@ -186,14 +212,49 @@ def main():
         if action['action'] != 'press':
             record['stopped'] = 'navigator did not ask for a press: ' + str(action)
             break
-        pad.press(action['button'], args.tap_ms)
-        after_serial = wait_serial(before_serial)
-        after, capture = grab('nav-chain-b', args.evidence)
-        record['states'].append({'phase': 'after', 'serial': after_serial,
-                                 'capture': capture, 'oracle': after,
-                                 'press': {'button': action['button'], 'tap_ms': args.tap_ms}})
-        record['verdict'] = summarise(before_serial, before['row'], after_serial,
-                                      (after or {}).get('row'), args.tap_ms)
+        if args.sweep and args.sweep_values:
+            taps = [int(value) for value in args.sweep_values.split(',')]
+        else:
+            taps = list(SWEEP_MS) if args.sweep else [args.tap_ms]
+        attempts, serial = [], before_serial
+        for tap_ms in taps:
+            try:
+                pad.press(action['button'], tap_ms)
+            except RuntimeError as error:
+                attempts.append({'tap_ms': tap_ms, 'verdict': {
+                    'qualified': False, 'reason': 'owned process unavailable before the press: %s' % error}})
+                record['sweep'] = {'attempts': attempts,
+                                   'decision': {'done': True, 'outcome': 'arm_ended'}}
+                break
+            after_serial = wait_serial(serial)
+            after, capture = grab('nav-chain-b-' + str(tap_ms), args.evidence)
+            verdict = summarise(serial, before['row'], after_serial,
+                                (after or {}).get('row'), tap_ms)
+            attempt = {'tap_ms': tap_ms, 'serial_before': serial, 'serial_after': after_serial,
+                       'verdict': verdict, 'capture': capture}
+            attempts.append(attempt)
+            record['states'].append({'phase': 'after', 'tap_ms': tap_ms, 'serial': after_serial,
+                                     'capture': capture, 'oracle': after, 'verdict': verdict})
+            if after_serial:
+                serial = after_serial
+            decision = sweep_decision(attempts) if args.sweep else {
+                'done': True, 'outcome': 'single_tap', 'tap_ms': tap_ms}
+            if decision['done']:
+                record['sweep'] = {'attempts': attempts, 'decision': decision}
+                break
+            before = after or before
+            navigator = Navigation(target=args.target)
+            next_action = observe(navigator, before['page'], before['cursor_y'], serial)
+            if next_action['action'] != 'press':
+                record['sweep'] = {'attempts': attempts,
+                                   'decision': {'done': True, 'outcome': 'navigator_stopped',
+                                                'reason': str(next_action)}}
+                break
+            action = next_action
+        else:
+            record['sweep'] = {'attempts': attempts, 'decision': sweep_decision(attempts)}
+        record['verdict'] = (record['sweep']['attempts'][-1]['verdict']
+                             if record.get('sweep') else None)
         break
     (args.evidence / 'chain.json').write_text(json.dumps(record, indent=2) + '\n')
     print(json.dumps(record, indent=2))

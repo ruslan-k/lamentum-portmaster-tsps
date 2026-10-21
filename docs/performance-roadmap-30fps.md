@@ -2709,3 +2709,21 @@ Owner **§40.3** done as pure host work; no device press, no build, no deploymen
 - **206 host tests PASS**, including every case the owner listed: `load→options` overshoot with an assertion that exactly one press was issued, `options→newgame` direction, single-row movement, stale serial, repeated same-frame polls, confirm acknowledgement, wrong config page, lagged serial, two identical animation frames, first row already at the target, and no auto-confirm after overshoot.
 
 Open: the sweep has not run on device; `NEWGAME_CONFIG` has no measured fingerprint (§40.4); the menu-memory waterfall (§40.5) is untouched. No scene, id295 or FPS claim.
+
+## 43. Short-press sweep: 80/150 ms do not register and the arm cannot finish the sweep (2026-10-21)
+
+Owner **§40.3 item 5** executed once (`nav-sweep-02`, build229, strict GL, 300 MiB texture budget, diagnostic floor 32 MiB), one press per attempt, each requiring a new present serial:
+
+| tap | serial delta | rows | verdict |
+|---|---|---|---|
+| **80 ms** | 17 → 21 (4) | 0 | qualified, no movement |
+| **150 ms** | 21 → 45 (24) | 0 | qualified, no movement |
+| 250 ms | — | — | not reached: arm ended (`arm_ended`) |
+
+Together with 350 ms → 0 rows and 900 ms → 2 rows, the one-row window is **between 400 and 900 ms**; values ≤350 ms are lost between guest samples.
+
+The sweep could not complete because the menu run survives only ~30–55 presents (~40 s) and one attempt costs a kmsgrab plus a base64 transfer plus a wait for a newer frame — the 150 ms attempt alone spanned 24 frames. This is **§40.5 in its sharpest form: the menu cannot stay alive long enough to characterise its own input**, so press-only experiments are exhausted until menu memory is explained.
+
+Tooling: `--sweep` / `--sweep-values` with a pure `sweep_decision()` (one row = success, two rows = immediate overshoot stop, no movement = next declared value), and a dead arm is recorded as `arm_ended` instead of raising. **210 host tests PASS.**
+
+Next: the §40.5 menu-memory waterfall (absolute deltas from before launch, 1 Hz plus first-frame and pre-refusal points, GL/RB/buffer/EGL storage with live-vs-deferred and generation, per-event waterfall of the first 55 presents). No scene, id295 or FPS claim.
