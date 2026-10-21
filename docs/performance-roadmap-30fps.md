@@ -2398,3 +2398,22 @@ Work under **§32.4 / PR B1**; §32's order is unchanged. Owner plan reviewed at
 - **170 host tests PASS** (4 new: opt-in by value, once-per-owner with full field set, 40 owners → 8 records + overflow, no guest reads, receipt-before-charge ordering), **435/435** baseline, ARM64 **build229** `b164cffd…4e82f` **not deployed**.
 
 Honest limits: the receipt cannot fire until a run reaches id295 first use, which needs the guarded New Game arm (§32.2) plus a verified navigator (§32.7); content identity/immutability still require offline owner-private hashing; B2's all-class ledger and transactional lifetimes are untouched. No game run, no id295 resolution, no scene and no FPS result.
+
+## 36. build229 installed and menu regression arm (2026-10-21)
+
+First device arm after §34/§35. Installed **build229** (`b164cffd…4e82f`) with its mandatory `run_identity.py` and the current launcher; previous ELF backed up in `lamentum-switch/.before-229/`. Two bounded principal runs, both owned and cleaned up (no cleanup errors, one MainUI, no game process afterwards):
+
+| arm | env | outcome |
+|---|---|---|
+| `menu-229-01` | defaults (`floor=96`) | header bound, execution verified, `T2_MEMORY_FLOOR` at frame **2** (`available-MiB=54`) |
+| `menu-229-02` | `COTM_GL_ERROR_IGNORE=0`, `LC2_BC_OWNER_RECEIPT=1`, `T2_TEXTURE_BUDGET_MIB=300`, **diagnostic** `floor=32` | **55 presents, 52 with pixels** (`peak nonblack=104461 max=255`), stop `T2_MEMORY_FLOOR` at `available-MiB=29`, `VmSwap=496 MB` |
+
+What the second arm establishes:
+
+- The menu still renders after the §34 upload-triple change, with strict GL error checking: the corrected path ran on the **real 8192x4096 BC atlas** (`LC2_BC_STRIPED_UPLOAD id=291`, 4 MiB stripes) and produced **no** GL-error-family line (`ZERO_TEXTURE_REFRESH_GL`, `ZERO_TEXEL_UPLOAD`, `ZERO_CUBE_UPLOAD`, `LC2_GL_UPLOAD_FORMAT`, `ZERO_SRGB_TEXTURE_BACKEND_REQUIRED` all zero).
+- The published ELF is proven to boot and present on the device it was built for, with its own run identity (`elf_sha256` in the header equals the installed file).
+- The B1 receipt did **not** fire: the menu performs no deferred-BC first use, so that instrument is still unexercised on hardware.
+
+What it does not establish: no navigation, no New Game, no Loading, no scene, no world draw, no id295 descriptor, no gameplay and no frame-rate figure. The attached kmsgrab was taken **after** the run (Spruce restored) and is cleanup evidence only — the picture claim rests on the runtime's own present readback, not on a panel capture. The 32 MiB floor stays explicitly diagnostic; production keeps the safe floor and the 300 MiB texture guard untouched.
+
+Memory fact worth carrying forward: the **menu alone** drives `MemAvailable` from 90 MiB to 29 MiB (VmSwap 496 MB) in ~55 frames, so any next arm must budget for the menu before it can ever afford Loading. Next step remains a verified navigator (§32.7), which is what makes a New Game arm — and therefore B1 and id295 — measurable at all.

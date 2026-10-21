@@ -1,0 +1,14 @@
+{
+  "frames_presented": 55,
+  "pixels_frames": 52,
+  "gl_error_family_lines": 0,
+  "owner_receipt_lines": 0,
+  "gpu_reserve_lines": 0,
+  "bc_striped_lines": 1,
+  "bc_deferred_lines": 0,
+  "stops": [
+    "T2_MEMORY_FLOOR"
+  ],
+  "log_lines": 8399,
+  "vmswap_last_kb": 495996
+}

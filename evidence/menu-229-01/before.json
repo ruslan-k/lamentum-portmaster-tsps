@@ -1,0 +1,30 @@
+{
+  "processes": {
+    "runtime.sh": [
+      {
+        "pid": 1217,
+        "starttime": 653
+      }
+    ],
+    "principal.sh": [
+      {
+        "pid": 2203,
+        "starttime": 1039
+      }
+    ],
+    "MainUI": [
+      {
+        "pid": 15381,
+        "starttime": 604842
+      }
+    ]
+  },
+  "game": [],
+  "online": "4-7",
+  "frame": 429,
+  "menu_events": 4,
+  "stops": [
+    "STOP status=TIME_LIMIT"
+  ],
+  "log_inode": 6650
+}
