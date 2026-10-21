@@ -1,0 +1,81 @@
+{
+  "cleanup_errors": [],
+  "before": {
+    "processes": {
+      "runtime.sh": [
+        {
+          "pid": 1228,
+          "starttime": 637
+        }
+      ],
+      "principal.sh": [
+        {
+          "pid": 2190,
+          "starttime": 1019
+        }
+      ],
+      "MainUI": [
+        {
+          "pid": 4303,
+          "starttime": 6656238
+        }
+      ]
+    },
+    "game": [],
+    "online": "0-7",
+    "frame": null,
+    "menu_events": 0,
+    "stops": [],
+    "log_inode": 6652
+  },
+  "after": {
+    "processes": {
+      "runtime.sh": [
+        {
+          "pid": 1228,
+          "starttime": 637
+        }
+      ],
+      "principal.sh": [
+        {
+          "pid": 2190,
+          "starttime": 1019
+        }
+      ],
+      "MainUI": [
+        {
+          "pid": 7273,
+          "starttime": 6758549
+        }
+      ]
+    },
+    "game": [],
+    "online": "0-7",
+    "frame": 443,
+    "menu_events": 4,
+    "stops": [
+      "STOP status=TIME_LIMIT"
+    ],
+    "log_inode": 6652
+  },
+  "host_terminated": null,
+  "termination": {
+    "kind": "runtime_timeout",
+    "stops": [
+      "TIME_LIMIT"
+    ],
+    "oom_evidence": []
+  },
+  "process_identity": {
+    "boot_id": "aedf014d-52ea-4c4c-8c42-f6650c7f8a91",
+    "pid": 6435,
+    "starttime": 6728232
+  },
+  "identity_errors": [],
+  "killed_without_stop": false,
+  "stops": [
+    "TIME_LIMIT"
+  ],
+  "runtime_ok": true,
+  "config_rejected": false
+}

@@ -1,0 +1,8 @@
+{
+  "qualification": "mapping_observation_not_semantic_owner",
+  "total_field_in_original_payload": "smaps_rollup Swap, not status VmSwap",
+  "accepted_texture_vs_guest_owner": false,
+  "accepted_rate_or_gameplay_comparison": false,
+  "stop": "PHYSICAL_MEMORY_CONFLICT",
+  "correction": "../../docs/c0-profiler-audit.md"
+}

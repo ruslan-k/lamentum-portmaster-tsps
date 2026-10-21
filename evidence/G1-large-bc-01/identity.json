@@ -1,0 +1,14 @@
+{
+  "executable_sha256": "b8407822b205b0012401ed327a82f9ae94e31344a0bfc1d77ccdc1f7b798df4a",
+  "launcher_sha256": "ae7622b858c1481ca73bfc6026b2dc317255d8f8d947373d0692297a531f978d",
+  "sd_free_bytes": 1456898048,
+  "saves": {
+    "PlayerPrefs.dat": "fe0f7f227336a30fd67f96c29536a5206abd89774b42b8fce62f4cc974743caa"
+  },
+  "source_commit": "5ec6dbc8c3e67ed3965e2a1487cf03f1f9097aaf",
+  "catalogue_sha256": "1ad4baeb4c73675f002e96d29360877ea4d1e44972e691f5ed1ffb7ca63ebdc9",
+  "overlay_sha256": "86733cf0e227ad636f17f680940d89942b903a45825c738a9cfaeea0063334fc",
+  "new_executable_sha256": "602d05be6f24fcdbdbebb73123c11d2ce0dc1dede70486d0d77c1f4025063391",
+  "owner_image_identity": "../harness-live-01/identity.json; no owner-image writes since that verification",
+  "backup_verified": true
+}

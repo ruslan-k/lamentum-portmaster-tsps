@@ -1,0 +1,40 @@
+{
+  "final": {
+    "svc0x1a-wait": {
+      "calls": 1,
+      "cpu_ms": 0.004,
+      "wall_ms": 0.004,
+      "cpu_us_mean": 4.0,
+      "calls_per_frame": 0.0,
+      "cpu_ms_per_frame": 0.0
+    },
+    "audout-cmd7": {
+      "calls": 10734,
+      "cpu_ms": 279.427,
+      "wall_ms": 309.248,
+      "cpu_us_mean": 26.03,
+      "calls_per_frame": 24.23,
+      "cpu_ms_per_frame": 0.631
+    },
+    "audout-cmd8": {
+      "calls": 30225,
+      "cpu_ms": 598.838,
+      "wall_ms": 835.947,
+      "cpu_us_mean": 19.81,
+      "calls_per_frame": 68.23,
+      "cpu_ms_per_frame": 1.352
+    }
+  },
+  "lines": 30,
+  "frames": 443,
+  "stop": [
+    "STOP status=TIME_LIMIT pc=0x7f82ee9bd8 detail=0x0 query_memory_calls=0x101 tls_trap_reads=0x0"
+  ],
+  "totals": {
+    "cpu_ms": 878.269,
+    "wall_ms": 1145.199,
+    "frames": 443,
+    "cpu_ms_per_frame": 1.983,
+    "audio_share_of_one_core_percent": 0.293
+  }
+}

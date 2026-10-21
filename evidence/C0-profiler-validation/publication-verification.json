@@ -1,0 +1,16 @@
+{
+  "exported_git_tree": "5601cf7d59b0b99f6bb88b3698cb7470921b7db2",
+  "unit_test_returncode": 0,
+  "unit_test_count": 126,
+  "build_returncode": 0,
+  "baseline_manifest_ok": 435,
+  "artifact_sha256": {
+    "lamentum-nextos": "61e251bfa3997c9111394b865d2bcaf80a921470f98956781d6b4e24334b39ad",
+    "lc2-cost-fixture": "1b3091ad20762fdb375d92822741380abdbe2bf5d5c5b0c5320b4565da1f7807",
+    "source/native/lc2_cost.h": "1da98a7adc2a905f58bc4b8ef046f53a7dee35c92055ea07115ea4b50d394e12"
+  },
+  "fixture_byte_identical_to_device_tested_elf": true,
+  "header_byte_identical_to_device_tested_header": true,
+  "game_elf_identity_note": "Compare exact source/header; source output directory can affect ELF bytes. No new game deployment.",
+  "private_adapter_checkout_required_by_host_tests": false
+}

@@ -1,0 +1,8 @@
+{
+  "pidfd_open_self": true,
+  "pidfd_signal_zero_self": true,
+  "numbers_source": "aarch64-linux-gnu-gcc -dM -E #include <asm/unistd.h>",
+  "pidfd_open_nr": 434,
+  "pidfd_send_signal_nr": 424,
+  "no_signal_delivered": true
+}

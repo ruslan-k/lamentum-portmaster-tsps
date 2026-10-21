@@ -2122,3 +2122,37 @@ git diff --check
 **Immediate best next test:** after implementing G0 sparse descriptor/GL ledger + T1 run identity + C0 bounded exclusive profiler, run **one** safe New Game probe that can answer which **actual** GL object id295 is, whether it has mips, where physical memory is going, what actually burns Loading CPU, and what the **next** scene milestone/STOP is. Those answers decide whether G2 ETC2, audio synchronization, shader/MRT, or another path is the real next fix. Do not spend further device time reconfirming menu-only functionality.
 
 **Conclusion:** compatibility and safe instrumentation have genuinely improved, but playable gameplay and 30 FPS remain undemonstrated. The realistic critical path is **G0 allocation identity -> proven G1 compressed driver support -> conditional G2 atlas residency reduction -> W0/W1 game scene and correct render target/CBUF/shaders -> W2 audio/controls/save -> F1 measured performance**, while **C0** runs in parallel to diagnose CPU pressure. Avoid speculative renderer rewrites, unsafe allocation-budget increases, and FPS claims from Loading.
+
+## 30. Execution follow-up — collector repair, not C0 or gameplay acceptance (2026-10-21)
+
+Reviewed current upstream **46ea9a8** and §29 before implementation. **§29 remains the
+execution queue**. This section records actual subsequent work and withdraws unsupported
+interpretations; it does not replace the G0/T1/G1 critical path.
+
+Detailed report: [C0 profiler audit](c0-profiler-audit.md). Evidence:
+[self-authored TSPS fixture](../evidence/C0-profiler-validation/README.md).
+
+| Item | Observed outcome / acceptance boundary |
+|---|---|
+| Historical swap-priority-01 | Harness **8**, matched kernel-victim OOM, original priority restored. One negative unmatched-phase arm, not a causal proof of a universal swap policy. |
+| Historical C1-svc-cost-01 | Harness **0**, TIME_LIMIT, cleanup clean; TLS threshold/tail loss and TID-dropping reduction invalidate the claimed complete handler totals. **C1/C0 not closed.** |
+| Historical C2-bc-decode-01 | Host collection interrupted; retained 319-present snapshot is preliminary, not final. Missing BC rows do not mean zero work. A later boot's log is not a replacement receipt. |
+| Collector repair | Bounded 128-thread registry, TID/starttime, explicit stop-time tails, true child-subtracted exclusive time, raw independent clocks, invalid/in-flight/overflow coverage, cumulative snapshot parser preserving thread generations. |
+| Host validation | **126 tests PASS**, including short-lived tails, nesting, invalid clocks, raw wall<CPU, valid zero timestamps, TID reuse, overflow/busy snapshots and missing/truncated reports. |
+| Rebuild | **435/435** baseline files verified; AArch64 build225 succeeds. Exact built header matches the overlay. Game ELF built **but NOT deployed**. |
+| Device component fixture | CPU-only self-authored program through principal; ON/OFF **0/0**, **4 retired thread generations / 12 rows**, synthetic wait/BC/release counts **12/12/4**, clean KMS Spruce restoration, CPU mask **4-7** preserved. No game/display/audio workload was tested. |
+| Installed port / policy | Build223 and game launcher hashes unchanged; no texture/swap/quota/admission policy experiment in this follow-up. |
+
+The old **1.98 ms/present / 0.293% core / "mutex calls absent" / "C1 closed"** verdicts
+are withdrawn. The older SVC histograms were parsed from **logged calls**, not round-robin
+PC sample slots. Anonymous VMAs do not identify texture versus guest/driver ownership, so
+the later **"99.66% anonymous proves GPU/textures irrelevant"** verdict is withdrawn too.
+Keep id295's later guarded GPU reservation as an independent proven hazard.
+
+**Remaining:** complete G0 id295 descriptor/storage/mips/lifetimes and T1 run UUID/phase
+navigation, G1 independent compressed driver fixture, then one guarded combined New Game
+arm. C0 still needs trap/IPC/wait/queue outcomes, same-run symbols and a matched Loading
+profiler OFF/ON overhead qualification. The independent CPU fixture is not that benchmark.
+No new world scene, physical player movement, audible audio, cold save/load or gameplay FPS
+is demonstrated. Re-fetch/read roadmap updates every **30–60 minutes of active work** and
+before the next experimental phase; record revisions and detailed results in the repo.

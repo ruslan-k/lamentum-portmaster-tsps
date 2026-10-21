@@ -1,0 +1,36 @@
+{
+  "returncode": 0,
+  "stdout": "Screenshot saved to /mnt/SDCARD/Roms/PORTS/lamentum-switch/logs/c0-fixture-da3a504f57f24402978601cd73b6103b/cleanup-menu.png (FB ID: 161, 1280x720)\n",
+  "stderr": "",
+  "sha256": "5900f7157b7bc732970a343d5d43ff8d6eed01499b115afec97e8521f19210bb",
+  "snapshot": {
+    "processes": {
+      "runtime.sh": [
+        {
+          "pid": 1217,
+          "starttime": 653
+        }
+      ],
+      "principal.sh": [
+        {
+          "pid": 2203,
+          "starttime": 1039
+        }
+      ],
+      "MainUI": [
+        {
+          "pid": 5994,
+          "starttime": 113628
+        }
+      ]
+    },
+    "game": [],
+    "online": "4-7",
+    "frame": 429,
+    "menu_events": 4,
+    "stops": [
+      "STOP status=TIME_LIMIT"
+    ],
+    "log_inode": 6650
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "qualification": "historical_incomplete_profiler",
+  "runtime_receipt": "TIME_LIMIT; harness 0; cleanup clean",
+  "accepted_cost_totals": false,
+  "accepted_zero_call_claims": false,
+  "reason": "Thresholded TLS emission omits tails/threads; reducer overwrites TIDs; no stop-time flush. Hooks exclude broader bridge cost.",
+  "correction": "../../docs/c0-profiler-audit.md"
+}

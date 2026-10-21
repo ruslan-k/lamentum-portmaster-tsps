@@ -1,0 +1,37 @@
+{
+  "game_sha": "86649c51854e4017fdbaddab16b7c53d327fb6a138c45c1106275c67a1727815",
+  "launcher_sha": "ae7622b858c1481ca73bfc6026b2dc317255d8f8d947373d0692297a531f978d",
+  "fixture_pids": [],
+  "boot_id": "d443aa3c-9e62-41fe-a5ba-e05aa4e63a61",
+  "after": {
+    "processes": {
+      "runtime.sh": [
+        {
+          "pid": 1217,
+          "starttime": 653
+        }
+      ],
+      "principal.sh": [
+        {
+          "pid": 2203,
+          "starttime": 1039
+        }
+      ],
+      "MainUI": [
+        {
+          "pid": 5994,
+          "starttime": 113628
+        }
+      ]
+    },
+    "game": [],
+    "online": "4-7",
+    "frame": 429,
+    "menu_events": 4,
+    "stops": [
+      "STOP status=TIME_LIMIT"
+    ],
+    "log_inode": 6650
+  },
+  "cleanup_errors": []
+}

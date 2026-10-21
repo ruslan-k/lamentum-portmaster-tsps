@@ -1,0 +1,14 @@
+{
+  "build_returncode": 0,
+  "baseline_manifest_ok": 435,
+  "sha256": {
+    "build-225/lamentum-nextos": "eee3e5ce041ff6be8dd1dbb1d8820f3c296e4d1a497909f4360d5361040124d5",
+    "build-225/lc2-cost-fixture": "1b3091ad20762fdb375d92822741380abdbe2bf5d5c5b0c5320b4565da1f7807",
+    "build-225/source/native/lc2_cost.h": "1da98a7adc2a905f58bc4b8ef046f53a7dee35c92055ea07115ea4b50d394e12",
+    "tools/fixtures/lc2-cost-fixture.c": "97010a6c814b0ffe9a0c4727f7d029b50824e1d0b399333a8c4b63f28b208e59",
+    "runtime/lamentum-adapter.patch": "b4bb49906f9aa78be79c4af7abbf0a32a514b888e66ec63810089799dc79f7e9",
+    "runtime/lamentum-shaders-draft.h": "1ad4baeb4c73675f002e96d29360877ea4d1e44972e691f5ed1ffb7ca63ebdc9"
+  },
+  "source_parity": true,
+  "game_executable_deployed": false
+}

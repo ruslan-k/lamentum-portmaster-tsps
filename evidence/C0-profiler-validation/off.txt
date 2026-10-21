@@ -1,0 +1,1 @@
+LC2_COST_FIXTURE_CLOCK fixture_pid=5750 cpu_resolution_ns=1 wall_resolution_ns=1

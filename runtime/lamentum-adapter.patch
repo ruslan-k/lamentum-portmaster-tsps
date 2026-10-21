@@ -165,7 +165,7 @@ index cdecae8..fda3668 100644
  }
  static void hid_exit_request(unsigned diagnostic) {
 diff --git a/native/ipc.h b/native/ipc.h
-index 7389a4e..59df724 100644
+index 7389a4e..544fbc0 100644
 --- a/native/ipc.h
 +++ b/native/ipc.h
 @@ -18,7 +18,7 @@ enum endpoint { EP_NONE, EP_SM, EP_LM, EP_LOGGER, EP_APM, EP_APM_SESSION,
@@ -177,7 +177,15 @@ index 7389a4e..59df724 100644
      EP_AUDOUT_MANAGER, EP_AUDOUT, EP_SAVE_DIR };
  static void endpoint_destroy(enum endpoint endpoint,unsigned state);
  static void nv_destroy(unsigned state);
-@@ -296,6 +296,12 @@ static enum endpoint sm_lookup(const uint8_t *name) {
+@@ -247,6 +247,7 @@ static void ipc_copy_events(uint8_t *buffer,struct ipc_request *req,const uint32
+ #include "input.h"
+ #include "audren.h"
+ #include "audout.h"
++#include "lc2_cost.h" /* C1 diagnostic */
+ #include "zero_controller_applet.h"
+ /* Terminator 2D, SDK 19.3.9: 35 additive command ids over 18.3.2 (docs/ipc-delta-vs-18.3.2.json). Frente D
+  * delivers native/t2_horizon19.h with the table and a `t2_horizon19_dispatch(endpoint,&req,buffer,pc)`
+@@ -296,6 +297,12 @@ static enum endpoint sm_lookup(const uint8_t *name) {
      if(!memcmp(name,"audren:u",8))found=EP_AUDREN_MANAGER;
      /* SDK 17 services with no laboratory behaviour: every command succeeds with no output; command 0 yields a child object. */
      if(!memcmp(name,"ectx:aw\0",8))found=EP_AW_STUB;
@@ -190,7 +198,7 @@ index 7389a4e..59df724 100644
      /* MOMODORA: Unity 2021 calls nn::ro::Initialize unconditionally (main+0x7c5e44, MEDIDO). No module is
       * ever loaded here: the title has no rom:/.nrr/dynamic.nrr, so the fsp OpenFile below returns PathNotFound. */
      if(!memcmp(name,"ldr:ro\0\0",8))found=EP_AW_STUB;
-@@ -520,6 +526,46 @@ retry_audio: ;
+@@ -520,13 +527,58 @@ retry_audio: ;
          }
          stop("AUDOUT_OPEN_NOT_IN_THIS_GAME",pc,req.command,20);
      }
@@ -237,6 +245,19 @@ index 7389a4e..59df724 100644
      if(endpoint==EP_AW_STUB) {
          struct line stub={0};text(&stub,"AW_STUB_SERVICE command=");hex(&stub,req.command);text(&stub," data=");hex(&stub,req.data_size);emit(&stub);
          if(req.command==0){ipc_child(buffer,s,&req,EP_AW_STUB,pc);return;}
+         ipc_reply(buffer,req.token,0,NULL,0,0,req.domain);return;
+     }
+     if(aud_dispatch(buffer,s,&req,endpoint,state,pc))return;
+-    if(aout_dispatch(buffer,s,&req,endpoint,state,pc))return;
++    {   /* C1: only AudioOut cmd7/cmd8 are measured (see lc2_cost.h). */
++        int cls=lc2_cost_ipc_class(endpoint==EP_AUDOUT,req.command);uint64_t cost=cls>=0?lc2_cost_enter((unsigned)cls):0;
++        int handled=aout_dispatch(buffer,s,&req,endpoint,state,pc);
++        if(cost)lc2_cost_leave(cls,cost);
++        if(handled)return;
++    }
+     if(zero_friends_dispatch(buffer,s,&req,endpoint,state,pc))return;
+     if(endpoint==EP_SETTINGS && req.command==8) {
+         /* libnx setGetQuestFlag: output u8. This is a normal application,
 diff --git a/native/lc2_cbuf_units.h b/native/lc2_cbuf_units.h
 new file mode 100644
 index 0000000..6f3885e
@@ -251,6 +272,274 @@ index 0000000..6f3885e
 +    if(top>=limit || ordinal>=limit-top)return -1;
 +    unsigned unit=limit-top-1-ordinal;
 +    return unit>=bottom?(int)unit:-1;
++}
++#endif
+diff --git a/native/lc2_cost.h b/native/lc2_cost.h
+new file mode 100644
+index 0000000..b6d1e24
+--- /dev/null
++++ b/native/lc2_cost.h
+@@ -0,0 +1,262 @@
++/* C0 diagnostic only. Bounded all-thread, cumulative handler counters.
++ * Each completed measured call has independent thread-CPU and MONOTONIC_RAW clocks.
++ * Exclusive intervals subtract direct children's inclusive intervals (not their exclusive
++ * intervals). Raw wall values are NEVER clamped to CPU values. Measurement overhead is
++ * included and must be qualified by a same-phase OFF/ON arm before a performance claim.
++ *
++ * Registration reads this thread's /proc identity once, BEFORE starting its first timer.
++ * There is no allocation, logging or mutex in a measured interval. Registry fields are
++ * atomic; a bounded seqlock snapshot either produces a consistent row or says incomplete.
++ * Retired threads retain their rows: stop-time reporting includes sub-4096-call tails.
++ * SIGKILL cannot flush anything; absent/incomplete reports must not mean zero cost.
++ */
++#ifndef LC2_COST_H
++#define LC2_COST_H
++#include <stdint.h>
++#include <stddef.h>
++#include <stdlib.h>
++#include <string.h>
++#include <time.h>
++#include <unistd.h>
++#include <fcntl.h>
++#include <errno.h>
++#include <sys/syscall.h>
++
++enum {LC2_COST_WAIT,LC2_COST_RELEASE,LC2_COST_AUDOUT7,LC2_COST_AUDOUT8,
++      LC2_COST_BC_DECODE,LC2_COST_CLASSES};
++static const char *const lc2_cost_names[LC2_COST_CLASSES]={
++    "svc0x1a-wait","svc0x1b-release","audout-cmd7","audout-cmd8","bc-decode"};
++#ifndef LC2_COST_THREADS
++#define LC2_COST_THREADS 128
++#endif
++#ifndef LC2_COST_DEPTH
++#define LC2_COST_DEPTH 16
++#endif
++#ifndef LC2_COST_CLOCK
++#define LC2_COST_CLOCK clock_gettime
++#endif
++struct lc2_cost_values {
++    uint64_t entered,completed,valid,invalid,cpu_inclusive_ns,cpu_exclusive_ns;
++    uint64_t wall_inclusive_ns,wall_exclusive_ns,max_cpu_ns,max_wall_ns,wall_lt_cpu;
++};
++struct lc2_cost_row {uint64_t seq;struct lc2_cost_values v;};
++struct lc2_cost_slot {
++    uint64_t published,tid,starttime,nesting_errors;
++    struct lc2_cost_row rows[LC2_COST_CLASSES];
++};
++struct lc2_cost_frame {
++    uint64_t token,cpu,wall,child_cpu,child_wall;unsigned bucket,valid;
++};
++static struct lc2_cost_slot lc2_cost_slots[LC2_COST_THREADS];
++static uint64_t lc2_cost_next,lc2_cost_overflow,lc2_cost_identity_failures,lc2_cost_report_id;
++static int lc2_cost_mode=-1,lc2_cost_reporting;
++static _Thread_local struct {
++    int slot;unsigned initialized,depth;uint64_t next_token;
++    struct lc2_cost_frame frames[LC2_COST_DEPTH];
++} lc2_cost_state;
++#define LC2_COST_LOAD(p) __atomic_load_n((p),__ATOMIC_ACQUIRE)
++#define LC2_COST_STORE(p,v) __atomic_store_n((p),(v),__ATOMIC_RELEASE)
++
++/* These small writers are also used on stop(), including signal/fault paths. */
++struct lc2_cost_line {char data[2048];size_t used;};
++static inline void lc2_cost_text(struct lc2_cost_line *b,const char *s) {
++    while(*s && b->used<sizeof(b->data))b->data[b->used++]=*s++;
++}
++static inline void lc2_cost_uint(struct lc2_cost_line *b,uint64_t n) {
++    char reversed[24];unsigned count=0;
++    do {reversed[count++]=(char)('0'+n%10);n/=10;}while(n);
++    while(count && b->used<sizeof(b->data))b->data[b->used++]=reversed[--count];
++}
++static inline void lc2_cost_field(struct lc2_cost_line *b,const char *key,uint64_t value) {
++    lc2_cost_text(b," ");lc2_cost_text(b,key);lc2_cost_text(b,"=");lc2_cost_uint(b,value);
++}
++static inline void lc2_cost_write(int fd,struct lc2_cost_line *b) {
++    lc2_cost_text(b,"\n");size_t at=0;unsigned interrupted=0;
++    while(at<b->used) {
++        ssize_t n=write(fd,b->data+at,b->used-at);
++        if(n>0)at+=(size_t)n;
++        else if(n<0 && errno==EINTR && interrupted++<8)continue;
++        else break;
++    }
++}
++static inline int lc2_cost_enabled(void) {
++    int mode=__atomic_load_n(&lc2_cost_mode,__ATOMIC_ACQUIRE);
++    if(mode<0) {
++        const char *s=getenv("LC2_SVC_COST");mode=s&&!strcmp(s,"1");
++        __atomic_store_n(&lc2_cost_mode,mode,__ATOMIC_RELEASE);
++    }
++    return mode;
++}
++static inline int lc2_cost_read_clock(clockid_t clock,uint64_t *out) {
++    struct timespec t;
++    if(LC2_COST_CLOCK(clock,&t) || t.tv_sec<0 || t.tv_nsec<0 || t.tv_nsec>=1000000000L)return 0;
++    *out=(uint64_t)t.tv_sec*UINT64_C(1000000000)+(uint64_t)t.tv_nsec;return 1;
++}
++/* Field 22 is token 19 after the final comm parenthesis, not after the first one. */
++static inline int lc2_cost_parse_start(const char *s,uint64_t *value) {
++    const char *last=NULL;
++    for(const char *p=s;*p;p++)if(*p==')')last=p;
++    if(!last)return 0;
++    const char *p=last+1;
++    for(unsigned field=0;field<19;field++) {
++        while(*p==' ' || *p=='\t')p++;
++        if(!*p)return 0;
++        while(*p && *p!=' ' && *p!='\t' && *p!='\n')p++;
++    }
++    while(*p==' ' || *p=='\t')p++;
++    if(*p<'0' || *p>'9')return 0;
++    uint64_t n=0;
++    while(*p>='0' && *p<='9') {
++        unsigned digit=(unsigned)(*p++-'0');
++        if(n>(UINT64_MAX-digit)/10)return 0;
++        n=n*10+digit;
++    }
++    if(*p && *p!=' ' && *p!='\n' && *p!='\t')return 0;
++    *value=n;return 1;
++}
++static inline struct lc2_cost_slot *lc2_cost_register(void) {
++    if(lc2_cost_state.initialized)
++        return lc2_cost_state.slot<0?NULL:&lc2_cost_slots[lc2_cost_state.slot];
++    lc2_cost_state.initialized=1;lc2_cost_state.slot=-1;
++    long tid=syscall(SYS_gettid);uint64_t start=0;
++    struct lc2_cost_line path={.used=0};lc2_cost_text(&path,"/proc/self/task/");
++    lc2_cost_uint(&path,(uint64_t)tid);lc2_cost_text(&path,"/stat");path.data[path.used]=0;
++    char stat[1024];ssize_t n=-1;int saved_errno=errno;
++    int fd=open(path.data,O_RDONLY|O_CLOEXEC);
++    if(fd>=0){n=read(fd,stat,sizeof(stat)-1);close(fd);}
++    errno=saved_errno;
++    if(n<=0 || (stat[n]=0,!lc2_cost_parse_start(stat,&start))) {
++        __atomic_fetch_add(&lc2_cost_identity_failures,1,__ATOMIC_RELAXED);return NULL;
++    }
++    uint64_t index=__atomic_fetch_add(&lc2_cost_next,1,__ATOMIC_RELAXED);
++    if(index>=LC2_COST_THREADS) {
++        __atomic_fetch_add(&lc2_cost_overflow,1,__ATOMIC_RELAXED);return NULL;
++    }
++    struct lc2_cost_slot *slot=&lc2_cost_slots[index];
++    slot->tid=(uint64_t)tid;slot->starttime=start;
++    lc2_cost_state.slot=(int)index;LC2_COST_STORE(&slot->published,1);return slot;
++}
++static inline void lc2_cost_row_begin(struct lc2_cost_row *r) {
++    __atomic_add_fetch(&r->seq,1,__ATOMIC_ACQ_REL);
++}
++static inline void lc2_cost_row_end(struct lc2_cost_row *r) {
++    __atomic_add_fetch(&r->seq,1,__ATOMIC_RELEASE);
++}
++static inline void lc2_cost_increment(uint64_t *p) {__atomic_fetch_add(p,1,__ATOMIC_RELAXED);}
++static inline void lc2_cost_add(uint64_t *p,uint64_t n) {__atomic_fetch_add(p,n,__ATOMIC_RELAXED);}
++static inline uint64_t lc2_cost_enter(unsigned bucket) {
++    int saved_errno=errno;
++    if(bucket>=LC2_COST_CLASSES || !lc2_cost_enabled())return 0;
++    struct lc2_cost_slot *slot=lc2_cost_register();if(!slot){errno=saved_errno;return 0;}
++    unsigned depth=lc2_cost_state.depth;
++    if(depth==LC2_COST_DEPTH) {
++        lc2_cost_increment(&slot->nesting_errors);
++        for(unsigned i=0;i<depth;i++)lc2_cost_state.frames[i].valid=0;
++        errno=saved_errno;return 0;
++    }
++    struct lc2_cost_frame *f=&lc2_cost_state.frames[depth];
++    *f=(struct lc2_cost_frame){.bucket=bucket,.valid=1};
++    f->token=++lc2_cost_state.next_token;
++    if(!f->token)f->token=++lc2_cost_state.next_token;
++    f->valid=lc2_cost_read_clock(CLOCK_MONOTONIC_RAW,&f->wall);
++    f->valid&=lc2_cost_read_clock(CLOCK_THREAD_CPUTIME_ID,&f->cpu);
++    lc2_cost_state.depth++;
++    struct lc2_cost_row *row=&slot->rows[bucket];lc2_cost_row_begin(row);
++    lc2_cost_increment(&row->v.entered);lc2_cost_row_end(row);
++    errno=saved_errno;
++    return f->token;
++}
++static inline void lc2_cost_leave(unsigned bucket,uint64_t token) {
++    int saved_errno=errno;
++    if(!token || lc2_cost_state.slot<0 || !lc2_cost_state.depth)return;
++    struct lc2_cost_slot *slot=&lc2_cost_slots[lc2_cost_state.slot];
++    struct lc2_cost_frame *f=&lc2_cost_state.frames[lc2_cost_state.depth-1];
++    if(f->token!=token || f->bucket!=bucket) {
++        lc2_cost_increment(&slot->nesting_errors);
++        for(unsigned i=0;i<lc2_cost_state.depth;i++)lc2_cost_state.frames[i].valid=0;
++        return;
++    }
++    uint64_t cpu_end=0,wall_end=0;
++    unsigned valid=lc2_cost_read_clock(CLOCK_THREAD_CPUTIME_ID,&cpu_end);
++    valid&=lc2_cost_read_clock(CLOCK_MONOTONIC_RAW,&wall_end);
++    valid&=f->valid && cpu_end>=f->cpu && wall_end>=f->wall;
++    uint64_t cpu=valid?cpu_end-f->cpu:0,wall=valid?wall_end-f->wall:0;
++    valid&=cpu>=f->child_cpu && wall>=f->child_wall;
++    lc2_cost_state.depth--;
++    if(lc2_cost_state.depth) {
++        struct lc2_cost_frame *parent=&lc2_cost_state.frames[lc2_cost_state.depth-1];
++        if(valid){parent->child_cpu+=cpu;parent->child_wall+=wall;}else parent->valid=0;
++    }
++    struct lc2_cost_row *row=&slot->rows[bucket];lc2_cost_row_begin(row);
++    struct lc2_cost_values *v=&row->v;lc2_cost_increment(&v->completed);
++    if(valid) {
++        lc2_cost_increment(&v->valid);
++        lc2_cost_add(&v->cpu_inclusive_ns,cpu);lc2_cost_add(&v->cpu_exclusive_ns,cpu-f->child_cpu);
++        lc2_cost_add(&v->wall_inclusive_ns,wall);lc2_cost_add(&v->wall_exclusive_ns,wall-f->child_wall);
++        if(cpu>LC2_COST_LOAD(&v->max_cpu_ns))LC2_COST_STORE(&v->max_cpu_ns,cpu);
++        if(wall>LC2_COST_LOAD(&v->max_wall_ns))LC2_COST_STORE(&v->max_wall_ns,wall);
++        if(wall<cpu)lc2_cost_increment(&v->wall_lt_cpu);
++    } else lc2_cost_increment(&v->invalid);
++    lc2_cost_row_end(row);
++    errno=saved_errno;
++}
++static inline int lc2_cost_snapshot(struct lc2_cost_row *row,struct lc2_cost_values *v) {
++    for(unsigned retry=0;retry<3;retry++) {
++        uint64_t seq=LC2_COST_LOAD(&row->seq);if(seq&1)continue;
++#define LC2_COST_COPY(name) v->name=LC2_COST_LOAD(&row->v.name)
++        LC2_COST_COPY(entered);LC2_COST_COPY(completed);LC2_COST_COPY(valid);LC2_COST_COPY(invalid);
++        LC2_COST_COPY(cpu_inclusive_ns);LC2_COST_COPY(cpu_exclusive_ns);
++        LC2_COST_COPY(wall_inclusive_ns);LC2_COST_COPY(wall_exclusive_ns);
++        LC2_COST_COPY(max_cpu_ns);LC2_COST_COPY(max_wall_ns);LC2_COST_COPY(wall_lt_cpu);
++#undef LC2_COST_COPY
++        __atomic_thread_fence(__ATOMIC_ACQUIRE);
++        if(seq==LC2_COST_LOAD(&row->seq))return 1;
++    }
++    return 0;
++}
++/* Explicit cumulative report. Call before _exit; do not depend on stdio/atexit/TLS destructors. */
++static inline void lc2_cost_report_fd(int fd) {
++    /* Never parse the environment in a fault/stop handler. No entered call means
++       no report, which the parser treats as missing evidence rather than zero. */
++    if(__atomic_load_n(&lc2_cost_mode,__ATOMIC_ACQUIRE)!=1 ||
++       __atomic_exchange_n(&lc2_cost_reporting,1,__ATOMIC_ACQUIRE))return;
++    int saved_errno=errno;uint64_t report=__atomic_add_fetch(&lc2_cost_report_id,1,__ATOMIC_RELAXED);
++    uint64_t count=LC2_COST_LOAD(&lc2_cost_next),incomplete=0,rows=0;
++    struct lc2_cost_line b={.used=0};lc2_cost_text(&b,"LC2_COST_V2_BEGIN");
++    lc2_cost_field(&b,"report",report);lc2_cost_field(&b,"slots",count);
++    lc2_cost_field(&b,"overflow",LC2_COST_LOAD(&lc2_cost_overflow));
++    lc2_cost_field(&b,"identity_failures",LC2_COST_LOAD(&lc2_cost_identity_failures));
++    lc2_cost_text(&b," cpu_clock=THREAD_CPUTIME_ID wall_clock=MONOTONIC_RAW cumulative=1 diagnostic=1");
++    lc2_cost_write(fd,&b);
++    for(uint64_t i=0;i<count && i<LC2_COST_THREADS;i++) {
++        struct lc2_cost_slot *slot=&lc2_cost_slots[i];
++        if(!LC2_COST_LOAD(&slot->published)){incomplete++;continue;}
++        for(unsigned cls=0;cls<LC2_COST_CLASSES;cls++) {
++            struct lc2_cost_values v;
++            if(!lc2_cost_snapshot(&slot->rows[cls],&v)){incomplete++;continue;}
++            if(!v.entered)continue;
++            b=(struct lc2_cost_line){.used=0};lc2_cost_text(&b,"LC2_COST_V2 class=");
++            lc2_cost_text(&b,lc2_cost_names[cls]);lc2_cost_field(&b,"report",report);
++            lc2_cost_field(&b,"tid",slot->tid);lc2_cost_field(&b,"tid_starttime",slot->starttime);
++            lc2_cost_field(&b,"nesting_errors",LC2_COST_LOAD(&slot->nesting_errors));
++#define LC2_COST_EMIT(name) lc2_cost_field(&b,#name,v.name)
++            LC2_COST_EMIT(entered);LC2_COST_EMIT(completed);LC2_COST_EMIT(valid);LC2_COST_EMIT(invalid);
++            LC2_COST_EMIT(cpu_inclusive_ns);LC2_COST_EMIT(cpu_exclusive_ns);
++            LC2_COST_EMIT(wall_inclusive_ns);LC2_COST_EMIT(wall_exclusive_ns);
++            LC2_COST_EMIT(max_cpu_ns);LC2_COST_EMIT(max_wall_ns);LC2_COST_EMIT(wall_lt_cpu);
++#undef LC2_COST_EMIT
++            lc2_cost_text(&b," scope=measured-handlers-only raw_wall=1");lc2_cost_write(fd,&b);rows++;
++        }
++    }
++    b=(struct lc2_cost_line){.used=0};lc2_cost_text(&b,"LC2_COST_V2_END");
++    lc2_cost_field(&b,"report",report);lc2_cost_field(&b,"rows",rows);
++    lc2_cost_field(&b,"incomplete_snapshots",incomplete);lc2_cost_write(fd,&b);
++    errno=saved_errno;__atomic_store_n(&lc2_cost_reporting,0,__ATOMIC_RELEASE);
++}
++static inline int lc2_cost_ipc_class(unsigned is_audout,unsigned command) {
++    if(!is_audout)return -1;
++    if(command==7)return LC2_COST_AUDOUT7;
++    if(command==8)return LC2_COST_AUDOUT8;
++    return -1;
 +}
 +#endif
 diff --git a/native/lc2_fileback.h b/native/lc2_fileback.h
@@ -641,7 +930,7 @@ index 0000000..ff9ab3b
 +}
 +#endif
 diff --git a/native/loader.c b/native/loader.c
-index 8018af5..95bf9e5 100644
+index 8018af5..fb2d533 100644
 --- a/native/loader.c
 +++ b/native/loader.c
 @@ -30,7 +30,9 @@
@@ -655,7 +944,21 @@ index 8018af5..95bf9e5 100644
  #define HOST_ADDRESS_LIMIT (8192ULL << 20)
  #define HEAP_BASE 0x1000000000ULL
  #define HEAP_LIMIT MEMORY_BUDGET
-@@ -184,15 +186,18 @@ static void trace_frames(ucontext_t *ctx) {
+@@ -125,11 +127,13 @@ static void location(struct line *b,uint64_t pc) {
+     hex(b,pc);
+ }
+ static void momo_thread_census(void);
++#include "lc2_cost.h" /* bounded all-thread diagnostic; explicit stop-time flush */
+ static void stop(const char *why, uint64_t pc, uint64_t detail, int status) {
+     momo_thread_census();
+     struct line b={0};text(&b,"STOP status=");text(&b,why);text(&b," pc=");location(&b,pc);
+     text(&b," detail=");hex(&b,detail);text(&b," query_memory_calls=");hex(&b,svc_counts[6]);
+     text(&b," tls_trap_reads=");hex(&b,tls_reads);emit(&b);
++    lc2_cost_report_fd(STDOUT_FILENO);
+     if(current_guest_context)trace_frames(current_guest_context);
+     /* Only async-signal-safe syscalls: this path also runs after guest faults. */
+     int memory_fd=open("/proc/self/status",O_RDONLY|O_CLOEXEC);
+@@ -184,21 +188,25 @@ static void trace_frames(ucontext_t *ctx) {
      emit(&b);
  }
  static void t2_gzram_touch(uint64_t,uint64_t); /* Frente J: guest zram, t2_guest_memory.h */
@@ -674,7 +977,14 @@ index 8018af5..95bf9e5 100644
  #include "megaman_movie.h"
  #include "megaman_memory.h"
  #include "megaman_heap_mapping.h"
-@@ -302,6 +307,7 @@ static void signal_dispatch(int sig,siginfo_t *info,void *opaque) {
+ #include "tls_stubs.h"
+ #include "aw_profiler.h"
+ #include "threading.h"
++#include "lc2_cost.h" /* C1 diagnostic: exclusive cost of the bridge calls */
+ /* Stall census: what every live guest thread was doing at its last system call. Printed by stop(),
+  * so a time limit or a fault always says who is waiting on what (MEDIDO need, run momo-076). */
+ static void momo_thread_census(void) {
+@@ -302,6 +310,7 @@ static void signal_dispatch(int sig,siginfo_t *info,void *opaque) {
      uint32_t instruction=bridge_instruction(pc);
      if(!instruction || *(const uint32_t *)(uintptr_t)pc!=TRAP_OPCODE)stop("UNKNOWN_TRAP",pc,0,23);
      if(graphics_trace_entry(pc,instruction,ctx))return;
@@ -682,7 +992,18 @@ index 8018af5..95bf9e5 100644
      if(megaman_movie_handle(pc,instruction,ctx))return;
      if(megaman_memory_handle(pc,instruction,ctx))return;
      if(local_register_trap(ctx,instruction))return;
-@@ -626,6 +632,8 @@ static void signal_handler(int sig,siginfo_t *info,void *opaque) {
+@@ -560,8 +569,8 @@ static void signal_dispatch(int sig,siginfo_t *info,void *opaque) {
+         if(!r[0])r[1]=index;
+         ctx->uc_mcontext.pc+=4;return;
+     }
+-    if(svc==0x1a) {emit_svc(&b,svc);mutex_wait(r[1],r[0],r[2],pc);r[0]=0;ctx->uc_mcontext.pc+=4;return;}
+-    if(svc==0x1b) {emit_svc(&b,svc);mutex_release(r[0],pc);r[0]=0;ctx->uc_mcontext.pc+=4;return;}
++    if(svc==0x1a) {emit_svc(&b,svc);uint64_t cost=lc2_cost_enter(LC2_COST_WAIT);mutex_wait(r[1],r[0],r[2],pc);lc2_cost_leave(LC2_COST_WAIT,cost);r[0]=0;ctx->uc_mcontext.pc+=4;return;}
++    if(svc==0x1b) {emit_svc(&b,svc);uint64_t cost=lc2_cost_enter(LC2_COST_RELEASE);mutex_release(r[0],pc);lc2_cost_leave(LC2_COST_RELEASE,cost);r[0]=0;ctx->uc_mcontext.pc+=4;return;}
+     if(svc==0x1c) {
+         emit_svc(&b,svc);
+         /* Bounded diagnostic for a stalled boot: who is waiting on which process-wide key. */
+@@ -626,6 +635,8 @@ static void signal_handler(int sig,siginfo_t *info,void *opaque) {
          return;
      }
      if(sig==SIGSEGV && t2_gzram_fault(info,opaque))return; /* Frente J: compressed guest block, restored; retry */
@@ -691,7 +1012,7 @@ index 8018af5..95bf9e5 100644
      ucontext_t *previous=current_guest_context;
      signal_handler_depth++;
      if(sig!=SIGTRAP){signal_dispatch(sig,info,opaque);return;}
-@@ -723,6 +731,9 @@ int main(int argc,char **argv) {
+@@ -723,6 +734,9 @@ int main(int argc,char **argv) {
          if(dladdr((void *)(uintptr_t)main,&info) && info.dli_fbase)
              printf("HOST_BASE address=%p file=%s\n",info.dli_fbase,info.dli_fname?info.dli_fname:"");
      }
@@ -701,7 +1022,7 @@ index 8018af5..95bf9e5 100644
      struct rlimit no_core={0,0};setrlimit(RLIMIT_CORE,&no_core);
      struct rlimit address_limit={HOST_ADDRESS_LIMIT,HOST_ADDRESS_LIMIT};
      if(setrlimit(RLIMIT_AS,&address_limit)){perror("diagnostic memory quota");return 1;}
-@@ -741,6 +752,7 @@ int main(int argc,char **argv) {
+@@ -741,6 +755,7 @@ int main(int argc,char **argv) {
      }
      t2_lazy_mesh_apply(images,sizeof(images)/sizeof(images[0])); /* Frente L: lazy quad meshes, T2_LAZY_MESH=0 disables */
      t2_image_file_map_report();
@@ -709,7 +1030,7 @@ index 8018af5..95bf9e5 100644
      /* Build and staging pin the original main NSO and segment hashes. The
       * optional movie handler also checks each relevant native instruction. */
      /* Historical LC2 hooks stay off: their code and object layouts are not
-@@ -756,6 +768,7 @@ int main(int argc,char **argv) {
+@@ -756,6 +771,7 @@ int main(int argc,char **argv) {
       * until the hook is re-pinned for 19.3.9. Off by default. */
      megaman_memory_configure(LC2_SDK_BASE,LC2_SDK_SHA256,LC2_RTLD_BASE,LC2_RTLD_SHA256);
      tls_stubs_initialize();
@@ -717,7 +1038,7 @@ index 8018af5..95bf9e5 100644
      aw_prof_thread=0;aw_prof_start();
      int tls_fast=tls_stubs_install(images,sizeof(images)/sizeof(images[0]));
      printf("TLS_READ_STUBS sites=%zu bytes=%zu offsets=0x%"PRIx64",0x%"PRIx64" fallback=%s; tls_trap_reads counts only remaining traps\n",
-@@ -769,7 +782,7 @@ int main(int argc,char **argv) {
+@@ -769,7 +785,7 @@ int main(int argc,char **argv) {
                  if(v!=graphics_entries[j].opcode)stop("GRAPHICS_IMAGE_IDENTITY",s->base+off,v,24);
                  graphics_entry=1;
              }
@@ -726,7 +1047,7 @@ index 8018af5..95bf9e5 100644
                 megaman_memory_entry(s->base+off,v) ||
                 (v&0xffe0001fU)==0xd4000001U || (v&0xffffffe0U)==0xd53bd060U ||
                 (v&0xffffffe0U)==0xd53bd040U || (v&0xffffffe0U)==0xd51bd040U ||
-@@ -815,7 +828,10 @@ int main(int argc,char **argv) {
+@@ -815,7 +831,10 @@ int main(int argc,char **argv) {
      const char *budget=getenv("MEGAMAN_PROBE_SECONDS");
      if(budget) {
          char *end=NULL;unsigned long seconds=strtoul(budget,&end,10);
@@ -2474,7 +2795,7 @@ index 0fb14ec..9e2ccfc 100644
              free(premul);free(probe);free(sprite);free(flat);free(scaled);free(awf);free(mipped);free(r8);free(advent);free(lowered);free(wrapped);free(interface_source);
              if(!status){char log[2048]={0};glGetShaderInfoLog(shaders[i],sizeof(log),NULL,log);printf("NVN_SHADER_COMPILE_ERROR %s\n",log);stop("NVN_SHADER_COMPILE_FAILED",nvn_caller,p->sources[i],21);}
 diff --git a/native/nvn_textures.h b/native/nvn_textures.h
-index 0feaef1..e67d4ff 100644
+index 0feaef1..b808445 100644
 --- a/native/nvn_textures.h
 +++ b/native/nvn_textures.h
 @@ -23,7 +23,7 @@ struct nvn_texture {
@@ -2486,7 +2807,22 @@ index 0feaef1..e67d4ff 100644
      unsigned aw_clear_valid,aw_clear_mask,aw_clear_known,aw_draws_since_clear,aw_caustic_half;float aw_clear_color[4];GLint aw_clear_scissor[4];
      GLuint zero_mip_masks[2];unsigned zero_mip_tail;unsigned momo_scale_alias_checked,momo_scale_alias_free;
      unsigned zero_depth_valid,zero_stencil_value,zero_depth_discarded;float zero_depth_value;
-@@ -135,7 +135,10 @@ static uint64_t nvn_texture_layout(uint64_t address,struct nvn_texture_builder *
+@@ -63,6 +63,14 @@ static unsigned nvn_textures_high;
+ static void zero_texture_storage_require(const struct nvn_texture *t);
+ #include "zero_render_scale.h"
+ #include "zero_texture_storage.h"
++#include "lc2_cost.h" /* C1/C2 diagnostic: exclusive BC decode cost (LC2_SVC_COST=1) */
++static inline int lc2_bc_decode_cost(unsigned format,void *destination,size_t destination_bytes,
++        const void *source,size_t source_bytes,unsigned width,unsigned height,size_t stride) {
++    uint64_t token=lc2_cost_enter(LC2_COST_BC_DECODE);
++    int ok=zero_bc_decode(format,destination,destination_bytes,source,source_bytes,width,height,stride);
++    lc2_cost_leave(LC2_COST_BC_DECODE,token);
++    return ok;
++}
+ /* Cached GPU targets have no fabricated CPU completion. Ordinary GPU
+  * sampling uses their live texture; any native CPU/packed-view/alias access
+  * requires a separately implemented readback before it can be admitted. */
+@@ -135,7 +143,10 @@ static uint64_t nvn_texture_layout(uint64_t address,struct nvn_texture_builder *
              unsigned bc=zero_bc_bytes(b->format);uint64_t face=0;
              for(unsigned i=0;i<b->levels;i++) {
                  struct zero_bc_level m;
@@ -2498,7 +2834,7 @@ index 0feaef1..e67d4ff 100644
                  levels[i]=m.offset;if(m.offset+m.size>face)face=m.offset+m.size;
              }
              face=(face+511)&~UINT64_C(511);
-@@ -197,7 +200,10 @@ static uint64_t nvn_texture_layout(uint64_t address,struct nvn_texture_builder *
+@@ -197,7 +208,10 @@ static uint64_t nvn_texture_layout(uint64_t address,struct nvn_texture_builder *
          uint64_t size=0;
          for(unsigned i=0;i<b->levels;i++) {
              struct zero_bc_level m;
@@ -2510,7 +2846,7 @@ index 0feaef1..e67d4ff 100644
              levels[i]=m.offset;size=m.offset+m.size;
          }
          return (size+4095)&~UINT64_C(4095);
-@@ -321,7 +327,7 @@ static struct nvn_texture *momo_texture_alias(uint64_t object,unsigned *index_ou
+@@ -321,7 +335,7 @@ static struct nvn_texture *momo_texture_alias(uint64_t object,unsigned *index_ou
      return NULL;
  }
  #endif
@@ -2519,7 +2855,7 @@ index 0feaef1..e67d4ff 100644
  static uint64_t zero_texture_record_id(uint64_t object) {return nvn_texture_find(object)->id;}
  static void aw_clear_texture_admit(uint64_t object,uint64_t view,const int32_t *region) {
      struct nvn_texture *t=nvn_texture_find(object);
-@@ -329,6 +335,7 @@ static void aw_clear_texture_admit(uint64_t object,uint64_t view,const int32_t *
+@@ -329,6 +343,7 @@ static void aw_clear_texture_admit(uint64_t object,uint64_t view,const int32_t *
      if(region[0]<0||region[1]<0||region[2]||region[3]<=0||region[4]<=0||region[5]!=1||
         (uint64_t)region[0]+region[3]>t->b.width||(uint64_t)region[1]+region[4]>t->b.height)stop("NVN_CLEAR_TEXTURE_REGION",nvn_caller,object,20);
  }
@@ -2527,7 +2863,16 @@ index 0feaef1..e67d4ff 100644
  static void zero_record_target_view(uint64_t object,const uint8_t *view,unsigned attachment) {
      struct nvn_texture *t=object?nvn_texture_find(object):NULL;
  #ifdef MOMO_SHADERS
-@@ -463,6 +470,58 @@ static void zero_cube_initialize(struct nvn_texture *t) {
+@@ -450,7 +465,7 @@ static void zero_cube_initialize(struct nvn_texture *t) {
+             if(!nvn_texture_decode_upload(t->b.format,t->b.swizzle,type,rgba,mip,(size_t)width*width))stop("ZERO_CUBE_PIXEL_FORMAT",nvn_caller,t->b.format,20);
+         }
+         else if(!megaman_blocklinear_rgba8_decode(linear,linear_bytes,mip,0x2000-t->levels[level],blocks*4,blocks,0x11) ||
+-           !zero_bc_decode(0x44,rgba,rgba_bytes,linear,linear_bytes,width,width,blocks*16))
++           !lc2_bc_decode_cost(0x44,rgba,rgba_bytes,linear,linear_bytes,width,width,blocks*16))
+             stop("ZERO_CUBE_DECODE",nvn_caller,level,24);
+         glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+face,level,GL_RGBA,width,width,0,GL_RGBA,type,rgba);
+         free(rgba);
+@@ -463,6 +478,58 @@ static void zero_cube_initialize(struct nvn_texture *t) {
      GLenum error=glGetError();if(error)stop("ZERO_CUBE_UPLOAD",nvn_caller,error,21);
      printf("ZERO_CUBE_REAL faces=6 size=%u levels=%u format=0x%x payload=%"PRIu64" per-face=%"PRIu64"\n",t->b.width,t->b.levels,t->b.format,t->size,t->size/6);
  }
@@ -2586,7 +2931,12 @@ index 0feaef1..e67d4ff 100644
  static void zero_texture_pool_flushed(struct nvn_pool *pool,uint64_t offset,uint64_t bytes) {
      if(!bytes)return;
      for(unsigned i=0;i<4096;i++) {
-@@ -485,6 +544,38 @@ static void zero_texture_bc_pixels(struct nvn_texture *t,unsigned level,const ui
+@@ -481,11 +548,89 @@ static void zero_texture_bc_pixels(struct nvn_texture *t,unsigned level,const ui
+     uint8_t *linear=malloc(linear_bytes);if(!linear)stop("ZERO_BC_LINEAR_MEMORY",nvn_caller,linear_bytes,21);
+     void *source=nvn_pointer(t->pool->address+t->b.offset+m.offset,m.size,PROT_READ);
+     if(!zero_bc_blocks_copy(&m,source,m.size,linear,linear_bytes,x,y,nx,ny,0) ||
+-       !zero_bc_decode(t->b.format,pixels,bytes,linear,linear_bytes,width,height,(size_t)nx*m.bytes))
++       !lc2_bc_decode_cost(t->b.format,pixels,bytes,linear,linear_bytes,width,height,(size_t)nx*m.bytes))
          stop("ZERO_BC_TILED_DECODE",nvn_caller,t->id,24);
      free(linear);
  }
@@ -2622,15 +2972,63 @@ index 0feaef1..e67d4ff 100644
 +        }
 +    }
 +}
++/* G1 diagnostic only: at most four large BC reservation attempts, before budget admission.
++ * Read existing host metadata only; do not restore/hash guest pages, allocate GPU storage,
++ * reinterpret formats, change budgets or declare a resource immutable. Existing API serialization
++ * protects the bounded seen list, exactly like the texture state examined below. */
++static void lc2_large_bc_reserve_audit(const struct nvn_texture *view,const struct nvn_texture *t,
++        unsigned output_bpp,unsigned bc,unsigned type,unsigned srgb,uint64_t requested) {
++    if(!bc || requested<(UINT64_C(128)<<20))return;
++    static unsigned configured,enabled,count;static uint64_t seen[4];
++    if(!configured){const char *o=getenv("LC2_LARGE_BC_AUDIT");enabled=o&&!strcmp(o,"1");configured=1;}
++    if(!enabled || count==4)return;
++    for(unsigned i=0;i<count;i++)if(seen[i]==t->id)return;
++    seen[count++]=t->id;
++    unsigned levels=t->b.levels<14?t->b.levels:14,width=t->b.width,height=t->b.height;
++    uint64_t all_mips=0;
++    for(unsigned i=0;i<levels;i++) {
++        uint64_t bytes=(uint64_t)width*height*output_bpp;
++        if(UINT64_MAX-all_mips<bytes){all_mips=UINT64_MAX;break;}
++        all_mips+=bytes;
++        if(width>1)width>>=1;
++        if(height>1)height>>=1;
++    }
++    printf("LC2_BC_RESERVE_AUDIT diagnostic=1 view-id=%"PRIu64" owner-id=%"PRIu64" view-object=0x%"PRIx64
++        " owner-object=0x%"PRIx64" alias=%u width=%u height=%u depth=%u levels=%u format=0x%x srgb=%u"
++        " target=%u flags=0x%x samples=%u swizzle=%u,%u,%u,%u block-bytes=%u upload-type=0x%x output-bpp=%u"
++        " guest-storage-bytes=%"PRIu64" pool-object=0x%"PRIx64" pool-address=0x%"PRIx64" pool-bytes=%"PRIu64
++        " pool-generation=%"PRIu64" pool-flags=0x%x pool-offset=%"PRIu64" snapshot-generation=%"PRIu64
++        " context=%p gl-name=%u depth-buffer=%u pending=%u draws=%u target-seen=%u references=%u"
++        " charged-owner-bytes=%"PRIu64" requested-base-bytes=%"PRIu64" mip-decoded-bytes=%"PRIu64
++        " device-limit=%d caller=0x%"PRIx64" phase=before-budget-check gl-allocation=not-attempted"
++        " storage-generation=untracked source-hash=not-read immutable=unproven\n",
++        view->id,t->id,view->object,t->object,(unsigned)(view!=t),t->b.width,t->b.height,t->b.depth,t->b.levels,t->b.format,srgb,
++        t->b.target,t->b.flags,t->b.samples,t->b.swizzle[0],t->b.swizzle[1],t->b.swizzle[2],t->b.swizzle[3],bc,type,output_bpp,
++        t->size,t->pool?t->pool->object:0,t->pool?t->pool->address:0,t->pool?t->pool->size:0,
++        t->pool?t->pool->generation:0,t->pool?t->pool->flags:0,t->b.offset,t->cpu_generation,
++        (void *)eglGetCurrentContext(),t->name,t->depth_buffer,t->lc2_bc_pending,t->draws,t->composition_target_seen,t->references,
++        t->t2_budget_bytes,requested,all_mips,nvn_device.texture_limit,nvn_caller);
++    width=t->b.width;height=t->b.height;
++    for(unsigned i=0;i<levels;i++) {
++        printf("LC2_BC_AUDIT_LEVEL owner-id=%"PRIu64" level=%u width=%u height=%u source-offset=%"PRIu64
++            " decoded-bytes=%"PRIu64" diagnostic=1\n",t->id,i,width,height,t->levels[i],(uint64_t)width*height*output_bpp);
++        if(width>1)width>>=1;
++        if(height>1)height>>=1;
++    }
++}
++/* LC2_LARGE_BC_AUDIT_END */
  static void zero_texture_refresh(struct nvn_texture *t) {
++    struct nvn_texture *view=t;
      t=zero_texture_storage_state(t);
      if(!__atomic_exchange_n(&t->zero_cpu_dirty,0,__ATOMIC_ACQ_REL))return;
-@@ -494,8 +585,19 @@ static void zero_texture_refresh(struct nvn_texture *t) {
+     t2_page_require_rgba8(t,"T2_PAGE_CPU_REFRESH_REQUIRED");
+@@ -494,8 +639,20 @@ static void zero_texture_refresh(struct nvn_texture *t) {
          stop("ZERO_TEXTURE_CPU_GPU_COHERENCE_REQUIRED",nvn_caller,t->id,20);
      unsigned width=t->b.width,height=t->b.height,bc=zero_bc_bytes(t->b.format);
      unsigned type=nvn_cpu_image_upload_type(t),output_bpp=nvn_texture_upload_bytes(type);
 +    if(t->lc2_bc_pending && !t->t2_budget_bytes) {
 +        uint64_t bytes=(uint64_t)width*height*output_bpp;
++        lc2_large_bc_reserve_audit(view,t,output_bpp,bc,type,zero_bc_srgb(t->b.format),bytes);
 +        t2_texture_budget_add(bytes,nvn_caller);t->t2_budget_bytes=bytes;
 +        printf("LC2_BC_GPU_RESERVE id=%"PRIu64" bytes=%"PRIu64" materialization=first-use\n",t->id,bytes);
 +    }
@@ -2645,7 +3043,7 @@ index 0feaef1..e67d4ff 100644
          uint64_t row=bc?(uint64_t)((width+3)/4)*bc:(uint64_t)width*nvn_texture_format_bytes(t->b.format);
          uint64_t stride=t->b.flags&0x50?t->b.stride:row;
          unsigned rows=bc?(height+3)/4:height;
-@@ -507,12 +609,16 @@ static void zero_texture_refresh(struct nvn_texture *t) {
+@@ -507,12 +664,16 @@ static void zero_texture_refresh(struct nvn_texture *t) {
              zero_texture_bc_pixels(t,level,NULL,pixels,bytes);
          } else for(unsigned y=0;y<height;y++)if(!nvn_texture_decode_upload(t->b.format,t->b.swizzle,type,pixels+(size_t)y*width*output_bpp,source+y*stride,width))
              stop("ZERO_TEXTURE_REFRESH_FORMAT",nvn_caller,t->b.format,20);
@@ -2663,7 +3061,7 @@ index 0feaef1..e67d4ff 100644
      printf("ZERO_TEXTURE_FLUSH_UPLOADED id=%"PRIu64" format=0x%x native-cpu-bytes=preserved before-sampler\n",t->id,t->b.format);
  }
  #include "zero_texture_writes.h"
-@@ -605,7 +711,8 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -605,7 +766,8 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
          /* Frente F: an eligible page gets no GL storage now (the pool holds nothing yet, MEDIDO pc-008: the
           * copy arrives later) and no budget; the copy decides between the palettized form and RGBA8. */
          t->t2_page.deferred=t2_page_eligible(&b);
@@ -2673,7 +3071,7 @@ index 0feaef1..e67d4ff 100644
          if(t->t2_budget_bytes)t2_texture_budget_add(size,nvn_caller);
          else if(t2_pages.deferred_logged++<4)printf("T2_PAGE_DEFERRED id=%"PRIu64" size=%ux%u rgba8-bytes=%"PRIu64" pool-flags=0x%x storage=none-until-copy\n",t->id,b.width,b.height,size,pool->flags);
  #ifdef MOMO_SHADERS
-@@ -673,8 +780,21 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -673,8 +835,21 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
                  glTexParameteri(GL_TEXTURE_2D,0x813d,b.levels-1);
  #endif
              unsigned width=b.width,height=b.height;
@@ -2696,7 +3094,7 @@ index 0feaef1..e67d4ff 100644
                  unsigned upload_type=nvn_cpu_image_upload_type(t),upload_bpp=nvn_texture_upload_bytes(upload_type);
                  size_t bytes=(size_t)width*height*upload_bpp;uint8_t *rgba=malloc(bytes);
                  if(!rgba)stop("NVN_TEXTURE_INITIAL_DATA_MEMORY",nvn_caller,bytes,21);
-@@ -749,7 +869,9 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -749,7 +924,9 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
      if(id==NI_nvnTexturePoolRegisterTexture) {
          struct nvn_descriptor_pool *d=NULL;
          for(unsigned i=0;i<32;i++)if(nvn_descriptor_pools[i].live&&nvn_descriptor_pools[i].object==a[0]&&nvn_descriptor_pools[i].type==1)d=&nvn_descriptor_pools[i];

@@ -1,0 +1,9 @@
+{
+  "qualification": "interrupted_preliminary_collection",
+  "preliminary_present_records": 319,
+  "final_runtime_outcome": "unknown",
+  "complete_cost_report": false,
+  "missing_bc_rows_mean_zero": false,
+  "use_post_reboot_log_as_replacement": false,
+  "correction": "../../docs/c0-profiler-audit.md"
+}

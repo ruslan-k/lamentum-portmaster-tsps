@@ -1,0 +1,7 @@
+{
+  "mainui_exit_requested": {
+    "pid": 2378,
+    "starttime": 1098
+  },
+  "principal_command": "chmod a+x \"/mnt/SDCARD/Emu/PORTS/../../spruce/scripts/emu/standard_launch.sh\";\"/mnt/SDCARD/Emu/PORTS/../../spruce/scripts/emu/standard_launch.sh\" \"/mnt/SDCARD/Roms/PORTS/lamentum-switch/logs/c0-fixture-da3a504f57f24402978601cd73b6103b/run-cost-fixture.sh\"\n"
+}

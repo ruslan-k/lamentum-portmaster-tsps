@@ -1,0 +1,9 @@
+{
+  "qualification": "negative_arm_causality_unresolved",
+  "harness_returncode": 8,
+  "termination": "kernel_oom_sigkill",
+  "restoration_verified": true,
+  "policy_necessity_or_universal_failure_proven": false,
+  "matched_phase_comparison": false,
+  "correction": "../../docs/c0-profiler-audit.md"
+}

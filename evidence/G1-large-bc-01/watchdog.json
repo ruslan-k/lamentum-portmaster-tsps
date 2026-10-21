@@ -1,0 +1,5 @@
+{
+  "returncode": 0,
+  "stdout": "{\"owner\": {\"boot_id\": \"aedf014d-52ea-4c4c-8c42-f6650c7f8a91\", \"pid\": 31371, \"starttime\": 6503852}, \"attached_monotonic\": 65066.203719302, \"finished_monotonic\": 65640.638683819, \"bound_seconds\": 600, \"outcome\": \"natural_exit_before_watchdog\", \"pidfd_bound\": true}\n",
+  "stderr": ""
+}

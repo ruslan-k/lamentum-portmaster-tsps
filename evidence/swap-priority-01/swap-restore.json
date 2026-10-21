@@ -1,0 +1,57 @@
+{
+  "action": "restore",
+  "device": "/dev/zram0",
+  "before": [
+    {
+      "filename": "/mnt/UDISK/swapfile",
+      "type": "file",
+      "size_kb": 1048572,
+      "used_kb": 540,
+      "priority": -2
+    },
+    {
+      "filename": "/mnt/sdcard/mmcblk1p1/cachefile",
+      "type": "file",
+      "size_kb": 524284,
+      "used_kb": 32284,
+      "priority": 40
+    },
+    {
+      "filename": "/dev/zram0",
+      "type": "partition",
+      "size_kb": 493028,
+      "used_kb": 2092,
+      "priority": 100
+    }
+  ],
+  "after": [
+    {
+      "filename": "/mnt/UDISK/swapfile",
+      "type": "file",
+      "size_kb": 1048572,
+      "used_kb": 540,
+      "priority": -2
+    },
+    {
+      "filename": "/mnt/sdcard/mmcblk1p1/cachefile",
+      "type": "file",
+      "size_kb": 524284,
+      "used_kb": 32168,
+      "priority": 40
+    },
+    {
+      "filename": "/dev/zram0",
+      "type": "partition",
+      "size_kb": 493028,
+      "used_kb": 0,
+      "priority": -3
+    }
+  ],
+  "outputs": [
+    "",
+    ""
+  ],
+  "drained_kb": 2092,
+  "verified": true,
+  "reason": "zram residual was below the tool guard (2 MiB); drained while the device was idle"
+}
