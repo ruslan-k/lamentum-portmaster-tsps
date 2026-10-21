@@ -46,12 +46,16 @@ class DirectionAndStepTests(unittest.TestCase):
 
 class SerialAndStateTests(unittest.TestCase):
     def test_repeated_same_frame_polls_never_press_twice(self):
-        nav = Navigation()
+        now = [0.0]
+        nav = Navigation(clock=lambda: now[0], response_timeout_s=5.0)
         observe(nav, MAIN_MENU, 442, 10)
-        events = [observe(nav, MAIN_MENU, 442, 10) for _ in range(4)]
-        self.assertTrue(all(e['action'] == 'wait' for e in events[:3]))
-        self.assertEqual(events[-1]['action'], 'refuse')
-        self.assertIn('not advancing', nav.refused)
+        events = [observe(nav, MAIN_MENU, 442, 10) for _ in range(100)]
+        self.assertTrue(all(e['action'] == 'wait' for e in events))
+        self.assertEqual(len([e for e in nav.events if e['action'] == 'press']), 1)
+        now[0] = 5.001
+        expired = observe(nav, MAIN_MENU, 442, 10)
+        self.assertEqual(expired['action'], 'refuse')
+        self.assertIn('deadline expired', nav.refused)
 
     def test_a_backwards_serial_is_refused_as_a_lagged_frame(self):
         nav = Navigation()

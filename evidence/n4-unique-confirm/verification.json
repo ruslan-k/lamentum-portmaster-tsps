@@ -1,0 +1,7 @@
+{
+  "base_revision": "0344ac0f4df1d6ad38640713a3d00b1b3495775b",
+  "red_base_rc": 1,
+  "regression_assertion_failures": 5,
+  "green_rc": 0,
+  "scope": "host pure-core N4-A/B only; no device navigation or FPS claim"
+}

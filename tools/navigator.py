@@ -15,12 +15,14 @@ Why each rule exists here (all of them were wrong answers once):
   * the page after a confirm must be the expected one; anything else is refused.
 """
 from dataclasses import dataclass, field
+import math
+import time
+from typing import Callable
 
 # Measured on a live frame of build229 (evidence/nav-oracle-01): rows at
 # y 442/492/542/592 (pitch 50), selection marked by a cursor glyph left of the row.
 ROWS_MAIN_MENU = {'load': 442, 'newgame': 492, 'options': 542, 'credits': 592}
 ROW_TOLERANCE = 12
-STALE_SERIAL_LIMIT = 3
 CONFIRM_OBSERVATIONS = 2
 
 IDLE = 'IDLE'
@@ -56,10 +58,23 @@ class Navigation:
     issued_serial: int = -1
     confirmed_serial: int = -1
     last_row: str | None = None
-    stale: int = 0
     confirm_seen: int = 0
     events: list = field(default_factory=list)
     refused: str | None = None
+    target_seen_serial: int = -1
+    last_observed_serial: int = -1
+    last_observation: Observation | None = None
+    clock: Callable[[], float] = field(default=time.monotonic, repr=False)
+    response_timeout_s: float = 5.0  # bounded diagnostic default, not device-qualified
+    waiting_since: float | None = None
+
+    def __post_init__(self):
+        if not math.isfinite(self.response_timeout_s) or self.response_timeout_s <= 0:
+            raise ValueError('positive finite response timeout required')
+
+    def _reset_confirm_evidence(self):
+        self.confirm_seen = 0
+        self.target_seen_serial = -1
 
     @property
     def finished(self):
@@ -96,6 +111,7 @@ class Navigation:
     def _refuse(self, reason, **extra):
         self.state = REFUSED
         self.refused = reason
+        self._reset_confirm_evidence()
         return self._emit('refuse', reason=reason, **extra)
 
     # --- state machine ---------------------------------------------------
@@ -108,16 +124,28 @@ class Navigation:
             return self._refuse('unknown page %r' % (observation.page,))
         if observation.present_serial <= 0:
             return self._refuse('present serial not established')
-        if observation.present_serial < self.issued_serial:
+        now = self.clock()
+        if not math.isfinite(now):
+            return self._refuse('invalid monotonic clock')
+        if self.waiting_since is None:
+            self.waiting_since = now
+        elapsed = now - self.waiting_since
+        if elapsed < 0:
+            return self._refuse('monotonic clock went backwards')
+        if elapsed >= self.response_timeout_s:
+            return self._refuse('response deadline expired; present serial not advancing or action unacknowledged',
+                                elapsed_ms=round(elapsed * 1000, 3),
+                                last_serial=self.last_observed_serial,
+                                issued_serial=self.issued_serial,
+                                owner_verified=False)
+        if observation.present_serial < self.last_observed_serial:
             return self._refuse('present serial went backwards: lagged or foreign frame')
-
-        if observation.present_serial == self.issued_serial:
-            self.stale += 1
-            if self.stale > STALE_SERIAL_LIMIT:
-                return self._refuse('present serial not advancing after an issued action')
-            return self._emit('wait', reason='action not yet acknowledged by a new frame',
-                              serial=observation.present_serial)
-        self.stale = 0
+        if observation.present_serial == self.last_observed_serial:
+            if observation != self.last_observation:
+                return self._refuse('conflicting observations for the same present serial')
+            return self._emit('wait', reason='no unique newer frame', serial=observation.present_serial)
+        self.last_observed_serial = observation.present_serial
+        self.last_observation = observation
 
         # A confirm is only satisfied by the expected page at a newer serial.
         if self.confirmed_serial >= 0 and observation.present_serial > self.confirmed_serial:
@@ -138,6 +166,7 @@ class Navigation:
 
         row = self.row_at(observation.cursor_y)
         if row is None:
+            self._reset_confirm_evidence()
             return self._emit('wait', reason='cursor not inside a known band',
                               cursor_y=observation.cursor_y, serial=observation.present_serial)
 
@@ -153,6 +182,8 @@ class Navigation:
         self.last_row = row
 
         if row != self.target:
+            self._reset_confirm_evidence()
+            self.waiting_since = now
             self.state = ACTION_ISSUED
             self.issued_serial = observation.present_serial
             return self._emit('press', button=self.direction_to(row), row=row,
@@ -160,6 +191,8 @@ class Navigation:
 
         if self.confirm_seen == 0:
             self.confirm_seen = 1
+            self.target_seen_serial = observation.present_serial
+            self.waiting_since = now
             self.state = AWAIT_NEW_PRESENT
             return self._emit('wait', reason='target row seen once; confirm needs a second frame',
                               row=row, serial=observation.present_serial)
@@ -169,6 +202,7 @@ class Navigation:
             return self._emit('wait', reason='waiting for the second agreeing observation',
                               row=row, serial=observation.present_serial)
         self.state = ACTION_ISSUED
+        self.waiting_since = now
         self.confirmed_serial = observation.present_serial
         self.issued_serial = observation.present_serial
         return self._emit('press', button='confirm', row=row, serial=observation.present_serial)

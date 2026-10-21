@@ -1,0 +1,65 @@
+FFFFF
+======================================================================
+FAIL: test_conflicting_cursor_on_same_serial_is_refused (test_navigator_n4.ConfirmUniqueFrameTests.test_conflicting_cursor_on_same_serial_is_refused)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/var/home/ruslan/.hermes/cache/scratch/n4-red-p9rekd3v/test_navigator_n4.py", line 22, in test_conflicting_cursor_on_same_serial_is_refused
+    self.assertEqual(observe(nav, MAIN_MENU, 442, 10)['action'], 'refuse')
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'press' != 'refuse'
+- press
++ refuse
+
+
+======================================================================
+FAIL: test_leaving_target_breaks_confirmation_streak (test_navigator_n4.ConfirmUniqueFrameTests.test_leaving_target_breaks_confirmation_streak)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/var/home/ruslan/.hermes/cache/scratch/n4-red-p9rekd3v/test_navigator_n4.py", line 35, in test_leaving_target_breaks_confirmation_streak
+    self.assertEqual(observe(nav, MAIN_MENU, 492, 12)['action'], 'wait')
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'press' != 'wait'
+- press
++ wait
+
+
+======================================================================
+FAIL: test_older_than_target_observation_is_refused (test_navigator_n4.ConfirmUniqueFrameTests.test_older_than_target_observation_is_refused)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/var/home/ruslan/.hermes/cache/scratch/n4-red-p9rekd3v/test_navigator_n4.py", line 17, in test_older_than_target_observation_is_refused
+    self.assertEqual(observe(nav, MAIN_MENU, 492, 9)['action'], 'refuse')
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'press' != 'refuse'
+- press
++ refuse
+
+
+======================================================================
+FAIL: test_owner_duplicate_serial_regression (test_navigator_n4.ConfirmUniqueFrameTests.test_owner_duplicate_serial_regression)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/var/home/ruslan/.hermes/cache/scratch/n4-red-p9rekd3v/test_navigator_n4.py", line 10, in test_owner_duplicate_serial_regression
+    self.assertEqual(observe(nav, MAIN_MENU, 492, 10)['action'], 'wait')
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'press' != 'wait'
+- press
++ wait
+
+
+======================================================================
+FAIL: test_unknown_cursor_breaks_confirmation_streak (test_navigator_n4.ConfirmUniqueFrameTests.test_unknown_cursor_breaks_confirmation_streak)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/var/home/ruslan/.hermes/cache/scratch/n4-red-p9rekd3v/test_navigator_n4.py", line 28, in test_unknown_cursor_breaks_confirmation_streak
+    self.assertEqual(observe(nav, MAIN_MENU, 492, 12)['action'], 'wait')
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'press' != 'wait'
+- press
++ wait
+
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.001s
+
+FAILED (failures=5)
