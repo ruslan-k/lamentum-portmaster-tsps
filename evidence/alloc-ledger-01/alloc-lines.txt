@@ -1,0 +1,3 @@
+LC2_ALLOC_LEDGER enabled=1 bounded-lines=64 classes=renderbuffer,buffer,egl-surface sizes=format-defined physical=unknown behaviour=unchanged
+LC2_ALLOC seq=1 class=renderbuffer bytes=8294400 a=1920 b=1080 c=0x35 rb-total-bytes=8294400 rb-count=1 buf-total-bytes=0 buf-count=0 surface-total-bytes=0 surface-count=0 serial=none physical=unknown
+LC2_ALLOC seq=2 class=renderbuffer bytes=3686400 a=1280 b=720 c=0x35 rb-total-bytes=11980800 rb-count=2 buf-total-bytes=0 buf-count=0 surface-total-bytes=0 surface-count=0 serial=none physical=unknown

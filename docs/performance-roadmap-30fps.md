@@ -2952,3 +2952,14 @@ Ranked drawdown: (1) CMA exhaustion 24.3 → 0.0 MiB; (2) guest pages to swap +4
 Recomputed from bytes, the four 1080p images are 31.64 MiB and still need 14.06 MiB at 720p, so the maximum **nominal** saving is **17.58 MiB** — matching the owner's correction, and at most a quarter of the observed drawdown.
 
 Consequences: raising the floor, extending the run, or expecting the 720p scaling to fix the menu are all ruled out by these numbers. The live candidates are the CMA consumer and retained colour targets (B2 ownership/last-reader ledger) plus, with approval, the reversible 720p A/B as one factor gated by `frame_diff.equivalent()` with the exact comparison alongside.
+
+## 51. Allocation receipts: the depth class is half my earlier estimate, and the 1080p family predates the first ledger line (2026-10-21)
+
+Build233 `4c818517…b80c` adds `LC2_ALLOC_LEDGER=1` (bounded 64 lines, opt-in by value, no GL call changed) covering depth renderbuffers, stream/stable VBOs and the EGL window surface. Arm `alloc-ledger-01`: `T2_MEMORY_FLOOR`, verified identity, zero cleanup errors.
+
+- **Correction:** the depth class is **2 renderbuffers / 11.98 MB** (8,294,400 at 1920×1080 and 3,686,400 at 1280×720). `GL_DEPTH24_STENCIL8_OES` (0x88f0) is **4 bytes/pixel**, but `lc2_menu_ledger` counted 8 for format 0x35, so the 22.9 MiB depth figure in §45/#46 was **2× too high**; the true value is 11.4 MiB. Source corrected (effective next build); the alloc receipts are now authoritative.
+- **Ordering:** both depth buffers are created at log lines 1013/3686, while the first ledger record is at 4167. The three 1080p colour targets are texture-path objects created in the same window, so ~**33 MB of 1080p GL images** (3×8.29 colour + 8.29 depth) plus 3.69 MB of 720p depth exist *before* `arm-start` — which is exactly why that line already reports CMA at ~20 MiB.
+- **CMA churns at the bottom:** 27.0 → 8.2 → 0.01 → 16.0 → 8.9 → 6.9 → 0.2 → 0.05 → 0.78 MiB. Consistent with per-frame allocation/free churn near exhaustion, but a **hypothesis**: no allocation timestamps or free receipts exist yet, and every line says `serial=none physical=unknown`.
+- **Unmeasured classes, labelled as such:** EGL window surface (this configuration uses the SDL surface path, so the `eglCreateWindowSurface` branch never ran) and buffers (the menu issues no vertex-stream draws).
+
+Next: emit the first ledger record at GL/texture init so the 1080p step appears inside the series instead of being baked into the baseline; then add retire receipts, which is the minimum before any "release retained targets" claim (owner §48 B2). The 720p storage question keeps its **17.58 MiB** nominal upper bound.
