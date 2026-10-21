@@ -2693,7 +2693,7 @@ sample = ("NVN_PRESENT_PIXELS frame=1 status=PIXELS\n"
 
 The one-row window sits between 350 and 900 ms at ~1 presented frame/s; the next arm should test ~500–600 ms with the same qualification.
 
-Recorded failures, not results: `nav-chain-05` ran the chain **before** the arm in a sequential shell (`;` not `&`) and wrote `states: []` (the arm itself had `stops: []` and verified execution); `nav-chain-06` overlapped correctly and read the menu, but the fresh run's log had no present line yet, so the serial was 0 and the navigator refused. The tool now calls `wait_serial(0)` so a first-frame race cannot masquerade as a refused chain.
+Recorded failures, not results: `nav-chain-05` ran the chain **before** the arm in a sequential shell (`;` not `&`) and wrote `states: []`, and its arm was then **killed by the kernel OOM reaper** (`Out of memory: Killed process 27722 (terminator2d-ne)`, harness rc 8) with **no** runtime STOP — the 32 MiB floor is a reactive 250 ms check, so an OOM can beat it; that is a memory fact, not a tap result (`evidence/nav-tap-length/correction-oom.json`). `nav-chain-06` overlapped correctly and read the menu, but the fresh run's log had no present line yet, so the serial was 0 and the navigator refused. The tool now calls `wait_serial(0)` so a first-frame race cannot masquerade as a refused chain.
 
 **199 host tests PASS.** Limits unchanged: menu only, one press, two frames — no config page, Loading, scene, id295 or FPS claim.
 

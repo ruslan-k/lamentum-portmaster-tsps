@@ -23,8 +23,10 @@ and are recorded as failures:
 
 - `nav-chain-05`: the chain was started **before** the arm in a sequential shell
   (`;` instead of `&`), waited its full 240 s window with no game, and wrote
-  `states: []`. The arm that ran afterwards had `stops: []` and verified execution;
-  its chain does not exist.
+  `states: []`. The arm that ran afterwards was **killed by the kernel OOM reaper**
+  (`Out of memory: Killed process 27722 (terminator2d-ne)`, harness rc 8) with **no**
+  runtime STOP: the 32 MiB floor is a reactive 250 ms check, so an OOM can beat it.
+  Its chain does not exist. Receipt: `correction-oom.json`.
 - `nav-chain-06`: chain and arm overlapped correctly and the oracle did read the
   menu (`load`, 126,850 B), but the present counter was still **0** because a fresh
   run's log had no present line at that instant, so the navigator refused with

@@ -1,0 +1,21 @@
+{
+  "arm": "nav-chain-05",
+  "what_was_published": "recorded as an orchestration failure with stops: []",
+  "what_the_receipt_shows": {
+    "termination_kind": "kernel_oom_sigkill",
+    "oom_evidence": [
+      {
+        "pid": 27722,
+        "kernel_timestamp_s": 9094.182595,
+        "comm": "terminator2d-ne",
+        "line": "[ 9094.182595] Out of memory: Killed process 27722 (terminator2d-ne)"
+      }
+    ],
+    "runtime_stops": [],
+    "execution_verified": true,
+    "cleanup_errors": [],
+    "harness_rc": 8
+  },
+  "conclusion": "The arm was killed by the kernel OOM reaper, not stopped by the runtime. T2_MEMORY_FLOOR is reactive (250 ms period), so an OOM can beat it between checks; the 32 MiB floor therefore does not prevent kernel OOM, it only reports a later refusal.",
+  "effect_on_the_tap_measurement": "none - the chain in that arm saw no game because it ran before the arm; the tap length is still unmeasured at 550 ms"
+}
