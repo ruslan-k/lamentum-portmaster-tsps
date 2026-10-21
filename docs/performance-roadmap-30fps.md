@@ -2696,3 +2696,16 @@ The one-row window sits between 350 and 900 ms at ~1 presented frame/s; the next
 Recorded failures, not results: `nav-chain-05` ran the chain **before** the arm in a sequential shell (`;` not `&`) and wrote `states: []` (the arm itself had `stops: []` and verified execution); `nav-chain-06` overlapped correctly and read the menu, but the fresh run's log had no present line yet, so the serial was 0 and the navigator refused. The tool now calls `wait_serial(0)` so a first-frame race cannot masquerade as a refused chain.
 
 **199 host tests PASS.** Limits unchanged: menu only, one press, two frames — no config page, Loading, scene, id295 or FPS claim.
+
+## 42. P0-N2 implemented: direction, overshoot refusal, double-frame confirm (2026-10-21)
+
+Owner **§40.3** done as pure host work; no device press, no build, no deployment.
+
+- `tools/navigator.py` is now an explicit `IDLE → ACTION_ISSUED → AWAIT_NEW_PRESENT → DONE/REFUSED` machine. A press is an action: while the issued action has no strictly newer frame the core waits, and after three repeats it refuses.
+- Direction comes from **ordered row indices**, so `options→newgame` and `credits→newgame` press **up**; the old unconditional `down` branch is gone.
+- A move of more than one row is **refused by default** (`overshoot, explicit recovery required`) and no follow-up press is issued. Recovery exists only behind `recovery=True` (diagnostic arms), where the overshoot is recorded and the next action is a single opposite-direction step; nothing auto-confirms.
+- Confirm needs **two newer agreeing observations** on the target row, and the page after it must be `NEWGAME_CONFIG`; any other page is refused, and the menu still being shown is `wait`, not a page change. A non-menu page without a preceding confirm is refused.
+- `nav_chain.summarise()` now refuses a two-row result instead of calling it qualified; `SWEEP_MS = (80, 150, 250, 400)` declares the owner's bounded short-press sweep.
+- **206 host tests PASS**, including every case the owner listed: `load→options` overshoot with an assertion that exactly one press was issued, `options→newgame` direction, single-row movement, stale serial, repeated same-frame polls, confirm acknowledgement, wrong config page, lagged serial, two identical animation frames, first row already at the target, and no auto-confirm after overshoot.
+
+Open: the sweep has not run on device; `NEWGAME_CONFIG` has no measured fingerprint (§40.4); the menu-memory waterfall (§40.5) is untouched. No scene, id295 or FPS claim.

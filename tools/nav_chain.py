@@ -26,6 +26,8 @@ from navigator import Navigation, observe     # noqa: E402
 
 TAP_MS = 350
 SERIAL_WAIT_S = 25
+# Owner P0-N2 asks for a bounded short-press sweep on hardware: 80/150/250/400 ms.
+SWEEP_MS = (80, 150, 250, 400)
 EVIDENCE = Path('evidence')
 
 
@@ -51,8 +53,11 @@ def summarise(serial_before, row_before, serial_after, row_after, tap_ms=TAP_MS)
     verdict = {'qualified': True, 'step': step, 'serial_delta': serial_after - serial_before,
                'row_before': row_before, 'row_after': row_after}
     if step > 1:
-        verdict['reason'] = ('one %d ms press moved %d rows - hold-length overshoot, '
-                             'shorten the tap' % (tap_ms, step))
+        return {'qualified': False, 'step': step,
+                'serial_delta': serial_after - serial_before,
+                'row_before': row_before, 'row_after': row_after,
+                'reason': ('one %d ms press moved %d rows - overshoot refused; shorten the tap'
+                           % (tap_ms, step))}
     else:
         verdict['reason'] = 'one press moved exactly one row on a newer frame'
     return verdict

@@ -1,28 +1,34 @@
-"""Single navigation core for the New Game path (roadmap 32.7, item 3).
+"""Navigator core under the owner's P0-N2 contract (roadmap 40.3).
 
-Pure state machine: it consumes observations (page, measured cursor row, present
-serial) and returns one action. No device I/O, no pixel heuristics, no OCR. The
-rules it enforces are the ones that have already produced wrong answers here:
+Explicit state machine, direction from ordered row indices, overshoot refused by
+default, and a confirm that needs two independent newer observations. Pure: no
+device I/O, no pixels - the caller supplies (page, cursor_y, present_serial).
 
-  * a press counts only after a NEW presented frame (at 1-2 fps a tap can land
-    entirely between two samples, and a stale serial means the press was never
-    observed);
-  * one press must move at most one row - a two-row move is an overshoot caused
-    by hold length, not evidence for a second press;
-  * a changed picture is not a page change; the page transition must be seen at
-    a later serial;
-  * an unknown page or a cursor that is not inside a known band refuses instead
-    of guessing.
+Why each rule exists here (all of them were wrong answers once):
+  * a press is an ACTION, not an observation: a second press is never issued while
+    the first one is unacknowledged;
+  * direction comes from ordered row indices, so a row below the target presses Up;
+  * a move of more than one row is refused by default: at 1-2 fps a long hold
+    advances two entries and continuing would walk past the target;
+  * confirming needs two newer observations that agree, because one frame can be a
+    leftover or a mid-animation state;
+  * the page after a confirm must be the expected one; anything else is refused.
 """
 from dataclasses import dataclass, field
 
-# Measured on a live frame of this build (evidence/nav-oracle-01): rows at
-# y 442/492/542/592 (pitch 50), selection marked by a cursor glyph left of the
-# row. The earlier 425/475/525/575 table came from a different build/scale.
+# Measured on a live frame of build229 (evidence/nav-oracle-01): rows at
+# y 442/492/542/592 (pitch 50), selection marked by a cursor glyph left of the row.
 ROWS_MAIN_MENU = {'load': 442, 'newgame': 492, 'options': 542, 'credits': 592}
 ROW_TOLERANCE = 12
-MAX_ROW_STEP = 1
 STALE_SERIAL_LIMIT = 3
+CONFIRM_OBSERVATIONS = 2
+
+IDLE = 'IDLE'
+ACTION_ISSUED = 'ACTION_ISSUED'
+AWAIT_NEW_PRESENT = 'AWAIT_NEW_PRESENT'
+OBSERVED_EFFECT = 'OBSERVED_EFFECT'
+DONE = 'DONE'
+REFUSED = 'REFUSED'
 
 MAIN_MENU = 'MAIN_MENU'
 NEWGAME_CONFIG = 'NEWGAME_CONFIG'
@@ -30,8 +36,7 @@ CONTROLS = 'CONTROLS'
 LOADING = 'LOADING'
 WORLD = 'WORLD_VISIBLE'
 PAGES = (MAIN_MENU, NEWGAME_CONFIG, CONTROLS, LOADING, WORLD)
-# Pages that end the navigation stage. WORLD is never claimed from a picture here.
-TERMINAL_PAGES = (NEWGAME_CONFIG, CONTROLS, LOADING, WORLD)
+EXPECTED_AFTER_CONFIRM = (NEWGAME_CONFIG,)
 
 
 @dataclass(frozen=True)
@@ -46,13 +51,29 @@ class Navigation:
     target: str = 'newgame'
     rows: dict = field(default_factory=lambda: dict(ROWS_MAIN_MENU))
     tolerance: int = ROW_TOLERANCE
+    recovery: bool = False
+    state: str = IDLE
     issued_serial: int = -1
     confirmed_serial: int = -1
     last_row: str | None = None
     stale: int = 0
+    confirm_seen: int = 0
     events: list = field(default_factory=list)
-    finished: bool = False
     refused: str | None = None
+
+    @property
+    def finished(self):
+        return self.state == DONE
+
+    # --- geometry --------------------------------------------------------
+    def ordered_rows(self):
+        return sorted(self.rows, key=lambda name: self.rows[name])
+
+    def index_of(self, row):
+        return self.ordered_rows().index(row)
+
+    def direction_to(self, row):
+        return 'down' if self.index_of(row) < self.index_of(self.target) else 'up'
 
     def row_at(self, cursor_y):
         best, distance = None, None
@@ -62,37 +83,58 @@ class Navigation:
                 best, distance = name, delta
         return best
 
+    def _pitch(self):
+        ordered = [self.rows[name] for name in self.ordered_rows()]
+        return max(1, ordered[1] - ordered[0])
+
+    # --- receipts --------------------------------------------------------
     def _emit(self, action, **extra):
-        event = {'action': action, **extra}
+        event = {'action': action, 'state': self.state, **extra}
         self.events.append(event)
         return event
 
+    def _refuse(self, reason, **extra):
+        self.state = REFUSED
+        self.refused = reason
+        return self._emit('refuse', reason=reason, **extra)
+
+    # --- state machine ---------------------------------------------------
     def observe(self, observation):
-        if self.finished:
+        if self.state == DONE:
             return self._emit('done', reason='navigation finished')
-        if self.refused:
+        if self.state == REFUSED:
             return self._emit('refuse', reason=self.refused)
         if observation.page not in PAGES:
-            self.refused = 'unknown page %r' % (observation.page,)
-            return self._emit('refuse', reason=self.refused)
+            return self._refuse('unknown page %r' % (observation.page,))
         if observation.present_serial <= 0:
-            self.refused = 'present serial not established'
-            return self._emit('refuse', reason=self.refused)
-        # A press or confirm is only qualified by a strictly later frame.
-        if self.issued_serial >= observation.present_serial:
+            return self._refuse('present serial not established')
+        if observation.present_serial < self.issued_serial:
+            return self._refuse('present serial went backwards: lagged or foreign frame')
+
+        if observation.present_serial == self.issued_serial:
             self.stale += 1
             if self.stale > STALE_SERIAL_LIMIT:
-                self.refused = 'present serial not advancing'
-                return self._emit('refuse', reason=self.refused)
-            return self._emit('wait', reason='no new presented frame', serial=observation.present_serial)
+                return self._refuse('present serial not advancing after an issued action')
+            return self._emit('wait', reason='action not yet acknowledged by a new frame',
+                              serial=observation.present_serial)
         self.stale = 0
 
-        if observation.page in TERMINAL_PAGES:
-            # Reaching a later page is a navigation result; whether it is a world
-            # is decided by scene receipts, never by this component.
-            if self.confirmed_serial >= 0 or observation.page != MAIN_MENU:
-                self.finished = True
+        # A confirm is only satisfied by the expected page at a newer serial.
+        if self.confirmed_serial >= 0 and observation.present_serial > self.confirmed_serial:
+            if observation.page in EXPECTED_AFTER_CONFIRM:
+                self.state = DONE
                 return self._emit('done', page=observation.page, serial=observation.present_serial)
+            if observation.page != MAIN_MENU:
+                return self._refuse('unexpected page %r after confirm' % (observation.page,))
+            self.confirm_seen = 0
+            return self._emit('wait', reason='confirm not acknowledged yet; menu still shown',
+                              serial=observation.present_serial)
+
+        # A page that only follows a confirm cannot appear without one: a
+        # screenshot change is not evidence that the menu was left.
+        if self.confirmed_serial < 0 and observation.page != MAIN_MENU:
+            return self._refuse('page %r seen without a preceding confirm' % (observation.page,),
+                                page=observation.page)
 
         row = self.row_at(observation.cursor_y)
         if row is None:
@@ -100,21 +142,36 @@ class Navigation:
                               cursor_y=observation.cursor_y, serial=observation.present_serial)
 
         if self.last_row is not None and row != self.last_row:
-            pitch = max(1, abs(self.rows['newgame'] - self.rows['load']))
-            steps = round(abs(self.rows[row] - self.rows[self.last_row]) / pitch)
-            if steps > MAX_ROW_STEP:
+            steps = round(abs(self.rows[row] - self.rows[self.last_row]) / self._pitch())
+            if steps > 1:
+                if not self.recovery:
+                    return self._refuse(
+                        'one action moved %d rows (%s -> %s): overshoot, explicit recovery required'
+                        % (steps, self.last_row, row), from_row=self.last_row, to_row=row, steps=steps)
                 self._emit('overshoot', from_row=self.last_row, to_row=row, steps=steps,
-                           reason='one press moved %d rows - hold length, not a new press' % steps)
+                           reason='recovery enabled for a diagnostic arm')
         self.last_row = row
 
         if row != self.target:
+            self.state = ACTION_ISSUED
             self.issued_serial = observation.present_serial
-            return self._emit('press', button='down', row=row, serial=observation.present_serial)
-        if self.confirmed_serial < 0:
-            self.confirmed_serial = observation.present_serial
-            return self._emit('press', button='confirm', row=row, serial=observation.present_serial)
-        return self._emit('wait', reason='waiting for the config page',
-                          row=row, serial=observation.present_serial)
+            return self._emit('press', button=self.direction_to(row), row=row,
+                              serial=observation.present_serial)
+
+        if self.confirm_seen == 0:
+            self.confirm_seen = 1
+            self.state = AWAIT_NEW_PRESENT
+            return self._emit('wait', reason='target row seen once; confirm needs a second frame',
+                              row=row, serial=observation.present_serial)
+        self.confirm_seen += 1
+        if self.confirm_seen < CONFIRM_OBSERVATIONS:
+            self.state = AWAIT_NEW_PRESENT
+            return self._emit('wait', reason='waiting for the second agreeing observation',
+                              row=row, serial=observation.present_serial)
+        self.state = ACTION_ISSUED
+        self.confirmed_serial = observation.present_serial
+        self.issued_serial = observation.present_serial
+        return self._emit('press', button='confirm', row=row, serial=observation.present_serial)
 
 
 def observe(navigation, page, cursor_y, present_serial):

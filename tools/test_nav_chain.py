@@ -12,12 +12,16 @@ class SummariseTests(unittest.TestCase):
         self.assertEqual(verdict['serial_delta'], 1)
         self.assertIn('exactly one row', verdict['reason'])
 
-    def test_two_rows_is_reported_as_a_hold_length_overshoot(self):
+    def test_two_rows_is_refused_as_a_hold_length_overshoot(self):
         verdict = nav_chain.summarise(10, 'load', 12, 'options', tap_ms=900)
-        self.assertTrue(verdict['qualified'])
+        self.assertFalse(verdict['qualified'])
         self.assertEqual(verdict['step'], 2)
-        self.assertIn('overshoot', verdict['reason'])
+        self.assertIn('overshoot refused', verdict['reason'])
         self.assertIn('900', verdict['reason'])
+
+    def test_the_sweep_is_short_by_contract(self):
+        self.assertEqual(nav_chain.SWEEP_MS, (80, 150, 250, 400))
+        self.assertTrue(all(value <= 400 for value in nav_chain.SWEEP_MS))
 
     def test_an_unchanged_serial_never_qualifies_the_press(self):
         verdict = nav_chain.summarise(10, 'load', 10, 'newgame')
