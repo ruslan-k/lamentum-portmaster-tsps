@@ -3058,3 +3058,13 @@ At steady state the halves diverge: anon falls 363 → 219 MiB (`VmSwap` ~415 Mi
 Consequence: the file half is the larger addressable term at steady state (~492 MiB). Nothing in the adapter advises dropping consumed image pages, and no receipt shows whether the runtime re-reads them — a concrete, testable question. The 720p item stays at 17.58 MiB, one thirtieth of the file half. No FPS claim is made: dropping image pages would change memory pressure, which is what stops the run at frame ~61.
 
 Next: instrument the image read path (touched, re-read, drop hints) and measure one reversible A/B of dropping already-consumed image pages.
+
+## 58. M1: same-window Mali metadata tracks the status/smaps gap (2026-10-21)
+
+Reviewed 7a5b8cb and owner §48.4–48.5. `mali-reconcile-01`: unchanged build239, original floor 96 MiB/cap 300 MiB/strict GL, verified UUID/boot/PID/starttime/executable identity. STOP T2_MEMORY_FLOOR at frame 16, no cleanup errors. No input/world attempt, no storage or admission change.
+
+Debugfs was unmounted, not unsupported: temporarily mounted, read driver allocation metadata, unmounted and verified original state. Five sequential samples (3.83–20.42 ms read windows, overhead unqualified). Status VmRSS minus summed smaps RSS: -284, 45384, 141068, 246112, 299832 KiB. Mali gpu_memory raw counts: 0, 11546, 35368, 60555, 74855. Native commit descriptor sums: 0, 47169536, 144543744, 253177856, 335257600 bytes; last sample additionally Imported UMM=11059200 bytes.
+
+If raw counts are 4 KiB pages, last count corresponds to 299420 KiB, close to the 299832 KiB RSS gap. Exact firmware units/accounting implementation remain unverified; co-growth is evidence for Mali accounting investigation, not exact attribution. Descriptor sums are not alias-deduplicated physical bytes and must not be added blindly to RSS. Largest Native descriptors commit 55984128 and 32821248 bytes, plus several 8990720-byte objects: guest/NVN/GL owners NOT established; do not infer dimensions or release safety from sizes.
+
+Report `docs/mali-rss-reconciliation.md`, raw metadata/reconciliation in `evidence/mali-reconcile-01`, parser with 3 tests, 230 host tests PASS. Final state: supervisors/MainUI each one, game zero, CPU mask restored, no pending command, debugfs unmounted; DRM screenshot shows Spruce charging clock (not gameplay/home icons). Next is owner/generation binding of large Native storage plus firmware counter verification, not image-page dropping. No FPS/playability gain claimed.

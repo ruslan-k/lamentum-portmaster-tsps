@@ -1,0 +1,252 @@
+{
+  "samples": [
+    {
+      "sample": 0,
+      "window_ms": 3.8312579999910668,
+      "status_kib": {
+        "VmRSS": 23612,
+        "RssAnon": 6552,
+        "RssFile": 17060
+      },
+      "smaps_totals_kib": {
+        "Rss": 23896,
+        "Pss": 22779,
+        "Anonymous": 6552,
+        "Swap": 0,
+        "Private_Clean": 16088,
+        "Private_Dirty": 6552
+      },
+      "status_minus_smaps_kib": -284,
+      "driver_contexts": {},
+      "gpu_memory_raw": "mali0                      0\n"
+    },
+    {
+      "sample": 1,
+      "window_ms": 12.286814999242779,
+      "status_kib": {
+        "VmRSS": 263668,
+        "RssAnon": 147128,
+        "RssFile": 116420
+      },
+      "smaps_totals_kib": {
+        "Rss": 218284,
+        "Pss": 217132,
+        "Anonymous": 148072,
+        "Swap": 0,
+        "Private_Clean": 68724,
+        "Private_Dirty": 148232
+      },
+      "status_minus_smaps_kib": 45384,
+      "driver_contexts": {
+        "8368_54": {
+          "rows": 53,
+          "commit_descriptor_bytes_by_type": {
+            "Native": 47169536
+          },
+          "deduplicated_physical_residency": null
+        }
+      },
+      "gpu_memory_raw": "mali0                  11546\n  kctx-0xffffffc009e75000      11546\n"
+    },
+    {
+      "sample": 2,
+      "window_ms": 18.17824399768142,
+      "status_kib": {
+        "VmRSS": 533156,
+        "RssAnon": 320688,
+        "RssFile": 212348
+      },
+      "smaps_totals_kib": {
+        "Rss": 392088,
+        "Pss": 390928,
+        "Anonymous": 321468,
+        "Swap": 0,
+        "Private_Clean": 69132,
+        "Private_Dirty": 321628
+      },
+      "status_minus_smaps_kib": 141068,
+      "driver_contexts": {
+        "8368_54": {
+          "rows": 76,
+          "commit_descriptor_bytes_by_type": {
+            "Native": 144543744
+          },
+          "deduplicated_physical_residency": null
+        }
+      },
+      "gpu_memory_raw": "mali0                  35368\n  kctx-0xffffffc009e75000      35368\n"
+    },
+    {
+      "sample": 3,
+      "window_ms": 17.604325999855064,
+      "status_kib": {
+        "VmRSS": 612140,
+        "RssAnon": 306244,
+        "RssFile": 305616
+      },
+      "smaps_totals_kib": {
+        "Rss": 366028,
+        "Pss": 364969,
+        "Anonymous": 308240,
+        "Swap": 36556,
+        "Private_Clean": 57704,
+        "Private_Dirty": 306988
+      },
+      "status_minus_smaps_kib": 246112,
+      "driver_contexts": {
+        "8368_54": {
+          "rows": 103,
+          "commit_descriptor_bytes_by_type": {
+            "Native": 253177856
+          },
+          "deduplicated_physical_residency": null
+        }
+      },
+      "gpu_memory_raw": "mali0                  60555\n  kctx-0xffffffc009e75000      60555\n"
+    },
+    {
+      "sample": 4,
+      "window_ms": 20.417331001226557,
+      "status_kib": {
+        "VmRSS": 689196,
+        "RssAnon": 343108,
+        "RssFile": 345808
+      },
+      "smaps_totals_kib": {
+        "Rss": 389364,
+        "Pss": 388444,
+        "Anonymous": 345256,
+        "Swap": 37184,
+        "Private_Clean": 46696,
+        "Private_Dirty": 341492
+      },
+      "status_minus_smaps_kib": 299832,
+      "driver_contexts": {
+        "8368_54": {
+          "rows": 280,
+          "commit_descriptor_bytes_by_type": {
+            "Imported UMM": 11059200,
+            "Native": 335257600
+          },
+          "deduplicated_physical_residency": null
+        }
+      },
+      "gpu_memory_raw": "mali0                  74855\n  kctx-0xffffffc009e75000      74855\n"
+    }
+  ],
+  "largest_descriptors_last_sample": [
+    {
+      "va": "5ef3e00000",
+      "virtual_bytes": 55984128,
+      "commit_bytes": 55984128,
+      "type": "Native",
+      "context": "8368_54"
+    },
+    {
+      "va": "5ef7e00000",
+      "virtual_bytes": 32821248,
+      "commit_bytes": 32821248,
+      "type": "Native",
+      "context": "8368_54"
+    },
+    {
+      "va": "5eef800000",
+      "virtual_bytes": 8990720,
+      "commit_bytes": 8990720,
+      "type": "Native",
+      "context": "8368_54"
+    },
+    {
+      "va": "5ef1600000",
+      "virtual_bytes": 8990720,
+      "commit_bytes": 8990720,
+      "type": "Native",
+      "context": "8368_54"
+    },
+    {
+      "va": "5ef2800000",
+      "virtual_bytes": 8990720,
+      "commit_bytes": 8990720,
+      "type": "Native",
+      "context": "8368_54"
+    },
+    {
+      "va": "5ef7400000",
+      "virtual_bytes": 8990720,
+      "commit_bytes": 8990720,
+      "type": "Native",
+      "context": "8368_54"
+    },
+    {
+      "va": "5efac00000",
+      "virtual_bytes": 8990720,
+      "commit_bytes": 8990720,
+      "type": "Native",
+      "context": "8368_54"
+    },
+    {
+      "va": "5efce00000",
+      "virtual_bytes": 8990720,
+      "commit_bytes": 8990720,
+      "type": "Native",
+      "context": "8368_54"
+    },
+    {
+      "va": "5efd800000",
+      "virtual_bytes": 8990720,
+      "commit_bytes": 8990720,
+      "type": "Native",
+      "context": "8368_54"
+    },
+    {
+      "va": "5efe200000",
+      "virtual_bytes": 8990720,
+      "commit_bytes": 8990720,
+      "type": "Native",
+      "context": "8368_54"
+    },
+    {
+      "va": "5eff400000",
+      "virtual_bytes": 8990720,
+      "commit_bytes": 8990720,
+      "type": "Native",
+      "context": "8368_54"
+    },
+    {
+      "va": "5efbc00000",
+      "virtual_bytes": 8523776,
+      "commit_bytes": 8523776,
+      "type": "Native",
+      "context": "8368_54"
+    },
+    {
+      "va": "5eede00000",
+      "virtual_bytes": 8298496,
+      "commit_bytes": 8298496,
+      "type": "Native",
+      "context": "8368_54"
+    },
+    {
+      "va": "5efa400000",
+      "virtual_bytes": 6660096,
+      "commit_bytes": 6660096,
+      "type": "Native",
+      "context": "8368_54"
+    },
+    {
+      "va": "5efb600000",
+      "virtual_bytes": 5595136,
+      "commit_bytes": 5595136,
+      "type": "Native",
+      "context": "8368_54"
+    },
+    {
+      "va": "5ef0200000",
+      "virtual_bytes": 5398528,
+      "commit_bytes": 5398528,
+      "type": "Native",
+      "context": "8368_54"
+    }
+  ],
+  "warning": "descriptor sums are not proven deduplicated physical bytes; gpu_memory units not verified against exact firmware source"
+}

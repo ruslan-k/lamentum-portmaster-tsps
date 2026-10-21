@@ -1,0 +1,7 @@
+{
+  "capture_rc": 0,
+  "umount_rc": 0,
+  "umount_error": "",
+  "debugfs_mounted": false,
+  "pending_command": false
+}

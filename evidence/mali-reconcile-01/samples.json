@@ -1,0 +1,1831 @@
+[
+  {
+    "pid": 8368,
+    "starttime": "1912649",
+    "run_uuid": "adfc2d2e-6b18-49f9-8612-419ea16c0ea7",
+    "boot_id": "d443aa3c-9e62-41fe-a5ba-e05aa4e63a61",
+    "status": "Name:\tterminator2d-ne\nUmask:\t0022\nState:\tD (disk sleep)\nTgid:\t8368\nNgid:\t0\nPid:\t8368\nPPid:\t8351\nTracerPid:\t0\nUid:\t0\t0\t0\t0\nGid:\t0\t0\t0\t0\nFDSize:\t256\nGroups:\t \nNStgid:\t8368\nNSpid:\t8368\nNSpgid:\t8351\nNSsid:\t8351\nVmPeak:\t  140580 kB\nVmSize:\t  140580 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t   23612 kB\nVmRSS:\t   23612 kB\nRssAnon:\t    6552 kB\nRssFile:\t   17060 kB\nRssShmem:\t       0 kB\nVmData:\t   85044 kB\nVmStk:\t     136 kB\nVmExe:\t    1064 kB\nVmLib:\t   51376 kB\nVmPTE:\t     168 kB\nVmSwap:\t       0 kB\nCoreDumping:\t0\nTHP_enabled:\t0\nThreads:\t1\nSigQ:\t1/3331\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000000\nSigIgn:\t0000000001001006\nSigCgt:\t0000000180000000\nCapInh:\t0000000000000000\nCapPrm:\t000001ffffffffff\nCapEff:\t000001ffffffffff\nCapBnd:\t000001ffffffffff\nCapAmb:\t0000000000000000\nNoNewPrivs:\t0\nSeccomp:\t0\nSeccomp_filters:\t0\nSpeculation_Store_Bypass:\tnot vulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\tff\nCpus_allowed_list:\t0-7\nMems_allowed:\t1\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t326\nnonvoluntary_ctxt_switches:\t300\n",
+    "driver": {},
+    "global_gpu": "mali0                      0\n",
+    "window_start": 19127.072326226,
+    "window_end": 19127.076157484,
+    "t": 19127.077472611,
+    "summary": {
+      "units": "KiB",
+      "scope": "one smaps read; non-atomic",
+      "limitations": "Pathname is not allocator identity; file VMAs can contain anonymous COW pages. Device mappings are not ordinary reclaimable files. No drop safety inferred.",
+      "owners": [
+        {
+          "path": "/usr/lib/libmali.so.0.32.0",
+          "mappings": 4,
+          "Rss": 11660,
+          "Pss": 11660,
+          "Anonymous": 2396,
+          "Swap": 0,
+          "Private_Clean": 9264,
+          "Private_Dirty": 2396
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/main.text.seg",
+          "mappings": 1,
+          "Rss": 4892,
+          "Pss": 4892,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 4892,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "[anonymous]",
+          "mappings": 12,
+          "Rss": 3552,
+          "Pss": 3552,
+          "Anonymous": 3552,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 3552
+        },
+        {
+          "path": "/usr/lib/libstdc++.so.6.0.28",
+          "mappings": 4,
+          "Rss": 1076,
+          "Pss": 1076,
+          "Anonymous": 56,
+          "Swap": 0,
+          "Private_Clean": 1020,
+          "Private_Dirty": 56
+        },
+        {
+          "path": "/lib/libc-2.33.so",
+          "mappings": 4,
+          "Rss": 948,
+          "Pss": 103,
+          "Anonymous": 24,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 24
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/lamentum-nextos",
+          "mappings": 3,
+          "Rss": 740,
+          "Pss": 740,
+          "Anonymous": 184,
+          "Swap": 0,
+          "Private_Clean": 556,
+          "Private_Dirty": 184
+        },
+        {
+          "path": "/usr/lib/libSDL2-2.0.so.0.3200.6",
+          "mappings": 4,
+          "Rss": 200,
+          "Pss": 200,
+          "Anonymous": 56,
+          "Swap": 0,
+          "Private_Clean": 144,
+          "Private_Dirty": 56
+        },
+        {
+          "path": "[heap]",
+          "mappings": 1,
+          "Rss": 172,
+          "Pss": 172,
+          "Anonymous": 172,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 172
+        },
+        {
+          "path": "/lib/ld-linux-aarch64.so.1",
+          "mappings": 3,
+          "Rss": 168,
+          "Pss": 35,
+          "Anonymous": 16,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 16
+        },
+        {
+          "path": "/lib/libpthread-2.33.so",
+          "mappings": 4,
+          "Rss": 108,
+          "Pss": 21,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/lib/libm-2.33.so",
+          "mappings": 4,
+          "Rss": 72,
+          "Pss": 34,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libdrm.so.2.4.0",
+          "mappings": 4,
+          "Rss": 72,
+          "Pss": 72,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 64,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libz.so.1.2.12",
+          "mappings": 4,
+          "Rss": 68,
+          "Pss": 68,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 60,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libgcc_s.so.1",
+          "mappings": 4,
+          "Rss": 56,
+          "Pss": 56,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 48,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/lib/librt-2.33.so",
+          "mappings": 4,
+          "Rss": 32,
+          "Pss": 32,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 24,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "[stack]",
+          "mappings": 1,
+          "Rss": 24,
+          "Pss": 24,
+          "Anonymous": 24,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 24
+        },
+        {
+          "path": "/lib/libdl-2.33.so",
+          "mappings": 4,
+          "Rss": 20,
+          "Pss": 10,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libEGL.so.1.4.0",
+          "mappings": 4,
+          "Rss": 12,
+          "Pss": 12,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 4,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libGLESv2.so.2.1.0",
+          "mappings": 4,
+          "Rss": 12,
+          "Pss": 12,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 4,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/rtld.text.seg",
+          "mappings": 1,
+          "Rss": 8,
+          "Pss": 8,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 8,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "[vdso]",
+          "mappings": 1,
+          "Rss": 4,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/main.rodata.seg",
+          "mappings": 1,
+          "Rss": 0,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/rtld.rodata.seg",
+          "mappings": 1,
+          "Rss": 0,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/sdk.rodata.seg",
+          "mappings": 1,
+          "Rss": 0,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/sdk.text.seg",
+          "mappings": 1,
+          "Rss": 0,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/subsdk0.rodata.seg",
+          "mappings": 1,
+          "Rss": 0,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/subsdk0.text.seg",
+          "mappings": 1,
+          "Rss": 0,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "[vvar]",
+          "mappings": 1,
+          "Rss": 0,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        }
+      ],
+      "totals": {
+        "Rss": 23896,
+        "Pss": 22779,
+        "Anonymous": 6552,
+        "Swap": 0,
+        "Private_Clean": 16088,
+        "Private_Dirty": 6552
+      }
+    }
+  },
+  {
+    "pid": 8368,
+    "starttime": "1912649",
+    "run_uuid": "adfc2d2e-6b18-49f9-8612-419ea16c0ea7",
+    "boot_id": "d443aa3c-9e62-41fe-a5ba-e05aa4e63a61",
+    "status": "Name:\tterminator2d-ne\nUmask:\t0022\nState:\tS (sleeping)\nTgid:\t8368\nNgid:\t0\nPid:\t8368\nPPid:\t8351\nTracerPid:\t0\nUid:\t0\t0\t0\t0\nGid:\t0\t0\t0\t0\nFDSize:\t256\nGroups:\t \nNStgid:\t8368\nNSpid:\t8368\nNSpgid:\t8351\nNSsid:\t8351\nVmPeak:\t 1005940 kB\nVmSize:\t 1005940 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t  263668 kB\nVmRSS:\t  263668 kB\nRssAnon:\t  147128 kB\nRssFile:\t  116420 kB\nRssShmem:\t     120 kB\nVmData:\t  473200 kB\nVmStk:\t     136 kB\nVmExe:\t    1064 kB\nVmLib:\t   91660 kB\nVmPTE:\t    1220 kB\nVmSwap:\t       0 kB\nCoreDumping:\t0\nTHP_enabled:\t0\nThreads:\t41\nSigQ:\t1/3331\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000010\nSigIgn:\t0000000001001006\nSigCgt:\t0000000980002cd8\nCapInh:\t0000000000000000\nCapPrm:\t000001ffffffffff\nCapEff:\t000001ffffffffff\nCapBnd:\t000001ffffffffff\nCapAmb:\t0000000000000000\nNoNewPrivs:\t0\nSeccomp:\t0\nSeccomp_filters:\t0\nSpeculation_Store_Bypass:\tnot vulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\t01\nCpus_allowed_list:\t0\nMems_allowed:\t1\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t2337\nnonvoluntary_ctxt_switches:\t2359\n",
+    "driver": {
+      "8368_54": {
+        "mem_allocs": "Zone name: SAME_VA:\n:              VA,          VA size,      Commit size,    Flags,     Mem type\n      5efce00000,           893000,           893000,     c06e, Native\n      5efd800000,           893000,           893000,     c07e, Native\n      5efe200000,           893000,           893000,     c07e, Native\n      5efec00000,           7ea000,           7ea000,     406a, Native\n      5eff400000,           893000,           893000,     c07e, Native\n      5effd3a000,            40000,            40000,     c07e, Native\n      5effd7a000,            40000,            40000,     c07e, Native\n      5effdba000,            21000,            21000,     c07e, Native\n      5effddb000,            20000,            20000,     c27e, Native\n      5effdfb000,            40000,            40000,     c07e, Native\n      5effe3b000,            40000,            40000,     406a, Native\n      5effe7b000,             1000,             1000,     c26e, Native\n      5effe7c000,             1000,             1000,     c26e, Native\n      5effe7d000,            20000,            20000,     c27e, Native\n      5effe9d000,            20000,            20000,     c27e, Native\n      5effebd000,            20000,            20000,     c27e, Native\n      5effedd000,            20000,            20000,     c27e, Native\n      5effefd000,            20000,            20000,     c27e, Native\n      5efff1d000,            20000,            20000,     c27e, Native\n      5efff3d000,            20000,            20000,     c27e, Native\n      5efff5d000,            20000,            20000,     c27e, Native\n      5efff7d000,            40000,            40000,     c06e, Native\n      5efffbd000,             1000,             1000,     c26e, Native\n      5efffbe000,             1000,             1000,     c06e, Native\n      5efffc0000,             1000,             1000,     c27e, Native\n      5efffe9000,             1000,             1000,     c27e, Native\n      5effff5000,             1000,             1000,     c27e, Native\n      5effff7000,             9000,             9000,     c06e, Native\nZone name: CUSTOM_VA:\n:              VA,          VA size,      Commit size,    Flags,     Mem type\nZone name: EXEC_VA:\n:              VA,          VA size,      Commit size,    Flags,     Mem type\n      7f00001000,             1000,             1000,     d062, Native\n      7f00002000,             1000,             1000,     d062, Native\n      7f00003000,             1000,             1000,     d062, Native\n      7f00004000,             1000,             1000,     d062, Native\n      7f00005000,             1000,             1000,     d062, Native\n      7f00006000,             1000,             1000,     d062, Native\n      7f00007000,             6000,             6000,     d062, Native\n      7f0000d000,             2000,             2000,     d062, Native\n      7f0000f000,             9000,             9000,     d062, Native\n      7f00018000,             3000,             3000,     d062, Native\n      7f0001b000,             1000,             1000,     d062, Native\n      7f0001c000,             2000,             2000,     d062, Native\n      7f0001e000,             1000,             1000,     d062, Native\n      7f0001f000,             2000,             2000,     d062, Native\n      7f00021000,             2000,             2000,     d062, Native\n      7f00023000,             1000,             1000,     d062, Native\n      7f00024000,             1000,             1000,     d062, Native\n      7f00025000,             7000,             7000,     d062, Native\n      7f0002c000,             1000,             1000,     d062, Native\n      7f0002d000,             1000,             1000,     d062, Native\n      7f0002e000,             1000,             1000,     d062, Native\n      7f0002f000,             1000,             1000,     d062, Native\n      7f00030000,             2000,             2000,     d062, Native\n      7f00032000,             3000,             3000,     d062, Native\n      7f00035000,             1000,             1000,     d062, Native\n",
+        "mem_pool_size": "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0\n",
+        "mem_jit_phys": "0,0,0\n"
+      }
+    },
+    "global_gpu": "mali0                  11546\n  kctx-0xffffffc009e75000      11546\n",
+    "window_start": 19129.518656425,
+    "window_end": 19129.53094324,
+    "t": 19129.532283451,
+    "summary": {
+      "units": "KiB",
+      "scope": "one smaps read; non-atomic",
+      "limitations": "Pathname is not allocator identity; file VMAs can contain anonymous COW pages. Device mappings are not ordinary reclaimable files. No drop safety inferred.",
+      "owners": [
+        {
+          "path": "[anonymous]",
+          "mappings": 223,
+          "Rss": 120864,
+          "Pss": 120864,
+          "Anonymous": 120864,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 120864
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/main.text.seg",
+          "mappings": 1,
+          "Rss": 30132,
+          "Pss": 30132,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 30132,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "[heap]",
+          "mappings": 1,
+          "Rss": 24072,
+          "Pss": 24072,
+          "Anonymous": 24072,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 24072
+        },
+        {
+          "path": "/usr/lib/libmali.so.0.32.0",
+          "mappings": 4,
+          "Rss": 13296,
+          "Pss": 13296,
+          "Anonymous": 2396,
+          "Swap": 0,
+          "Private_Clean": 10900,
+          "Private_Dirty": 2396
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/main.rodata.seg",
+          "mappings": 1,
+          "Rss": 8348,
+          "Pss": 8348,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 8348,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/sdk.text.seg",
+          "mappings": 1,
+          "Rss": 5644,
+          "Pss": 5644,
+          "Anonymous": 84,
+          "Swap": 0,
+          "Private_Clean": 5560,
+          "Private_Dirty": 84
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/sdk.rodata.seg",
+          "mappings": 1,
+          "Rss": 5124,
+          "Pss": 5124,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 5124,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/subsdk0.text.seg",
+          "mappings": 1,
+          "Rss": 3412,
+          "Pss": 3412,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 3412,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/subsdk0.rodata.seg",
+          "mappings": 1,
+          "Rss": 1472,
+          "Pss": 1472,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 1472,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/lamentum-nextos",
+          "mappings": 3,
+          "Rss": 1404,
+          "Pss": 1404,
+          "Anonymous": 324,
+          "Swap": 0,
+          "Private_Clean": 1080,
+          "Private_Dirty": 324
+        },
+        {
+          "path": "/usr/lib/libstdc++.so.6.0.28",
+          "mappings": 4,
+          "Rss": 1076,
+          "Pss": 1076,
+          "Anonymous": 56,
+          "Swap": 0,
+          "Private_Clean": 1020,
+          "Private_Dirty": 56
+        },
+        {
+          "path": "/usr/lib/libSDL2-2.0.so.0.3200.6",
+          "mappings": 4,
+          "Rss": 1032,
+          "Pss": 1032,
+          "Anonymous": 56,
+          "Swap": 0,
+          "Private_Clean": 976,
+          "Private_Dirty": 56
+        },
+        {
+          "path": "/lib/libc-2.33.so",
+          "mappings": 4,
+          "Rss": 1012,
+          "Pss": 133,
+          "Anonymous": 24,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 24
+        },
+        {
+          "path": "/usr/lib/libasound.so.2.0.0",
+          "mappings": 4,
+          "Rss": 428,
+          "Pss": 428,
+          "Anonymous": 36,
+          "Swap": 0,
+          "Private_Clean": 392,
+          "Private_Dirty": 36
+        },
+        {
+          "path": "/lib/ld-linux-aarch64.so.1",
+          "mappings": 3,
+          "Rss": 168,
+          "Pss": 35,
+          "Anonymous": 16,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 16
+        },
+        {
+          "path": "/tmp/cotm-switch-shm-gmGMlx (deleted)",
+          "mappings": 2,
+          "Rss": 160,
+          "Pss": 160,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 160
+        },
+        {
+          "path": "/lib/libpthread-2.33.so",
+          "mappings": 4,
+          "Rss": 108,
+          "Pss": 24,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/lib/libudev.so.1.6.3",
+          "mappings": 4,
+          "Rss": 100,
+          "Pss": 100,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 92,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/lib/libm-2.33.so",
+          "mappings": 4,
+          "Rss": 72,
+          "Pss": 34,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libdrm.so.2.4.0",
+          "mappings": 4,
+          "Rss": 72,
+          "Pss": 72,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 64,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libz.so.1.2.12",
+          "mappings": 4,
+          "Rss": 68,
+          "Pss": 68,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 60,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libgcc_s.so.1",
+          "mappings": 4,
+          "Rss": 56,
+          "Pss": 56,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 48,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "[stack]",
+          "mappings": 1,
+          "Rss": 52,
+          "Pss": 52,
+          "Anonymous": 52,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 52
+        },
+        {
+          "path": "/lib/librt-2.33.so",
+          "mappings": 4,
+          "Rss": 32,
+          "Pss": 32,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 24,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/lib/libdl-2.33.so",
+          "mappings": 4,
+          "Rss": 20,
+          "Pss": 10,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libEGL.so.1.4.0",
+          "mappings": 4,
+          "Rss": 12,
+          "Pss": 12,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 4,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libGLESv2.so.2.1.0",
+          "mappings": 4,
+          "Rss": 12,
+          "Pss": 12,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 4,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libgbm.so.1.0.0",
+          "mappings": 4,
+          "Rss": 12,
+          "Pss": 12,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 4,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/rtld.text.seg",
+          "mappings": 1,
+          "Rss": 8,
+          "Pss": 8,
+          "Anonymous": 4,
+          "Swap": 0,
+          "Private_Clean": 4,
+          "Private_Dirty": 4
+        },
+        {
+          "path": "/tmp/cotm-switch-shm-jFhRci (deleted)",
+          "mappings": 2,
+          "Rss": 8,
+          "Pss": 4,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/rtld.rodata.seg",
+          "mappings": 1,
+          "Rss": 4,
+          "Pss": 4,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 4,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "[vdso]",
+          "mappings": 1,
+          "Rss": 4,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/dev/mali0",
+          "mappings": 53,
+          "Rss": 0,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "[vvar]",
+          "mappings": 1,
+          "Rss": 0,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        }
+      ],
+      "totals": {
+        "Rss": 218284,
+        "Pss": 217132,
+        "Anonymous": 148072,
+        "Swap": 0,
+        "Private_Clean": 68724,
+        "Private_Dirty": 148232
+      }
+    }
+  },
+  {
+    "pid": 8368,
+    "starttime": "1912649",
+    "run_uuid": "adfc2d2e-6b18-49f9-8612-419ea16c0ea7",
+    "boot_id": "d443aa3c-9e62-41fe-a5ba-e05aa4e63a61",
+    "status": "Name:\tterminator2d-ne\nUmask:\t0022\nState:\tS (sleeping)\nTgid:\t8368\nNgid:\t0\nPid:\t8368\nPPid:\t8351\nTracerPid:\t0\nUid:\t0\t0\t0\t0\nGid:\t0\t0\t0\t0\nFDSize:\t256\nGroups:\t \nNStgid:\t8368\nNSpid:\t8368\nNSpgid:\t8351\nNSsid:\t8351\nVmPeak:\t 1648308 kB\nVmSize:\t 1648308 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t  533156 kB\nVmRSS:\t  533156 kB\nRssAnon:\t  320688 kB\nRssFile:\t  212348 kB\nRssShmem:\t     120 kB\nVmData:\t  723536 kB\nVmStk:\t     136 kB\nVmExe:\t    1064 kB\nVmLib:\t   91660 kB\nVmPTE:\t    1748 kB\nVmSwap:\t       0 kB\nCoreDumping:\t0\nTHP_enabled:\t0\nThreads:\t47\nSigQ:\t1/3331\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000010\nSigIgn:\t0000000001001006\nSigCgt:\t0000000980002cd8\nCapInh:\t0000000000000000\nCapPrm:\t000001ffffffffff\nCapEff:\t000001ffffffffff\nCapBnd:\t000001ffffffffff\nCapAmb:\t0000000000000000\nNoNewPrivs:\t0\nSeccomp:\t0\nSeccomp_filters:\t0\nSpeculation_Store_Bypass:\tnot vulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\t01\nCpus_allowed_list:\t0\nMems_allowed:\t1\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t2737\nnonvoluntary_ctxt_switches:\t2718\n",
+    "driver": {
+      "8368_54": {
+        "mem_allocs": "Zone name: SAME_VA:\n:              VA,          VA size,      Commit size,    Flags,     Mem type\n      5ef6c00000,           7ea000,           7ea000,     406a, Native\n      5ef7400000,           893000,           893000,     c07e, Native\n      5ef7e00000,          1f4d000,          1f4d000,     c07e, Native\n      5ef9e00000,           526000,           526000,     c07e, Native\n      5efa400000,           65a000,           65a000,     c07e, Native\n      5efac00000,           893000,           893000,     c07e, Native\n      5efb600000,           556000,           556000,     c07e, Native\n      5efbc00000,           821000,           821000,     c07e, Native\n      5efc448000,           1b8000,           1b8000,     c07e, Native\n      5efc600000,           209000,           209000,     c07e, Native\n      5efc875000,           18b000,           18b000,     406a, Native\n      5efca00000,           209000,           209000,     c07e, Native\n      5efcc9f000,           161000,           161000,     406a, Native\n      5efce00000,           893000,           893000,     c06e, Native\n      5efd6fb000,           105000,           105000,     c07e, Native\n      5efd800000,           893000,           893000,     c07e, Native\n      5efe0fc000,            40000,            40000,     c07e, Native\n      5efe13c000,            c4000,            c4000,     c07e, Native\n      5efe200000,           893000,           893000,     c07e, Native\n      5efeabf000,            20000,            20000,     c27e, Native\n      5efeb3f000,            40000,            40000,     c07e, Native\n      5efebf7000,            41000,            41000,     406a, Native\n      5efec38000,           1c8000,           1c8000,     c07e, Native\n      5efee00000,           526000,           526000,     c07e, Native\n      5eff33e000,            42000,            42000,     c07e, Native\n      5eff380000,            40000,            40000,     c07e, Native\n      5eff3c0000,            40000,            40000,     c07e, Native\n      5eff400000,           893000,           893000,     c07e, Native\n      5effcb7000,            83000,            83000,     c07e, Native\n      5effd3a000,            40000,            40000,     c07e, Native\n      5effd7a000,            40000,            40000,     c07e, Native\n      5effdba000,            21000,            21000,     c07e, Native\n      5effdfb000,            40000,            40000,     c07e, Native\n      5effe3b000,            40000,            40000,     406a, Native\n      5effe7b000,             1000,             1000,     c26e, Native\n      5effe7c000,             1000,             1000,     c26e, Native\n      5effe7d000,            20000,            20000,     c27e, Native\n      5effe9d000,            20000,            20000,     c27e, Native\n      5effebd000,            20000,            20000,     c27e, Native\n      5effedd000,            20000,            20000,     c27e, Native\n      5effefd000,            20000,            20000,     c27e, Native\n      5efff1d000,            20000,            20000,     c27e, Native\n      5efff3d000,            20000,            20000,     c27e, Native\n      5efff5d000,            20000,            20000,     c27e, Native\n      5efff7d000,            40000,            40000,     c06e, Native\n      5efffbd000,             1000,             1000,     c26e, Native\n      5efffbe000,             1000,             1000,     c06e, Native\n      5efffc0000,             1000,             1000,     c27e, Native\n      5efffe9000,             1000,             1000,     c27e, Native\n      5effff5000,             1000,             1000,     c27e, Native\n      5effff7000,             9000,             9000,     c06e, Native\nZone name: CUSTOM_VA:\n:              VA,          VA size,      Commit size,    Flags,     Mem type\nZone name: EXEC_VA:\n:              VA,          VA size,      Commit size,    Flags,     Mem type\n      7f00001000,             1000,             1000,     d062, Native\n      7f00002000,             1000,             1000,     d062, Native\n      7f00003000,             1000,             1000,     d062, Native\n      7f00004000,             1000,             1000,     d062, Native\n      7f00005000,             1000,             1000,     d062, Native\n      7f00006000,             1000,             1000,     d062, Native\n      7f00007000,             6000,             6000,     d062, Native\n      7f0000d000,             2000,             2000,     d062, Native\n      7f0000f000,             9000,             9000,     d062, Native\n      7f00018000,             3000,             3000,     d062, Native\n      7f0001b000,             1000,             1000,     d062, Native\n      7f0001c000,             2000,             2000,     d062, Native\n      7f0001e000,             1000,             1000,     d062, Native\n      7f0001f000,             2000,             2000,     d062, Native\n      7f00021000,             2000,             2000,     d062, Native\n      7f00023000,             1000,             1000,     d062, Native\n      7f00024000,             1000,             1000,     d062, Native\n      7f00025000,             7000,             7000,     d062, Native\n      7f0002c000,             1000,             1000,     d062, Native\n      7f0002d000,             1000,             1000,     d062, Native\n      7f0002e000,             1000,             1000,     d062, Native\n      7f0002f000,             1000,             1000,     d062, Native\n      7f00030000,             2000,             2000,     d062, Native\n      7f00032000,             3000,             3000,     d062, Native\n      7f00035000,             1000,             1000,     d062, Native\n",
+        "mem_pool_size": "2611 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0\n",
+        "mem_jit_phys": "0,0,0\n"
+      }
+    },
+    "global_gpu": "mali0                  35368\n  kctx-0xffffffc009e75000      35368\n",
+    "window_start": 19132.004800408,
+    "window_end": 19132.022978652,
+    "t": 19132.024410779,
+    "summary": {
+      "units": "KiB",
+      "scope": "one smaps read; non-atomic",
+      "limitations": "Pathname is not allocator identity; file VMAs can contain anonymous COW pages. Device mappings are not ordinary reclaimable files. No drop safety inferred.",
+      "owners": [
+        {
+          "path": "[anonymous]",
+          "mappings": 263,
+          "Rss": 310240,
+          "Pss": 310240,
+          "Anonymous": 310240,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 310240
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/main.text.seg",
+          "mappings": 1,
+          "Rss": 30132,
+          "Pss": 30132,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 30132,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/usr/lib/libmali.so.0.32.0",
+          "mappings": 4,
+          "Rss": 13296,
+          "Pss": 13296,
+          "Anonymous": 2396,
+          "Swap": 0,
+          "Private_Clean": 10900,
+          "Private_Dirty": 2396
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/main.rodata.seg",
+          "mappings": 1,
+          "Rss": 8504,
+          "Pss": 8504,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 8504,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "[heap]",
+          "mappings": 1,
+          "Rss": 8072,
+          "Pss": 8072,
+          "Anonymous": 8072,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 8072
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/sdk.text.seg",
+          "mappings": 1,
+          "Rss": 5644,
+          "Pss": 5644,
+          "Anonymous": 84,
+          "Swap": 0,
+          "Private_Clean": 5560,
+          "Private_Dirty": 84
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/sdk.rodata.seg",
+          "mappings": 1,
+          "Rss": 5124,
+          "Pss": 5124,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 5124,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/subsdk0.text.seg",
+          "mappings": 1,
+          "Rss": 3412,
+          "Pss": 3412,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 3412,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/subsdk0.rodata.seg",
+          "mappings": 1,
+          "Rss": 1472,
+          "Pss": 1472,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 1472,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/lamentum-nextos",
+          "mappings": 3,
+          "Rss": 1424,
+          "Pss": 1424,
+          "Anonymous": 344,
+          "Swap": 0,
+          "Private_Clean": 1080,
+          "Private_Dirty": 344
+        },
+        {
+          "path": "/usr/lib/libstdc++.so.6.0.28",
+          "mappings": 4,
+          "Rss": 1076,
+          "Pss": 1076,
+          "Anonymous": 56,
+          "Swap": 0,
+          "Private_Clean": 1020,
+          "Private_Dirty": 56
+        },
+        {
+          "path": "/usr/lib/libSDL2-2.0.so.0.3200.6",
+          "mappings": 4,
+          "Rss": 1032,
+          "Pss": 1032,
+          "Anonymous": 56,
+          "Swap": 0,
+          "Private_Clean": 976,
+          "Private_Dirty": 56
+        },
+        {
+          "path": "/lib/libc-2.33.so",
+          "mappings": 4,
+          "Rss": 1012,
+          "Pss": 127,
+          "Anonymous": 24,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 24
+        },
+        {
+          "path": "/usr/lib/libasound.so.2.0.0",
+          "mappings": 4,
+          "Rss": 680,
+          "Pss": 680,
+          "Anonymous": 36,
+          "Swap": 0,
+          "Private_Clean": 644,
+          "Private_Dirty": 36
+        },
+        {
+          "path": "/lib/ld-linux-aarch64.so.1",
+          "mappings": 3,
+          "Rss": 168,
+          "Pss": 35,
+          "Anonymous": 16,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 16
+        },
+        {
+          "path": "/tmp/cotm-switch-shm-gmGMlx (deleted)",
+          "mappings": 2,
+          "Rss": 160,
+          "Pss": 160,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 160
+        },
+        {
+          "path": "/lib/libpthread-2.33.so",
+          "mappings": 4,
+          "Rss": 108,
+          "Pss": 22,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/lib/libudev.so.1.6.3",
+          "mappings": 4,
+          "Rss": 100,
+          "Pss": 100,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 92,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/lib/libm-2.33.so",
+          "mappings": 4,
+          "Rss": 72,
+          "Pss": 34,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libdrm.so.2.4.0",
+          "mappings": 4,
+          "Rss": 72,
+          "Pss": 72,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 64,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libz.so.1.2.12",
+          "mappings": 4,
+          "Rss": 68,
+          "Pss": 68,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 60,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libgcc_s.so.1",
+          "mappings": 4,
+          "Rss": 56,
+          "Pss": 56,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 48,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "[stack]",
+          "mappings": 1,
+          "Rss": 52,
+          "Pss": 52,
+          "Anonymous": 52,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 52
+        },
+        {
+          "path": "/lib/librt-2.33.so",
+          "mappings": 4,
+          "Rss": 32,
+          "Pss": 32,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 24,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/lib/libdl-2.33.so",
+          "mappings": 4,
+          "Rss": 20,
+          "Pss": 10,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libEGL.so.1.4.0",
+          "mappings": 4,
+          "Rss": 12,
+          "Pss": 12,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 4,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libGLESv2.so.2.1.0",
+          "mappings": 4,
+          "Rss": 12,
+          "Pss": 12,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 4,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libgbm.so.1.0.0",
+          "mappings": 4,
+          "Rss": 12,
+          "Pss": 12,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 4,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/rtld.text.seg",
+          "mappings": 1,
+          "Rss": 8,
+          "Pss": 8,
+          "Anonymous": 4,
+          "Swap": 0,
+          "Private_Clean": 4,
+          "Private_Dirty": 4
+        },
+        {
+          "path": "/tmp/cotm-switch-shm-jFhRci (deleted)",
+          "mappings": 2,
+          "Rss": 8,
+          "Pss": 4,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/rtld.rodata.seg",
+          "mappings": 1,
+          "Rss": 4,
+          "Pss": 4,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 4,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "[vdso]",
+          "mappings": 1,
+          "Rss": 4,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/dev/mali0",
+          "mappings": 51,
+          "Rss": 0,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/dev/snd/pcmC0D0p",
+          "mappings": 1,
+          "Rss": 0,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "[vvar]",
+          "mappings": 1,
+          "Rss": 0,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        }
+      ],
+      "totals": {
+        "Rss": 392088,
+        "Pss": 390928,
+        "Anonymous": 321468,
+        "Swap": 0,
+        "Private_Clean": 69132,
+        "Private_Dirty": 321628
+      }
+    }
+  },
+  {
+    "pid": 8368,
+    "starttime": "1912649",
+    "run_uuid": "adfc2d2e-6b18-49f9-8612-419ea16c0ea7",
+    "boot_id": "d443aa3c-9e62-41fe-a5ba-e05aa4e63a61",
+    "status": "Name:\tterminator2d-ne\nUmask:\t0022\nState:\tR (running)\nTgid:\t8368\nNgid:\t0\nPid:\t8368\nPPid:\t8351\nTracerPid:\t0\nUid:\t0\t0\t0\t0\nGid:\t0\t0\t0\t0\nFDSize:\t256\nGroups:\t \nNStgid:\t8368\nNSpid:\t8368\nNSpgid:\t8351\nNSsid:\t8351\nVmPeak:\t 1742824 kB\nVmSize:\t 1706204 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t  670264 kB\nVmRSS:\t  612140 kB\nRssAnon:\t  306244 kB\nRssFile:\t  305616 kB\nRssShmem:\t     280 kB\nVmData:\t  674256 kB\nVmStk:\t     136 kB\nVmExe:\t    1064 kB\nVmLib:\t   91660 kB\nVmPTE:\t    1812 kB\nVmSwap:\t   36764 kB\nCoreDumping:\t0\nTHP_enabled:\t0\nThreads:\t48\nSigQ:\t1/3331\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000000\nSigIgn:\t0000000001001006\nSigCgt:\t0000000980002cd8\nCapInh:\t0000000000000000\nCapPrm:\t000001ffffffffff\nCapEff:\t000001ffffffffff\nCapBnd:\t000001ffffffffff\nCapAmb:\t0000000000000000\nNoNewPrivs:\t0\nSeccomp:\t0\nSeccomp_filters:\t0\nSpeculation_Store_Bypass:\tnot vulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\t01\nCpus_allowed_list:\t0\nMems_allowed:\t1\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t3486\nnonvoluntary_ctxt_switches:\t4582\n",
+    "driver": {
+      "8368_54": {
+        "mem_allocs": "Zone name: SAME_VA:\n:              VA,          VA size,      Commit size,    Flags,     Mem type\n      5eef400000,           3d0000,           3d0000,     c07e, Native\n      5eef800000,           893000,           893000,     c07e, Native\n      5ef0200000,           526000,           526000,     c07e, Native\n      5ef0800000,           3da000,           3da000,     406a, Native\n      5ef0c00000,           411000,           411000,     c07e, Native\n      5ef1200000,           209000,           209000,     c07e, Native\n      5ef1600000,           893000,           893000,     c07e, Native\n      5ef2800000,           893000,           893000,     c07e, Native\n      5ef3200000,           24a000,           24a000,     c07e, Native\n      5ef3a00000,           38f000,           38f000,     c07e, Native\n      5ef3e00000,          3564000,          3564000,     c07e, Native\n      5ef7400000,           893000,           893000,     c07e, Native\n      5ef7cfb000,           105000,           105000,     c07e, Native\n      5ef7e00000,          1f4d000,          1f4d000,     c07e, Native\n      5ef9dbe000,            42000,            42000,     c07e, Native\n      5ef9e00000,           526000,           526000,     c07e, Native\n      5efa33a000,            42000,            42000,     c07e, Native\n      5efa37c000,            42000,            42000,     c07e, Native\n      5efa3be000,            42000,            42000,     c07e, Native\n      5efa400000,           65a000,           65a000,     c07e, Native\n      5efaa78000,            42000,            42000,     c07e, Native\n      5efaaba000,           146000,           146000,     c07e, Native\n      5efac00000,           893000,           893000,     c07e, Native\n      5efb4b9000,            42000,            42000,     c07e, Native\n      5efb4fb000,           105000,           105000,     c07e, Native\n      5efb600000,           556000,           556000,     c07e, Native\n      5efbb7c000,            42000,            42000,     c07e, Native\n      5efbbbe000,            42000,            42000,     c07e, Native\n      5efbc00000,           821000,           821000,     c07e, Native\n      5efc448000,           1b8000,           1b8000,     c07e, Native\n      5efc600000,           209000,           209000,     c07e, Native\n      5efc82d000,            42000,            42000,     c07e, Native\n      5efc86f000,           191000,           191000,     406a, Native\n      5efca00000,           209000,           209000,     c07e, Native\n      5efcc38000,           1c8000,           1c8000,     c07e, Native\n      5efce00000,           893000,           893000,     c06e, Native\n      5efd6b9000,            42000,            42000,     c07e, Native\n      5efd6fb000,           105000,           105000,     c07e, Native\n      5efd800000,           893000,           893000,     c07e, Native\n      5efe0ba000,            42000,            42000,     c07e, Native\n      5efe0fc000,            40000,            40000,     c07e, Native\n      5efe13c000,            c4000,            c4000,     c07e, Native\n      5efe200000,           893000,           893000,     c07e, Native\n      5efea96000,            42000,            42000,     c07e, Native\n      5efead8000,            67000,            67000,     c07e, Native\n      5efeb3f000,            40000,            40000,     c07e, Native\n      5efeb8f000,            42000,            42000,     c07e, Native\n      5efebd1000,            67000,            67000,     406a, Native\n      5efec38000,           1c8000,           1c8000,     c07e, Native\n      5efee00000,           526000,           526000,     c07e, Native\n      5eff33e000,            42000,            42000,     c07e, Native\n      5eff380000,            40000,            40000,     c07e, Native\n      5eff3c0000,            40000,            40000,     c07e, Native\n      5eff400000,           893000,           893000,     c07e, Native\n      5effcb7000,            83000,            83000,     c07e, Native\n      5effd3a000,            40000,            40000,     c07e, Native\n      5effd7a000,            40000,            40000,     c07e, Native\n      5effdba000,            21000,            21000,     c07e, Native\n      5effdfb000,            40000,            40000,     c07e, Native\n      5effe3b000,            40000,            40000,     c07e, Native\n      5effe7b000,             1000,             1000,     c26e, Native\n      5effe7c000,             1000,             1000,     c26e, Native\n      5effe7d000,            20000,            20000,     c27e, Native\n      5effe9d000,            20000,            20000,     c27e, Native\n      5effebd000,            20000,            20000,     c27e, Native\n      5effedd000,            20000,            20000,     c27e, Native\n      5effefd000,            20000,            20000,     c27e, Native\n      5efff1d000,            20000,            20000,     c27e, Native\n      5efff3d000,            20000,            20000,     c27e, Native\n      5efff5d000,            20000,            20000,     c27e, Native\n      5efff7d000,            40000,            40000,     c06e, Native\n      5efffbd000,             1000,             1000,     c26e, Native\n      5efffbe000,             1000,             1000,     c06e, Native\n      5efffc0000,             1000,             1000,     c27e, Native\n      5efffc9000,            20000,            20000,     c27e, Native\n      5efffe9000,             1000,             1000,     c27e, Native\n      5effff5000,             1000,             1000,     c27e, Native\n      5effff7000,             9000,             9000,     c06e, Native\nZone name: CUSTOM_VA:\n:              VA,          VA size,      Commit size,    Flags,     Mem type\nZone name: EXEC_VA:\n:              VA,          VA size,      Commit size,    Flags,     Mem type\n      7f00001000,             1000,             1000,     d062, Native\n      7f00002000,             1000,             1000,     d062, Native\n      7f00003000,             1000,             1000,     d062, Native\n      7f00004000,             1000,             1000,     d062, Native\n      7f00005000,             1000,             1000,     d062, Native\n      7f00006000,             1000,             1000,     d062, Native\n      7f00007000,             6000,             6000,     d062, Native\n      7f0000d000,             2000,             2000,     d062, Native\n      7f0000f000,             9000,             9000,     d062, Native\n      7f00018000,             3000,             3000,     d062, Native\n      7f0001b000,             1000,             1000,     d062, Native\n      7f0001c000,             2000,             2000,     d062, Native\n      7f0001e000,             1000,             1000,     d062, Native\n      7f0001f000,             2000,             2000,     d062, Native\n      7f00021000,             2000,             2000,     d062, Native\n      7f00023000,             1000,             1000,     d062, Native\n      7f00024000,             1000,             1000,     d062, Native\n      7f00025000,             7000,             7000,     d062, Native\n      7f0002c000,             1000,             1000,     d062, Native\n      7f0002d000,             1000,             1000,     d062, Native\n      7f0002e000,             1000,             1000,     d062, Native\n      7f0002f000,             1000,             1000,     d062, Native\n      7f00030000,             2000,             2000,     d062, Native\n      7f00032000,             3000,             3000,     d062, Native\n      7f00035000,             1000,             1000,     d062, Native\n",
+        "mem_pool_size": "2815 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0\n",
+        "mem_jit_phys": "0,0,0\n"
+      }
+    },
+    "global_gpu": "mali0                  60555\n  kctx-0xffffffc009e75000      60555\n",
+    "window_start": 19134.491045683,
+    "window_end": 19134.508650009,
+    "t": 19134.509834469,
+    "summary": {
+      "units": "KiB",
+      "scope": "one smaps read; non-atomic",
+      "limitations": "Pathname is not allocator identity; file VMAs can contain anonymous COW pages. Device mappings are not ordinary reclaimable files. No drop safety inferred.",
+      "owners": [
+        {
+          "path": "[anonymous]",
+          "mappings": 269,
+          "Rss": 299352,
+          "Pss": 299352,
+          "Anonymous": 299352,
+          "Swap": 34184,
+          "Private_Clean": 1252,
+          "Private_Dirty": 298100
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/main.text.seg",
+          "mappings": 1,
+          "Rss": 25708,
+          "Pss": 25708,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 25708,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/usr/lib/libmali.so.0.32.0",
+          "mappings": 4,
+          "Rss": 8888,
+          "Pss": 8888,
+          "Anonymous": 1856,
+          "Swap": 540,
+          "Private_Clean": 7032,
+          "Private_Dirty": 1856
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/main.rodata.seg",
+          "mappings": 1,
+          "Rss": 7084,
+          "Pss": 7084,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 7084,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "[heap]",
+          "mappings": 1,
+          "Rss": 6368,
+          "Pss": 6368,
+          "Anonymous": 6368,
+          "Swap": 1732,
+          "Private_Clean": 0,
+          "Private_Dirty": 6368
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/sdk.text.seg",
+          "mappings": 1,
+          "Rss": 5360,
+          "Pss": 5360,
+          "Anonymous": 80,
+          "Swap": 4,
+          "Private_Clean": 5280,
+          "Private_Dirty": 80
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/sdk.rodata.seg",
+          "mappings": 1,
+          "Rss": 3820,
+          "Pss": 3820,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 3820,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/subsdk0.text.seg",
+          "mappings": 1,
+          "Rss": 3412,
+          "Pss": 3412,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 3412,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/subsdk0.rodata.seg",
+          "mappings": 1,
+          "Rss": 1176,
+          "Pss": 1176,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 1176,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/lamentum-nextos",
+          "mappings": 3,
+          "Rss": 1156,
+          "Pss": 1156,
+          "Anonymous": 320,
+          "Swap": 28,
+          "Private_Clean": 836,
+          "Private_Dirty": 320
+        },
+        {
+          "path": "/usr/lib/libstdc++.so.6.0.28",
+          "mappings": 4,
+          "Rss": 796,
+          "Pss": 796,
+          "Anonymous": 40,
+          "Swap": 16,
+          "Private_Clean": 756,
+          "Private_Dirty": 40
+        },
+        {
+          "path": "/lib/libc-2.33.so",
+          "mappings": 4,
+          "Rss": 756,
+          "Pss": 90,
+          "Anonymous": 24,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 24
+        },
+        {
+          "path": "/usr/lib/libSDL2-2.0.so.0.3200.6",
+          "mappings": 4,
+          "Rss": 736,
+          "Pss": 736,
+          "Anonymous": 32,
+          "Swap": 24,
+          "Private_Clean": 704,
+          "Private_Dirty": 32
+        },
+        {
+          "path": "/usr/lib/libasound.so.2.0.0",
+          "mappings": 4,
+          "Rss": 508,
+          "Pss": 508,
+          "Anonymous": 36,
+          "Swap": 0,
+          "Private_Clean": 472,
+          "Private_Dirty": 36
+        },
+        {
+          "path": "/tmp/cotm-switch-shm-gmGMlx (deleted)",
+          "mappings": 2,
+          "Rss": 320,
+          "Pss": 160,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/lib/ld-linux-aarch64.so.1",
+          "mappings": 3,
+          "Rss": 144,
+          "Pss": 28,
+          "Anonymous": 12,
+          "Swap": 4,
+          "Private_Clean": 0,
+          "Private_Dirty": 12
+        },
+        {
+          "path": "/lib/libpthread-2.33.so",
+          "mappings": 4,
+          "Rss": 92,
+          "Pss": 20,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/lib/libudev.so.1.6.3",
+          "mappings": 4,
+          "Rss": 72,
+          "Pss": 72,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 64,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/lib/libm-2.33.so",
+          "mappings": 4,
+          "Rss": 52,
+          "Pss": 22,
+          "Anonymous": 4,
+          "Swap": 4,
+          "Private_Clean": 0,
+          "Private_Dirty": 4
+        },
+        {
+          "path": "[stack]",
+          "mappings": 1,
+          "Rss": 48,
+          "Pss": 48,
+          "Anonymous": 48,
+          "Swap": 4,
+          "Private_Clean": 0,
+          "Private_Dirty": 48
+        },
+        {
+          "path": "/usr/lib/libdrm.so.2.4.0",
+          "mappings": 4,
+          "Rss": 44,
+          "Pss": 44,
+          "Anonymous": 0,
+          "Swap": 8,
+          "Private_Clean": 44,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/lib/librt-2.33.so",
+          "mappings": 4,
+          "Rss": 24,
+          "Pss": 24,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 16,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libz.so.1.2.12",
+          "mappings": 4,
+          "Rss": 24,
+          "Pss": 24,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 16,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libgcc_s.so.1",
+          "mappings": 4,
+          "Rss": 20,
+          "Pss": 20,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 12,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/lib/libdl-2.33.so",
+          "mappings": 4,
+          "Rss": 16,
+          "Pss": 9,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libEGL.so.1.4.0",
+          "mappings": 4,
+          "Rss": 12,
+          "Pss": 12,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 4,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libGLESv2.so.2.1.0",
+          "mappings": 4,
+          "Rss": 12,
+          "Pss": 12,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 4,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/rtld.text.seg",
+          "mappings": 1,
+          "Rss": 8,
+          "Pss": 8,
+          "Anonymous": 4,
+          "Swap": 0,
+          "Private_Clean": 4,
+          "Private_Dirty": 4
+        },
+        {
+          "path": "/tmp/cotm-switch-shm-jFhRci (deleted)",
+          "mappings": 2,
+          "Rss": 8,
+          "Pss": 4,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/rtld.rodata.seg",
+          "mappings": 1,
+          "Rss": 4,
+          "Pss": 4,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 4,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/usr/lib/libgbm.so.1.0.0",
+          "mappings": 4,
+          "Rss": 4,
+          "Pss": 4,
+          "Anonymous": 0,
+          "Swap": 8,
+          "Private_Clean": 4,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "[vdso]",
+          "mappings": 1,
+          "Rss": 4,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/dev/mali0",
+          "mappings": 78,
+          "Rss": 0,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/dev/snd/pcmC0D0p",
+          "mappings": 1,
+          "Rss": 0,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "[vvar]",
+          "mappings": 1,
+          "Rss": 0,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        }
+      ],
+      "totals": {
+        "Rss": 366028,
+        "Pss": 364969,
+        "Anonymous": 308240,
+        "Swap": 36556,
+        "Private_Clean": 57704,
+        "Private_Dirty": 306988
+      }
+    }
+  },
+  {
+    "pid": 8368,
+    "starttime": "1912649",
+    "run_uuid": "adfc2d2e-6b18-49f9-8612-419ea16c0ea7",
+    "boot_id": "d443aa3c-9e62-41fe-a5ba-e05aa4e63a61",
+    "status": "Name:\tterminator2d-ne\nUmask:\t0022\nState:\tS (sleeping)\nTgid:\t8368\nNgid:\t0\nPid:\t8368\nPPid:\t8351\nTracerPid:\t0\nUid:\t0\t0\t0\t0\nGid:\t0\t0\t0\t0\nFDSize:\t256\nGroups:\t \nNStgid:\t8368\nNSpid:\t8368\nNSpgid:\t8351\nNSsid:\t8351\nVmPeak:\t 1946724 kB\nVmSize:\t 1946032 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t  721620 kB\nVmRSS:\t  689196 kB\nRssAnon:\t  343108 kB\nRssFile:\t  345808 kB\nRssShmem:\t     280 kB\nVmData:\t  742732 kB\nVmStk:\t     136 kB\nVmExe:\t    1064 kB\nVmLib:\t   91660 kB\nVmPTE:\t    2080 kB\nVmSwap:\t   37284 kB\nCoreDumping:\t0\nTHP_enabled:\t0\nThreads:\t49\nSigQ:\t2/3331\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000010\nSigIgn:\t0000000001001006\nSigCgt:\t0000000980002cd8\nCapInh:\t0000000000000000\nCapPrm:\t000001ffffffffff\nCapEff:\t000001ffffffffff\nCapBnd:\t000001ffffffffff\nCapAmb:\t0000000000000000\nNoNewPrivs:\t0\nSeccomp:\t0\nSeccomp_filters:\t0\nSpeculation_Store_Bypass:\tnot vulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\t01\nCpus_allowed_list:\t0\nMems_allowed:\t1\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t5133\nnonvoluntary_ctxt_switches:\t5756\n",
+    "driver": {
+      "8368_54": {
+        "mem_allocs": "Zone name: SAME_VA:\n:              VA,          VA size,      Commit size,    Flags,     Mem type\n      5eece00000,           384000,           384000,     c23e, Imported UMM\n      5eed2f4000,            41000,            41000,     c07e, Native\n      5eed335000,            41000,            41000,     c07e, Native\n      5eed376000,            41000,            41000,     c07e, Native\n      5eed3b7000,            41000,            41000,     c07e, Native\n      5eed3f8000,            41000,            41000,     c07e, Native\n      5eed439000,            41000,            41000,     c07e, Native\n      5eed47a000,            41000,            41000,     c07e, Native\n      5eed4bb000,            41000,            41000,     c07e, Native\n      5eed4fc000,            41000,            41000,     c07e, Native\n      5eed53d000,            41000,            41000,     c07e, Native\n      5eed57e000,            41000,            41000,     c07e, Native\n      5eed5bf000,            41000,            41000,     c07e, Native\n      5eed600000,           384000,           384000,     c23e, Imported UMM\n      5eed9bf000,            41000,            41000,     c07e, Native\n      5eeda00000,           384000,           384000,     c23e, Imported UMM\n      5eeddbf000,            41000,            41000,     c07e, Native\n      5eede00000,           7ea000,           7ea000,     406a, Native\n      5eee600000,           475000,           475000,     406a, Native\n      5eeea7a000,            41000,            41000,     c07e, Native\n      5eeeabb000,            41000,            41000,     c07e, Native\n      5eeeafc000,            41000,            41000,     c07e, Native\n      5eeeb3d000,            41000,            41000,     c07e, Native\n      5eeeb7e000,            41000,            41000,     c07e, Native\n      5eeebbf000,            41000,            41000,     c07e, Native\n      5eeec00000,           3d0000,           3d0000,     c07e, Native\n      5eef000000,           3d0000,           3d0000,     c06e, Native\n      5eef400000,           3d0000,           3d0000,     c07e, Native\n      5eef800000,           893000,           893000,     c07e, Native\n      5ef009c000,            20000,            20000,     c27e, Native\n      5ef00bc000,            41000,            41000,     c07e, Native\n      5ef00fd000,            41000,            41000,     c07e, Native\n      5ef013e000,            20000,            20000,     c27e, Native\n      5ef015e000,            20000,            20000,     c27e, Native\n      5ef017e000,            41000,            41000,     c07e, Native\n      5ef01bf000,            41000,            41000,     c07e, Native\n      5ef0200000,           526000,           526000,     c07e, Native\n      5ef072f000,            20000,            20000,     c27e, Native\n      5ef074f000,            20000,            20000,     c27e, Native\n      5ef076f000,            41000,            41000,     c07e, Native\n      5ef07b0000,            20000,            20000,     c27e, Native\n      5ef07d0000,            41000,            41000,     c07e, Native\n      5ef0811000,            20000,            20000,     c27e, Native\n      5ef0831000,            41000,            41000,     c07e, Native\n      5ef0872000,            41000,            41000,     c07e, Native\n      5ef08b3000,            41000,            41000,     c07e, Native\n      5ef08f4000,            41000,            41000,     c07e, Native\n      5ef0935000,            41000,            41000,     c07e, Native\n      5ef0976000,            41000,            41000,     c07e, Native\n      5ef09b7000,            41000,            41000,     c07e, Native\n      5ef09f8000,            41000,            41000,     c07e, Native\n      5ef0a39000,            41000,            41000,     c07e, Native\n      5ef0a7a000,            41000,            41000,     c07e, Native\n      5ef0abb000,            41000,            41000,     c07e, Native\n      5ef0afc000,            41000,            41000,     c07e, Native\n      5ef0b3d000,            41000,            41000,     c07e, Native\n      5ef0b7e000,            41000,            41000,     c07e, Native\n      5ef0bbf000,            41000,            41000,     c07e, Native\n      5ef0c00000,           411000,           411000,     c07e, Native\n      5ef1019000,            20000,            20000,     c27e, Native\n      5ef1039000,            41000,            41000,     c07e, Native\n      5ef107a000,            41000,            41000,     c07e, Native\n      5ef10bb000,            41000,            41000,     c07e, Native\n      5ef10fc000,            41000,            41000,     c07e, Native\n      5ef113d000,            41000,            41000,     c07e, Native\n      5ef117e000,            41000,            41000,     c07e, Native\n      5ef11bf000,            41000,            41000,     c07e, Native\n      5ef1200000,           209000,           209000,     c07e, Native\n      5ef1425000,            41000,            41000,     c07e, Native\n      5ef1466000,            41000,            41000,     c07e, Native\n      5ef14a7000,            41000,            41000,     c07e, Native\n      5ef14e8000,            41000,            41000,     c07e, Native\n      5ef1529000,            55000,            55000,     c26e, Native\n      5ef157e000,            41000,            41000,     c07e, Native\n      5ef15bf000,            41000,            41000,     c07e, Native\n      5ef1600000,           893000,           893000,     c07e, Native\n      5ef1ea6000,            41000,            41000,     c07e, Native\n      5ef1ee7000,            41000,            41000,     c07e, Native\n      5ef1f28000,           18b000,           18b000,     406a, Native\n      5ef20b3000,            41000,            41000,     c07e, Native\n      5ef20f4000,            41000,            41000,     c07e, Native\n      5ef2135000,            41000,            41000,     c07e, Native\n      5ef2176000,            41000,            41000,     c07e, Native\n      5ef21b7000,            41000,            41000,     c07e, Native\n      5ef21f8000,            41000,            41000,     c07e, Native\n      5ef2239000,            41000,            41000,     c07e, Native\n      5ef227a000,            41000,            41000,     c07e, Native\n      5ef22bb000,            41000,            41000,     c07e, Native\n      5ef22fc000,            41000,            41000,     c07e, Native\n      5ef233d000,            41000,            41000,     c07e, Native\n      5ef237e000,            41000,            41000,     c07e, Native\n      5ef23bf000,            41000,            41000,     c07e, Native\n      5ef2400000,           3d0000,           3d0000,     c07e, Native\n      5ef27e0000,            20000,            20000,     c27e, Native\n      5ef2800000,           893000,           893000,     c07e, Native\n      5ef309f000,           161000,           161000,     406a, Native\n      5ef3200000,           24a000,           24a000,     c07e, Native\n      5ef345b000,            41000,            41000,     c07e, Native\n      5ef349c000,            41000,            41000,     c07e, Native\n      5ef34dd000,            41000,            41000,     c07e, Native\n      5ef351e000,            e2000,            e2000,     406a, Native\n      5ef3600000,           385000,           385000,     406a, Native\n      5ef399f000,            20000,            20000,     c27e, Native\n      5ef39bf000,            41000,            41000,     c07e, Native\n      5ef3a00000,           38f000,           38f000,     c07e, Native\n      5ef3d9f000,            20000,            20000,     c27e, Native\n      5ef3dbf000,            41000,            41000,     c07e, Native\n      5ef3e00000,          3564000,          3564000,     c07e, Native\n      5ef737e000,            41000,            41000,     c07e, Native\n      5ef73bf000,            41000,            41000,     c07e, Native\n      5ef7400000,           893000,           893000,     c07e, Native\n      5ef7c9a000,            20000,            20000,     c27e, Native\n      5ef7cba000,            41000,            41000,     c07e, Native\n      5ef7cfb000,           105000,           105000,     c07e, Native\n      5ef7e00000,          1f4d000,          1f4d000,     c07e, Native\n      5ef9d5b000,            63000,            63000,     c07e, Native\n      5ef9dbe000,            42000,            42000,     c07e, Native\n      5ef9e00000,           526000,           526000,     c07e, Native\n      5efa33a000,            42000,            42000,     c07e, Native\n      5efa37c000,            42000,            42000,     c07e, Native\n      5efa3be000,            42000,            42000,     c07e, Native\n      5efa400000,           65a000,           65a000,     c07e, Native\n      5efaa78000,            42000,            42000,     c07e, Native\n      5efaaba000,           146000,           146000,     c07e, Native\n      5efac00000,           893000,           893000,     c07e, Native\n      5efb499000,            20000,            20000,     c27e, Native\n      5efb4b9000,            42000,            42000,     c07e, Native\n      5efb4fb000,           105000,           105000,     c07e, Native\n      5efb600000,           556000,           556000,     c07e, Native\n      5efbb5c000,            20000,            20000,     c27e, Native\n      5efbb7c000,            42000,            42000,     c07e, Native\n      5efbbbe000,            42000,            42000,     c07e, Native\n      5efbc00000,           821000,           821000,     c07e, Native\n      5efc428000,            20000,            20000,     c27e, Native\n      5efc448000,           1b8000,           1b8000,     c07e, Native\n      5efc600000,           209000,           209000,     c07e, Native\n      5efc80d000,            20000,            20000,     c27e, Native\n      5efc82d000,            42000,            42000,     c07e, Native\n      5efc88a000,            f5000,            f5000,     c07e, Native\n      5efc97f000,            40000,            40000,     c07e, Native\n      5efc9bf000,            41000,            41000,     406a, Native\n      5efca00000,           209000,           209000,     c07e, Native\n      5efcc10000,             8000,             8000,     c26e, Native\n      5efcc18000,            20000,            20000,     c27e, Native\n      5efcc38000,           1c8000,           1c8000,     c07e, Native\n      5efce00000,           893000,           893000,     c06e, Native\n      5efd699000,            20000,            20000,     c27e, Native\n      5efd6b9000,            42000,            42000,     c07e, Native\n      5efd6fb000,           105000,           105000,     c07e, Native\n      5efd800000,           893000,           893000,     c07e, Native\n      5efe09a000,            20000,            20000,     c27e, Native\n      5efe0ba000,            42000,            42000,     c07e, Native\n      5efe0fc000,            40000,            40000,     c07e, Native\n      5efe13c000,            c4000,            c4000,     c07e, Native\n      5efe200000,           893000,           893000,     c07e, Native\n      5efea96000,            42000,            42000,     c07e, Native\n      5efead8000,            67000,            67000,     c07e, Native\n      5efeb3f000,            40000,            40000,     c07e, Native\n      5efeb81000,             2000,             2000,     c26e, Native\n      5efeb83000,             2000,             2000,     c26e, Native\n      5efeb85000,             1000,             1000,     c26e, Native\n      5efeb86000,             1000,             1000,     c26e, Native\n      5efeb87000,             8000,             8000,     c26e, Native\n      5efeb8f000,            42000,            42000,     c07e, Native\n      5efebd1000,             1000,             1000,     c26e, Native\n      5efebd2000,             1000,             1000,     c26e, Native\n      5efebd3000,             1000,             1000,     c26e, Native\n      5efebd4000,             1000,             1000,     c26e, Native\n      5efebd5000,             1000,             1000,     c26e, Native\n      5efebd6000,            20000,            20000,     c27e, Native\n      5efebf6000,            42000,            42000,     c07e, Native\n      5efec38000,           1c8000,           1c8000,     c07e, Native\n      5efee00000,           526000,           526000,     c07e, Native\n      5eff326000,             1000,             1000,     c26e, Native\n      5eff327000,             1000,             1000,     c26e, Native\n      5eff328000,             1000,             1000,     c26e, Native\n      5eff329000,             1000,             1000,     c26e, Native\n      5eff32a000,             1000,             1000,     c26e, Native\n      5eff32b000,             1000,             1000,     c26e, Native\n      5eff32c000,             1000,             1000,     c26e, Native\n      5eff32d000,             1000,             1000,     c26e, Native\n      5eff32e000,             1000,             1000,     c26e, Native\n      5eff32f000,             1000,             1000,     c26e, Native\n      5eff330000,             8000,             8000,     c26e, Native\n      5eff338000,             1000,             1000,     c27e, Native\n      5eff339000,             1000,             1000,     c27e, Native\n      5eff33a000,             1000,             1000,     c27e, Native\n      5eff33b000,             1000,             1000,     c27e, Native\n      5eff33c000,             1000,             1000,     c27e, Native\n      5eff33d000,             1000,             1000,     c27e, Native\n      5eff33e000,            42000,            42000,     c07e, Native\n      5eff380000,            40000,            40000,     c07e, Native\n      5eff3c0000,            40000,            40000,     c07e, Native\n      5eff400000,           893000,           893000,     c07e, Native\n      5effc93000,             1000,             1000,     c27e, Native\n      5effc94000,             2000,             2000,     c26e, Native\n      5effc96000,             1000,             1000,     c26e, Native\n      5effc97000,             1000,             1000,     c26e, Native\n      5effc98000,             8000,             8000,     c26e, Native\n      5effca2000,             1000,             1000,     c27e, Native\n      5effca3000,             1000,             1000,     c26e, Native\n      5effca4000,             2000,             2000,     c26e, Native\n      5effca6000,             2000,             2000,     c26e, Native\n      5effcab000,             1000,             1000,     c27e, Native\n      5effcac000,             4000,             4000,     c26e, Native\n      5effcb1000,             1000,             1000,     c27e, Native\n      5effcb2000,             1000,             1000,     c26e, Native\n      5effcb3000,             1000,             1000,     c26e, Native\n      5effcb4000,             1000,             1000,     c26e, Native\n      5effcb5000,             2000,             2000,     c26e, Native\n      5effcb7000,            83000,            83000,     c07e, Native\n      5effd3a000,            40000,            40000,     c07e, Native\n      5effd7a000,            40000,            40000,     c07e, Native\n      5effdba000,            21000,            21000,     c07e, Native\n      5effddb000,            20000,            20000,     c27e, Native\n      5effdfb000,            40000,            40000,     c07e, Native\n      5effe3b000,            40000,            40000,     c07e, Native\n      5effe7b000,             1000,             1000,     c26e, Native\n      5effe7c000,             1000,             1000,     c26e, Native\n      5effe7d000,            20000,            20000,     c27e, Native\n      5effe9d000,            20000,            20000,     c27e, Native\n      5effebd000,            20000,            20000,     c27e, Native\n      5effedd000,            20000,            20000,     c27e, Native\n      5effefd000,            20000,            20000,     c27e, Native\n      5efff1d000,            20000,            20000,     c27e, Native\n      5efff3d000,            20000,            20000,     c27e, Native\n      5efff5d000,            20000,            20000,     c27e, Native\n      5efff7d000,            40000,            40000,     c06e, Native\n      5efffbd000,             1000,             1000,     c26e, Native\n      5efffbe000,             1000,             1000,     c06e, Native\n      5efffbf000,             1000,             1000,     c26e, Native\n      5efffc0000,             1000,             1000,     c27e, Native\n      5efffc8000,             1000,             1000,     c27e, Native\n      5efffc9000,            20000,            20000,     c27e, Native\n      5efffe9000,             1000,             1000,     c27e, Native\n      5efffec000,             1000,             1000,     c27e, Native\n      5efffed000,             4000,             4000,     c26e, Native\n      5effff1000,             1000,             1000,     c26e, Native\n      5effff4000,             1000,             1000,     c27e, Native\n      5effff5000,             1000,             1000,     c27e, Native\n      5effff7000,             9000,             9000,     c06e, Native\nZone name: CUSTOM_VA:\n:              VA,          VA size,      Commit size,    Flags,     Mem type\n      5f00000000,         16800000,           200000,   90caec, Native\n      5f16800000,           200000,           200000,   90caec, Native\n      5f16a00000,           200000,           200000,   90caec, Native\n      5f16c00000,           200000,           200000,   90caec, Native\n      5f16e00000,           200000,           200000,   90caec, Native\n      5f17000000,           200000,           200000,   90caec, Native\n      5f17200000,           200000,           200000,   90caec, Native\n      5f17400000,           200000,           200000,   90caec, Native\n      5f17600000,           200000,           200000,   90caec, Native\n      5f17800000,           200000,           200000,   90caec, Native\n      5f17a00000,           200000,           200000,   90caec, Native\n      5f17c00000,           200000,           200000,   90caec, Native\n      5f17e00000,           200000,           200000,   90caec, Native\n      5f18000000,         16800000,           200000,   90caec, Native\nZone name: EXEC_VA:\n:              VA,          VA size,      Commit size,    Flags,     Mem type\n      7f00001000,             1000,             1000,     d062, Native\n      7f00002000,             1000,             1000,     d062, Native\n      7f00003000,             1000,             1000,     d062, Native\n      7f00004000,             1000,             1000,     d062, Native\n      7f00005000,             1000,             1000,     d062, Native\n      7f00006000,             1000,             1000,     d062, Native\n      7f00007000,             6000,             6000,     d062, Native\n      7f0000d000,             2000,             2000,     d062, Native\n      7f0000f000,             9000,             9000,     d062, Native\n      7f00018000,             3000,             3000,     d062, Native\n      7f0001b000,             1000,             1000,     d062, Native\n      7f0001c000,             2000,             2000,     d062, Native\n      7f0001e000,             1000,             1000,     d062, Native\n      7f0001f000,             2000,             2000,     d062, Native\n      7f00021000,             2000,             2000,     d062, Native\n      7f00023000,             1000,             1000,     d062, Native\n      7f00024000,             1000,             1000,     d062, Native\n      7f00025000,             7000,             7000,     d062, Native\n      7f0002c000,             1000,             1000,     d062, Native\n      7f0002d000,             1000,             1000,     d062, Native\n      7f0002e000,             1000,             1000,     d062, Native\n      7f0002f000,             1000,             1000,     d062, Native\n      7f00030000,             2000,             2000,     d062, Native\n      7f00032000,             3000,             3000,     d062, Native\n      7f00035000,             1000,             1000,     d062, Native\n",
+        "mem_pool_size": "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0\n",
+        "mem_jit_phys": "0,7168,0\n"
+      }
+    },
+    "global_gpu": "mali0                  74855\n  kctx-0xffffffc009e75000      74855\n",
+    "window_start": 19136.988428187,
+    "window_end": 19137.008845518,
+    "t": 19137.010107354,
+    "summary": {
+      "units": "KiB",
+      "scope": "one smaps read; non-atomic",
+      "limitations": "Pathname is not allocator identity; file VMAs can contain anonymous COW pages. Device mappings are not ordinary reclaimable files. No drop safety inferred.",
+      "owners": [
+        {
+          "path": "[anonymous]",
+          "mappings": 275,
+          "Rss": 336048,
+          "Pss": 336048,
+          "Anonymous": 336048,
+          "Swap": 35132,
+          "Private_Clean": 3572,
+          "Private_Dirty": 332476
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/main.text.seg",
+          "mappings": 1,
+          "Rss": 17880,
+          "Pss": 17880,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 17880,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/usr/lib/libmali.so.0.32.0",
+          "mappings": 4,
+          "Rss": 17000,
+          "Pss": 17000,
+          "Anonymous": 1988,
+          "Swap": 408,
+          "Private_Clean": 15132,
+          "Private_Dirty": 1868
+        },
+        {
+          "path": "[heap]",
+          "mappings": 1,
+          "Rss": 6540,
+          "Pss": 6540,
+          "Anonymous": 6540,
+          "Swap": 1560,
+          "Private_Clean": 56,
+          "Private_Dirty": 6484
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/sdk.text.seg",
+          "mappings": 1,
+          "Rss": 3404,
+          "Pss": 3404,
+          "Anonymous": 80,
+          "Swap": 4,
+          "Private_Clean": 3324,
+          "Private_Dirty": 80
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/subsdk0.text.seg",
+          "mappings": 1,
+          "Rss": 2552,
+          "Pss": 2552,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 2552,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/lamentum-nextos",
+          "mappings": 3,
+          "Rss": 1224,
+          "Pss": 1224,
+          "Anonymous": 320,
+          "Swap": 28,
+          "Private_Clean": 908,
+          "Private_Dirty": 316
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/main.rodata.seg",
+          "mappings": 1,
+          "Rss": 1176,
+          "Pss": 1176,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 1176,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/usr/lib/libSDL2-2.0.so.0.3200.6",
+          "mappings": 4,
+          "Rss": 612,
+          "Pss": 612,
+          "Anonymous": 36,
+          "Swap": 20,
+          "Private_Clean": 576,
+          "Private_Dirty": 36
+        },
+        {
+          "path": "/lib/libc-2.33.so",
+          "mappings": 4,
+          "Rss": 604,
+          "Pss": 74,
+          "Anonymous": 24,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 24
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/sdk.rodata.seg",
+          "mappings": 1,
+          "Rss": 604,
+          "Pss": 604,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 604,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/subsdk0.rodata.seg",
+          "mappings": 1,
+          "Rss": 364,
+          "Pss": 364,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 364,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/tmp/cotm-switch-shm-gmGMlx (deleted)",
+          "mappings": 2,
+          "Rss": 320,
+          "Pss": 160,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/usr/lib/libasound.so.2.0.0",
+          "mappings": 4,
+          "Rss": 316,
+          "Pss": 316,
+          "Anonymous": 36,
+          "Swap": 0,
+          "Private_Clean": 280,
+          "Private_Dirty": 36
+        },
+        {
+          "path": "/usr/lib/libstdc++.so.6.0.28",
+          "mappings": 4,
+          "Rss": 236,
+          "Pss": 236,
+          "Anonymous": 44,
+          "Swap": 12,
+          "Private_Clean": 196,
+          "Private_Dirty": 40
+        },
+        {
+          "path": "/lib/ld-linux-aarch64.so.1",
+          "mappings": 3,
+          "Rss": 140,
+          "Pss": 30,
+          "Anonymous": 12,
+          "Swap": 4,
+          "Private_Clean": 0,
+          "Private_Dirty": 12
+        },
+        {
+          "path": "/lib/libpthread-2.33.so",
+          "mappings": 4,
+          "Rss": 92,
+          "Pss": 20,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/lib/libm-2.33.so",
+          "mappings": 4,
+          "Rss": 48,
+          "Pss": 15,
+          "Anonymous": 4,
+          "Swap": 4,
+          "Private_Clean": 0,
+          "Private_Dirty": 4
+        },
+        {
+          "path": "[stack]",
+          "mappings": 1,
+          "Rss": 48,
+          "Pss": 48,
+          "Anonymous": 48,
+          "Swap": 4,
+          "Private_Clean": 0,
+          "Private_Dirty": 48
+        },
+        {
+          "path": "/usr/lib/libdrm.so.2.4.0",
+          "mappings": 4,
+          "Rss": 24,
+          "Pss": 24,
+          "Anonymous": 4,
+          "Swap": 4,
+          "Private_Clean": 24,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/lib/libdl-2.33.so",
+          "mappings": 4,
+          "Rss": 16,
+          "Pss": 9,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/lib/librt-2.33.so",
+          "mappings": 4,
+          "Rss": 16,
+          "Pss": 16,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 8,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/lib/libudev.so.1.6.3",
+          "mappings": 4,
+          "Rss": 16,
+          "Pss": 16,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 8,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libz.so.1.2.12",
+          "mappings": 4,
+          "Rss": 16,
+          "Pss": 16,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 8,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libEGL.so.1.4.0",
+          "mappings": 4,
+          "Rss": 12,
+          "Pss": 12,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 4,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libGLESv2.so.2.1.0",
+          "mappings": 4,
+          "Rss": 12,
+          "Pss": 12,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 4,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/usr/lib/libgcc_s.so.1",
+          "mappings": 4,
+          "Rss": 12,
+          "Pss": 12,
+          "Anonymous": 8,
+          "Swap": 0,
+          "Private_Clean": 4,
+          "Private_Dirty": 8
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/rtld.text.seg",
+          "mappings": 1,
+          "Rss": 8,
+          "Pss": 8,
+          "Anonymous": 4,
+          "Swap": 0,
+          "Private_Clean": 4,
+          "Private_Dirty": 4
+        },
+        {
+          "path": "/tmp/cotm-switch-shm-jFhRci (deleted)",
+          "mappings": 2,
+          "Rss": 8,
+          "Pss": 4,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/usr/lib/libgbm.so.1.0.0",
+          "mappings": 4,
+          "Rss": 8,
+          "Pss": 8,
+          "Anonymous": 4,
+          "Swap": 4,
+          "Private_Clean": 8,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/mnt/sdcard/mmcblk1p1/Roms/ports/lamentum-switch/rtld.rodata.seg",
+          "mappings": 1,
+          "Rss": 4,
+          "Pss": 4,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 4,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "[vdso]",
+          "mappings": 1,
+          "Rss": 4,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/dev/mali0",
+          "mappings": 250,
+          "Rss": 0,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "/dev/snd/pcmC0D0p",
+          "mappings": 1,
+          "Rss": 0,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        },
+        {
+          "path": "[vvar]",
+          "mappings": 1,
+          "Rss": 0,
+          "Pss": 0,
+          "Anonymous": 0,
+          "Swap": 0,
+          "Private_Clean": 0,
+          "Private_Dirty": 0
+        }
+      ],
+      "totals": {
+        "Rss": 389364,
+        "Pss": 388444,
+        "Anonymous": 345256,
+        "Swap": 37184,
+        "Private_Clean": 46696,
+        "Private_Dirty": 341492
+      }
+    }
+  }
+]
