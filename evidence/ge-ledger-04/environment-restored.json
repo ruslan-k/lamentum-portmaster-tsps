@@ -1,0 +1,10 @@
+{
+  "pending": false,
+  "debugfs_mounted": false,
+  "sampler_left": [
+    "/tmp/ge_samples.jsonl",
+    "/tmp/ge_sampler.err",
+    "/tmp/ge_sampler.py"
+  ],
+  "capture_rc": 0
+}

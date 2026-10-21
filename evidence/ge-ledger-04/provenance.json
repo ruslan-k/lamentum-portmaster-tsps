@@ -1,0 +1,9 @@
+{
+  "log_sha256": "c69d268aea2c2dab387035f4da52050c61e0b0078e05d159ddb19296f5e12196",
+  "log_bytes": 599305,
+  "summary": "LC2_LIFE_SUMMARY share-group=unverified bytes=declared-payload completion=unobserved storage-calls=166 extends=50 deletes=24 delete-with-views=0 name-reuse=24 retained=253465904 peak=253465904 live=92 alias-views=0 overflow=0 tex-bytes=241485104 tex-live=90 rb-bytes=11980800 rb-live=2 buf-bytes=0 buf-live=0 respecs=0",
+  "stop": [
+    "STOP status=T2_MEMORY_FLOOR pc=0x0 detail=0x5c query_memory_calls=0x100 tls_trap_reads=0x0"
+  ],
+  "sampler": "device-side 0.3 s loop, /tmp/ge_samples.jsonl, terminated by explicit pid"
+}

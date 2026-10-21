@@ -1,0 +1,9 @@
+{
+  "rc": 0,
+  "still_mounted": false,
+  "sampler_files": [
+    "/tmp/ge_samples.jsonl",
+    "/tmp/ge_sampler.err",
+    "/tmp/ge_sampler.py"
+  ]
+}

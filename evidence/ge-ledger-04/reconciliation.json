@@ -1,0 +1,32 @@
+{
+  "declared": {
+    "texture_bytes": 241485104,
+    "depth_bytes": 11980800,
+    "texture_mib": 230.2981,
+    "depth_mib": 11.4258,
+    "live_textures": 90,
+    "live_depth": 2,
+    "texture_over_charge": 2.0948
+  },
+  "charged": {
+    "texture_bytes": 115278848,
+    "depth_bytes": 11980800,
+    "texture_mib": 109.9385,
+    "depth_mib": 11.4258,
+    "live_textures": 93
+  },
+  "depth_agrees_exactly": true,
+  "gpu_memory": {
+    "min": 0,
+    "max": 84900,
+    "samples": 31,
+    "units_verified": false,
+    "scope": "driver counter, unit not derived from source"
+  },
+  "physical_attribution": false,
+  "notes": [
+    "declared payload counts every requested texture level",
+    "budget charge is an accounting policy figure",
+    "gpu_memory may include alignment, tiling, aliases and non-texture storage"
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "staged_tree": "830d20a9b7bcd5e9f23335270f7723fd0a866108",
+  "host_tests": 273,
+  "python310_ast": true,
+  "clean_cli_reproduces_reconciliation": true,
+  "run_uuid": "70d73d87-bc79-4616-9fbb-4e81f09ead61",
+  "note": "log supplied owner-local, not published"
+}
