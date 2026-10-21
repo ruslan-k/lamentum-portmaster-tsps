@@ -2990,3 +2990,21 @@ Arm `map-ledger-02` **ended in a kernel OOM kill** (`kernel_oom_sigkill`, `HARNE
 Established: the −433.8 MiB step is not a main-heap reservation, and two owners are measured (~70 MiB blob, ≥124.6 MiB alias). Not established: the remaining ~240 MiB, because alias totals are truncated by the line window and blob **unmaps** are not receipted, so the balance is one-sided. Not claimed: that `alias_physical` leaks — its `svc 0x2d` unmaps are uninstrumented.
 
 Next: periodic summaries plus unmap receipts for both classes, one clean arm for a full alias total, then compare against the measured 568.7 → 134.9 MiB step. The 720p ceiling (17.58 MiB) remains the smaller lever.
+
+## 54. `alias_physical` is a later phase, and `MemAvailable` is not game memory (2026-10-21)
+
+Build237 `ee28f264afe6` adds `svc 0x2d` unmap receipts (`alias-unmapped`, `alias-live`) and a periodic `LC2_MAP_SUMMARY` every 64 events plus one on line-bound overflow. Arm `map-ledger-03`: clean `T2_MEMORY_FLOOR` stop, verified identity, zero cleanup errors.
+
+| event | frames | available | CMA | charged |
+|---|---|---|---|---|
+| `gl-init` | 0 | 599.9 MiB | 0.01 MiB | 0 |
+| `first-present` | 1 | 128.4 MiB | 20.6 MiB | 107.1 MiB |
+| stop | 42 | 31.4 MiB | 5.5 MiB | 157.3 MiB |
+
+Receipts in this arm: 13 blob/file events = 69.95 MiB, then **zero alias events** before the floor stopped the run (`alias-bytes=0/0 events=13`).
+
+Three corrections to §53. (1) `alias_physical` is **not** part of the pre-first-frame step; it appears only in the longer OOM arm, i.e. during decoding/loading, so my §53 wording described an arm that had run past the menu's limit. (2) The `svc 1` main-heap path stays unused in every arm, so neither structured path explains the step. (3) `MemAvailable` is **contaminated by page cache** — the runtime reads a 1.74 GB image in exactly that window and page cache is reclaimable, so the −471.5 MiB step is not guest-owned memory; `VmData` (1,022,876 kB) is virtual, not resident. Claims of the form "the guest reserves N MiB" now require anon+shmem, not `MemAvailable`.
+
+Tooling guarantee: class totals print on line-bound overflow and every 64 events, so a truncated window no longer hides totals, and alias unmaps are two-sided (`alias-unmapped`/`alias-live`), though unexercised here because the alias phase was never reached.
+
+Next: one arm recording anon/shmem beside `MemAvailable`; then reach the alias phase deliberately and label it a loading-phase measurement; the 720p ceiling (17.58 MiB) stays a smaller lever.
