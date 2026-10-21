@@ -1,11 +1,45 @@
 {
-  "observed_at": "2026-10-21T05:34:05.918192",
+  "observed_at": "2026-10-21T05:34:56.664028",
   "process_counts": {
     "MainUI": 1,
-    "runtime": 0,
+    "runtime": 1,
     "principal": 1,
     "port": 0
   },
+  "process_matches": [
+    {
+      "pid": 1217,
+      "comm": "runtime.sh",
+      "argv": [
+        "/bin/sh",
+        "./runtime.sh"
+      ]
+    },
+    {
+      "pid": 2203,
+      "comm": "principal.sh",
+      "argv": [
+        "/bin/sh",
+        "/mnt/SDCARD/spruce/scripts/principal.sh"
+      ]
+    },
+    {
+      "pid": 5994,
+      "comm": "MainUI",
+      "argv": [
+        "/mnt/SDCARD/spruce/flip/bin/MainUI",
+        "/mnt/SDCARD/App/PyUI/main-ui/mainui.py",
+        "-device",
+        "TRIMUI_SMART_PRO_S",
+        "-logDir",
+        "/mnt/SDCARD/Saves/spruce",
+        "-pyUiConfig",
+        "/mnt/SDCARD/App/PyUI/py-ui-config.json",
+        "-cfwConfig",
+        "/mnt/SDCARD/Saves/spruce/spruce-config.json"
+      ]
+    }
+  ],
   "installed_elf_sha256": "86649c51854e4017fdbaddab16b7c53d327fb6a138c45c1106275c67a1727815",
   "run_identity_helper_installed": false,
   "observer_affinity": [
@@ -15,5 +49,6 @@
     7
   ],
   "observation_only": true,
-  "no_game_launch_or_deployment": true
+  "no_game_launch_or_deployment": true,
+  "classification_correction": "Previous snapshot counted comm=runtime, omitting real comm=runtime.sh. Re-observed using exact script comm plus argv path, retaining matched process receipts; no device state change."
 }
