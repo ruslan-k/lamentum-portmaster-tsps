@@ -2755,3 +2755,19 @@ Build231 `41d6b4f8…c682` adds per-class estimates to `LC2_MENU_LEDGER`. Arm `m
 - Experiment paths that could have explained it (`scaled`, `half`, `bc-pending`, `joined`) are measurably absent in the menu.
 
 Next: the transactional ownership ledger from §40.6 B2 — which of the 19 colour targets is retained after the menu stops needing it, and whether depth renderbuffers are reallocated per target elsewhere. Estimates remain estimates: no scene, id295 or FPS claim.
+
+## 46. Menu colour-target inventory: four 1920×1080 images on a 1280×720 panel (2026-10-21)
+
+Build232 `a9b516e0…8957` adds a bounded per-target receipt (`LC2_MENU_TARGET`, ≤32 lines, once per run, first time `MemAvailable` drops below 64 MiB). Arm `menu-targets-01` (one arm, `T2_MEMORY_FLOOR`, verified identity, zero cleanup errors) listed **19 targets / 43.39 MiB charged**, matching the ledger's independent 43.4 MiB colour-target estimate.
+
+| class | count | charged | ids | draws |
+|---|---|---|---|---|
+| **1920×1080** (3 colour + 1 depth) | 4 | **31.64 MiB** | 2, 3, 4, 28 | 200 |
+| 1280×720 (2 colour + 1 depth) | 3 | 10.55 MiB | 172, 173, 206 | 534 |
+| post cascade 640×360 → 1×1 | 12 | 1.21 MiB | 211…225, 260 | 231 |
+
+- **Three 1920×1080 colour targets plus a 1920×1080 depth exist although the panel is 1280×720** — the largest class in the menu and, by construction, not explicable by presentation size. This is the class the §32.9 GPU-fill row names.
+- Busiest target is **id 172 (1280×720, 513 draws)**; the 1920 trio carries 200 draws total. The post cascade is twelve images costing 1.21 MiB (4 KiB charge floor each) — real but minor.
+- All listed targets report `target-seen=1` and 1–2 references, so no counter proves an orphan; `last-used-serial` does not exist yet.
+
+Next, one factor at a time with identical-output guards: (1) opt-in 1280×720 storage for the 1920 trio and its depth, verifying pixels; (2) only if (1) is not pixel-safe, fenced release of provably unreferenced targets, which is blocked on the B2 last-reader epoch rather than on a guess. Charged bytes are not Mali residency; no scene, id295 or FPS claim.

@@ -1118,10 +1118,10 @@ index 0000000..fbe5673
 +#endif
 diff --git a/native/lc2_menu_ledger.h b/native/lc2_menu_ledger.h
 new file mode 100644
-index 0000000..00a7d9c
+index 0000000..1f121a9
 --- /dev/null
 +++ b/native/lc2_menu_ledger.h
-@@ -0,0 +1,130 @@
+@@ -0,0 +1,157 @@
 +/* MENU_MEMORY_LEDGER (owner roadmap 40.5 M0): measurement without behaviour change.
 + *
 + * One line at most once per second while enabled, plus a forced line at the
@@ -1166,6 +1166,32 @@ index 0000000..00a7d9c
 +        else if(!strncmp(line,"VmSwap:",7))*swap_kib=strtoul(line+7,NULL,10);
 +    }
 +    fclose(file);
++}
++
++
++/* Opt-in per-target receipt (LC2_MENU_LEDGER=1). Emitted at most once per run, when
++ * available memory first crosses below 64 MiB, i.e. before the floor refusal. Names
++ * every colour target the adapter has drawn into or marked as a composition target,
++ * with the counters it already tracks. `last-used-serial=untracked` is deliberate:
++ * no last-reader epoch exists yet (that is the B2 ledger work). */
++static void lc2_menu_ledger_targets(const char *why,unsigned frames) {
++    static unsigned emitted;
++    if(emitted)return;
++    emitted=1;
++    unsigned listed=0;
++    for(unsigned i=0;i<4096 && listed<32;i++) {
++        struct nvn_texture *t=&nvn_textures[i];
++        if(!t->live || !(t->composition_target_seen || t->draws))continue;
++        listed++;
++        printf("LC2_MENU_TARGET why=%s frames=%u id=%"PRIu64" object=0x%"PRIx64
++               " size=%ux%u format=0x%x levels=%u charged-bytes=%"PRIu64" guest-bytes=%"PRIu64
++               " draws=%u target-seen=%u references=%u depth-buffer=%u name=%u"
++               " last-used-serial=untracked resident-bytes=unknown\n",
++               why,frames,t->id,t->object,t->b.width,t->b.height,t->b.format,t->b.levels,
++               t->t2_budget_bytes,t->size,t->draws,t->composition_target_seen,t->references,
++               t->depth_buffer,t->name);
++    }
++    printf("LC2_MENU_TARGETS_DONE why=%s listed=%u scope=adapter-known only\n",why,listed);
 +}
 +
 +static void lc2_menu_ledger_emit(const char *why,unsigned frames) {
@@ -1244,6 +1270,7 @@ index 0000000..00a7d9c
 +    if(now-lc2_menu_ledger.last_ns<1000000000ULL)return;
 +    lc2_menu_ledger.last_ns=now;
 +    lc2_menu_ledger_emit("interval",frames);
++    if(lc2_menu_ledger_meminfo("MemAvailable")<65536UL)lc2_menu_ledger_targets("pre-floor-targets",frames);
 +}
 +
 +/* Called where the floor decides to stop the run: the ledger must survive the exit. */
