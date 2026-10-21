@@ -1,0 +1,7 @@
+{
+  "log_sha256": "56c34eb8e99a11cf19b43f96c092edde89988e5ae7d29c3b320d99e61e49e1d4",
+  "summary": "LC2_LIFE_SUMMARY share-group=unverified bytes=declared-payload completion=unobserved storage-calls=166 extends=50 deletes=24 delete-with-views=0 name-reuse=24 retained=253465904 peak=253465904 live=92 alias-views=0 overflow=0 tex-bytes=241485104 tex-live=90 rb-bytes=11980800 rb-live=2 buf-bytes=0 buf-live=0 respecs=0 tex-l0=247062780 tex-mips=713780 tex-scaled=0 tex-half=0 tex-charged=247776560 tex-uncharged=0 tex-guest=107024384",
+  "stop": [
+    "STOP status=T2_MEMORY_FLOOR pc=0x0 detail=0x5c query_memory_calls=0xfd tls_trap_reads=0x0"
+  ]
+}

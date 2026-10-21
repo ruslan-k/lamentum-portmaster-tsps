@@ -45,10 +45,22 @@ int main(void) {
  assert(lc2_life_events_state()->kind_live[3]==1);
  for(unsigned i=0;i<LC2_LIFE_EVENT_CAP+3;i++)lc2_life_events_storage(100+i,1000+i,1,1);
  assert(lc2_life_events_state()->overflow>=3);
+ lc2_life_events_tex(0,1000,0,0,1);
+ lc2_life_events_tex(1,250,0,0,1);
+ lc2_life_events_tex(0,400,1,0,0);
+ lc2_life_events_tex(0,90,0,1,0);
+ assert(lc2_life_events_state()->tex_level0_bytes==1490);
+ assert(lc2_life_events_state()->tex_mip_bytes==250);
+ assert(lc2_life_events_state()->tex_scaled_bytes==400);
+ assert(lc2_life_events_state()->tex_half_bytes==90);
+ assert(lc2_life_events_state()->tex_charged_bytes==1250);
+ assert(lc2_life_events_state()->tex_uncharged_bytes==490);
+ lc2_life_events_tex_guest(1000);
+ assert(lc2_life_events_state()->tex_guest_bytes==1000);
  /* The stop-path formatter must agree with printf digit-for-digit: a stray leading
   * or trailing digit silently misreports every counter by 10x. */
- char expect[512];
- snprintf(expect,sizeof expect," storage-calls=%llu extends=%llu deletes=%llu delete-with-views=%llu name-reuse=%llu retained=%llu peak=%llu live=%llu alias-views=%llu overflow=%llu tex-bytes=%llu tex-live=%llu rb-bytes=%llu rb-live=%llu buf-bytes=%llu buf-live=%llu respecs=%llu",
+ char expect[768];
+ snprintf(expect,sizeof expect," storage-calls=%llu extends=%llu deletes=%llu delete-with-views=%llu name-reuse=%llu retained=%llu peak=%llu live=%llu alias-views=%llu overflow=%llu tex-bytes=%llu tex-live=%llu rb-bytes=%llu rb-live=%llu buf-bytes=%llu buf-live=%llu respecs=%llu tex-l0=%llu tex-mips=%llu tex-scaled=%llu tex-half=%llu tex-charged=%llu tex-uncharged=%llu tex-guest=%llu",
   (unsigned long long)lc2_life_events_state()->storage_calls,
   (unsigned long long)lc2_life_events_state()->extends,
   (unsigned long long)lc2_life_events_state()->deletes,
@@ -65,7 +77,14 @@ int main(void) {
   (unsigned long long)lc2_life_events_state()->kind_live[2],
   (unsigned long long)lc2_life_events_state()->kind_bytes[3],
   (unsigned long long)lc2_life_events_state()->kind_live[3],
-  (unsigned long long)lc2_life_events_state()->respecs);
+  (unsigned long long)lc2_life_events_state()->respecs,
+  (unsigned long long)lc2_life_events_state()->tex_level0_bytes,
+  (unsigned long long)lc2_life_events_state()->tex_mip_bytes,
+  (unsigned long long)lc2_life_events_state()->tex_scaled_bytes,
+  (unsigned long long)lc2_life_events_state()->tex_half_bytes,
+  (unsigned long long)lc2_life_events_state()->tex_charged_bytes,
+  (unsigned long long)lc2_life_events_state()->tex_uncharged_bytes,
+  (unsigned long long)lc2_life_events_state()->tex_guest_bytes);
  printf("EXPECT%s\n",expect);
  lc2_life_events_report_fd(1);
  return 0;

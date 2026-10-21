@@ -3158,3 +3158,13 @@ Arm ge-ledger-04 (run 70d73d87-bc79-4616-9fbb-4e81f09ead61, game PID26543 in 31 
 Four earlier attempts are recorded as tool defects, not results: one long SSH sampler call (timeout), a reused evidence directory (harness refused), gpu_memory's first token mis-parsed as the counter, and samples without the run UUID (pairing refused). They stay owner-local under private-backups/ge-invalid/.
 
 STOP T2_MEMORY_FLOOR, no OOM receipt, cleanup[]; game0, MainUI/principal/runtime1, CPU4-7, no pending launch, debugfs unmounted, sampler files/process removed, DRM Spruce home. Host273 tests PASS in a clean export. Details docs/ledger-bases.md, evidence/ge-ledger-04/. Next: per-texture split (level-0 vs full chain vs scaled/half) to explain the 2.0948x without guessing, and a source-derived or fixture-calibrated gpu_memory unit. Menu headroom, world and30 FPS remain OPEN.
+
+## 69. M1: the 2.09x texture gap is decoded-vs-compressed; mips are 0.68 MiB (2026-10-21)
+
+Reviewed 2aba2d3 / §48.5. The opt-in ledger now classifies texture requests (level0 vs extra mips, scaled/half, charged vs uncharged, and the guest/compressed size of charged textures) with a host regression per bucket; still no GL/admission/budget/format/delete change and still default off.
+
+Build247 ecef4ba2075946095e69120137366850c41184d26e3e82c995cdd98995bd6575, 435/435. Arm tex-levels-02 (floor96/cap300/strict GL, no input): tex-bytes241485104 (230.30 MiB, 90 live), tex-l0 247062780, tex-mips713780 (0.68 MiB), scaled/half 0, tex-charged247776560, tex-uncharged0, tex-guest107024384 (102.07 MiB); budget charge at the last interval115278848 (109.94 MiB, 93 live). Declared/charge = 2.095, decoded/guest = 2.256.
+
+Two candidate explanations are measured and refuted for this phase: extra mip levels are 0.29 % of the payload, and no declared request belongs to an uncharged texture. The difference is the BASIS: the budget is denominated in guest/compressed storage while GL holds decoded pixels, so a 300 MiB cap does not bound GL residency (at this ratio ~675 MiB decoded on a 963 MiB board). That is accounting, not a fix; no cap/admission/format policy changed. A residual 7.7 % between tex-guest and the charge is unexplained and recorded as open.
+
+STOP T2_MEMORY_FLOOR, no OOM receipt, cleanup[]; game0, MainUI/principal/runtime1, CPU4-7, no pending launch, debugfs unmounted, DRM Spruce home. Staged atomic deployment with hash read-back, build246 in .before-247. Host273 tests PASS in a clean export. Details docs/tex-levels.md, evidence/tex-levels-02/. Next: per-texture guest/decoded/charge pairing for a bounded set to resolve the 7.7 %, then the same against gpu_memory once its unit is derived. Menu headroom, world and30 FPS remain OPEN.

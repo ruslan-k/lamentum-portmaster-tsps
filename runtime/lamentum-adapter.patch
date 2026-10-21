@@ -1185,10 +1185,10 @@ index 0000000..fbe5673
 +#endif
 diff --git a/native/lc2_life_events.h b/native/lc2_life_events.h
 new file mode 100644
-index 0000000..48f7cf5
+index 0000000..706e47f
 --- /dev/null
 +++ b/native/lc2_life_events.h
-@@ -0,0 +1,137 @@
+@@ -0,0 +1,164 @@
 +/* Bounded OBSERVATION ledger for GL storage events. Diagnostic only, default off.
 + *
 + * It answers design questions before any lifetime policy is integrated:
@@ -1213,6 +1213,8 @@ index 0000000..48f7cf5
 +    uint64_t storage_calls,extends,deletes,delete_with_views,name_reuse,overflow;
 +    uint64_t retained_bytes,peak_bytes,live,alias_views;
 +    uint64_t kind_bytes[4],kind_live[4],respecs;
++    uint64_t tex_level0_bytes,tex_mip_bytes,tex_scaled_bytes,tex_half_bytes;
++    uint64_t tex_charged_bytes,tex_uncharged_bytes,tex_guest_bytes;
 +};
 +static struct lc2_life_events_state lc2_life_events_state_storage;
 +static inline struct lc2_life_events_state *lc2_life_events_state(void) {return &lc2_life_events_state_storage;}
@@ -1267,6 +1269,27 @@ index 0000000..48f7cf5
 +    s->respecs++;
 +    if(s->retained_bytes>s->peak_bytes)s->peak_bytes=s->retained_bytes;
 +}
++/* Classification of texture requests, so a budget charge can be compared with
++ * the declared payload without guessing: level0 vs extra mips, plus the
++ * scaled/half variants that change the requested size. */
++static inline void lc2_life_events_tex(unsigned level,uint64_t bytes,unsigned scaled,unsigned half,
++        unsigned charged) {
++    if(!lc2_life_events_on() || !bytes)return;
++    struct lc2_life_events_state *s=lc2_life_events_state();
++    if(level)s->tex_mip_bytes+=bytes;else s->tex_level0_bytes+=bytes;
++    if(scaled)s->tex_scaled_bytes+=bytes;
++    if(half)s->tex_half_bytes+=bytes;
++    /* Separate the textures the budget actually charges from those it does not:
++     * a scope difference and a per-texture size difference need different fixes. */
++    if(charged)s->tex_charged_bytes+=bytes;else s->tex_uncharged_bytes+=bytes;
++}
++/* The guest-side storage a charged texture declares to the budget, i.e. the
++ * compressed size for BC formats. Comparing it with the decoded GL payload and
++ * with the budget total separates "different basis" from "not charged at all". */
++static inline void lc2_life_events_tex_guest(uint64_t bytes) {
++    if(!lc2_life_events_on() || !bytes)return;
++    lc2_life_events_state()->tex_guest_bytes+=bytes;
++}
 +static inline void lc2_life_events_alias(uint64_t name,uint64_t kind,int delta) {
 +    if(!lc2_life_events_on())return;
 +    struct lc2_life_events_state *s=lc2_life_events_state();
@@ -1303,7 +1326,7 @@ index 0000000..48f7cf5
 +    struct lc2_life_events_state *s=lc2_life_events_state();
 +    if(!lc2_life_events_on() || (!s->storage_calls && !s->deletes))return;
 +    static const char head[]="LC2_LIFE_SUMMARY share-group=unverified bytes=declared-payload completion=unobserved";
-+    char tail[768];size_t used=0;
++    char tail[1024];size_t used=0;
 +    const struct {const char *name;uint64_t *value;} fields[]={
 +        {" storage-calls=",&s->storage_calls},{" extends=",&s->extends},{" deletes=",&s->deletes},
 +        {" delete-with-views=",&s->delete_with_views},{" name-reuse=",&s->name_reuse},
@@ -1312,7 +1335,11 @@ index 0000000..48f7cf5
 +        {" tex-bytes=",&s->kind_bytes[1]},{" tex-live=",&s->kind_live[1]},
 +        {" rb-bytes=",&s->kind_bytes[2]},{" rb-live=",&s->kind_live[2]},
 +        {" buf-bytes=",&s->kind_bytes[3]},{" buf-live=",&s->kind_live[3]},
-+        {" respecs=",&s->respecs}};
++        {" respecs=",&s->respecs},
++        {" tex-l0=",&s->tex_level0_bytes},{" tex-mips=",&s->tex_mip_bytes},
++        {" tex-scaled=",&s->tex_scaled_bytes},{" tex-half=",&s->tex_half_bytes},
++        {" tex-charged=",&s->tex_charged_bytes},{" tex-uncharged=",&s->tex_uncharged_bytes},
++        {" tex-guest=",&s->tex_guest_bytes}};
 +    for(unsigned i=0;i<sizeof(fields)/sizeof(fields[0]);i++) {
 +        size_t length=strlen(fields[i].name);
 +        if(used+length+21>sizeof(tail))break;
@@ -3836,7 +3863,7 @@ index 0fb14ec..9e2ccfc 100644
              free(premul);free(probe);free(sprite);free(flat);free(scaled);free(awf);free(mipped);free(r8);free(advent);free(lowered);free(wrapped);free(interface_source);
              if(!status){char log[2048]={0};glGetShaderInfoLog(shaders[i],sizeof(log),NULL,log);printf("NVN_SHADER_COMPILE_ERROR %s\n",log);stop("NVN_SHADER_COMPILE_FAILED",nvn_caller,p->sources[i],21);}
 diff --git a/native/nvn_textures.h b/native/nvn_textures.h
-index 0feaef1..dc09f11 100644
+index 0feaef1..dbe82e2 100644
 --- a/native/nvn_textures.h
 +++ b/native/nvn_textures.h
 @@ -6,6 +6,14 @@
@@ -4207,7 +4234,7 @@ index 0feaef1..dc09f11 100644
              glGenTextures(1,&t->name);if(!t->name)stop("NVN_TEXTURE_GL_NAME",nvn_caller,t->id,21);glBindTexture(GL_TEXTURE_2D,t->name);
  #if ZERO_ZX_GAME
              /* This backend exposes NVN's storage-level limit directly. Mali
-@@ -673,8 +908,22 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -673,8 +908,23 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
                  glTexParameteri(GL_TEXTURE_2D,0x813d,b.levels-1);
  #endif
              unsigned width=b.width,height=b.height;
@@ -4220,7 +4247,8 @@ index 0feaef1..dc09f11 100644
 +                printf("LC2_BC_DEFERRED id=%"PRIu64" size=%ux%u rgba-bytes=%"PRIu64" source=retained-guest-pool diagnostic=1\n",t->id,width,height,(uint64_t)width*height*4);
 +            }
 +            if(t->host_half){glPixelStorei(GL_UNPACK_ALIGNMENT,1);glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,width/2,height/2,0,GL_RGBA,GL_UNSIGNED_BYTE,NULL);
-+                lc2_life_events_storage(t->id,t->name,1,(uint64_t)(width/2)*(height/2)*4U);}
++                lc2_life_events_storage(t->id,t->name,1,(uint64_t)(width/2)*(height/2)*4U);
++                lc2_life_events_tex(0,(uint64_t)(width/2)*(height/2)*4U,t->host_scaled?1U:0U,1U,t->t2_budget_bytes?1U:0U);}
 +            for(unsigned i=0;i<b.levels&&!t->host_half&&!t->packaged_lazy&&!t->t2_page.deferred&&!t->lc2_bc_pending;i++) {
 +                if(zero_bc_bytes(b.format) && width>4096 && !t->host_scaled) {
 +                    glPixelStorei(GL_UNPACK_ALIGNMENT,1);
@@ -4232,7 +4260,7 @@ index 0feaef1..dc09f11 100644
                  unsigned upload_type=nvn_cpu_image_upload_type(t),upload_bpp=nvn_texture_upload_bytes(upload_type);
                  size_t bytes=(size_t)width*height*upload_bpp;uint8_t *rgba=malloc(bytes);
                  if(!rgba)stop("NVN_TEXTURE_INITIAL_DATA_MEMORY",nvn_caller,bytes,21);
-@@ -697,8 +946,12 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -697,8 +947,14 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
                  /* Uniformity was checked across the complete original decode.
                   * The compact upload consumes the same constant pixel value. */
                  glPixelStorei(GL_UNPACK_ALIGNMENT,1);
@@ -4243,11 +4271,13 @@ index 0feaef1..dc09f11 100644
 +                glTexImage2D(GL_TEXTURE_2D,i,spec.internal,t->host_scaled?t->host_width:width,t->host_scaled?t->host_height:height,0,spec.external,spec.type,rgba);
 +                lc2_life_events_storage(t->id,t->name,1,
 +                    (uint64_t)(t->host_scaled?t->host_width:width)*(t->host_scaled?t->host_height:height)*upload_bpp);
++                lc2_life_events_tex(i,(uint64_t)(t->host_scaled?t->host_width:width)*(t->host_scaled?t->host_height:height)*upload_bpp,t->host_scaled?1U:0U,0U,t->t2_budget_bytes?1U:0U);
++                if(!i && t->t2_budget_bytes)lc2_life_events_tex_guest(t->size);
 +                lc2_storage_end(lc2_probe_ticket,"texture",t->id,t->name,t->host_scaled?t->host_width:width,t->host_scaled?t->host_height:height,i,b.format);
  #if MEGAMAN_HOST_DIAGNOSTIC
                  /* Observation remains an independent RGBA8 reference; packed
                   * UNORM5 may truthfully differ by one readback code value. */
-@@ -719,7 +972,7 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -719,7 +975,7 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
                  if(height>1)height>>=1;
              }
  #if ZERO_ZX_GAME
@@ -4256,7 +4286,7 @@ index 0feaef1..dc09f11 100644
  #endif
              nvn_texture_parameters(t,GL_NEAREST,GL_NEAREST,GL_CLAMP_TO_EDGE,GL_CLAMP_TO_EDGE);
              glBindTexture(GL_TEXTURE_2D,0);
-@@ -749,7 +1002,9 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -749,7 +1005,9 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
      if(id==NI_nvnTexturePoolRegisterTexture) {
          struct nvn_descriptor_pool *d=NULL;
          for(unsigned i=0;i<32;i++)if(nvn_descriptor_pools[i].live&&nvn_descriptor_pools[i].object==a[0]&&nvn_descriptor_pools[i].type==1)d=&nvn_descriptor_pools[i];
@@ -4267,7 +4297,7 @@ index 0feaef1..dc09f11 100644
          struct nvn_texture *t=nvn_texture_find(a[2]);struct nvn_descriptor *slot=&d->entries[a[1]];
          if(a[3] && !megaman_texture_view_identity(nvn_pointer(a[3],MEGAMAN_TEXTURE_VIEW_BYTES,PROT_READ),t->b.levels) &&
             !aw_texture_view_identity_native(nvn_pointer(a[3],MEGAMAN_TEXTURE_VIEW_BYTES,PROT_READ),&t->b,t->aw_native_format))
-@@ -802,9 +1057,10 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -802,9 +1060,10 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
          unsigned delete_storage=zero_texture_storage_release(t);
          if(delete_storage) {
              zero_depth_framebuffer_forget(storage->id);
