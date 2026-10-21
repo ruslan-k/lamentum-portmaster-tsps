@@ -2345,3 +2345,28 @@ If three same-scene A/B pairs show no full-frame P95 improvement beyond noise, *
 **Stop and change direction** if the phase never reaches id295 (fix the earlier bottleneck first), compression lacks real physical benefit, the original atlas is mutable/renderable, any test violates RAM/CMA bounds, errors are hidden by lenient GL handling, an MRT patch is made without seeing count>1, C0 coverage/overhead is unqualified, or a visual/audio/save regression appears. If safe 30 FPS proves unattainable at reasonable image quality and memory headroom, record the limiting facts rather than promoting an unstable preset.
 
 **Bottom line:** the next meaningful successful milestone is not another shader link, a smaller payload estimate or a higher FPS counter on Loading. It is a **run-identified, safe first-world draw and physical movement** with a trace explaining why Loading progressed. All subsequent rendering and FPS optimizations should be evaluated from that concrete gameplay baseline.
+
+## 33. T1 partial implementation: owned exec/log safety, not phase acceptance (2026-10-21)
+
+Owner roadmap revision **5ed8462** and its new **§32** were fetched, read and merged before publication. **§32 remains the execution plan**; this section records a component result for **§32.7 / PR E**, not a new priority order.
+
+### Implemented and tested
+
+- Mandatory paired `run_identity.py` obtains a target-kernel UUID and nonce, emits `LAMENTUM_RUN_HEADER`, hashes an opened runtime FD and executes that FD. UUID/nonce + boot/PID/starttime + executable dev/inode/SHA identify the attempt; observers independently verify post-exec ownership. Keep the numeric `COTM_RUN_ID` ABI (<=12 decimal characters); the UUID has its own `LAMENTUM_RUN_UUID` key.
+- Strict byte-framed collectors reject changed UUID/header/dev/inode or bounded continuity anchors with `LOG_GENERATION_CHANGED`, rather than silently resetting/merging counters. Pending partial headers cannot downgrade an already accepted generation.
+- Principal/control observers check the owned executable generation. Host stop attempts are recorded separately from a delivered pidfd TERM; already-exited, mismatched and unsupported outcomes are not attributed as host termination. No unowned numeric-PID fallback.
+- Both divergent legacy navigators now refuse default use. `--allow-unverified-navigation` is explicitly diagnostic; it does not qualify page/scene reachability. No unified semantic navigator or scene event has been invented.
+- **159 host tests PASS**, Python 3.10 syntax checks and launcher/build Bash syntax pass. A clean curated export repeats the tests and full pinned non-root AArch64 **build227**: **435/435** baseline, packaged helper exact match, both ELF **PT_LOAD** segments match. Whole unstripped ELF hashes differ; no byte-reproducible claim.
+- Read-only TSPS checks: Python **3.10.4**, FD exec supported; Python pidfd convenience APIs absent but kernel syscalls **434/424** accept a self `signal=0` probe. The exact final collector rejects the existing unowned log with zero accepted counters. This is protocol/component validation, **not a game run**.
+
+Details and receipts: [T1 implementation](t1-owned-log.md), [evidence](../evidence/T1-owned-log/README.md). The first clean export caught an omitted launcher-test helper fixture; it was staged and the full export checks rerun, without weakening the missing-helper refusal.
+
+### Deliberately not accepted
+
+- **Build227 is NOT DEPLOYED**; installed runtime/helper policy was not changed and no New Game arm or performance benchmark ran.
+- Owner-image/catalogue bindings remain explicit `null` / `content_bindings_complete=false`. Header ownership is not full source-content attestation.
+- Unified semantic pages, new-present-per-action receipts, source-pinned scene milestones, physical movement, audible audio and cold save/load are still open. Therefore **T1 is NOT CLOSED**.
+- Bounded log anchors implement an append-only continuity contract; they do not attest every earlier byte against adversarial rewriting. Device hard-stop/cleanup acceptance and profiler overhead still need a real owned run.
+- G0 id295 descriptor/residency/lifetime, C0 game qualification, first world and **30 FPS remain unproven**. No cap/floor/swap or `alias_physical` policy changed.
+
+Next source-correctness work follows **§32.3 / PR A**: audit all decoded sRGB/linear upload paths, test exact GLES3 format/type triples with self-authored color/alpha/mip readbacks, then qualify on Mali. Do not use this safety-component publication as a gameplay claim.

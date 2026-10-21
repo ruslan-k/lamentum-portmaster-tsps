@@ -38,5 +38,17 @@
     "standards": "self-review only; curated public source/metadata and paired fixtures; no independent reviewer invoked",
     "spec": "partial \u00a729.6 identity/safety; content binding, semantic navigation and device principal acceptance remain open"
   },
-  "no_device_deployment_or_game_launch": true
+  "no_device_deployment_or_game_launch": true,
+  "owner_plan_reconciliation": {
+    "reviewed_upstream": "5ed8462ae5de8ac127406d2a081814f9bbc3c792",
+    "merge_commit": "b34535664498d37fbd7d3ec8a0a986ae322b134e",
+    "owner_roadmap_preserved_as_exact_byte_prefix": true,
+    "followup_section": 33,
+    "execution_plan_section": 32,
+    "next_correctness_item": "32.3 / PR A: GLES3 sRGB upload contract",
+    "all_source_and_build_inputs_identical_to_clean_export_tree": true,
+    "post_merge_tests_rc": 0,
+    "post_merge_tests_output": "{\"harness_rc\": 4, \"samples\": 1, \"process_identity\": {\"boot_id\": \"fixture-boot\", \"pid\": 17, \"starttime\": 42}, \"scope\": \"CPU diagnostics, not gameplay FPS\"}\n...............................................................................................................................................................\n----------------------------------------------------------------------\nRan 159 tests in 5.182s\n\nOK\n",
+    "reviewed_at": "2026-10-21T09:34:05.961498+04:00"
+  }
 }

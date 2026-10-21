@@ -3,6 +3,10 @@
 Reviewed roadmap **§29.6**, including its explicit requirement not to mix old
 latest.log records with a new run. Starting upstream: **0caf515**. This is an
 identity/safety component, **not T1 completion or gameplay/30 FPS acceptance**.
+Before publication, fetched and fully reviewed owner revision **5ed8462**, including
+new **§32.7 / PR E**, and merged it without overwriting the owner's §32 plan.
+This component is recorded in **§33**; §32's execution priority remains authoritative.
+Its next correctness item is **§32.3 / PR A**, the GLES3 sRGB upload contract.
 
 ## What changed
 

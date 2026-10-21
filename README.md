@@ -6,6 +6,8 @@
 
 **G0 admission arithmetic (partial):** [checked storage layout report](docs/g0-storage-layout.md) adds overflow-checked per-mip/layer/face/sample payload calculation and uses it before deferred-BC first-use admission. **138 host tests PASS** (12 new G0 tests, including 1024 randomized reference cases), 12 trap-on-UB tests and **435/435** baseline validation; pinned ARM64 **build226 succeeds but is not deployed**. Lazy eligibility remains **single-mip**; id295's actual format/mips, physical GPU residency, all-class ledger and transactional GL lifetime remain unproven. No device or FPS claim; roadmap **§31** records this component step; **§32** defines the current execution queue.
 
+**T1 owned-log safety (partial, follow-up §33):** [implementation and limits](docs/t1-owned-log.md) add target-kernel UUID/nonce, pinned-FD exec, generation-bound collectors and exact-owner pidfd stop receipts. The paired helper is mandatory; both legacy navigators now refuse default unverified navigation. **159 host tests PASS**, clean-export ARM64 **build227 PASS**, **435/435** baseline and packaged-helper verification; final collector executes on TSPS Python 3.10.4 and rejects the old unowned log. **Not deployed and no game run.** Image/catalogue binding, semantic navigation and scene receipts remain open. The owner's **§32** execution order is unchanged; this is a component result, not T1 completion, id295 progress or 30 FPS.
+
 **C1 owner follow-up:** [source/ELF-pinned AudioOut audit](evidence/C1-audio-owner/README.md) resolves endpoint0x40 as the audout:u child: cmd7 appends PCM and cmd8 retrieves released buffers. Correct SVC-specific mutex operands yield 41 addresses in load-probe-08, not the former 1,011 mixed argument values. Actual complete executing handler/bridge cost is still unmeasured.
 
 **Status: NOT PLAYABLE (world-frontier evidence remains build218–219; later measurement attempts are qualified in the C0 audit).** The device reaches the real main menu, New Game configuration, controls page and Loading; the catalogue contains **46 entries (0–45), including seven TEST substitutes**. Fragment45 linked in [newgame-20](evidence/newgame-20/summary.json), but real world rendering, player movement, audible audio, cold save/load and sustained gameplay FPS remain **unverified**.
@@ -113,7 +115,9 @@ docker run --rm --security-opt label=disable -e COTM_CC=/work/tools/cc-lamentum.
   --entrypoint /bin/sh pmjs-arm64-spruce-local:20261002-gcc10 \
   -c 'cd /work && bash build_lamentum.sh /reference /image /work/build'
 
-# 4. install: port/Lamentum.sh -> /mnt/SDCARD/Roms/PORTS/, runtime + section -> lamentum-switch/
+# 4. install: port/Lamentum.sh -> /mnt/SDCARD/Roms/PORTS/
+#    runtime + build/run_identity.py + section -> lamentum-switch/
+#    Keep the launcher and its mandatory run_identity.py helper paired; incomplete installs refuse to start.
 ```
 
 `tools/cc-lamentum.sh` only downgrades two warning classes (`unused-result`,
