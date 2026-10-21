@@ -2771,3 +2771,13 @@ Build232 `a9b516e0…8957` adds a bounded per-target receipt (`LC2_MENU_TARGET`,
 - All listed targets report `target-seen=1` and 1–2 references, so no counter proves an orphan; `last-used-serial` does not exist yet.
 
 Next, one factor at a time with identical-output guards: (1) opt-in 1280×720 storage for the 1920 trio and its depth, verifying pixels; (2) only if (1) is not pixel-safe, fenced release of provably unreferenced targets, which is blocked on the B2 last-reader epoch rather than on a guess. Charged bytes are not Mali residency; no scene, id295 or FPS claim.
+
+## 47. Origin of the 1920×1080 menu targets: the game, not the adapter (2026-10-21)
+
+The four 1080p images from §46 are created by the title's own code with **instruction literals**: at `main+0x53bfcc` it executes `mov w21,#0x438` (1080), `orr w1,wzr,#0x780` (1920), then `blr` into `nvnTextureBuilderSetSize2D`; the log shows that call for three colour targets plus a depth target built through a struct-sized site (`main+0x533a40`, which also builds the 1280×720 window target as `0x500×0x2d0`).
+
+Therefore this is **not** an adapter defect: `NVN_WINDOW_REAL framebuffer=1280x720`, the display resolution query answers `{1280,720}`, `ListDisplays` reports maximum-layer capacity (1920×1080) which is a capability field, and the adapter has no `GetOperationMode` handling to report "docked".
+
+Consequence: the panel path is already 720p; reducing the 1080p composition family is a **storage policy** decision, and the adapter already ships the switch for it — `ZERO_RENDER_SCALE=2` maps `1920×1080 → 1280×720` and preserves native 720p composition/UI. It stays off by default because the roadmap records it as a measured performance-negative, and it would remove **31.64 MiB** of menu charged storage.
+
+Next is a single-factor A/B: `ZERO_RENDER_SCALE=2` versus default on the same menu screen, gated by `tools/frame_diff.identical()` and reporting both the charged-byte saving and the pixel difference. That needs the owner's go-ahead because it changes image quality.
