@@ -1973,6 +1973,22 @@ This was documented for the observed **one color target plus depth/stencil** cas
 
 **PASS:** actual target-count behavior is known; multi-RT is implemented only if demanded, with correct first-world pixels. **STOP:** invalid views/resource ownership, missing outputs or an unsafe memory increase.
 
+### 29.2a. GL-SRGB — Another concrete GLES3 format-contract defect to test early
+
+**Fresh source-level audit finding:** the LC2 striped BC upload in runtime/lamentum-adapter.patch, native/nvn_textures.h, currently sets a single variable to either 0x8C42 when zero_bc_srgb(t->b.format) is true or GL_RGBA, and passes that same variable as **both the internalformat and the external format**. The other first-use BC materialization path similarly supplies 0x8C42 for both glTexImage2D arguments, and also as the external format for glTexSubImage2D.
+
+0x8C42 denotes legacy GL_SRGB_ALPHA_EXT/GL_SRGB_ALPHA, **not** the valid GLES3 sized storage internal format GL_SRGB8_ALPHA8 (0x8C43). GLES3's standard pixel-data **format** for an sRGB RGBA8 texture is **GL_RGBA**, with GL_UNSIGNED_BYTE data. GLES3 reference: [glTexImage2D / valid internalformat-format-type triples](https://docs.gl/es3/glTexImage2D); [Android Khronos-compatible CTS regression describing exactly the 0x8C42 -> 0x8C43 + GL_RGBA correction](https://android.googlesource.com/platform/cts/+/9a1095c1ed4cf6d1f2fbee4be083ff013dc8b51d).
+
+**This is a source-level GLES3 API mismatch, not yet an on-device demonstrated Loading failure.** It is conditional on an actual sRGB BC path being executed; the latest observed failure is still the earlier 300 MiB texture reservation. Do **not** claim fixing 0x8C42 will bypass id295 or improve FPS. It is nevertheless a cheap, correct compatibility fix worth guarding and testing before accepting new world pixels.
+
+1. Search the entire **effective rebuilt baseline plus adapter overlay** (not only the patch hunk) for 0x8C42, GL_SRGB_ALPHA, zero_bc_srgb, glTexImage2D and glTexSubImage2D. Identify whether the BC path uses GL_UNSIGNED_BYTE versus another upload type, and verify every reachable sRGB variant. Preserve sRGB sampling semantics.
+2. For decoded RGBA8 sRGB pixels use **internalformat=GL_SRGB8_ALPHA8**, **format=GL_RGBA**, **type=GL_UNSIGNED_BYTE**. For linear RGBA8 use GL_RGBA8 (sized) with the same GL_RGBA/GL_UNSIGNED_BYTE external pair where supported; do not feed a sized internal enum as the external pixel-data format. On glTexSubImage2D, supply only GL_RGBA/GL_UNSIGNED_BYTE; storage was defined by the earlier glTexImage2D.
+3. Create a tiny self-authored GLES3 fixture exercising first allocation, every striped update, first-use lazy materialization, re-upload after a guest write, with both linear and sRGB inputs, a border pixel/alpha gradient and sampled framebuffer readback. Compare with the original game-independent reference fixture; include actual glGetError and a known pixel expectation, not just an empty GL error count.
+4. Verify native GL context generation, sampler mip completeness and any framebuffer-versus-texture restrictions. Keep strict COTM_GL_ERROR_IGNORE=0. Do not mask invalid enums by catching and ignoring the GL error.
+5. On device, report how frequently the actual Lamentum shader/texture path reaches an sRGB BC image **before** making a performance claim. The patch should reduce compatibility risk and may remove a later GL STOP, but only a traced post-Loading transition proves that.
+
+**PASS:** spec-valid API argument triples and sRGB/linear pixel parity on the actual Mali GLES3 stack; no hidden GL errors. **STOP:** wrong gamma/alpha or any unverified conversion/format. This PR can be implemented and tested **off-device** alongside G0; do not let it displace the proven id295 memory wall as the current priority.
+
 ### 29.3. G0 — First fix exact id295/mipmap admission and measure all GL allocations
 
 **Confirmed code risk:** in the adapter's native/nvn_textures.h zero_texture_refresh, deferred BC first-use admission uses base-level width*height*output_bpp, then iterates all texture levels. If an actual deferred texture has multiple mips, its **charged amount can undercount created GL storage**. This is not proof id295 has mips, nor proof it caused the previously reported GPU OOM.
