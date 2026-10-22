@@ -1,0 +1,68 @@
+{
+  "schema": 1,
+  "run_uuid": "40d57167-d5b1-4071-9bdf-a3b2dd028a92",
+  "identity": {
+    "boot_id": "66203f22-4ac8-4a2a-a47c-cddc253d3bda",
+    "pid": 23644,
+    "starttime": 851447,
+    "elf_sha256": "fd83556cd52776f4371a1644e9d013cfcb317275d14e907c331f8f2ec7cbd74d"
+  },
+  "reducer": "tools/ledger_bases.py:replay_texture_budget",
+  "status": "reconciled",
+  "sample": {
+    "floor_check_t_ns": 8524495203769,
+    "budget_sample_t_ns": 8524495216977,
+    "bracket_ns": 13208,
+    "available_kib": 97580,
+    "floor_mib": 96,
+    "swap_free_kib": 1988100,
+    "t2_snapshot_status": "sampled",
+    "budget_events_between_floor_and_sample": 0,
+    "gl_storage_events_between_floor_and_sample": 0
+  },
+  "budget": {
+    "event_lines": 141,
+    "event_overflow": 0,
+    "adds": 117,
+    "add_bytes": 116851712,
+    "subs": 24,
+    "sub_bytes": 1572864,
+    "live_bytes": 115278848,
+    "replayed_live_bytes": 115278848,
+    "charge_count": 117,
+    "live_id_count": 93,
+    "pair_guest_bytes": 115278848,
+    "pair_charge_bytes": 115278848,
+    "pair_mismatches": 0,
+    "pair_guest_charge_mismatches": 0,
+    "missing_pairs": 0,
+    "budget_live_ids_without_gl_storage": ["46", "51", "52"],
+    "gl_storage_owners_without_budget": []
+  },
+  "gl_storage": {
+    "storage_events": 164,
+    "storage_event_overflow": 0,
+    "deletes": 24,
+    "delete_event_overflow": 0,
+    "live_records": 90,
+    "texture_records": 88,
+    "texture_bytes": 232834352,
+    "renderbuffer_records": 2,
+    "renderbuffer_bytes": 11980800,
+    "total_declared_bytes": 244815152,
+    "matches_life_summary": true
+  },
+  "join_limits": {
+    "direct_live_pair_snapshot": "unavailable: GL mutex trylock EBUSY=16",
+    "budget_vs_pair_charge": "matched for all 93 live budget IDs",
+    "three_budget_live_ids_without_gl_storage": "pair records identify 1x1 format 0x25 objects with no-live-gl-storage",
+    "share_group": "unverified",
+    "gpu_completion": "unobserved",
+    "physical_gpu_residency": "unknown"
+  },
+  "raw_log": {
+    "bytes": 706659,
+    "sha256": "4f7233077f4dccd0b5fbd5b2972891eda5970f809ed661cbf3461dc2a1a896d2",
+    "policy": "local-only"
+  }
+}

@@ -123,10 +123,45 @@ on this device. The cleanup receipt's unanchored stop parser also mistook the
 log contains only `STOP status=T2_MEMORY_FLOOR`. These parser/receipt gaps must
 be fixed before the next run.
 
+## Build250 per-object budget replay (2026-10-22)
+
+The [build250 device report](../evidence/m2a-budget-20261022-01/README.md) adds
+timestamped per-NVN budget add/sub records, a nonblocking floor budget sample,
+run-scoped snapshot parsing, and the tested offline reducer
+`tools/ledger_bases.py:replay_texture_budget`. Runtime SHA-256 is
+`fd83556cd52776f4371a1644e9d013cfcb317275d14e907c331f8f2ec7cbd74d`; floor96,
+cap300, strict GL, no game input.
+
+Run `40d57167-d5b1-4071-9bdf-a3b2dd028a92` produced 5 presentation records,
+no menu events, and stopped at `T2_MEMORY_FLOOR` (95 MiB reported against
+floor96). First-present measured `MemAvailable=144596` KiB, `CmaFree=8220`
+KiB, and budget-live `112325632` B. At the floor check it measured
+`MemAvailable=97580` KiB and `SwapFree=1988100` KiB; prelaunch `SwapFree` was
+`2034520` KiB, so this run did not meet the no-swap goal. OOM evidence is empty.
+
+The budget journal emitted 141 lines (117 adds, 24 subtracts; zero overflow).
+Replaying per texture ID at the nonblocking floor sample yields exactly
+`115278848` live bytes across 93 IDs, matching the sample and each live pair's
+guest/charge payload. Three charged IDs (`46`, `51`, `52`) have
+`no-live-gl-storage` pair status; there are no live GL owners without a budget
+owner. The GL storage replay yields 90 current records (88 textures /
+`232834352` B; 2 renderbuffers / `11980800` B), total `244815152` B, and
+matches `LC2_LIFE_SUMMARY` exactly. The floor check and budget sample are
+13208 ns apart, with no budget or GL storage event between them.
+
+The direct GL live-pair snapshot still could not acquire the GL mutex (`EBUSY`),
+so the storage set is reconstructed from the timestamped bounded journal. This
+is declared storage accounting, not physical Mali residency or GPU completion;
+share-group identity remains unverified. `/proc/pressure/memory` is unavailable.
+KMS after cleanup and an agent-injected Back wake shows SpruceOS home, not
+Lamentum. No scene, input, sound, save/load, menu, or gameplay FPS was verified.
+
 ## Next
 
-Add per-object T2 budget add/sub events and read that independent counter even
-when the GL lock is busy; anchor the stop/frame parsers to the owned run. Keep
-the 96 MiB floor and 300 MiB cap unchanged. Only after the menu memory gate
-passes should the next phase reduce a measured storage class; world, input,
-sound, save/load, and gameplay 30 FPS remain OPEN.
+The exact budget/storage replay closes the same-run arithmetic for this
+no-alias menu arm; it does not make the game playable or prevent swap. Preserve
+floor96/cap300 and select one evidence-backed, quality-neutral first-present
+memory reduction path. Lossy texture transcode or render-resolution changes
+still require explicit quality acceptance; do not enter New Game until the
+menu holds the safety gate. World, input, sound, save/load, no-swap, and gameplay
+30 FPS remain OPEN.

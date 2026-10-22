@@ -1,5 +1,5 @@
 import unittest, json
-from ledger_bases import reconcile
+from ledger_bases import reconcile, replay_texture_budget
 
 LEDGER = ('LC2_MENU_LEDGER why=interval t-ms=8622 frames=11 line=2 available-kib=111664 '
           'budget-live-bytes=115278848 textures-live=93 textures-charged-bytes=115278848 '
@@ -9,10 +9,62 @@ LIFE = ('LC2_LIFE_SUMMARY share-group=unverified bytes=declared-payload completi
         'texture-calls=1 deletes=24 retained=253465904 peak=253465904 live=92 '
         'tex-bytes=241485104 tex-live=90 rb-bytes=11980800 rb-live=2 buf-bytes=0 buf-live=0\n')
 RUN = dict(run_uuid='u-1', pid=7, starttime='9', boot_id='b-1')
+BUDGET_RUN = dict(run_uuid='u-1', boot_id='b-1', pid=7, starttime=9, elf_sha256='a'*64)
+
+
+def budget_log():
+    header = {'run_uuid': 'u-1', 'boot_id': 'b-1', 'pid': 7, 'starttime': 9, 'elf_sha256': 'a'*64}
+    return chr(10).join((
+        'LAMENTUM_RUN_HEADER ' + json.dumps(header),
+        'LC2_TEXTURE_PAIR run-id=u-1 t-ns=100 phase=initialize id=42 object-generation=42 storage-owner=42 guest-bytes=100 charge-bytes=100 storage-status=recorded',
+        'LC2_TEXTURE_PAIR run-id=u-1 t-ns=105 phase=initialize id=43 object-generation=43 storage-owner=43 guest-bytes=30 charge-bytes=30 storage-status=no-live-gl-storage',
+        'LC2_TEXTURE_BUDGET_EVENT run-id=u-1 t-ns=110 action=add texture-id=42 delta-bytes=100 live-bytes=100 charge-count=1 caller=1 status=recorded',
+        'LC2_GL_STORAGE_EVENT run-id=u-1 t-ns=120 event=allocate owner=42 gl-name=9 kind=1 storage-generation=1 bytes=400 total-bytes=400 status=recorded',
+        'LC2_TEXTURE_BUDGET_EVENT run-id=u-1 t-ns=130 action=add texture-id=43 delta-bytes=30 live-bytes=130 charge-count=2 caller=1 status=recorded',
+        'LC2_GL_STORAGE_DELETE run-id=u-1 t-ns=140 owner=42 gl-name=9 kind=1 storage-generation=1 bytes=400 matched=1',
+        'LC2_TEXTURE_BUDGET_EVENT run-id=u-1 t-ns=150 action=sub texture-id=42 delta-bytes=100 live-bytes=30 charge-count=2 caller=1 status=recorded',
+        'LC2_TEXTURE_BUDGET_FLOOR run-id=u-1 floor-check-t-ns=160 budget-sample-t-ns=160 floor-available-kib=97580 floor-swap-free-kib=1988100 live-bytes=30 peak-bytes=130 charge-count=2 event-lines=3 event-overflow=0 status=sampled lock-rc=0',
+        'LC2_TEXTURE_BUDGET_EVENT run-id=u-1 t-ns=170 action=add texture-id=99 delta-bytes=1 live-bytes=31 charge-count=3 caller=1 status=recorded',
+        'LC2_LIFE_SUMMARY share-group=unverified storage-calls=1 extends=0 deletes=1 delete-with-views=0 name-reuse=0 retained=0 peak=400 live=0 overflow=0 tex-bytes=0 tex-live=0 rb-bytes=0 rb-live=0 storage-event-lines=1 storage-event-overflow=0 delete-event-lines=1 delete-event-overflow=0',
+    )) + chr(10)
 
 
 def samples(rows):
     return [dict(run_uuid='u-1', pid=7, starttime='9', boot_id='b-1', **r) for r in rows]
+
+
+class BudgetReplayTests(unittest.TestCase):
+    def test_replays_per_id_charge_and_storage_to_the_floor_sample(self):
+        result = replay_texture_budget(budget_log(), BUDGET_RUN)
+        self.assertEqual(result['status'], 'reconciled')
+        self.assertEqual(result['budget']['floor_available_kib'], 97580)
+        self.assertEqual(result['budget']['live_bytes'], 30)
+        self.assertEqual(result['budget']['replay_bytes'], 30)
+        self.assertEqual(result['budget']['peak_bytes'], 130)
+        self.assertEqual(result['budget']['event_count'], 3)
+        self.assertEqual(result['budget']['events_after_sample'], 1)
+        self.assertEqual(result['budget']['live_ids'], ['43'])
+        self.assertEqual(result['budget']['pair_charge_mismatches'], [])
+        self.assertEqual(result['budget']['pair_guest_charge_mismatches'], [])
+        self.assertEqual(result['budget']['budget_without_gl_storage_ids'], ['43'])
+        self.assertEqual(result['gl_storage']['live_records'], 0)
+        self.assertTrue(result['gl_storage']['summary_matches'])
+
+    def test_refuses_foreign_run_and_underflow(self):
+        with self.assertRaisesRegex(ValueError, 'identity'):
+            replay_texture_budget(budget_log(), dict(BUDGET_RUN, run_uuid='foreign'))
+        broken = budget_log().replace('delta-bytes=100 live-bytes=30 charge-count=2',
+                                      'delta-bytes=101 live-bytes=29 charge-count=2')
+        with self.assertRaisesRegex(ValueError, 'underflow|transition|snapshot'):
+            replay_texture_budget(broken, BUDGET_RUN)
+
+    def test_refuses_busy_or_overflowed_floor_sample(self):
+        busy = budget_log().replace('status=sampled lock-rc=0', 'status=mutex-busy lock-rc=16')
+        with self.assertRaisesRegex(ValueError, 'snapshot'):
+            replay_texture_budget(busy, BUDGET_RUN)
+        overflow = budget_log().replace('event-overflow=0 status=sampled', 'event-overflow=1 status=sampled')
+        with self.assertRaisesRegex(ValueError, 'overflow'):
+            replay_texture_budget(overflow, BUDGET_RUN)
 
 
 class ReconcileTests(unittest.TestCase):

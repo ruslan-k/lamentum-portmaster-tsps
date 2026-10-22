@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "run_uuid": "40d57167-d5b1-4071-9bdf-a3b2dd028a92",
+  "sample": "prelaunch after build250 install",
+  "boot_id": "66203f22-4ac8-4a2a-a47c-cddc253d3bda",
+  "processes": {
+    "MainUI": [{"pid": 19116, "starttime": 656003}],
+    "principal.sh": [{"pid": 2191, "starttime": 1023}],
+    "runtime.sh": [{"pid": 1209, "starttime": 635}]
+  },
+  "game": [],
+  "cpu_online_mask": "4-7",
+  "cpu_sysfs": {
+    "0": {"online": "0", "mode": "444"},
+    "1": {"online": "0", "mode": "444"},
+    "2": {"online": "0", "mode": "444"},
+    "3": {"online": "0", "mode": "444"}
+  },
+  "meminfo_kib": {
+    "MemTotal": 986064,
+    "MemAvailable": 673736,
+    "SwapTotal": 2065884,
+    "SwapFree": 2034520,
+    "CmaFree": 102848
+  },
+  "psi_memory": null,
+  "prior_log_snapshot": {
+    "log_run_uuid": "cc013fc9-af26-4e2f-84b6-38e5c7af35dd",
+    "log_matches_expected": null,
+    "frame": 3,
+    "menu_events": 0,
+    "stops": ["STOP status=T2_MEMORY_FLOOR"],
+    "scope": "previous owned run; excluded from build250 counters"
+  }
+}

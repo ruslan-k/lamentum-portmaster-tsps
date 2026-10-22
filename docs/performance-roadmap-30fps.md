@@ -3597,3 +3597,25 @@ In parallel, choose **one currently proven first-present owner** for a reversibl
 | P2 | **F1** quiet multi-scene profiling toward 30 FPS | **Blocked by W0** | Whole-frame P50/P95 ≤33.33 ms, P99 documented, safe memory and correct gameplay |
 
 **Do not over-read build249**: 89 GL records matching the final 236,520,752-B summary are a useful **internal accounting consistency check**; they do not prove that many unique device-resident bytes exist, a GPU leak, or any VRAM savings. At 68 MiB available the port still cannot safely approach New Game, and only an observed memory reduction plus a verified first-world run changes playability. §72 remains the detailed how-to for the deeper M3/N5/W0/F1 tests; §73 is the **current status and next implementation queue**.
+
+---
+
+## 74. Build250 per-object budget and GL-storage replay; memory gate remains open (2026-10-22)
+
+**Newer than §73.** Build250 adds timestamped T2 budget add/sub events with NVN texture IDs, a nonblocking budget snapshot at the floor, and run-scoped frame/menu/stop parsing. Those runtime/parser changes and their tests were published in commit `3e71c50`; this follow-up adds `tools/ledger_bases.py:replay_texture_budget` and its synthetic C/Python fixtures. The owned build250 run and compact receipts are in [evidence/m2a-budget-20261022-01](../evidence/m2a-budget-20261022-01/README.md). The prior build249 run and §73 remain historical.
+
+**STATUS: NOT PLAYABLE; no gameplay FPS.** Build250 ELF SHA-256 `fd83556cd52776f4371a1644e9d013cfcb317275d14e907c331f8f2ec7cbd74d`; run `40d57167-d5b1-4071-9bdf-a3b2dd028a92`; floor96, cap300, strict GL, no game input. It produced **5** owned presentation records, **0** menu events, then `STOP status=T2_MEMORY_FLOOR` at **95 MiB vs floor96**. Exact `MemAvailable=97580 KiB`, `SwapFree=1988100 KiB`; prelaunch SwapFree was `2034520 KiB`, so the no-swap target is not met. OOM evidence is empty. First-present recorded `MemAvailable=144596 KiB`, `CmaFree=8220 KiB`, budget-live `112325632 B`.
+
+### 74.1. Per-object budget replay and run-scoped parser result
+
+The opt-in journal emitted 141 T2 budget events: 117 adds (`116851712 B`) and 24 subtracts (`1572864 B`), zero overflow. At `budget-sample-t-ns=8524495216977`, the nonblocking snapshot reports `115278848 B` live across 93 IDs. The sample is 13208 ns after the memory-floor check, with **no** budget or GL-storage event in the bracket. The reducer matches the snapshot, and for every live ID the replayed charge equals its latest pair charge; the aggregate live pair guest and charge payloads both equal `115278848 B`, with zero mismatch/missing pair.
+
+Three live charged IDs (`46`, `51`, `52`) have no current GL-storage record and are explicitly labeled `no-live-gl-storage`; no live GL owner lacks a budget owner. Replaying the timestamped GL storage/deletes to the same sample yields 90 records: 88 textures / `232834352 B` and 2 renderbuffers / `11980800 B`, total `244815152 B`. It matches `LC2_LIFE_SUMMARY` exactly; 164 storage events, 24 deletes, zero event overflow. The direct live-pair snapshot still missed the GL mutex (`EBUSY=16`), so this is bounded journal replay, not a forced lock or physical Mali measurement.
+
+The stop parser now accepts only complete line-start `STOP status=` records, and snapshot counters are scoped to the last owned run UUID. The build250 harness receipt reports only `T2_MEMORY_FLOOR`; prelaunch fields identify the previous log UUID rather than attributing its 3 frames to the new run. `/proc/pressure/memory` remains unavailable (`null`). The host suite passed **280 tests**; the pinned target-compatible build and AArch64/GLIBC checks passed.
+
+### 74.2. What remains open
+
+This closes E1 parsing for the build250 arm and validates the E2 budget/GL-storage arithmetic for this observed **no-alias** run. It does not yet validate ID reuse, shared backing, subresource replacement, all storage classes, share-group identity, last-reader/fence completion, or physical residency; E3 remains open. No measured device RAM reduction was made. The run consumed swap and still stops before the menu, so do not enter New Game.
+
+**Next: §73.5 M3-now.** Source-audit one first-present, quality-neutral CPU staging/decode path and choose a reversible candidate from that evidence. Keep floor96/cap300/strict GL. Lossy texture transcoding or render-resolution changes still require explicit quality acceptance; the no-swap target, menu gate, first world, sound, saves, and >30 gameplay FPS are unmet.

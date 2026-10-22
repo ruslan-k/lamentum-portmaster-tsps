@@ -1,0 +1,61 @@
+{
+  "processes": {
+    "runtime.sh": [
+      {
+        "pid": 1209,
+        "starttime": 635
+      }
+    ],
+    "principal.sh": [
+      {
+        "pid": 2191,
+        "starttime": 1023
+      }
+    ],
+    "MainUI": [
+      {
+        "pid": 24019,
+        "starttime": 852580
+      }
+    ]
+  },
+  "game": [],
+  "online": "4-7",
+  "boot_id": "66203f22-4ac8-4a2a-a47c-cddc253d3bda",
+  "epoch_s": 1792676941.7188156,
+  "monotonic_ns": 8638973598814,
+  "meminfo_kib": {
+    "MemTotal": 986064,
+    "MemAvailable": 668400,
+    "SwapTotal": 2065884,
+    "SwapFree": 2034436,
+    "CmaFree": 77328
+  },
+  "cpu_sysfs": {
+    "0": {
+      "online": "0",
+      "mode": "444"
+    },
+    "1": {
+      "online": "0",
+      "mode": "444"
+    },
+    "2": {
+      "online": "0",
+      "mode": "444"
+    },
+    "3": {
+      "online": "0",
+      "mode": "444"
+    }
+  },
+  "psi_memory": null,
+  "log_inode": 7616,
+  "log_run_uuid": "40d57167-d5b1-4071-9bdf-a3b2dd028a92",
+  "log_matches_expected": null,
+  "frame": 5,
+  "menu_events": 0,
+  "stops": [
+    "STOP status=T2_MEMORY_FLOOR pc=0x0 detail=0x5f query_memory_calls=0xfc tls_trap_reads=0x0"
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "run_uuid": "40d57167-d5b1-4071-9bdf-a3b2dd028a92",
+  "sample": "fresh SSH readback after the KMS wake capture",
+  "boot_id": "66203f22-4ac8-4a2a-a47c-cddc253d3bda",
+  "processes": {
+    "MainUI": [{"pid": 24019, "starttime": 852580}],
+    "principal.sh": [{"pid": 2191, "starttime": 1023}],
+    "runtime.sh": [{"pid": 1209, "starttime": 635}]
+  },
+  "game": [],
+  "cpu_online_mask": "4-7",
+  "cpu_sysfs": {
+    "0": {"online": "0", "mode": "444"},
+    "1": {"online": "0", "mode": "444"},
+    "2": {"online": "0", "mode": "444"},
+    "3": {"online": "0", "mode": "444"}
+  },
+  "meminfo_kib": {"MemAvailable": 671016, "SwapFree": 2034436, "CmaFree": 77440},
+  "files": {
+    "Lamentum.sh": {"sha256": "f32204ff1b271dd66e38f79573f75c6f562af49174ea436e81dd9417dba1354a", "mode": "777"},
+    "lamentum-switch/lamentum-nextos": {"sha256": "fd83556cd52776f4371a1644e9d013cfcb317275d14e907c331f8f2ec7cbd74d", "mode": "777"},
+    "lamentum-switch/lamentum-nextos.before-250": {"sha256": "0e62238c69c36e9fbd49669d5c062c0449ee56c2624b44acf37461c206cd588b", "mode": "777"},
+    "lamentum-switch/run_identity.py": {"sha256": "abe8e4847b18a750c0796af33d887cf43714126c9751ccdc8236715cb752401a", "mode": "777"}
+  }
+}

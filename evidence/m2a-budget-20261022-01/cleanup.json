@@ -1,0 +1,161 @@
+{
+  "cleanup_errors": [],
+  "before": {
+    "processes": {
+      "runtime.sh": [
+        {
+          "pid": 1209,
+          "starttime": 635
+        }
+      ],
+      "principal.sh": [
+        {
+          "pid": 2191,
+          "starttime": 1023
+        }
+      ],
+      "MainUI": [
+        {
+          "pid": 19116,
+          "starttime": 656003
+        }
+      ]
+    },
+    "game": [],
+    "online": "4-7",
+    "boot_id": "66203f22-4ac8-4a2a-a47c-cddc253d3bda",
+    "epoch_s": 1792676811.9137049,
+    "monotonic_ns": 8509168489527,
+    "meminfo_kib": {
+      "MemTotal": 986064,
+      "MemAvailable": 673736,
+      "SwapTotal": 2065884,
+      "SwapFree": 2027772,
+      "CmaFree": 102848
+    },
+    "cpu_sysfs": {
+      "0": {
+        "online": "0",
+        "mode": "444"
+      },
+      "1": {
+        "online": "0",
+        "mode": "444"
+      },
+      "2": {
+        "online": "0",
+        "mode": "444"
+      },
+      "3": {
+        "online": "0",
+        "mode": "444"
+      }
+    },
+    "psi_memory": null,
+    "log_inode": 7616,
+    "log_run_uuid": "cc013fc9-af26-4e2f-84b6-38e5c7af35dd",
+    "log_matches_expected": null,
+    "frame": 3,
+    "menu_events": 0,
+    "stops": [
+      "STOP status=T2_MEMORY_FLOOR pc=0x0 detail=0x44 query_memory_calls=0xfc tls_trap_reads=0x0"
+    ]
+  },
+  "after": {
+    "processes": {
+      "runtime.sh": [
+        {
+          "pid": 1209,
+          "starttime": 635
+        }
+      ],
+      "principal.sh": [
+        {
+          "pid": 2191,
+          "starttime": 1023
+        }
+      ],
+      "MainUI": [
+        {
+          "pid": 24019,
+          "starttime": 852580
+        }
+      ]
+    },
+    "game": [],
+    "online": "4-7",
+    "boot_id": "66203f22-4ac8-4a2a-a47c-cddc253d3bda",
+    "epoch_s": 1792676829.568965,
+    "monotonic_ns": 8526823748232,
+    "meminfo_kib": {
+      "MemTotal": 986064,
+      "MemAvailable": 714032,
+      "SwapTotal": 2065884,
+      "SwapFree": 2031620,
+      "CmaFree": 75960
+    },
+    "cpu_sysfs": {
+      "0": {
+        "online": "0",
+        "mode": "444"
+      },
+      "1": {
+        "online": "0",
+        "mode": "444"
+      },
+      "2": {
+        "online": "0",
+        "mode": "444"
+      },
+      "3": {
+        "online": "0",
+        "mode": "444"
+      }
+    },
+    "psi_memory": null,
+    "log_inode": 7616,
+    "log_run_uuid": "40d57167-d5b1-4071-9bdf-a3b2dd028a92",
+    "log_matches_expected": true,
+    "frame": 5,
+    "menu_events": 0,
+    "stops": [
+      "STOP status=T2_MEMORY_FLOOR pc=0x0 detail=0x5f query_memory_calls=0xfc tls_trap_reads=0x0"
+    ]
+  },
+  "expected_run": {
+    "run_uuid": "40d57167-d5b1-4071-9bdf-a3b2dd028a92",
+    "boot_id": "66203f22-4ac8-4a2a-a47c-cddc253d3bda",
+    "elf_dev": 45833,
+    "elf_ino": 37546,
+    "elf_sha256": "fd83556cd52776f4371a1644e9d013cfcb317275d14e907c331f8f2ec7cbd74d",
+    "launcher_sha256": "f32204ff1b271dd66e38f79573f75c6f562af49174ea436e81dd9417dba1354a",
+    "helper_sha256": "abe8e4847b18a750c0796af33d887cf43714126c9751ccdc8236715cb752401a"
+  },
+  "process_identity": {
+    "boot_id": "66203f22-4ac8-4a2a-a47c-cddc253d3bda",
+    "pid": 23644,
+    "starttime": 851447,
+    "elf_dev": 45833,
+    "elf_ino": 37546
+  },
+  "execution_verified": true,
+  "host_terminated": null,
+  "termination": {
+    "kind": "runtime_stop",
+    "stops": [
+      "T2_MEMORY_FLOOR"
+    ],
+    "oom_evidence": []
+  },
+  "stop_attempts": [],
+  "observer_error": null,
+  "identity_errors": [],
+  "stops": [
+    "T2_MEMORY_FLOOR"
+  ],
+  "killed_without_stop": false,
+  "runtime_ok": false,
+  "config_rejected": false,
+  "content_bindings_complete": false,
+  "scene_verified": false
+}
