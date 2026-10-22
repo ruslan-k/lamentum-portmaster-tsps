@@ -1,0 +1,11 @@
+{
+  "boot_id": "66203f22-4ac8-4a2a-a47c-cddc253d3bda",
+  "phase": "before-launch",
+  "online_mask": "4-7",
+  "cpu_files": {
+    "0": {"online": "0", "mode": "0444"},
+    "1": {"online": "0", "mode": "0444"},
+    "2": {"online": "0", "mode": "0444"},
+    "3": {"online": "0", "mode": "0444"}
+  }
+}

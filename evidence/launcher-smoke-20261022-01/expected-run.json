@@ -1,0 +1,9 @@
+{
+  "run_uuid": "da207fdd-f695-491a-a35c-3068f69bfb59",
+  "boot_id": "66203f22-4ac8-4a2a-a47c-cddc253d3bda",
+  "elf_dev": 45833,
+  "elf_ino": 7732,
+  "elf_sha256": "ecef4ba2075946095e69120137366850c41184d26e3e82c995cdd98995bd6575",
+  "launcher_sha256": "f32204ff1b271dd66e38f79573f75c6f562af49174ea436e81dd9417dba1354a",
+  "helper_sha256": "abe8e4847b18a750c0796af33d887cf43714126c9751ccdc8236715cb752401a"
+}
