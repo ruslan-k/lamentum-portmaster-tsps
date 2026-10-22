@@ -64,6 +64,10 @@ def validate_cleanup(before, after):
             errors.append(key + ' count is not one')
     if before['online'] != after['online']:
         errors.append('CPU online mask not restored')
+    if before.get('boot_id') and before.get('boot_id') != after.get('boot_id'):
+        errors.append('device boot changed during run')
+    if before.get('cpu_sysfs') is not None and before.get('cpu_sysfs') != after.get('cpu_sysfs'):
+        errors.append('CPU online values or sysfs modes not restored')
     for key in ('principal.sh', 'runtime.sh'):
         if before['processes'].get(key) != after['processes'].get(key):
             errors.append(key + ' identity changed')
@@ -71,7 +75,7 @@ def validate_cleanup(before, after):
 
 
 SNAPSHOT = '''from pathlib import Path
-import json,re,hashlib
+import json,re,hashlib,os,time
 procs={}
 for p in Path('/proc').iterdir():
  if p.name.isdigit():
@@ -85,8 +89,21 @@ port=Path('/mnt/SDCARD/Roms/PORTS/lamentum-switch')
 log=port/'logs/latest.log'
 t=log.read_text(errors='replace') if log.exists() else ''
 frames=re.findall(r'NVN_PRESENT_PIXELS frame=(\\d+)',t)
+mem={}
+for line in Path('/proc/meminfo').read_text().splitlines():
+ fields=line.split()
+ if fields and fields[0] in ('MemTotal:','MemAvailable:','CmaFree:','SwapTotal:','SwapFree:'):
+  mem[fields[0][:-1]]=int(fields[1])
+cores={}
+for i in range(4):
+ q=Path('/sys/devices/system/cpu/cpu%d/online'%i)
+ cores[str(i)]={'online':q.read_text().strip(),'mode':format(os.stat(q).st_mode&0o777,'03o')} if q.exists() else {'online':None,'mode':None}
+psi=Path('/proc/pressure/memory')
+psi_memory=psi.read_text().strip() if psi.exists() else None
 print(json.dumps({'processes':procs,'game':procs.get('terminator2d-ne',[])+procs.get('lamentum-nextos',[]),
  'online':Path('/sys/devices/system/cpu/online').read_text().strip(),
+ 'boot_id':Path('/proc/sys/kernel/random/boot_id').read_text().strip(),'epoch_s':time.time(),'monotonic_ns':time.monotonic_ns(),
+ 'meminfo_kib':mem,'cpu_sysfs':cores,'psi_memory':psi_memory,
  'frame':int(frames[-1]) if frames else None,'menu_events':t.count('LC2_MENU_EVENT'),
  'stops':re.findall(r'STOP status=\\S+',t),'log_inode':log.stat().st_ino if log.exists() else None}))
 '''

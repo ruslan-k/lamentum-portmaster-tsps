@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "run_uuid": "cc013fc9-af26-4e2f-84b6-38e5c7af35dd",
+  "execution_verified": true,
+  "termination": {
+    "kind": "runtime_stop",
+    "actual_owned_log_stop_lines": ["STOP status=T2_MEMORY_FLOOR"],
+    "oom_evidence": [],
+    "host_terminated": null
+  },
+  "harness_cleanup_errors": [],
+  "killed_without_stop": false,
+  "post_run": {
+    "game_processes": [],
+    "mainui": {"pid": 19116, "starttime": 656003},
+    "cpu_online_mask": "4-7",
+    "cpu0_3": {"online": "0", "mode": "0444"}
+  },
+  "parser_correction": {
+    "source": "uncommitted local cleanup.json from the same run",
+    "false_stop": "gl-lock-unavailable",
+    "cause": "unanchored STOP status= substring also matched LC2_MENU_LEDGER_PRESTOP status=gl-lock-unavailable",
+    "correction_basis": "owned log has one actual STOP status line, T2_MEMORY_FLOOR; the diagnostic is not a stop"
+  }
+}

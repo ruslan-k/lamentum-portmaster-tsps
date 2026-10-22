@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "run_uuid": "cc013fc9-af26-4e2f-84b6-38e5c7af35dd",
+  "device": "TSPS SpruceOS",
+  "boot_id": "66203f22-4ac8-4a2a-a47c-cddc253d3bda",
+  "mainui_identity": {"pid": 19116, "starttime": 656003},
+  "game_processes": [],
+  "captures": [
+    {
+      "file": "mainui-after.png",
+      "framebuffer_id": 161,
+      "dimensions": "1280x720",
+      "bytes": 21074,
+      "sha256": "9414b1b5e64e14c305d3d0c9231d29b8338df7a733fb0c949fd3a40ce2f87fcf",
+      "visual_result": "SpruceOS lock/clock overlay; not Lamentum"
+    },
+    {
+      "file": "mainui-after-wake.png",
+      "framebuffer_id": 160,
+      "dimensions": "1280x720",
+      "bytes": 56159,
+      "sha256": "b14c44073b36601e7d670e5578bc4175a9747e65b3f0a5fd1ffd16d0cd8c1387",
+      "visual_result": "SpruceOS home UI awake (clock, favourites, gamepad, menu, settings); not Lamentum"
+    }
+  ],
+  "wake_action": {
+    "file": "wake-back.json",
+    "action": "Back",
+    "key_code": 304,
+    "hold_ms": 100,
+    "released": true,
+    "source": "agent evdev injection; not a physical human press"
+  },
+  "raw_screenshots_policy": "local-only; not included in Git"
+}

@@ -91,10 +91,42 @@ apply a safety factor from these data. Share-group identity is unverified and
 GPU completion unobserved. The raw log and captures are local-only; report and
 compact receipts are committed.
 
+## Build249 timestamped storage replay (2026-10-22)
+
+The [build249 device report](../evidence/m2a-20261022-01/README.md) adds monotonic
+timestamps and object/storage generations to the opt-in pair and GL storage
+journal. Runtime SHA-256 is
+`0e62238c69c36e9fbd49669d5c062c0449ee56c2624b44acf37461c206cd588b`; floor96,
+cap300, strict GL, no input.
+
+The owned run (`cc013fc9-af26-4e2f-84b6-38e5c7af35dd`) produced 3 presentation
+records and no menu events, then stopped at `T2_MEMORY_FLOOR` (68 MiB reported
+against floor96). The first-present sample at 6,746 ms/frame1 had
+`MemAvailable=119140` KiB, `CmaFree=17512` KiB, and budget-live `112325632` B.
+The floor callback found the GL lock busy (`EBUSY`), so it could not emit the
+direct live-pair snapshot. It did record the floor timestamp and exact available
+sample (`70304` KiB).
+
+The run emitted 116 pair events (113 with GL storage, 3 without), 163
+storage events (50 extensions), and 24 delete events; no event ring overflowed.
+Replaying each storage generation through the floor timestamp yields 89 live
+GL-storage records: 87 textures / `224539952` B and 2 renderbuffers /
+`11980800` B. The total `236520752` B matches `LC2_LIFE_SUMMARY` at process stop
+exactly. This validates the declared GL-storage event replay for this run; it
+does not prove Mali physical residency or GPU completion.
+
+The T2 budget's exact per-object live value at the floor remains unresolved:
+budget retirement is not logged per NVN object, and the lock-busy callback did
+not sample the independent T2 budget counter. `/proc/pressure/memory` is absent
+on this device. The cleanup receipt's unanchored stop parser also mistook the
+`LC2_MENU_LEDGER_PRESTOP` diagnostic label for a runtime stop; the actual owned
+log contains only `STOP status=T2_MEMORY_FLOOR`. These parser/receipt gaps must
+be fixed before the next run.
+
 ## Next
 
-Complete M2A with timestamped per-generation create/extension/delete joins and a
-same-time live-set total, including the missing early-allocation/PSI samples.
-Keep the 96 MiB floor and 300 MiB cap unchanged. Only after the menu memory gate
+Add per-object T2 budget add/sub events and read that independent counter even
+when the GL lock is busy; anchor the stop/frame parsers to the owned run. Keep
+the 96 MiB floor and 300 MiB cap unchanged. Only after the menu memory gate
 passes should the next phase reduce a measured storage class; world, input,
 sound, save/load, and gameplay 30 FPS remain OPEN.

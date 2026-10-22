@@ -35,7 +35,7 @@ class PadContractTests(unittest.TestCase):
         self.assertEqual(parse_stat(s), {'pid': 123, 'starttime': 456})
 
     def test_cleanup_contract(self):
-        b = {'processes': {n: [{'pid': i, 'starttime': i * 5}] for i, n in enumerate(['MainUI', 'principal.sh', 'runtime.sh'], 1)}, 'game': [], 'online': '4-7'}
+        b = {'processes': {n: [{'pid': i, 'starttime': i * 5}] for i, n in enumerate(['MainUI', 'principal.sh', 'runtime.sh'], 1)}, 'game': [], 'online': '4-7', 'boot_id': 'fixture-boot', 'cpu_sysfs': {str(i): {'online': '0', 'mode': '444'} for i in range(4)}}
         a = copy.deepcopy(b)
         a['processes']['MainUI'][0]['pid'] = 999
         self.assertEqual(validate_cleanup(b, a), [])
@@ -46,6 +46,10 @@ class PadContractTests(unittest.TestCase):
         self.assertIn('game process remains', validate_cleanup(b, bad))
         bad = copy.deepcopy(a); bad['online'] = '0-7'
         self.assertIn('CPU online mask not restored', validate_cleanup(b, bad))
+        bad = copy.deepcopy(a); bad['cpu_sysfs']['0']['mode'] = '644'
+        self.assertIn('CPU online values or sysfs modes not restored', validate_cleanup(b, bad))
+        bad = copy.deepcopy(a); bad['boot_id'] = 'different-boot'
+        self.assertIn('device boot changed during run', validate_cleanup(b, bad))
 
 
 if __name__ == '__main__':
