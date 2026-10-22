@@ -9,26 +9,29 @@ LOG="$GAMEDIR/logs/latest.log"
 exec >"$LOG" 2>&1
 [ -r ./run_identity.py ] || { printf 'LAMENTUM_RUN_HELPER_MISSING\n'; exit 1; }
 
-# The recovered runtime pins its threads to cores 0-3, which Spruce keeps offline.
-# Remember each file's original state and restore it on exit.
+# Remember each file's original state and permissions and restore both on exit.
 CPU_RESTORE=""
+restore_cpu() {
+    for entry in $CPU_RESTORE; do
+        c=${entry%%:*}; rest=${entry#*:}
+        want=${rest%%:*}; mode=${rest##*:}
+        p="/sys/devices/system/cpu/cpu${c}/online"
+        [ -e "$p" ] || continue
+        chmod u+w "$p" 2>/dev/null || true
+        printf '%s' "$want" >"$p" 2>/dev/null || true
+        chmod "$mode" "$p" 2>/dev/null || true
+    done
+}
+trap restore_cpu EXIT
 for c in 0 1 2 3; do
     p="/sys/devices/system/cpu/cpu${c}/online"
     [ -e "$p" ] || continue
     previous=$(cat "$p")
-    CPU_RESTORE="$CPU_RESTORE $c:$previous"
+    mode=$(stat -c '%a' "$p") || { printf 'LAMENTUM_CPU_MODE_READ_FAILED cpu=%s\n' "$c"; exit 1; }
+    CPU_RESTORE="$CPU_RESTORE $c:$previous:$mode"
     chmod u+w "$p" 2>/dev/null || true
     if [ "$previous" = 0 ]; then printf 1 >"$p" || true; fi
 done
-restore_cpu() {
-    for entry in $CPU_RESTORE; do
-        c=${entry%%:*}; want=${entry##*:}
-        p="/sys/devices/system/cpu/cpu${c}/online"
-        [ -e "$p" ] || continue
-        printf '%s' "$want" >"$p" 2>/dev/null || true
-    done
-}
-trap restore_cpu EXIT
 
 export HOME="$GAMEDIR"
 export SDL_VIDEODRIVER=kmsdrm SDL_AUDIODRIVER=alsa

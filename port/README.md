@@ -9,6 +9,8 @@ lamentum-switch/
   save-laboratory/       isolated save directory used by diagnostic runs
 ```
 
+Before runtime start, the launcher temporarily enables CPU0–3 as needed and restores each CPU's original online value and sysfs permissions on exit.
+
 The launcher verifies nothing about the game data beyond the runtime's own checks: the runtime
 compares the section file's size with the size pinned in the owner image and refuses to start
 (`VERIFIED_ROMFS_SECTION_UNAVAILABLE`) when they differ. Validate the image offline (segment

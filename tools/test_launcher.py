@@ -19,6 +19,7 @@ class LauncherTests(unittest.TestCase):
                 p = cpu / ('cpu%d' % index) / 'online'
                 p.parent.mkdir(parents=True)
                 p.write_text(state)
+                p.chmod(0o444)
             runtime = game / 'lamentum-nextos'
             runtime.write_text('#!/bin/bash\n'
                 'printf "%s %s %s %s %s %s\\n" "$LC2_GLES3" "$COTM_ASYNC_QUEUE" '
@@ -36,6 +37,8 @@ class LauncherTests(unittest.TestCase):
             self.assertEqual((game / 'defaults.txt').read_text().strip(), '1 0 0 0 0 96')
             self.assertEqual(''.join((cpu / ('cpu%d' % i) / 'online').read_text()
                                     for i in range(4)), '0101')
+            self.assertEqual([((cpu / ('cpu%d' % i) / 'online').stat().st_mode & 0o777)
+                              for i in range(4)], [0o444] * 4)
             lines = (game / 'logs/latest.log').read_text().splitlines()
             self.assertTrue(lines[0].startswith('LAMENTUM_RUN_HEADER '), lines[:2])
             first = json.loads(lines[0].split(' ', 1)[1])
