@@ -115,6 +115,25 @@ int main(void) {
  assert(lc2_life_events_state()->tex_uncharged_bytes==490);
  lc2_life_events_tex_guest(1000);
  assert(lc2_life_events_state()->tex_guest_bytes==1000);
+ /* M3-B: bounded default-off event ring, with write-after-call reporting. */
+ setenv("LC2_M3B_TIMELINE","0",1);
+ struct lc2_m3b_descriptor window_desc={.stage="bc-full-refresh",.owner_id=105,.object=4660,
+  .gl_name=12,.storage_generation=3,.content_generation=7,.pool_id=8,.pool_generation=9,
+  .compressed_input_bytes=2073600,.rgba_requested_bytes=8294400,.linear_requested_bytes=2073600,
+  .staging_live_requested_peak_bytes=10368000,.gl_intent_bytes=8294400,
+  .width=1920,.height=1080,.level=0,.format=0x44,.allocate=0,.storage_generation_known=1};
+ assert(lc2_m3b_window_begin(&window_desc)==NULL);
+ setenv("LC2_M3B_TIMELINE","1",1);
+ setenv("LC2_M3B_MAX_EVENTS","4",1);
+ struct lc2_m3b_window *window=lc2_m3b_window_begin(&window_desc);assert(window);
+ lc2_m3b_decode_mark(window,100,150);
+ lc2_m3b_gl_alloc_mark(window,160,170);
+ lc2_m3b_upload_mark(window,180,190);
+ lc2_m3b_window_finish(window,200);
+ assert(lc2_m3b_mark("first-present",7));
+ assert(lc2_m3b_mark("teardown",0));
+ assert(lc2_m3b_window_begin(&window_desc)); /* unfinished owner window is incomplete at flush */
+ assert(!lc2_m3b_mark("overflow",0));
  /* The stop-path formatter must agree with printf digit-for-digit: a stray leading
   * or trailing digit silently misreports every counter by 10x. */
  char expect[768];
@@ -173,6 +192,24 @@ class LifeEventTests(unittest.TestCase):
             r = subprocess.run([str(p / 'test')], capture_output=True, text=True)
             self.assertEqual(r.returncode, 0, r.stderr)
             out = r.stdout
+            m3b_windows = [line for line in out.splitlines() if line.startswith('LC2_M3B_WINDOW ')]
+            m3b_marks = [line for line in out.splitlines() if line.startswith('LC2_M3B_MARK ')]
+            self.assertEqual(len(m3b_windows), 1)
+            self.assertIn('run-id=test-budget-run', m3b_windows[0])
+            self.assertIn('stage=bc-full-refresh', m3b_windows[0])
+            self.assertIn('decode-start-ns=100 decode-end-ns=150 decode-wall-ns=50', m3b_windows[0])
+            self.assertIn('gl-alloc-wall-ns=10', m3b_windows[0])
+            self.assertIn('gl-upload-wall-ns=10', m3b_windows[0])
+            self.assertIn('owner-id=105 owner-generation=105 generation-basis=nvn-object-id object=0x1234', m3b_windows[0])
+            self.assertIn('storage-generation=3 storage-generation-known=1 content-generation=7', m3b_windows[0])
+            self.assertIn('source-compressed-bytes=2073600 rgba-requested-bytes=8294400', m3b_windows[0])
+            self.assertIn('linear-requested-bytes=2073600 staging-live-requested-peak-bytes=10368000', m3b_windows[0])
+            self.assertIn('gl-error=unobserved-in-window driver-allocation=unknown', m3b_windows[0])
+            self.assertIn('mali-residency=unknown completion=unobserved', m3b_windows[0])
+            self.assertEqual(len(m3b_marks), 2)
+            self.assertTrue(any('name=first-present value=7' in line for line in m3b_marks))
+            m3b_summary = next(line for line in out.splitlines() if line.startswith('LC2_M3B_SUMMARY '))
+            self.assertIn('configured=4 claimed=5 final-claimed=5 emitted=3 incomplete=1 active=1 dropped=1 format-errors=0 complete=0', m3b_summary)
             self.assertIn('LC2_LIFE_SUMMARY', out)
             self.assertIn('share-group=unverified', out)
             self.assertIn('delete-with-views=1', out)

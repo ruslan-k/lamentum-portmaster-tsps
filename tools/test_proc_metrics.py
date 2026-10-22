@@ -7,6 +7,7 @@ import unittest
 from pathlib import Path
 
 from proc_metrics import collect_proc, cpu_delta, parse_stat, sample_request
+import proc_metrics
 
 
 def sample(t, ticks, *, hz=250, start=42, tid_start=43):
@@ -84,6 +85,25 @@ class CollectorExecutionTests(unittest.TestCase):
         self.assertIn(str(os.getpid()), out['threads'])
         self.assertIn('schedstat', out['threads'][str(os.getpid())])
 
+    def test_unpinned_runtime_discovery_returns_executable_identity(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / 'proc'
+            (root / 'sys/kernel/random').mkdir(parents=True)
+            (root / 'sys/kernel/random/boot_id').write_text('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa')
+            process = root / '77'
+            (process / 'task').mkdir(parents=True)
+            (process / 'comm').write_text('terminator2d-ne')
+            stat = '77 (terminator2d-ne) R 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21'
+            (process / 'stat').write_text(stat)
+            (process / 'status').write_text('VmRSS: 10 kB\nVmSwap: 0 kB\n')
+            executable = Path(directory) / 'runtime'
+            executable.write_bytes(b'self-authored runtime identity fixture')
+            (process / 'exe').symlink_to(executable)
+            row = collect_proc(proc_root=str(root), runtime_path=str(executable))
+            self.assertTrue(row['running'])
+            self.assertEqual(row['elf_dev'], os.stat(executable).st_dev)
+            self.assertEqual(row['elf_ino'], os.stat(executable).st_ino)
+
     def test_expected_exec_inode_is_checked_even_when_pid_generation_matches(self):
         actual = collect_proc(pid=os.getpid())
         metadata = os.stat('/proc/self/exe')
@@ -146,6 +166,100 @@ class IdentityAndStatTests(unittest.TestCase):
         self.assertEqual(len(out['top_threads']), 6)
         self.assertEqual(out['cpu_percent'], 50.0)
         self.assertEqual(out['thread_deltas'][0]['cpu_ms_per_s'], 100.0)
+
+
+class MemoryTimelineTests(unittest.TestCase):
+    def test_prelaunch_system_sample_keeps_missing_values_unknown(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / 'proc'
+            (root / 'sys/kernel/random').mkdir(parents=True)
+            boot = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+            (root / 'sys/kernel/random/boot_id').write_text(boot)
+            (root / 'meminfo').write_text('MemTotal: 1000 kB\nMemAvailable: 500 kB\nSwapTotal: 2000 kB\nSwapFree: 1500 kB\n')
+            (root / 'vmstat').write_text('pgfault 20\n')
+            expected = {'boot_id': boot, 'elf_sha256': 'a' * 64, 'elf_dev': 9, 'elf_ino': 10}
+            sample = proc_metrics.collect_memory_system_sample(expected,
+                'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', expected['elf_sha256'], proc_root=str(root))
+            self.assertEqual(sample['sample_status'], 'ok')
+            self.assertEqual(sample['pid'], None)
+            self.assertEqual(sample['phase'], 'prelaunch')
+            self.assertEqual((sample['elf_dev'],sample['elf_ino']),(9,10))
+            self.assertEqual(sample['system']['MemAvailable_kib'], 500)
+            self.assertIsNone(sample['system']['CmaFree_kib'])
+            self.assertIsNone(sample['vmstat']['pswpin'])
+            self.assertIsNone(sample['pressure_memory'])
+
+    def test_system_memory_request_serializes_tested_function(self):
+        run_uuid = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
+        expected = {'boot_id': 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'}
+        source = proc_metrics.system_memory_request(expected, run_uuid, 'a' * 64)
+        compile(source, '<remote-system-memory>', 'exec')
+        self.assertIn(run_uuid, source)
+        self.assertIn(expected['boot_id'], source)
+        self.assertIn('collect_memory_system_sample', source)
+
+    def test_attach_discovery_uses_executable_inode_and_boot_id(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / 'proc'
+            (root / 'sys/kernel/random').mkdir(parents=True)
+            boot = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+            (root / 'sys/kernel/random/boot_id').write_text(boot)
+            executable = Path(directory) / 'runtime'
+            executable.write_bytes(b'self-authored runtime identity fixture')
+            process = root / '77'
+            (process / 'task').mkdir(parents=True)
+            (process / 'comm').write_text('terminator2d-ne')
+            (process / 'stat').write_text('77 (terminator2d-ne) R 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21')
+            (process / 'exe').symlink_to(executable)
+            expected = {'boot_id': boot, 'elf_dev': os.stat(executable).st_dev,
+                        'elf_ino': os.stat(executable).st_ino}
+            owner = proc_metrics.discover_memory_owner(expected, proc_root=str(root))
+            self.assertEqual(owner['status'], 'ok')
+            self.assertEqual((owner['pid'], owner['starttime']), (77, 19))
+            self.assertEqual((owner['elf_dev'], owner['elf_ino']),
+                             (expected['elf_dev'], expected['elf_ino']))
+
+    def test_sparse_smaps_sample_records_read_duration(self):
+        owner = collect_proc(pid=os.getpid())
+        expected = {key: owner[key] for key in ('boot_id','pid','starttime','elf_dev','elf_ino')}
+        sample = proc_metrics.collect_memory_sample(expected,
+            'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','a'*64,sample_seq=39)
+        self.assertEqual(sample['sample_status'],'ok')
+        self.assertIn(sample['smaps_rollup']['status'],('ok','unavailable'))
+        self.assertGreaterEqual(sample['smaps_rollup']['read_duration_ns'],0)
+
+    def test_bounded_target_timeline_carries_run_and_process_identity(self):
+        live = collect_proc(pid=os.getpid())
+        exe = os.stat('/proc/self/exe')
+        expected = {key: live[key] for key in ('boot_id', 'pid', 'starttime')}
+        expected.update(elf_dev=exe.st_dev, elf_ino=exe.st_ino)
+        run_uuid = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+        elf_sha256 = 'a' * 64
+        source = proc_metrics.memory_timeline_request(
+            expected, run_uuid, elf_sha256, max_samples=2, interval_ms=10)
+        compile(source, '<memory-timeline-payload>', 'exec')
+        run = subprocess.run([sys.executable, '-c', source], capture_output=True,
+                             text=True, timeout=10)
+        self.assertEqual(run.returncode, 0, run.stderr)
+        timeline = json.loads(run.stdout)
+        self.assertEqual(timeline['run_uuid'], run_uuid)
+        self.assertEqual(timeline['elf_sha256'], elf_sha256)
+        self.assertEqual(timeline['identity'], expected)
+        self.assertEqual(timeline['sample_count'], 2)
+        self.assertFalse(timeline['complete'])
+        self.assertEqual(timeline['stop_reason'], 'sample-limit')
+        self.assertEqual(timeline['dropped_samples'], 0)
+        first, second = timeline['samples']
+        self.assertEqual(first['phase'], 'process-attach')
+        self.assertEqual(first['sample_status'], 'ok')
+        self.assertEqual(second['phase'], 'sampling')
+        self.assertGreater(second['t_monotonic_ns'], first['t_monotonic_ns'])
+        self.assertGreater(first['process']['VmRSS_kib'], 0)
+        self.assertIsNotNone(first['process']['VmHWM_kib'])
+        self.assertIn('CmaFree_kib', first['system'])
+        self.assertIn('pswpin', first['vmstat'])
+        self.assertIn('pressure_memory', first)
+        self.assertIn(first['smaps_rollup']['status'], ('not-scheduled', 'ok', 'unavailable'))
 
 
 if __name__ == '__main__':

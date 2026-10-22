@@ -42,4 +42,5 @@ __pycache__/
 evidence/**/kernel-before.json
 evidence/**/kernel-after.json
 evidence/**/owned-log-final.json
+evidence/**/memory-timeline.raw.json
 build-*-home/
