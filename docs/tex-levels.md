@@ -156,12 +156,38 @@ share-group identity remains unverified. `/proc/pressure/memory` is unavailable.
 KMS after cleanup and an agent-injected Back wake shows SpruceOS home, not
 Lamentum. No scene, input, sound, save/load, menu, or gameplay FPS was verified.
 
+## Build251 M3-A BC3 staging candidate (host-verified, device A/B pending)
+
+The build250 owned log identifies BC3 texture id105 (`1920x1080`, format
+`0x44`) before first present. The existing wide-atlas stripe path was not used;
+this medium-width owner followed the full decode path. Source analysis gives
+`8294400` B for the RGBA buffer plus `2073600` B for its simultaneous linear BC
+buffer (`10368000` B requested scratch). The existing 128-row stripe path
+requests `983040` B plus `245760` B (`1228800` B), a source-derived reduction
+of `9139200` B per upload. This is a bound on requested overlapping CPU buffers,
+not RSS, system `MemAvailable`, swap, or Mali physical residency.
+
+Build251 adds the default-off `LC2_BC_STRIPE_MEDIUM=1` switch for non-scaled BC
+textures 1024–4096 pixels wide, at both initialization and refresh; the existing
+`width>4096` behavior is unchanged. The same decoder feeds the full and stripe
+paths. The host C fixture verifies policy boundaries and byte-for-byte BC3
+decode equivalence for `1920x1080` tiled input and a partial-stripe case. Host
+suite: 281 passed. Runtime SHA-256:
+`1bcb32a4bac2e1e30e4c64ab8bb5d8ddd58c3cc59363a785919991eac4ab6b78`.
+
+Not installed or device-tested yet. The next gate is a matched, three-repeat A/B
+on this same build251, alternating flag-absent and `LC2_BC_STRIPE_MEDIUM=1`
+arms. Keep floor96/cap300/strict GL/no input; compare the full/striped scratch
+records, first-present memory/swap counters, stop outcome, GL errors and cleanup.
+Do not enter New Game. An improvement in requested scratch alone does not prove
+less RSS/swap, menu stability or gameplay FPS.
+
 ## Next
 
 The exact budget/storage replay closes the same-run arithmetic for this
-no-alias menu arm; it does not make the game playable or prevent swap. Preserve
-floor96/cap300 and select one evidence-backed, quality-neutral first-present
-memory reduction path. Lossy texture transcode or render-resolution changes
+no-alias menu arm; it does not make the game playable or prevent swap. Validate
+the build251 medium-width stripe candidate before selecting a different
+first-present memory path. Lossy texture transcode or render-resolution changes
 still require explicit quality acceptance; do not enter New Game until the
 menu holds the safety gate. World, input, sound, save/load, no-swap, and gameplay
 30 FPS remain OPEN.

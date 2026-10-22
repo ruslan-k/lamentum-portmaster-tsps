@@ -3,7 +3,35 @@
 #include <stdlib.h>
 #include "zero_bc_layout.h"
 #include "zero_bc.h"
+static void check_bc3_stripe(unsigned w,unsigned h) {
+    struct zero_bc_level m;assert(zero_bc_level_layout(w,h,16,0,&m));
+    size_t blocks=(size_t)m.blocks_x*m.blocks_y*16,pixels=(size_t)w*h*4;
+    unsigned char *linear_source=malloc(blocks),*tiled=calloc(m.size,1),*linear_full=malloc(blocks);
+    unsigned char *full=malloc(pixels),*striped=malloc(pixels);
+    assert(linear_source&&tiled&&linear_full&&full&&striped);
+    for(size_t i=0;i<blocks;i++)linear_source[i]=(unsigned char)(i*53+i/29);
+    assert(zero_bc_blocks_copy(&m,tiled,m.size,linear_source,blocks,0,0,m.blocks_x,m.blocks_y,1));
+    assert(zero_bc_blocks_copy(&m,tiled,m.size,linear_full,blocks,0,0,m.blocks_x,m.blocks_y,0));
+    assert(zero_bc_decode(0x44,full,pixels,linear_full,blocks,w,h,(size_t)m.blocks_x*16));
+    for(unsigned y=0;y<h;y+=128) {
+        unsigned rows=h-y;if(rows>128)rows=128;
+        size_t row_blocks=(size_t)m.blocks_x*((rows+3)/4),row_bytes=row_blocks*16;
+        unsigned char *linear=malloc(row_bytes);assert(linear);
+        assert(zero_bc_blocks_copy(&m,tiled,m.size,linear,row_bytes,0,y/4,m.blocks_x,(rows+3)/4,0));
+        assert(zero_bc_decode(0x44,striped+(size_t)y*w*4,(size_t)rows*w*4,
+                              linear,row_bytes,w,rows,(size_t)m.blocks_x*16));
+        free(linear);
+    }
+    assert(memcmp(full,striped,pixels)==0);
+    free(linear_source);free(tiled);free(linear_full);free(full);free(striped);
+}
 int main(void) {
+    assert(zero_bc_should_stripe(16,4097,0,0));
+    assert(!zero_bc_should_stripe(16,4096,0,0));
+    assert(zero_bc_should_stripe(16,1920,0,1));
+    assert(!zero_bc_should_stripe(16,768,0,1));
+    assert(!zero_bc_should_stripe(16,1920,1,1));
+    assert(!zero_bc_should_stripe(0,1920,0,1));
     struct zero_bc_level m;
     assert(zero_bc_level_layout(8192,4096,16,0,&m));
     assert(m.size==33554432 && m.blocks_x==2048 && m.blocks_y==1024);
@@ -42,6 +70,7 @@ int main(void) {
     }
     assert(memcmp(full,striped,rgba_bytes)==0);
     free(linear);free(tiled);free(full);free(striped);
-    printf("BC3 8192x4096: %zu unique in-range blocks; mip13, guards and stripe equivalence OK\n",checked);
+    check_bc3_stripe(1920,1080);
+    printf("BC3 layout and 8192x132/1920x1080 stripe equivalence OK blocks=%zu\n",checked);
     return 0;
 }
