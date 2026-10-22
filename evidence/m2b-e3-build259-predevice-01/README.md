@@ -13,8 +13,8 @@
 
 ## Verified
 
-- Focused storage-layout/admission suite: **14 tests passed**, including the extracted pre-allocation call-order fixture.
-- Full host suite: **301 tests passed**.
+- Full host suite: **302 tests passed**.
+- Focused coverage: **14 storage layout/admission tests** plus **1 extracted T2 `/proc`/margin wrapper test**; the latter exercised unset/invalid margins, missing CMA, available-memory and CMA refusals, and overflow.
 - Pinned source baseline: **435/435 hashes OK**.
 - Adapter source `git diff --check` passed; generated overlay is byte-for-byte equal to the adapter source diff. Overlay SHA-256: `4a1837eff2b1d3d3619262ee8250e0fc12e504ca9c6357abc561ecb66cdcf5fc`.
 - Cross-build in pinned image `sha256:e437308c01ce7af4a035c3f0652bc886e258889f66803f805bce53d05af75f0c` succeeded. `build-259/lamentum-nextos`: ELF64/AArch64 PIE, 2,198,560 bytes, SHA-256 `d72e2f69afa16dd5b846950f3fba80bc9926edcab9b2d45c57ed23faa14b9066`; maximum GLIBC requirement 2.27. The ELF contains `T2_STORAGE_ADMISSION`, `T2_STORAGE_ADMISSION_SUMMARY`, and `T2_STORAGE_MARGIN_MIB` markers.
