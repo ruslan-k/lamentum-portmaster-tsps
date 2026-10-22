@@ -3180,13 +3180,13 @@ Cleanup errors were empty: no game remained, `MainUI`/`principal.sh`/`runtime.sh
 
 ---
 
-## 70. Post-build247 audit: safe first-world bring-up, performance, and REA feasibility (2026-10-22)
+## 71. Post-build247 audit: safe first-world bring-up, performance, and REA feasibility (2026-10-22)
 
-**Reviewed source HEAD:** [3bb74d3c2c](https://github.com/ruslan-k/lamentum-portmaster-tsps/commit/3bb74d3c2c), including the preceding [ed78c1b](https://github.com/ruslan-k/lamentum-portmaster-tsps/commit/ed78c1bb2d). Read the recent source/commit diffs, current roadmap §§48–69, runtime and launcher, texture/lifetime reports, and upstream [morluto/rea](https://github.com/morluto/rea) documentation. **This is a source-and-evidence review, not a new device run, installed build, Windows game inspection, executable decompilation, tested memory optimization, or FPS measurement.** Keep previous numbered sections as a historical record. This section supersedes older NEXT priorities wherever implementation already exists.
+**Reviewed source HEAD and same-day device receipt:** [3bb74d3c2c](https://github.com/ruslan-k/lamentum-portmaster-tsps/commit/3bb74d3c2c), including the preceding [ed78c1b](https://github.com/ruslan-k/lamentum-portmaster-tsps/commit/ed78c1bb2d). Read the recent source/commit diffs, current roadmap §§48–70, runtime and launcher, [October 22 launcher smoke](../evidence/launcher-smoke-20261022-01/README.md), texture/lifetime reports, and upstream [morluto/rea](https://github.com/morluto/rea) documentation. **This is a source-and-evidence review, not a new device run, installed build, Windows game inspection, executable decompilation, tested memory optimization, or FPS measurement.** Keep previous numbered sections as a historical record. This section supersedes older NEXT priorities wherever implementation already exists.
 
 **STATUS: NOT PLAYABLE.** Working menu/Options/New Game UI and Loading observations are distinct from a correct controllable world. No verified world movement, audible audio, cold save/load, or gameplay FPS exists. **Goal order: memory-safe menu -> correct owned navigation -> first real world -> playable audio/save -> measured gameplay FPS -> 30 FPS.**
 
-### 70.1. What was actually completed
+### 71.1. What was actually completed
 
 | Workstream | Verified progress | Still open |
 |---|---|---|
@@ -3195,14 +3195,14 @@ Cleanup errors were empty: no game remained, `MainUI`/`principal.sh`/`runtime.sh
 | Memory budget | Last sampled texture charge 115278848 bytes / **109.94 MiB**, versus decoded 230.30 MiB; decoded/guest ~**2.256x** and decoded/charged ~**2.095x** in this one menu arm | 300 MiB budget is in a different basis than decoded GL storage; it does NOT cap physical GL/Mali residency to 300 MiB |
 | Lifetime | Native lc2_lifetime.h C11 test core, object/storage generation tokens, aliases/readers/retirement guards; build244 observed **24/24 deleted GL names reused**; build245 added renderbuffer class | Share-group, all allocation paths, GPU completion, independent live backing and physical deletion unproven; core is not an automatic reclaimer |
 | Mali correlation | Native upload brackets for owner81/GL39 and owner92/GL47; one descriptor disappears/reuses a VA; one persists in sampled interval | Allocation VA is not stable resource identity; staged/retained attribution and actual refund unproven |
-| Launcher | ed78c1b restores sysfs CPU online mode AND original permissions; 3bb74d gets modes with Python os.stat instead of depending on GNU stat; regression for missing stat | A separate on-device launch/forced-exit test after current launcher commits |
+| Launcher | ed78c1b restores sysfs CPU online mode AND original permissions; 3bb74d gets modes with Python os.stat instead of depending on GNU stat; regression for missing stat | **October 22 device smoke verified**: 12 present records, typed T2_MEMORY_FLOOR at 62 MiB versus floor96, no menu events; CPU0–3 online=0 and mode=0444 restored; forced-exit branch not separately qualified |
 | Rendering | Known literal 1920x1080 game-side render targets; physical panel already 1280x720; partial shader-through-45 and menu GLSL fixes | Actual fragment45 four-MRT output, correct world pixels, total scene GPU cost, and first-world shader census |
 
 **Accounting interpretation:** In the same build247 arm, the 230.30 MiB live decoded texture payload is far larger than the 102.07 MiB guest/compressed payload. The additional mip-level total is only 0.68 MiB; scaled/half and uncharged request buckets were zero in this phase. The texture cap of 300 MiB in guest/charged units may correspond to considerably greater decoded GL requests; 300 × 2.256 ≈ 677 MiB is an illustrative pressure warning, **not a measured physical allocation or generally valid conversion factor**. The residual ~7.7% between guest and last charge is also not proven overhead: the sampled counts differ (90 versus 93 objects) and may span different instants. Resolve it by joining the *same live generations at the same timestamp*. Do not infer a leak. Sources: [tex-levels](tex-levels.md), [ledger-bases](ledger-bases.md), [life-events](life-events.md), [lifetime-core](lifetime-core.md), §§65–69.
 
-**Memory gate:** previous menu arms reached MemAvailable about 54.7 MiB and CmaFree about 1 MiB while normal T2_MEMORY_FLOOR_MIB=96 was active. Historical 96 MiB floor stops are real safe refusals, not successful gameplay. 32 MiB was a diagnostic floor, not a valid release fix. The current accounting additions did not improve headroom.
+**Memory gate:** the new [launcher smoke](../evidence/launcher-smoke-20261022-01/README.md) verified build247 on-device, 12 NVN_PRESENT_PIXELS records, zero LC2_MENU_EVENT, and a safe T2_MEMORY_FLOOR refusal at **62 MiB versus floor96**, with clean MainUI/process/CPU value+permission restoration. These are not confirmed Lamentum visible frames or gameplay FPS. Earlier menu arms reached MemAvailable about 54.7 MiB and CmaFree about 1 MiB while normal T2_MEMORY_FLOOR_MIB=96 was active. Historical 96 MiB floor stops are real safe refusals, not successful gameplay. 32 MiB was a diagnostic floor, not a valid release fix. The current accounting additions did not improve headroom.
 
-### 70.2. P0-M2A — Source-accurate generation-joined memory ledger
+### 71.2. P0-M2A — Source-accurate generation-joined memory ledger
 
 **Code locations to inspect before each edit:** native/nvn_textures.h, native/nvn_framebuffers.h, native/nvn_render.h, native/lc2_lifetime.h, native/lc2_life_events.h within runtime/lamentum-adapter.patch; tools/ledger_bases.py, applicable life-event fixtures, actual guest mmap/alias logic, and the runtime stop handler. Never edit reconstructed baseline files directly; preserve the manifest-pinned 435-file source and include changes in the overlay patch.
 
@@ -3220,7 +3220,7 @@ Cleanup errors were empty: no game remained, `MainUI`/`principal.sh`/`runtime.sh
 
 **PASS:** a timestamp-joined storage/guest/budget ledger with exact counts and explicitly bounded unknowns; source of the observed mismatch either explained or narrowed to per-object evidence. **STOP:** negative balances, phantom frees, source mismatch or instrumentation that changes memory behavior. **This PR does not yet save RAM.**
 
-### 70.3. P0-M2B — Protect allocations *before* the device is out of memory
+### 71.3. P0-M2B — Protect allocations *before* the device is out of memory
 
 After M2A, add a **separate, default-off pre-allocation admission gate**, targeting the earliest actual large GL storage call.
 
@@ -3232,7 +3232,7 @@ After M2A, add a **separate, default-off pre-allocation admission gate**, target
 
 **PASS:** every tested large allocation is either safely admitted with known headroom or rejected before kernel/Mali OOM. Actual additional *available* memory is a later optimization task.
 
-### 70.4. P0-G3 — Reduce a measured storage class; choose one lossless path first
+### 71.4. P0-G3 — Reduce a measured storage class; choose one lossless path first
 
 **G3-A: GPU-compressed texture side cache (conditional).**
 
@@ -3250,7 +3250,7 @@ After M2A, add a **separate, default-off pre-allocation admission gate**, target
 
 **G3 PASS:** repeatable safe memory headroom for the SAME phase with correct image semantics and no new stall. **STOP:** a smaller budget number without actual RAM benefit, unclear lifecycle or visual regressions.
 
-### 70.5. P0-N5/W0/W1 — Verify New Game and actual gameplay rather than more menu probes
+### 71.5. P0-N5/W0/W1 — Verify New Game and actual gameplay rather than more menu probes
 
 1. **Pin identities:** current installed ELF SHA, exact owner Switch image/segments, metadata, catalogue and adapter hashes, Spruce version, memory floor96, texture cap300, strict GL. Source HEAD 3bb74d alone does NOT prove that launcher or runtime was deployed.
 2. **Qualify navigation on device:** use the currently implemented persistent owned reader/N4 action graph, newer distinct presentation serials for observations, monotonic time deadline, mandatory button-release ACK, same PID/starttime/UUID before and after each capture. An identical frame seen twice must never satisfy a two-frame Confirm. A failed page oracle must refuse input instead of sending an automatic corrective press.
@@ -3262,14 +3262,14 @@ After M2A, add a **separate, default-off pre-allocation admission gate**, target
 
 **W0 PASS:** reproducible actual first-world pixels plus controlled character motion. **W1 PASS:** interaction, scene transition, audible sound, and cold save/load. **STOP:** missing owner/capture, early memory-floor condition, unverified shader pair, broken framebuffer or GPU error. No gameplay FPS claim before W0.
 
-### 70.6. P1-F0 — The performance plan once W0 succeeds
+### 71.6. P1-F0 — The performance plan once W0 succeeds
 
 - F0-A: quiet, phase-qualified 60–120 second presented-frame ledger, CPU scheduling and per-thread CPU, wall vs guest wait, memory compression/fault CPU, NVN replay, GPU fence waits, swap. Use no high-volume GL logging or readback. Three matched runs and exact serial coverage; exclude loading only from an **explicit separate** steady-world metric. Old build202 title/Loading P50/P95 is not gameplay.
 - F0-B: if host/guest wait dominates, trace Unity PlayerLoop vs Horizon SleepThread/WaitSynchronization and compressor contention; modify only semantics proven by call-site inspection. If GL replay dominates, start with native/nvn_render.h kind=7 glTexImage2D-per-cbuf cost, buffered glTexSubImage2D and exact-content/generation skip; then sampler state, FBO churn and buffer allocations. If GPU fill dominates, qualify target resolution/bloom and tile-based render passes.
 - F0-C: avoid performance shifts: moving CPU replay time into glFinish, accumulating new resident GL caches, or reducing FBO resolution while breaking readable UI all fail. Resource caching keys MUST include share group, object/storage generation, backing write epoch and last-reader/fence semantics.
 - F0-D: staged throughput targets 5/10/15/20 and **30 FPS**, with original roadmap's whole-frame P50/P95 ≤33.33 ms, P99 and no recurring >100 ms stutters, under safe RAM/thermal and valid audio/save constraints. Menu-only 30 FPS or an inverse median interval is not acceptance.
 
-### 70.7. REA investigation: could Switch or Windows decompilation yield a native ARM64 launcher?
+### 71.7. REA investigation: could Switch or Windows decompilation yield a native ARM64 launcher?
 
 **Short decision:** [REA](https://github.com/morluto/rea) is useful for *targeted reverse engineering* of the owner game, but **does not automatically turn a Windows x86-64 game or Switch NSO into a native Linux ARM64 game**. The current Switch port already uses **native ARM64 machine code** wrapped by a Linux AArch64 Horizon/NVN/Unity compatibility runtime. The greatest practical benefit of REA is finding the exact owner function/ABI/resource/scene behavior blocking this adapter; not reproducing an entire Unity engine from decompiler output.
 
@@ -3350,11 +3350,11 @@ Raw mode maps **one file as one region**; it does not reconstruct Switch NSO imp
 
 **Licensing/data rule:** use only legally accessible owner binaries, do not commit original game NSO/DLL, metadata, shaders, transformed assets or bulk decompiled pseudocode. Preserve independent hash-pinned evidence rather than publishing proprietary artifacts.
 
-### 70.8. Prioritized PR execution order and hard gates
+### 71.8. Prioritized PR execution order and hard gates
 
 | Order | PR | Deliverable | PASS / immediate STOP |
 |---:|---|---|---|
-| 1 | **L0** | Device acceptance for launcher 3bb74d sysfs online and permission restoration, no GNU stat dependency, normal and forced stop | Original CPU online AND permissions, MainUI/owner cleanup |
+| CLOSED | **L0** | The [Oct 22 smoke](../evidence/launcher-smoke-20261022-01/README.md) verified statless launcher, owned principal execution, safe memory refusal and CPU online/mode restoration | Normal typed-stop/device cleanup PASS; **forced-exit branch still untested** |
 | 2 | **M2A-1** | Prelaunch→EGL→first texture→first frame→prestop timeline | Single UUID/boot/PID/ELF; no contaminated process phases |
 | 3 | **M2A-2** | Per-texture decoded/guest/charged exact-generation join + 7.7% discrepancy | Same instant, exact object set, no GL-name-only keys |
 | 4 | **M2A-3** | All-class framebuffer/renderbuffer/buffer/EGL staging + fence/reader lifecycle | No early free, completed reader proof or explicit unknown |
@@ -3368,4 +3368,4 @@ Raw mode maps **one file as one region**; it does not reconstruct Switch NSO imp
 
 Every PR must report: SHA256 for source patch, recovered baseline manifest, installed ELF, original owner image and shader catalogue; exact env and feature-off fallback; clean host fixtures; run UUID/boot/PID/starttime; stateful owned screenshot and log coverage; available/CMA, decoded/charged/driver bases with unknown units labeled; typed stop; MainUI/principal restoration; original CPU **online value and mode**, zero stray processes and no lingering debugfs mount. Do NOT describe a new host test count as device proof or the *absence* of an OOM record as positive memory safety without full kernel/run evidence.
 
-**Immediate recommendation:** finish M2A exact generation/basis joins and the preallocation safety barrier **before a new New Game run**. In parallel, inspect the owner's **Windows install** with R0 to determine whether a Mono CIL path exists. Use REA primarily to understand the exact Unity scene/resource/SVC blockers in the current ARM64 runtime, not as an automatic native conversion pipeline.
+**Immediate recommendation:** L0 normal-stop acceptance is now closed by the Oct 22 smoke; finish M2A exact generation/basis joins and the preallocation safety barrier **before a new New Game run**. In parallel, inspect the owner's **Windows install** with R0 to determine whether a Mono CIL path exists. Use REA primarily to understand the exact Unity scene/resource/SVC blockers in the current ARM64 runtime, not as an automatic native conversion pipeline.
