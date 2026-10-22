@@ -1829,10 +1829,10 @@ index 0000000..c25256f
 +#endif
 diff --git a/native/lc2_menu_ledger.h b/native/lc2_menu_ledger.h
 new file mode 100644
-index 0000000..3b9eb84
+index 0000000..dfbb269
 --- /dev/null
 +++ b/native/lc2_menu_ledger.h
-@@ -0,0 +1,269 @@
+@@ -0,0 +1,293 @@
 +/* MENU_MEMORY_LEDGER (owner roadmap 40.5 M0): measurement without behaviour change.
 + *
 + * One line at most once per second while enabled, plus a forced line at the
@@ -1846,6 +1846,13 @@ index 0000000..3b9eb84
 +#ifndef LC2_MENU_LEDGER_H
 +#define LC2_MENU_LEDGER_H
 +#include <time.h>
++#include "lc2_proc_memory_snapshot.h"
++#ifndef LC2_MENU_LEDGER_MEMINFO_PATH
++#define LC2_MENU_LEDGER_MEMINFO_PATH "/proc/meminfo"
++#endif
++#ifndef LC2_MENU_LEDGER_STATUS_PATH
++#define LC2_MENU_LEDGER_STATUS_PATH "/proc/self/status"
++#endif
 +
 +static struct {
 +    unsigned configured, enabled, lines, forced_first, forced_floor;
@@ -2026,11 +2033,28 @@ index 0000000..3b9eb84
 +    if(lc2_menu_ledger_meminfo("MemAvailable")<65536UL)lc2_menu_ledger_targets("pre-floor-targets",frames);
 +}
 +
++/* One small proc-only read before attempting the GL lock. This records host memory
++ * at the floor boundary even when the adapter-storage ledger cannot take its try-lock. */
++static void lc2_menu_ledger_floor_memory(unsigned long floor_available_kib,
++        unsigned long floor_swap_free_kib,uint64_t floor_check_ns) {
++    char line[512];
++    int n=lc2_proc_memory_snapshot_format_line(line,sizeof(line),lc2_life_events_run_id(),
++        floor_check_ns,floor_available_kib,floor_swap_free_kib,
++        LC2_MENU_LEDGER_MEMINFO_PATH,LC2_MENU_LEDGER_STATUS_PATH);
++    if(n>0)printf("%s",line);
++    else printf("LC2_MENU_FLOOR_MEMORY status=format-error run-id=%s floor-check-t-ns=%llu"
++        " floor-available-kib=%lu floor-swap-free-kib=%lu\n",
++        lc2_life_events_run_id(),(unsigned long long)floor_check_ns,
++        floor_available_kib,floor_swap_free_kib);
++    fflush(stdout);
++}
++
 +/* Called on the 250 ms watcher before a floor stop. Try-lock rather than wait:
 + * an active GL call makes the exact storage snapshot unknown, not worth a deadlock. */
 +static void lc2_menu_ledger_floor_preflight(unsigned long floor_available_kib,
 +        unsigned long floor_swap_free_kib,uint64_t floor_check_ns) {
 +    if(!__atomic_load_n(&lc2_menu_ledger.enabled,__ATOMIC_ACQUIRE))return;
++    lc2_menu_ledger_floor_memory(floor_available_kib,floor_swap_free_kib,floor_check_ns);
 +    int lock_rc=pthread_mutex_trylock(&nvn_gl_completion.mutex);
 +    if(lock_rc) {
 +        printf("LC2_MENU_FLOOR_CAPTURE status=gl-lock-unavailable lock-rc=%d floor-check-t-ns=%llu floor-available-kib=%lu floor-swap-free-kib=%lu\n",
@@ -2202,6 +2226,129 @@ index 0000000..ff9ab3b
 +    if(bytes<156)return -1;
 +    return word!=UINT32_C(0x3f800000);
 +}
++#endif
+diff --git a/native/lc2_proc_memory_snapshot.h b/native/lc2_proc_memory_snapshot.h
+new file mode 100644
+index 0000000..2a9982a
+--- /dev/null
++++ b/native/lc2_proc_memory_snapshot.h
+@@ -0,0 +1,117 @@
++#ifndef LC2_PROC_MEMORY_SNAPSHOT_H
++#define LC2_PROC_MEMORY_SNAPSHOT_H
++
++#include <errno.h>
++#include <fcntl.h>
++#include <stdint.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include <time.h>
++#include <unistd.h>
++
++struct lc2_proc_memory_snapshot {
++    uint64_t start_ns,end_ns;
++    int time_known,meminfo_read,status_read;
++    int cmafree_known,vmrss_known,vmswap_known;
++    long cmafree_kib,vmrss_kib,vmswap_kib;
++};
++
++static int lc2_proc_memory_snapshot_now(uint64_t *value) {
++    struct timespec ts;
++    if(!value || clock_gettime(CLOCK_MONOTONIC,&ts))return 0;
++    *value=(uint64_t)ts.tv_sec*1000000000ULL+(uint64_t)ts.tv_nsec;
++    return 1;
++}
++
++static int lc2_proc_memory_snapshot_read_text(const char *path,char *buffer,size_t capacity) {
++    if(!path || !buffer || capacity<2)return 0;
++    int fd=open(path,O_RDONLY|O_CLOEXEC);
++    if(fd<0)return 0;
++    ssize_t count;
++    do {count=read(fd,buffer,capacity-1);} while(count<0 && errno==EINTR);
++    close(fd);
++    if(count<0 || (size_t)count>=capacity-1)return 0;
++    buffer[count]='\0';
++    return 1;
++}
++
++static int lc2_proc_memory_snapshot_field_kib(const char *text,const char *key,long *value) {
++    if(!text || !key || !value)return 0;
++    size_t key_length=strlen(key);
++    const char *line=text;
++    while(*line) {
++        if(!strncmp(line,key,key_length) && line[key_length]==':') {
++            const char *number=line+key_length+1;
++            while(*number==' ' || *number=='\t')number++;
++            if(*number<'0' || *number>'9')return 0;
++            errno=0;char *end=NULL;long parsed=strtol(number,&end,10);
++            if(errno==ERANGE || end==number || parsed<0)return 0;
++            *value=parsed;return 1;
++        }
++        const char *next=strchr(line,'\n');
++        if(!next)break;
++        line=next+1;
++    }
++    return 0;
++}
++
++static void lc2_proc_memory_snapshot_capture(const char *meminfo_path,const char *status_path,
++        struct lc2_proc_memory_snapshot *sample) {
++    if(!sample)return;
++    memset(sample,0,sizeof(*sample));
++    sample->cmafree_kib=sample->vmrss_kib=sample->vmswap_kib=-1;
++    int start_ok=lc2_proc_memory_snapshot_now(&sample->start_ns);
++    char buffer[4096];
++    if(lc2_proc_memory_snapshot_read_text(meminfo_path,buffer,sizeof(buffer))) {
++        sample->meminfo_read=1;
++        sample->cmafree_known=lc2_proc_memory_snapshot_field_kib(buffer,"CmaFree",&sample->cmafree_kib);
++    }
++    if(lc2_proc_memory_snapshot_read_text(status_path,buffer,sizeof(buffer))) {
++        sample->status_read=1;
++        sample->vmrss_known=lc2_proc_memory_snapshot_field_kib(buffer,"VmRSS",&sample->vmrss_kib);
++        sample->vmswap_known=lc2_proc_memory_snapshot_field_kib(buffer,"VmSwap",&sample->vmswap_kib);
++    }
++    int end_ok=lc2_proc_memory_snapshot_now(&sample->end_ns);
++    sample->time_known=start_ok && end_ok && sample->end_ns>=sample->start_ns;
++}
++
++static const char *lc2_proc_memory_snapshot_long_token(long value,char buffer[32]) {
++    if(value<0)return "unknown";
++    snprintf(buffer,32,"%ld",value);
++    return buffer;
++}
++
++static const char *lc2_proc_memory_snapshot_u64_token(uint64_t value,int known,char buffer[32]) {
++    if(!known)return "unknown";
++    snprintf(buffer,32,"%llu",(unsigned long long)value);
++    return buffer;
++}
++
++static int lc2_proc_memory_snapshot_format_line(char *line,size_t capacity,const char *run_id,
++        uint64_t floor_check_ns,unsigned long floor_available_kib,unsigned long floor_swap_free_kib,
++        const char *meminfo_path,const char *status_path) {
++    if(!line || !capacity)return -1;
++    struct lc2_proc_memory_snapshot sample;
++    lc2_proc_memory_snapshot_capture(meminfo_path,status_path,&sample);
++    char start[32],end[32],duration[32],cma[32],rss[32],swap[32];
++    lc2_proc_memory_snapshot_u64_token(sample.start_ns,sample.time_known,start);
++    lc2_proc_memory_snapshot_u64_token(sample.end_ns,sample.time_known,end);
++    if(sample.time_known)snprintf(duration,sizeof(duration),"%llu",
++        (unsigned long long)(sample.end_ns-sample.start_ns));
++    else strcpy(duration,"unknown");
++    const char *cma_token=lc2_proc_memory_snapshot_long_token(sample.cmafree_kib,cma);
++    const char *rss_token=lc2_proc_memory_snapshot_long_token(sample.vmrss_kib,rss);
++    const char *swap_token=lc2_proc_memory_snapshot_long_token(sample.vmswap_kib,swap);
++    int written=snprintf(line,capacity,
++        "LC2_MENU_FLOOR_MEMORY run-id=%s floor-check-t-ns=%llu snapshot-start-ns=%s snapshot-end-ns=%s snapshot-read-ns=%s"
++        " floor-available-kib=%lu floor-swap-free-kib=%lu cmafree-kib=%s vmrss-kib=%s vmswap-kib=%s"
++        " meminfo-read=%u status-read=%u source=proc-meminfo+proc-self-status scope=host-process gl-lock-independent=1\n",
++        run_id&&*run_id?run_id:"unavailable",(unsigned long long)floor_check_ns,start,end,duration,
++        floor_available_kib,floor_swap_free_kib,cma_token,rss_token,swap_token,
++        (unsigned)sample.meminfo_read,(unsigned)sample.status_read);
++    if(written<0 || (size_t)written>=capacity)return -1;
++    return written;
++}
++
 +#endif
 diff --git a/native/lc2_storage_probe.h b/native/lc2_storage_probe.h
 new file mode 100644
