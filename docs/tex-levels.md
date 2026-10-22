@@ -58,11 +58,43 @@ Spruce home. Build247 deployed by staged write + fsync + atomic replace with
 independent hash read-back, build246 kept as `.before-247`. Host 273 tests PASS
 in a clean index export; build247 435/435.
 
+## Build248 per-initialize pair observation (2026-10-22)
+
+The follow-up [device report](../evidence/texture-pair-20261022-01/README.md)
+uses runtime `1462d92791748650e951cd9256d1fee712213b18bc08e25b8eb22ab0b4aaa73a`,
+floor96/cap300/strict GL, and no input. It stopped at `T2_MEMORY_FLOOR` (95 MiB
+reported against floor96), with no OOM evidence, 8 present records, and no menu
+events.
+
+The 1 Hz menu ledger measured first present at 6,574 ms/frame1 with
+`budget-live=112325632` B (107.12 MiB), 91 live textures and
+`CmaFree=3504` KiB; at 7,603 ms/frame8 it measured `budget-live=115278848` B
+(109.94 MiB), 93 live textures and `CmaFree=11764` KiB. Its `MemAvailable`
+values were 130156 KiB and 77908 KiB; the separate 250 ms floor-watch event
+reported 95 MiB, so these are asynchronous samples, not one timestamp.
+
+The opt-in pair ledger emitted 117 initialization events (114 with a live GL
+storage record, 3 `no-live-gl-storage`, zero pair overflow). Cumulative event
+payloads were 116851712 B guest/charge, 239125808 B declared GL texture storage,
+and 11980800 B declared GL renderbuffers. Across events, GL-declared texture +
+renderbuffer bytes exceeded charge in 69/117 pairs; 68 exceeded 2x and 3
+exceeded 4x. For example, id61 (800x1500, format `0x42`) recorded 614400 B
+charged versus 4800000 B GL-declared (7.812x). These are declared payloads, not
+measured Mali residency.
+
+This is **partial M2A evidence**, not a live-set join. There were 24 deletes and
+24 GL-name reuses; the records do not yet carry timestamped storage/object
+generations, per-ID retirement, aliases, or last-reader completion. The event
+sums therefore cannot be reconciled as if they described one simultaneous set.
+The budget-versus-guest residual remains unresolved; do not infer a leak or
+apply a safety factor from these data. Share-group identity is unverified and
+GPU completion unobserved. The raw log and captures are local-only; report and
+compact receipts are committed.
+
 ## Next
 
-The residual 7.7 % and the physical side are what remain: either the charge
-includes textures created just after the last interval line, or it uses a
-slightly different size rule. Next step is a per-texture pairing (guest size,
-decoded size, charge) for a bounded set, then the same comparison against
-`gpu_memory` once its unit is derived. Menu headroom, world and 30 FPS remain
-OPEN.
+Complete M2A with timestamped per-generation create/extension/delete joins and a
+same-time live-set total, including the missing early-allocation/PSI samples.
+Keep the 96 MiB floor and 300 MiB cap unchanged. Only after the menu memory gate
+passes should the next phase reduce a measured storage class; world, input,
+sound, save/load, and gameplay 30 FPS remain OPEN.

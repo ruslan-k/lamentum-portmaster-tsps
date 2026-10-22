@@ -1,0 +1,99 @@
+{
+  "cleanup_errors": [],
+  "before": {
+    "processes": {
+      "runtime.sh": [
+        {
+          "pid": 1209,
+          "starttime": 635
+        }
+      ],
+      "principal.sh": [
+        {
+          "pid": 2191,
+          "starttime": 1023
+        }
+      ],
+      "MainUI": [
+        {
+          "pid": 7309,
+          "starttime": 170915
+        }
+      ]
+    },
+    "game": [],
+    "online": "4-7",
+    "frame": 12,
+    "menu_events": 0,
+    "stops": [
+      "STOP status=T2_MEMORY_FLOOR"
+    ],
+    "log_inode": 7616
+  },
+  "after": {
+    "processes": {
+      "runtime.sh": [
+        {
+          "pid": 1209,
+          "starttime": 635
+        }
+      ],
+      "principal.sh": [
+        {
+          "pid": 2191,
+          "starttime": 1023
+        }
+      ],
+      "MainUI": [
+        {
+          "pid": 13703,
+          "starttime": 421845
+        }
+      ]
+    },
+    "game": [],
+    "online": "4-7",
+    "frame": 8,
+    "menu_events": 0,
+    "stops": [
+      "STOP status=T2_MEMORY_FLOOR"
+    ],
+    "log_inode": 7616
+  },
+  "expected_run": {
+    "run_uuid": "fcb27ba2-5d5a-49be-95d7-5e13072c8ede",
+    "boot_id": "66203f22-4ac8-4a2a-a47c-cddc253d3bda",
+    "elf_dev": 45833,
+    "elf_ino": 18812,
+    "elf_sha256": "1462d92791748650e951cd9256d1fee712213b18bc08e25b8eb22ab0b4aaa73a",
+    "launcher_sha256": "f32204ff1b271dd66e38f79573f75c6f562af49174ea436e81dd9417dba1354a",
+    "helper_sha256": "abe8e4847b18a750c0796af33d887cf43714126c9751ccdc8236715cb752401a"
+  },
+  "process_identity": {
+    "boot_id": "66203f22-4ac8-4a2a-a47c-cddc253d3bda",
+    "pid": 13329,
+    "starttime": 420706,
+    "elf_dev": 45833,
+    "elf_ino": 18812
+  },
+  "execution_verified": true,
+  "host_terminated": null,
+  "termination": {
+    "kind": "runtime_stop",
+    "stops": [
+      "T2_MEMORY_FLOOR"
+    ],
+    "oom_evidence": []
+  },
+  "stop_attempts": [],
+  "observer_error": null,
+  "identity_errors": [],
+  "stops": [
+    "T2_MEMORY_FLOOR"
+  ],
+  "killed_without_stop": false,
+  "runtime_ok": false,
+  "config_rejected": false,
+  "content_bindings_complete": false,
+  "scene_verified": false
+}

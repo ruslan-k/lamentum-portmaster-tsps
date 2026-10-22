@@ -1,0 +1,16 @@
+{
+  "boot_id": "66203f22-4ac8-4a2a-a47c-cddc253d3bda",
+  "device_epoch": 1792672482.8888981,
+  "online_mask": "4-7",
+  "cpu0_3": {
+    "0": {"online": "0", "mode": "444"},
+    "1": {"online": "0", "mode": "444"},
+    "2": {"online": "0", "mode": "444"},
+    "3": {"online": "0", "mode": "444"}
+  },
+  "meminfo_kib": {
+    "MemAvailable": 659344,
+    "SwapFree": 2034764,
+    "CmaFree": 123592
+  }
+}

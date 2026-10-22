@@ -1,0 +1,25 @@
+{
+  "run_uuid": "fcb27ba2-5d5a-49be-95d7-5e13072c8ede",
+  "boot_id": "66203f22-4ac8-4a2a-a47c-cddc253d3bda",
+  "capture": {
+    "tool": "/mnt/SDCARD/spruce/bin64/kmsgrab",
+    "framebuffer_id": 161,
+    "resolution": "1280x720",
+    "initial_idle_overlay_sha256": "7fe355351db84294fbddfd3322744226c8a56d076f0563c82b239265be938978",
+    "after_wake_sha256": "37aa625c1c800d3535fad8bf44563c3fe242ba9ba045f46ea1eac119f143ba66",
+    "after_wake_bytes": 55582,
+    "raw_pngs": "local-only; not committed"
+  },
+  "wake": {
+    "receipt": "wake-back.json",
+    "action": "TRIMUI Player1 EV_KEY 304 (Back)",
+    "hold_ms": 100,
+    "released": true,
+    "source": "agent-injected; not a physical human press"
+  },
+  "post_capture_state": {
+    "mainui": {"pid": 13703, "starttime": 421845},
+    "game_processes": [],
+    "visible_screen": "SpruceOS MainUI home/navigation; not Lamentum"
+  }
+}
