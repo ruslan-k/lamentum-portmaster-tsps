@@ -1185,10 +1185,10 @@ index 0000000..fbe5673
 +#endif
 diff --git a/native/lc2_life_events.h b/native/lc2_life_events.h
 new file mode 100644
-index 0000000..706e47f
+index 0000000..3a6bb12
 --- /dev/null
 +++ b/native/lc2_life_events.h
-@@ -0,0 +1,164 @@
+@@ -0,0 +1,213 @@
 +/* Bounded OBSERVATION ledger for GL storage events. Diagnostic only, default off.
 + *
 + * It answers design questions before any lifetime policy is integrated:
@@ -1203,10 +1203,12 @@ index 0000000..706e47f
 +#ifndef LC2_LIFE_EVENTS_H
 +#define LC2_LIFE_EVENTS_H
 +#include <stdint.h>
++#include <stdio.h>
 +#include <stdlib.h>
 +#include <string.h>
 +#include <unistd.h>
 +#define LC2_LIFE_EVENT_CAP 512U
++#define LC2_LIFE_TEXTURE_PAIR_CAP 128U
 +struct lc2_life_event {uint64_t name,kind,bytes,mips,nvn_id;unsigned live;};
 +struct lc2_life_events_state {
 +    struct lc2_life_event entries[LC2_LIFE_EVENT_CAP];
@@ -1215,6 +1217,7 @@ index 0000000..706e47f
 +    uint64_t kind_bytes[4],kind_live[4],respecs;
 +    uint64_t tex_level0_bytes,tex_mip_bytes,tex_scaled_bytes,tex_half_bytes;
 +    uint64_t tex_charged_bytes,tex_uncharged_bytes,tex_guest_bytes;
++    uint64_t tex_pair_lines,tex_pair_overflow;
 +};
 +static struct lc2_life_events_state lc2_life_events_state_storage;
 +static inline struct lc2_life_events_state *lc2_life_events_state(void) {return &lc2_life_events_state_storage;}
@@ -1290,6 +1293,27 @@ index 0000000..706e47f
 +    if(!lc2_life_events_on() || !bytes)return;
 +    lc2_life_events_state()->tex_guest_bytes+=bytes;
 +}
++/* Read declared payload by NVN owner and GL storage class. A reused GL name
++ * contributes only its current generation; arithmetic overflow stays unknown. */
++static inline int lc2_life_events_storage_payload(uint64_t nvn_id,uint64_t kind,
++        uint64_t *bytes,unsigned *records) {
++    if(!nvn_id || !bytes || !records)return 0;
++    struct lc2_life_events_state *s=lc2_life_events_state();
++    uint64_t total=0;unsigned count=0;
++    for(unsigned i=0;i<LC2_LIFE_EVENT_CAP;i++) {
++        const struct lc2_life_event *e=&s->entries[i];
++        if(!e->live || e->kind!=kind || e->nvn_id!=nvn_id)continue;
++        if(e->bytes>UINT64_MAX-total)return 0;
++        total+=e->bytes;count++;
++    }
++    *bytes=total;*records=count;return 1;
++}
++static inline int lc2_life_events_texture_payload(uint64_t nvn_id,uint64_t *bytes,unsigned *records) {
++    return lc2_life_events_storage_payload(nvn_id,1,bytes,records);
++}
++static inline int lc2_life_events_renderbuffer_payload(uint64_t nvn_id,uint64_t *bytes,unsigned *records) {
++    return lc2_life_events_storage_payload(nvn_id,2,bytes,records);
++}
 +static inline void lc2_life_events_alias(uint64_t name,uint64_t kind,int delta) {
 +    if(!lc2_life_events_on())return;
 +    struct lc2_life_events_state *s=lc2_life_events_state();
@@ -1322,6 +1346,30 @@ index 0000000..706e47f
 +static inline void lc2_life_write(int fd,const char *text,size_t length) {
 +    while(length) {ssize_t done=write(fd,text,length);if(done<=0)return;text+=done;length-=(size_t)done;}
 +}
++static inline void lc2_life_events_texture_pair(const char *phase,uint64_t nvn_id,uint64_t storage_owner,
++        uint64_t object,unsigned texture_name,unsigned renderbuffer_name,unsigned width,unsigned height,
++        unsigned format,unsigned levels,uint64_t guest_bytes,uint64_t charge_bytes) {
++    if(!lc2_life_events_on())return;
++    struct lc2_life_events_state *s=lc2_life_events_state();
++    if(s->tex_pair_lines>=LC2_LIFE_TEXTURE_PAIR_CAP) {s->tex_pair_overflow++;return;}
++    uint64_t texture_bytes=0,renderbuffer_bytes=0;unsigned texture_records=0,renderbuffer_records=0;
++    int texture_known=lc2_life_events_storage_payload(storage_owner,1,&texture_bytes,&texture_records);
++    int renderbuffer_known=lc2_life_events_storage_payload(storage_owner,2,&renderbuffer_bytes,&renderbuffer_records);
++    const char *status=!storage_owner?"owner-unavailable":(!texture_known||!renderbuffer_known)?"overflow":
++        (texture_records||renderbuffer_records)?"recorded":"no-live-gl-storage";
++    char line[768];
++    int n=snprintf(line,sizeof(line),"LC2_TEXTURE_PAIR phase=%s id=%llu storage-owner=%llu object=%llu"
++        " texture=%u renderbuffer=%u size=%ux%u format=0x%x levels=%u guest-bytes=%llu charge-bytes=%llu"
++        " gl-texture-bytes=%llu gl-texture-records=%u gl-renderbuffer-bytes=%llu gl-renderbuffer-records=%u"
++        " storage-status=%s share-group=unverified completion=unobserved physical=unproven\n",
++        phase?phase:"unknown",(unsigned long long)nvn_id,(unsigned long long)storage_owner,(unsigned long long)object,
++        texture_name,renderbuffer_name,width,height,format,levels,(unsigned long long)guest_bytes,
++        (unsigned long long)charge_bytes,(unsigned long long)texture_bytes,texture_records,
++        (unsigned long long)renderbuffer_bytes,renderbuffer_records,status);
++    if(n<0 || (size_t)n>=sizeof(line)) {s->tex_pair_overflow++;return;}
++    lc2_life_write(STDOUT_FILENO,line,(size_t)n);
++    s->tex_pair_lines++;
++}
 +static inline void lc2_life_events_report_fd(int fd) {
 +    struct lc2_life_events_state *s=lc2_life_events_state();
 +    if(!lc2_life_events_on() || (!s->storage_calls && !s->deletes))return;
@@ -1339,7 +1387,8 @@ index 0000000..706e47f
 +        {" tex-l0=",&s->tex_level0_bytes},{" tex-mips=",&s->tex_mip_bytes},
 +        {" tex-scaled=",&s->tex_scaled_bytes},{" tex-half=",&s->tex_half_bytes},
 +        {" tex-charged=",&s->tex_charged_bytes},{" tex-uncharged=",&s->tex_uncharged_bytes},
-+        {" tex-guest=",&s->tex_guest_bytes}};
++        {" tex-guest=",&s->tex_guest_bytes},{" tex-pair-lines=",&s->tex_pair_lines},
++        {" tex-pair-overflow=",&s->tex_pair_overflow}};
 +    for(unsigned i=0;i<sizeof(fields)/sizeof(fields[0]);i++) {
 +        size_t length=strlen(fields[i].name);
 +        if(used+length+21>sizeof(tail))break;
@@ -3863,7 +3912,7 @@ index 0fb14ec..9e2ccfc 100644
              free(premul);free(probe);free(sprite);free(flat);free(scaled);free(awf);free(mipped);free(r8);free(advent);free(lowered);free(wrapped);free(interface_source);
              if(!status){char log[2048]={0};glGetShaderInfoLog(shaders[i],sizeof(log),NULL,log);printf("NVN_SHADER_COMPILE_ERROR %s\n",log);stop("NVN_SHADER_COMPILE_FAILED",nvn_caller,p->sources[i],21);}
 diff --git a/native/nvn_textures.h b/native/nvn_textures.h
-index 0feaef1..dbe82e2 100644
+index 0feaef1..c8242a4 100644
 --- a/native/nvn_textures.h
 +++ b/native/nvn_textures.h
 @@ -6,6 +6,14 @@
@@ -4014,7 +4063,7 @@ index 0feaef1..dbe82e2 100644
  static void zero_texture_pool_flushed(struct nvn_pool *pool,uint64_t offset,uint64_t bytes) {
      if(!bytes)return;
      for(unsigned i=0;i<4096;i++) {
-@@ -481,11 +556,151 @@ static void zero_texture_bc_pixels(struct nvn_texture *t,unsigned level,const ui
+@@ -481,11 +556,160 @@ static void zero_texture_bc_pixels(struct nvn_texture *t,unsigned level,const ui
      uint8_t *linear=malloc(linear_bytes);if(!linear)stop("ZERO_BC_LINEAR_MEMORY",nvn_caller,linear_bytes,21);
      void *source=nvn_pointer(t->pool->address+t->b.offset+m.offset,m.size,PROT_READ);
      if(!zero_bc_blocks_copy(&m,source,m.size,linear,linear_bytes,x,y,nx,ny,0) ||
@@ -4066,6 +4115,15 @@ index 0feaef1..dbe82e2 100644
 +        uint32_t box[6]={0,y,0,width,rows,1};
 +        zero_texture_bc_pixels(t,level,box,pixels,(size_t)width*rows*bpp);
 +        glTexSubImage2D(GL_TEXTURE_2D,level,0,y,width,rows,spec.external,spec.type,pixels);
++    }
++    uint64_t payload=(uint64_t)width*height*bpp;
++    if(allocate) {
++        lc2_life_events_storage(t->id,t->name,1,payload);
++        lc2_life_events_tex(level,payload,t->host_scaled?1U:0U,t->host_half?1U:0U,t->t2_budget_bytes?1U:0U);
++        if(!level && t->t2_budget_bytes)lc2_life_events_tex_guest(t->size);
++        if(t->lc2_bc_pending)
++            lc2_life_events_texture_pair("bc-materialize",t->id,zero_texture_storage_state(t)->id,t->object,
++                t->name,t->depth_buffer,t->b.width,t->b.height,t->b.format,t->b.levels,t->size,t->t2_budget_bytes);
 +    }
 +    free(pixels);
 +    printf("LC2_BC_STRIPED_UPLOAD id=%"PRIu64" size=%ux%u temporary-bytes=%zu resolution=preserved\n",t->id,width,height,capacity);
@@ -4167,7 +4225,7 @@ index 0feaef1..dbe82e2 100644
      t=zero_texture_storage_state(t);
      if(!__atomic_exchange_n(&t->zero_cpu_dirty,0,__ATOMIC_ACQ_REL))return;
      t2_page_require_rgba8(t,"T2_PAGE_CPU_REFRESH_REQUIRED");
-@@ -494,8 +709,16 @@ static void zero_texture_refresh(struct nvn_texture *t) {
+@@ -494,8 +718,16 @@ static void zero_texture_refresh(struct nvn_texture *t) {
          stop("ZERO_TEXTURE_CPU_GPU_COHERENCE_REQUIRED",nvn_caller,t->id,20);
      unsigned width=t->b.width,height=t->b.height,bc=zero_bc_bytes(t->b.format);
      unsigned type=nvn_cpu_image_upload_type(t),output_bpp=nvn_texture_upload_bytes(type);
@@ -4184,7 +4242,7 @@ index 0feaef1..dbe82e2 100644
          uint64_t row=bc?(uint64_t)((width+3)/4)*bc:(uint64_t)width*nvn_texture_format_bytes(t->b.format);
          uint64_t stride=t->b.flags&0x50?t->b.stride:row;
          unsigned rows=bc?(height+3)/4:height;
-@@ -507,12 +730,16 @@ static void zero_texture_refresh(struct nvn_texture *t) {
+@@ -507,12 +739,16 @@ static void zero_texture_refresh(struct nvn_texture *t) {
              zero_texture_bc_pixels(t,level,NULL,pixels,bytes);
          } else for(unsigned y=0;y<height;y++)if(!nvn_texture_decode_upload(t->b.format,t->b.swizzle,type,pixels+(size_t)y*width*output_bpp,source+y*stride,width))
              stop("ZERO_TEXTURE_REFRESH_FORMAT",nvn_caller,t->b.format,20);
@@ -4202,7 +4260,7 @@ index 0feaef1..dbe82e2 100644
      printf("ZERO_TEXTURE_FLUSH_UPLOADED id=%"PRIu64" format=0x%x native-cpu-bytes=preserved before-sampler\n",t->id,t->b.format);
  }
  #include "zero_texture_writes.h"
-@@ -605,7 +832,8 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -605,7 +841,8 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
          /* Frente F: an eligible page gets no GL storage now (the pool holds nothing yet, MEDIDO pc-008: the
           * copy arrives later) and no budget; the copy decides between the palettized form and RGBA8. */
          t->t2_page.deferred=t2_page_eligible(&b);
@@ -4212,7 +4270,7 @@ index 0feaef1..dbe82e2 100644
          if(t->t2_budget_bytes)t2_texture_budget_add(size,nvn_caller);
          else if(t2_pages.deferred_logged++<4)printf("T2_PAGE_DEFERRED id=%"PRIu64" size=%ux%u rgba8-bytes=%"PRIu64" pool-flags=0x%x storage=none-until-copy\n",t->id,b.width,b.height,size,pool->flags);
  #ifdef MOMO_SHADERS
-@@ -649,7 +877,13 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -649,7 +886,13 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
              const char *extensions=(const char *)glGetString(GL_EXTENSIONS);
              if(!extensions || !strstr(extensions,b.format==0x35?"GL_OES_packed_depth_stencil":"GL_OES_depth24"))stop("NVN_DEPTH_BACKEND_REQUIRED",nvn_caller,b.format,20);
              glGenRenderbuffers(1,&t->depth_buffer);glBindRenderbuffer(GL_RENDERBUFFER,t->depth_buffer);
@@ -4226,7 +4284,7 @@ index 0feaef1..dbe82e2 100644
              glBindRenderbuffer(GL_RENDERBUFFER,0);
              if(b.format==0x34)printf("NVN_DEPTH_CONVERSION guest=DEPTH32F host=DEPTH24 precision-reduced rendering-validation-pending\n");
          } else {
-@@ -664,6 +898,7 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -664,6 +907,7 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
                  const char *extensions=(const char *)glGetString(GL_EXTENSIONS);
                  if(!extensions || !strstr(extensions,"GL_EXT_sRGB"))stop("ZERO_SRGB_TEXTURE_BACKEND_REQUIRED",nvn_caller,b.format,20);
              }
@@ -4234,7 +4292,7 @@ index 0feaef1..dbe82e2 100644
              glGenTextures(1,&t->name);if(!t->name)stop("NVN_TEXTURE_GL_NAME",nvn_caller,t->id,21);glBindTexture(GL_TEXTURE_2D,t->name);
  #if ZERO_ZX_GAME
              /* This backend exposes NVN's storage-level limit directly. Mali
-@@ -673,8 +908,23 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -673,8 +917,23 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
                  glTexParameteri(GL_TEXTURE_2D,0x813d,b.levels-1);
  #endif
              unsigned width=b.width,height=b.height;
@@ -4260,7 +4318,7 @@ index 0feaef1..dbe82e2 100644
                  unsigned upload_type=nvn_cpu_image_upload_type(t),upload_bpp=nvn_texture_upload_bytes(upload_type);
                  size_t bytes=(size_t)width*height*upload_bpp;uint8_t *rgba=malloc(bytes);
                  if(!rgba)stop("NVN_TEXTURE_INITIAL_DATA_MEMORY",nvn_caller,bytes,21);
-@@ -697,8 +947,14 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -697,8 +956,14 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
                  /* Uniformity was checked across the complete original decode.
                   * The compact upload consumes the same constant pixel value. */
                  glPixelStorei(GL_UNPACK_ALIGNMENT,1);
@@ -4277,7 +4335,7 @@ index 0feaef1..dbe82e2 100644
  #if MEGAMAN_HOST_DIAGNOSTIC
                  /* Observation remains an independent RGBA8 reference; packed
                   * UNORM5 may truthfully differ by one readback code value. */
-@@ -719,7 +975,7 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -719,7 +984,7 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
                  if(height>1)height>>=1;
              }
  #if ZERO_ZX_GAME
@@ -4286,7 +4344,16 @@ index 0feaef1..dbe82e2 100644
  #endif
              nvn_texture_parameters(t,GL_NEAREST,GL_NEAREST,GL_CLAMP_TO_EDGE,GL_CLAMP_TO_EDGE);
              glBindTexture(GL_TEXTURE_2D,0);
-@@ -749,7 +1005,9 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -731,6 +996,8 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+             if(slot<4096 && slot+1>__atomic_load_n(&nvn_textures_high,__ATOMIC_RELAXED))
+                 __atomic_store_n(&nvn_textures_high,slot+1,__ATOMIC_RELEASE);
+         }
++        lc2_life_events_texture_pair("initialize",t->id,zero_texture_storage_state(t)->id,t->object,
++            t->name,t->depth_buffer,b.width,b.height,b.format,b.levels,t->size,t->t2_budget_bytes);
+         pool->references++;nvn_gl_release();
+         /* MOMO_TEXTURE_IDENTITY: pool+offset of every texture, so two render targets of the same size can
+          * be told apart from two names for one piece of memory (the scene lands in one target while the post
+@@ -749,7 +1016,9 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
      if(id==NI_nvnTexturePoolRegisterTexture) {
          struct nvn_descriptor_pool *d=NULL;
          for(unsigned i=0;i<32;i++)if(nvn_descriptor_pools[i].live&&nvn_descriptor_pools[i].object==a[0]&&nvn_descriptor_pools[i].type==1)d=&nvn_descriptor_pools[i];
@@ -4297,7 +4364,7 @@ index 0feaef1..dbe82e2 100644
          struct nvn_texture *t=nvn_texture_find(a[2]);struct nvn_descriptor *slot=&d->entries[a[1]];
          if(a[3] && !megaman_texture_view_identity(nvn_pointer(a[3],MEGAMAN_TEXTURE_VIEW_BYTES,PROT_READ),t->b.levels) &&
             !aw_texture_view_identity_native(nvn_pointer(a[3],MEGAMAN_TEXTURE_VIEW_BYTES,PROT_READ),&t->b,t->aw_native_format))
-@@ -802,9 +1060,10 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -802,9 +1071,10 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
          unsigned delete_storage=zero_texture_storage_release(t);
          if(delete_storage) {
              zero_depth_framebuffer_forget(storage->id);

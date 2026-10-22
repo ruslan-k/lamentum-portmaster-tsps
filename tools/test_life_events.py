@@ -43,6 +43,34 @@ int main(void) {
  assert(lc2_life_events_state()->respecs==2);
  assert(lc2_life_events_state()->kind_bytes[3]==100);
  assert(lc2_life_events_state()->kind_live[3]==1);
+ /* Texture owner join is by NVN id across current live GL storage generations. */
+ lc2_life_events_storage(42,420,1,200);
+ lc2_life_events_storage(42,420,1,50);           /* another mip of the same GL image */
+ lc2_life_events_storage(42,421,1,80);           /* second image for the same NVN owner */
+ lc2_life_events_storage(42,422,2,999);         /* renderbuffer is not texture payload */
+ lc2_life_events_storage(43,430,1,300);
+ uint64_t decoded=0;unsigned records=0;
+ assert(lc2_life_events_texture_payload(42,&decoded,&records));
+ assert(decoded==330 && records==2);
+ assert(lc2_life_events_texture_payload(43,&decoded,&records));
+ assert(decoded==300 && records==1);
+ assert(lc2_life_events_storage_payload(42,2,&decoded,&records));
+ assert(decoded==999 && records==1);
+ lc2_life_events_delete(420,1,0);
+ assert(lc2_life_events_texture_payload(42,&decoded,&records));
+ assert(decoded==80 && records==1);
+ lc2_life_events_storage(44,420,1,100);        /* reused GL name has a new owner */
+ assert(lc2_life_events_texture_payload(42,&decoded,&records));
+ assert(decoded==80 && records==1);
+ assert(lc2_life_events_texture_payload(44,&decoded,&records));
+ assert(decoded==100 && records==1);
+ lc2_life_events_texture_pair("initialize",42,42,4660,7,0,128,64,0x41,1,500,400);
+ assert(lc2_life_events_state()->tex_pair_lines==1);
+ for(unsigned i=1;i<LC2_LIFE_TEXTURE_PAIR_CAP;i++)
+  lc2_life_events_texture_pair("initialize",42,42,4660,7,0,128,64,0x41,1,500,400);
+ assert(lc2_life_events_state()->tex_pair_lines==LC2_LIFE_TEXTURE_PAIR_CAP);
+ lc2_life_events_texture_pair("overflow",42,42,4660,7,0,128,64,0x41,1,500,400);
+ assert(lc2_life_events_state()->tex_pair_overflow==1);
  for(unsigned i=0;i<LC2_LIFE_EVENT_CAP+3;i++)lc2_life_events_storage(100+i,1000+i,1,1);
  assert(lc2_life_events_state()->overflow>=3);
  lc2_life_events_tex(0,1000,0,0,1);
@@ -60,7 +88,7 @@ int main(void) {
  /* The stop-path formatter must agree with printf digit-for-digit: a stray leading
   * or trailing digit silently misreports every counter by 10x. */
  char expect[768];
- snprintf(expect,sizeof expect," storage-calls=%llu extends=%llu deletes=%llu delete-with-views=%llu name-reuse=%llu retained=%llu peak=%llu live=%llu alias-views=%llu overflow=%llu tex-bytes=%llu tex-live=%llu rb-bytes=%llu rb-live=%llu buf-bytes=%llu buf-live=%llu respecs=%llu tex-l0=%llu tex-mips=%llu tex-scaled=%llu tex-half=%llu tex-charged=%llu tex-uncharged=%llu tex-guest=%llu",
+ snprintf(expect,sizeof expect," storage-calls=%llu extends=%llu deletes=%llu delete-with-views=%llu name-reuse=%llu retained=%llu peak=%llu live=%llu alias-views=%llu overflow=%llu tex-bytes=%llu tex-live=%llu rb-bytes=%llu rb-live=%llu buf-bytes=%llu buf-live=%llu respecs=%llu tex-l0=%llu tex-mips=%llu tex-scaled=%llu tex-half=%llu tex-charged=%llu tex-uncharged=%llu tex-guest=%llu tex-pair-lines=%llu tex-pair-overflow=%llu",
   (unsigned long long)lc2_life_events_state()->storage_calls,
   (unsigned long long)lc2_life_events_state()->extends,
   (unsigned long long)lc2_life_events_state()->deletes,
@@ -84,7 +112,9 @@ int main(void) {
   (unsigned long long)lc2_life_events_state()->tex_half_bytes,
   (unsigned long long)lc2_life_events_state()->tex_charged_bytes,
   (unsigned long long)lc2_life_events_state()->tex_uncharged_bytes,
-  (unsigned long long)lc2_life_events_state()->tex_guest_bytes);
+  (unsigned long long)lc2_life_events_state()->tex_guest_bytes,
+  (unsigned long long)lc2_life_events_state()->tex_pair_lines,
+  (unsigned long long)lc2_life_events_state()->tex_pair_overflow);
  printf("EXPECT%s\n",expect);
  lc2_life_events_report_fd(1);
  return 0;
@@ -110,7 +140,13 @@ class LifeEventTests(unittest.TestCase):
             self.assertIn('LC2_LIFE_SUMMARY', out)
             self.assertIn('share-group=unverified', out)
             self.assertIn('delete-with-views=1', out)
-            self.assertIn('name-reuse=1', out)
+            self.assertIn('name-reuse=2', out)
+            pairs = [line for line in out.splitlines() if line.startswith('LC2_TEXTURE_PAIR ')]
+            self.assertEqual(len(pairs), 128)
+            self.assertTrue(any('id=42 storage-owner=42 object=4660 texture=7 renderbuffer=0 '
+                                'size=128x64 format=0x41 levels=1 guest-bytes=500 charge-bytes=400 '
+                                'gl-texture-bytes=80 gl-texture-records=1 gl-renderbuffer-bytes=999 '
+                                'gl-renderbuffer-records=1 storage-status=recorded' in line for line in pairs))
             self.assertEqual(out.count('LC2_LIFE_SUMMARY'), 1)
             expected = [l for l in out.splitlines() if l.startswith('EXPECT')]
             summary = [l for l in out.splitlines() if l.startswith('LC2_LIFE_SUMMARY')]
