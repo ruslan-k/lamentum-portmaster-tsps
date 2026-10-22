@@ -176,6 +176,20 @@ def replay_texture_budget(log_text, expected_run):
     guest_bytes=pair_charge_bytes=0;budget_owners=set();no_gl=[]
     live_storage={}
     storage_events=[];delete_events=[];storage_after=delete_after=0
+    def storage_identity(row):
+        group_id=row.get('share-group-id')
+        group_status=row.get('share-group','unverified')
+        if group_id is None:
+            if group_status!='unverified':raise ValueError('missing share-group identity')
+            group_id='unverified'
+        elif (group_status=='verified') != (group_id!='0'):
+            raise ValueError('inconsistent share-group identity')
+        return (group_id,row['owner'],row['gl-name'],row['kind'],row['storage-generation'])
+    def subresource_identity(row):
+        keys=('target','face','level','layer')
+        if all(field in row for field in keys):
+            return ('gl',row['target'].lower(),int(row['face']),int(row['level']),int(row['layer']))
+        return ('legacy',row.get('subresource','unknown'))
     for line in lines:
         if line.startswith('LC2_GL_STORAGE_EVENT '):
             row=_fields(line)
@@ -184,16 +198,26 @@ def replay_texture_budget(log_text, expected_run):
             if t_ns>sample_ns:
                 storage_after+=1;continue
             if row.get('status')!='recorded':raise ValueError('incomplete GL storage event')
-            key=(row['owner'],row['gl-name'],row['kind'],row['storage-generation'])
+            key=storage_identity(row)
+            subresource=subresource_identity(row)
             amount=int(row['bytes']);total=int(row['total-bytes'])
+            if amount>max_u64 or total>max_u64:raise ValueError('GL storage value overflow')
+            current=live_storage.get(key)
             if row['event']=='allocate':
-                if key in live_storage or amount!=total:raise ValueError('invalid GL storage allocation')
-                live_storage[key]=total
+                if current is not None or amount!=total:raise ValueError('invalid GL storage allocation')
+                updated={subresource:amount}
             elif row['event']=='extend':
-                if key not in live_storage or amount>max_u64-live_storage[key] or live_storage[key]+amount!=total:
-                    raise ValueError('invalid GL storage extension')
-                live_storage[key]=total
+                if current is None or subresource in current:raise ValueError('invalid GL storage extension')
+                updated=dict(current);updated[subresource]=amount
+            elif row['event']=='respec':
+                if current is None or subresource not in current:raise ValueError('invalid GL storage redefinition')
+                updated=dict(current);updated[subresource]=amount
             else:raise ValueError('unknown GL storage transition')
+            live_bytes=sum(updated.values())
+            if live_bytes>max_u64 or live_bytes!=total:raise ValueError('GL storage subresources do not match total')
+            if 'subresource-count' in row and int(row['subresource-count'])!=len(updated):
+                raise ValueError('GL storage subresource count mismatch')
+            live_storage[key]=updated
             storage_events.append(row)
         elif line.startswith('LC2_GL_STORAGE_DELETE '):
             row=_fields(line)
@@ -202,12 +226,15 @@ def replay_texture_budget(log_text, expected_run):
             if t_ns>sample_ns:
                 delete_after+=1;continue
             if row.get('matched')!='1':raise ValueError('unmatched GL storage delete')
-            key=(row['owner'],row['gl-name'],row['kind'],row['storage-generation'])
-            if key not in live_storage or live_storage[key]!=int(row['bytes']):
+            key=storage_identity(row)
+            current=live_storage.get(key)
+            if current is None or sum(current.values())!=int(row['bytes']):
                 raise ValueError('GL storage delete does not match current generation')
+            if 'subresource-count' in row and int(row['subresource-count'])!=len(current):
+                raise ValueError('GL storage delete subresource count mismatch')
             del live_storage[key]
             delete_events.append(row)
-    gl_owners={key[0] for key in live_storage}
+    gl_owners={key[1] for key in live_storage}
     for texture_id in active_ids:
         pair=pairs.get(texture_id)
         if pair is None:
@@ -224,8 +251,8 @@ def replay_texture_budget(log_text, expected_run):
     if pair_missing or pair_mismatches:
         raise ValueError('live budget owners do not join to texture pairs')
     by_kind={};count_by_kind={}
-    for (_,_,kind,_),amount in live_storage.items():
-        by_kind[kind]=by_kind.get(kind,0)+amount
+    for (_,_,_,kind,_),subresources in live_storage.items():
+        by_kind[kind]=by_kind.get(kind,0)+sum(subresources.values())
         count_by_kind[kind]=count_by_kind.get(kind,0)+1
     summaries=[_fields(line) for line in lines if line.startswith('LC2_LIFE_SUMMARY ')]
     if len(summaries)!=1:raise ValueError('expected one lifecycle summary')
@@ -233,7 +260,7 @@ def replay_texture_budget(log_text, expected_run):
     summary_matches=None
     if not storage_after and not delete_after:
         summary_matches=(len(live_storage)==int(summary['live']) and
-            sum(live_storage.values())==int(summary['retained']) and
+            sum(sum(subresources.values()) for subresources in live_storage.values())==int(summary['retained']) and
             count_by_kind.get('1',0)==int(summary['tex-live']) and
             by_kind.get('1',0)==int(summary['tex-bytes']) and
             count_by_kind.get('2',0)==int(summary['rb-live']) and

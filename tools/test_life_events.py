@@ -211,7 +211,7 @@ class LifeEventTests(unittest.TestCase):
             m3b_summary = next(line for line in out.splitlines() if line.startswith('LC2_M3B_SUMMARY '))
             self.assertIn('configured=4 claimed=5 final-claimed=5 emitted=3 incomplete=1 active=1 dropped=1 format-errors=0 complete=0', m3b_summary)
             self.assertIn('LC2_LIFE_SUMMARY', out)
-            self.assertIn('share-group=unverified', out)
+            self.assertIn('share-group=per-record', out)
             self.assertIn('delete-with-views=1', out)
             self.assertIn('name-reuse=2', out)
             pairs = [line for line in out.splitlines() if line.startswith('LC2_TEXTURE_PAIR ')]
@@ -261,6 +261,127 @@ class LifeEventTests(unittest.TestCase):
             summary = [l for l in out.splitlines() if l.startswith('LC2_LIFE_SUMMARY')]
             self.assertEqual(len(expected), 1)
             self.assertTrue(summary[0].endswith(expected[0][len('EXPECT'):]), (summary, expected))
+
+    def test_redefining_same_texture_level_replaces_not_adds(self):
+        patch = (ROOT / 'runtime/lamentum-adapter.patch').read_text()
+        block = patch.split(MARKER, 1)[1].split('diff --git ', 1)[0]
+        header = '\n'.join(line[1:] for line in block.splitlines()
+                            if line.startswith('+') and not line.startswith('+++')) + '\n'
+        source = r'''
+#include "lc2_life_events.h"
+#include <assert.h>
+int main(void) {
+ setenv("LC2_LIFE_EVENTS","1",1);
+ lc2_life_events_storage(42,77,1,100,0);
+ lc2_life_events_storage(42,77,1,250,0);
+ assert(lc2_life_events_state()->retained_bytes==250);
+ assert(lc2_life_events_state()->respecs==1);
+ assert(lc2_life_events_state()->extends==0);
+ lc2_life_events_storage(42,77,1,50,1);
+ assert(lc2_life_events_state()->retained_bytes==300);
+ assert(lc2_life_events_state()->extends==1);
+ lc2_life_events_storage(42,77,1,0,0);
+ assert(lc2_life_events_state()->retained_bytes==50);
+ assert(lc2_life_event_find(77,1,1)->mips==2);
+ assert(lc2_life_events_state()->respecs==2);
+ return 0;
+}
+'''
+        with tempfile.TemporaryDirectory() as d:
+            p = pathlib.Path(d)
+            (p / 'lc2_life_events.h').write_text(header)
+            (p / 'test.c').write_text(source)
+            built = subprocess.run(['cc', '-std=gnu11', '-Wall', '-Wextra', '-Werror', '-I', d,
+                                    str(p / 'test.c'), '-o', str(p / 'test')], capture_output=True, text=True)
+            self.assertEqual(built.returncode, 0, built.stderr)
+            ran = subprocess.run([str(p / 'test')], capture_output=True, text=True)
+            self.assertEqual(ran.returncode, 0, ran.stderr)
+
+    def test_storage_key_distinguishes_share_groups_and_cube_faces(self):
+        patch = (ROOT / 'runtime/lamentum-adapter.patch').read_text()
+        block = patch.split(MARKER, 1)[1].split('diff --git ', 1)[0]
+        header = '\n'.join(line[1:] for line in block.splitlines()
+                            if line.startswith('+') and not line.startswith('+++')) + '\n'
+        source = r'''
+#include "lc2_life_events.h"
+#include <assert.h>
+int main(void) {
+ setenv("LC2_LIFE_EVENTS","1",1);
+ struct lc2_life_storage_key a={.share_group=1,.name=9,.kind=1,.target=0x8515,.face=0,.level=0,.layer=0};
+ struct lc2_life_storage_key b=a;b.face=1;
+ struct lc2_life_storage_key c=a;c.share_group=2;
+ lc2_life_events_storage_key(7,&a,100);
+ lc2_life_events_storage_key(7,&a,200);
+ lc2_life_events_storage_key(7,&b,100);
+ lc2_life_events_storage_key(7,&c,50);
+ assert(lc2_life_events_state()->retained_bytes==350);
+ assert(lc2_life_events_state()->live==2);
+ uint64_t bytes=0;unsigned records=0;
+ struct lc2_life_storage_key v={.share_group=1,.name=17,.kind=3,.target=0x8892,.face=0,.level=0,.layer=0};
+ lc2_life_events_respec_key(8,&v,100);
+ lc2_life_events_respec_key(8,&v,80);
+ assert(lc2_life_events_state()->retained_bytes==430);
+ assert(lc2_life_events_state()->live==3);
+ assert(lc2_life_events_storage_payload(8,3,&bytes,&records));
+ assert(bytes==80 && records==1);
+ lc2_life_events_delete_key(&v,0);
+ assert(lc2_life_events_storage_payload(8,3,&bytes,&records));
+ assert(bytes==0 && records==0);
+ assert(lc2_life_events_state()->retained_bytes==350);
+ lc2_life_events_delete_key(&a,0);
+ assert(lc2_life_events_texture_payload(7,&bytes,&records));
+ assert(bytes==50 && records==1);
+ return 0;
+}
+'''
+        with tempfile.TemporaryDirectory() as d:
+            p = pathlib.Path(d)
+            (p / 'lc2_life_events.h').write_text(header)
+            (p / 'test.c').write_text(source)
+            built = subprocess.run(['cc', '-std=gnu11', '-Wall', '-Wextra', '-Werror', '-I', d,
+                                    str(p / 'test.c'), '-o', str(p / 'test')], capture_output=True, text=True)
+            self.assertEqual(built.returncode, 0, built.stderr)
+            ran = subprocess.run([str(p / 'test')], capture_output=True, text=True)
+            self.assertEqual(ran.returncode, 0, ran.stderr)
+            self.assertIn('share-group=verified share-group-id=1 target=0x8515 face=0 level=0 layer=0', ran.stdout)
+            self.assertIn('share-group=verified share-group-id=1 target=0x8515 face=1 level=0 layer=0', ran.stdout)
+            self.assertIn('share-group=verified share-group-id=2 target=0x8515 face=0 level=0 layer=0', ran.stdout)
+            self.assertIn('event=respec owner=8 gl-name=17 kind=3 storage-generation=1 bytes=80', ran.stdout)
+            self.assertIn('share-group=verified share-group-id=1 target=0x8892 face=0 level=0 layer=0', ran.stdout)
+            self.assertIn('share-group=verified share-group-id=1', ran.stdout)
+
+    def test_live_table_recycles_after_more_than_512_create_delete_cycles(self):
+        patch = (ROOT / 'runtime/lamentum-adapter.patch').read_text()
+        block = patch.split(MARKER, 1)[1].split('diff --git ', 1)[0]
+        header = '\n'.join(line[1:] for line in block.splitlines()
+                            if line.startswith('+') and not line.startswith('+++')) + '\n'
+        source = r'''
+#include "lc2_life_events.h"
+#include <assert.h>
+int main(void) {
+ setenv("LC2_LIFE_EVENTS","1",1);
+ for(unsigned i=0;i<LC2_LIFE_EVENT_CAP+24;i++) {
+  lc2_life_events_storage(7,99,1,1,0);
+  uint64_t min=0,max=0;
+  assert(lc2_life_events_storage_generation(7,1,&min,&max));
+  assert(min==i+1 && max==i+1);
+  lc2_life_events_delete(99,1,0);
+ }
+ struct lc2_life_events_state *s=lc2_life_events_state();
+ assert(s->overflow==0 && s->live==0 && s->retained_bytes==0);
+ assert(s->name_reuse==LC2_LIFE_EVENT_CAP+23);
+ return 0;
+}
+'''
+        with tempfile.TemporaryDirectory() as d:
+            p = pathlib.Path(d)
+            (p / 'lc2_life_events.h').write_text(header)
+            (p / 'test.c').write_text(source)
+            built = subprocess.run(['cc', '-std=gnu11', '-Wall', '-Wextra', '-Werror', '-I', d,
+                                    str(p / 'test.c'), '-o', str(p / 'test')], capture_output=True, text=True)
+            self.assertEqual(built.returncode, 0, built.stderr)
+            ran = subprocess.run([str(p / 'test')], capture_output=True, text=True)
+            self.assertEqual(ran.returncode, 0, ran.stderr)
 
 if __name__ == '__main__':
     unittest.main()

@@ -50,6 +50,49 @@ class BudgetReplayTests(unittest.TestCase):
         self.assertEqual(result['gl_storage']['live_records'], 0)
         self.assertTrue(result['gl_storage']['summary_matches'])
 
+    def test_replays_same_subresource_redefinition_and_mip_extension(self):
+        lines=[]
+        for line in budget_log().splitlines():
+            if line.startswith('LC2_GL_STORAGE_EVENT '):
+                line=line.replace('bytes=400 total-bytes=400 status=recorded',
+                                  'bytes=100 total-bytes=100 subresource=0 status=recorded')
+                lines.append(line)
+                lines.append('LC2_GL_STORAGE_EVENT run-id=u-1 t-ns=125 event=extend owner=42 gl-name=9 kind=1 storage-generation=1 bytes=50 total-bytes=150 subresource=1 status=recorded')
+                lines.append('LC2_GL_STORAGE_EVENT run-id=u-1 t-ns=128 event=respec owner=42 gl-name=9 kind=1 storage-generation=1 bytes=80 total-bytes=130 subresource=0 status=recorded')
+            elif line.startswith('LC2_GL_STORAGE_DELETE '):
+                continue
+            elif line.startswith('LC2_LIFE_SUMMARY '):
+                lines.append('LC2_LIFE_SUMMARY share-group=unverified storage-calls=3 extends=1 deletes=0 delete-with-views=0 name-reuse=0 respecs=1 retained=130 peak=150 live=1 overflow=0 tex-bytes=130 tex-live=1 rb-bytes=0 rb-live=0 storage-event-lines=3 storage-event-overflow=0 delete-event-lines=0 delete-event-overflow=0')
+            else:
+                lines.append(line)
+        result=replay_texture_budget(chr(10).join(lines)+chr(10), BUDGET_RUN)
+        self.assertTrue(result['gl_storage']['summary_matches'])
+        self.assertEqual(result['gl_storage']['bytes_by_kind'], {'1':130})
+        self.assertEqual(result['gl_storage']['live_records'], 1)
+
+    def test_replays_share_group_and_cube_face_keys_without_cross_delete(self):
+        events = [
+            'LC2_GL_STORAGE_EVENT run-id=u-1 t-ns=120 event=allocate owner=42 gl-name=9 kind=1 storage-generation=1 bytes=100 total-bytes=100 subresource=0 subresource-count=1 status=recorded share-group=verified share-group-id=1 target=0x8515 face=0 level=0 layer=0',
+            'LC2_GL_STORAGE_EVENT run-id=u-1 t-ns=125 event=extend owner=42 gl-name=9 kind=1 storage-generation=1 bytes=50 total-bytes=150 subresource=0 subresource-count=2 status=recorded share-group=verified share-group-id=1 target=0x8515 face=1 level=0 layer=0',
+            'LC2_GL_STORAGE_EVENT run-id=u-1 t-ns=128 event=allocate owner=42 gl-name=9 kind=1 storage-generation=1 bytes=20 total-bytes=20 subresource=0 subresource-count=1 status=recorded share-group=verified share-group-id=2 target=0x8515 face=0 level=0 layer=0',
+        ]
+        lines=[]
+        inserted=False
+        for line in budget_log().splitlines():
+            if line.startswith('LC2_GL_STORAGE_EVENT '):
+                lines.extend(events);inserted=True
+            elif line.startswith('LC2_GL_STORAGE_DELETE '):
+                lines.append('LC2_GL_STORAGE_DELETE run-id=u-1 t-ns=140 owner=42 gl-name=9 kind=1 storage-generation=1 bytes=150 subresource-count=2 views=0 matched=1 share-group=verified share-group-id=1')
+            elif line.startswith('LC2_LIFE_SUMMARY '):
+                lines.append('LC2_LIFE_SUMMARY share-group=per-record storage-calls=3 extends=1 deletes=1 delete-with-views=0 name-reuse=0 retained=20 peak=170 live=1 overflow=0 tex-bytes=20 tex-live=1 rb-bytes=0 rb-live=0 storage-event-lines=3 storage-event-overflow=0 delete-event-lines=1 delete-event-overflow=0')
+            else:
+                lines.append(line)
+        self.assertTrue(inserted)
+        result=replay_texture_budget(chr(10).join(lines)+chr(10), BUDGET_RUN)
+        self.assertTrue(result['gl_storage']['summary_matches'])
+        self.assertEqual(result['gl_storage']['bytes_by_kind'], {'1':20})
+        self.assertEqual(result['gl_storage']['live_records'], 1)
+
     def test_refuses_foreign_run_and_underflow(self):
         with self.assertRaisesRegex(ValueError, 'identity'):
             replay_texture_budget(budget_log(), dict(BUDGET_RUN, run_uuid='foreign'))
