@@ -1,0 +1,157 @@
+{
+  "schema_version": 1,
+  "phase": "M3-B expanded allocation windows",
+  "source_commit": "07c2434a930a9873d0c790a1a7386f2cfb4fdbed",
+  "pr": "https://github.com/ruslan-k/lamentum-portmaster-tsps/pull/1",
+  "build": {
+    "label": "build256b",
+    "sha256": "27a2f9a8fcb00761ac6673937145929e675a75c641afde221dc01f96df39d771",
+    "overlay_sha256": "ea6a4d103f3893ad0420973dcf3077ec84ccd806053b4b017ede1a7fc1ad657c",
+    "arch": "AArch64 ELF64",
+    "max_glibc": "2.27"
+  },
+  "device": {
+    "boot_id": "66203f22-4ac8-4a2a-a47c-cddc253d3bda",
+    "runtime_backup": {"path": "lamentum-nextos.before-256b", "sha256": "b6a84e4cd423cbbd88661502c53f1f6de81ab81d1de9c504700d289e96d417e1"},
+    "older_backups_verified": {
+      "build253": "7acd58704b662184d4f2103d782d911b06c40e18fe7f4505f2753a06242bc6b9",
+      "build251": "1bcb32a4bac2e1e30e4c64ab8bb5d8ddd58c3cc59363a785919991eac4ab6b78"
+    },
+    "launcher_sha256": "f32204ff1b271dd66e38f79573f75c6f562af49174ea436e81dd9417dba1354a",
+    "helper_sha256": "abe8e4847b18a750c0796af33d887cf43714126c9751ccdc8236715cb752401a"
+  },
+  "controls": {
+    "input": "none",
+    "T2_MEMORY_FLOOR_MIB": 96,
+    "T2_TEXTURE_BUDGET_MIB": 300,
+    "COTM_GL_ERROR_IGNORE": 0,
+    "LC2_LIFE_EVENTS": 1,
+    "LC2_MENU_LEDGER": 1,
+    "LC2_M3B_MAX_EVENTS": 64,
+    "LC2_BC_STRIPE_MEDIUM": "unset",
+    "LC2_BC_INPLACE_DECODE": "unset",
+    "only_changed_arm_variable": "LC2_M3B_TIMELINE (0 vs 1)",
+    "memory_timeline_interval_ms": 100
+  },
+  "live_set_from_build254_off": {
+    "owners": 95,
+    "BC_texture_gl_bytes": 188899072,
+    "nonBC_texture_gl_bytes": 52586032,
+    "depth_renderbuffer_bytes": 11980800,
+    "combined_declared_gl_bytes": 253465904,
+    "T2_guest_and_charge_bytes": 117441536,
+    "physical_Mali_residency": "unknown"
+  },
+  "arms": {
+    "off": {
+      "run_uuid": "eb0df8ff-d369-4caa-9e5d-abc749a18bb6",
+      "execution_verified": true,
+      "stop": "T2_MEMORY_FLOOR",
+      "menu_events": 0,
+      "present_count": 13,
+      "floor_snapshot": {
+        "MemAvailable_kib": 92404,
+        "SwapFree_kib": 1962064,
+        "CmaFree_kib": 7836,
+        "VmRSS_kib": 699000,
+        "VmSwap_kib": 62008,
+        "read_duration_ns": 145792
+      },
+      "prelaunch_system_sample": {"MemAvailable_kib": 676028, "SwapFree_kib": 2033488, "CmaFree_kib": 107224},
+      "SwapFree_drop_kib": 71424,
+      "nearest_live_sample_to_floor": {
+        "offset_ns": -38593898,
+        "MemAvailable_kib": 78072,
+        "SwapFree_kib": 1962064,
+        "CmaFree_kib": 6968,
+        "VmRSS_kib": 716780,
+        "VmSwap_kib": 62012,
+        "sample_duration_ns": 5734557
+      },
+      "timeline": {"samples": 109, "live_samples": 107, "complete": false, "dropped_samples": 3, "stop_reason": "exited"},
+      "M3B_ring": {"windows": 0, "marks": 0, "summary": "absent as expected when disabled"},
+      "kernel_delta": {"new_order4_page_allocation_failures": 1, "comm": "terminator2d-ne", "pid": 30017, "call_path": "system_heap_allocate -> dma_heap_ioctl", "node0_free_pages": 8399, "free_cma_pages": 4122, "line": "[22380.157231] terminator2d-ne: page allocation failure: order:4, mode:0x140dc2(GFP_HIGHUSER|__GFP_COMP|__GFP_ZERO), nodemask=(null),cpuset=/,mems_allowed=0", "new_oom_killer_or_killed_process_lines": 0},
+      "cleanup": {"errors": 0, "game_processes": 0, "MainUI_restored": true},
+      "cleanup_KMS": {
+        "initial_capture": "idle-clock overlay",
+        "agent_injected_back_ms": 100,
+        "awake_MainUI_verified": true,
+        "awake_screenshot_sha256": "a6200d17688528dceaac7099ec4a724da40d70d08128a9270622a6496b91da11"
+      }
+    },
+    "on": {
+      "run_uuid": "df657097-c8f2-4635-b7a9-eb02ada2689b",
+      "execution_verified": true,
+      "stop": "T2_MEMORY_FLOOR",
+      "menu_events": 0,
+      "present_count": 12,
+      "floor_snapshot": {
+        "MemAvailable_kib": 91616,
+        "SwapFree_kib": 1975176,
+        "CmaFree_kib": 92,
+        "VmRSS_kib": 711928,
+        "VmSwap_kib": 48776,
+        "read_duration_ns": 146875
+      },
+      "prelaunch_system_sample": {"MemAvailable_kib": 685500, "SwapFree_kib": 2033800, "CmaFree_kib": 73836},
+      "SwapFree_drop_kib": 58624,
+      "nearest_live_sample_to_floor": {
+        "offset_ns": -74478247,
+        "MemAvailable_kib": 108048,
+        "SwapFree_kib": 1975176,
+        "CmaFree_kib": 92,
+        "VmRSS_kib": 711928,
+        "VmSwap_kib": 48776,
+        "sample_duration_ns": 6289851
+      },
+      "timeline": {"samples": 107, "live_samples": 105, "complete": false, "dropped_samples": 4, "stop_reason": "unavailable"},
+      "M3B_ring": {
+        "configured": 64,
+        "claimed": 44,
+        "emitted": 44,
+        "incomplete": 0,
+        "active": 0,
+        "dropped": 0,
+        "format_errors": 0,
+        "complete": true,
+        "windows": 41,
+        "marks": 3,
+        "storage_generation_known": 41,
+        "stage_counts": {"bc-full-initialize": 25, "bc-full-refresh": 4, "texture-full-initialize": 9, "texture-full-refresh": 1, "renderbuffer-depth-storage": 2}
+      },
+      "kernel_delta": {"new_page_allocation_failures": 0, "new_oom_killer_or_killed_process_lines": 0, "baseline_contains_off_failure": true},
+      "owners": {
+        "92": {"size": "3600x3600", "format": "0x44", "rgba_requested_bytes": 51840000, "linear_requested_bytes": 12960000, "peak_requested_bytes": 64800000, "decode_wall_ns": 558905251, "gl_allocation_wall_ns": 180019455},
+        "81": {"size": "3600x2160", "format": "0x44", "rgba_requested_bytes": 31104000, "linear_requested_bytes": 7776000, "peak_requested_bytes": 38880000, "decode_wall_ns": 323600435, "gl_allocation_wall_ns": 49020927},
+        "nonBC_init_ids": [2, 3, 4, 60, 82, 84, 90, 172, 206],
+        "nonBC_refresh_ids": [60],
+        "depth_renderbuffer_ids": [28, 173]
+      },
+      "cleanup": {"errors": 0, "game_processes": 0, "MainUI_restored": true},
+      "cleanup_KMS": {"awake_MainUI_verified": true, "screenshot_sha256": "7eb118fbcde0ee19c5891d54592ad36357638149cb530dd442ac95c649fe60d4"}
+    }
+  },
+  "current_state_after_on": {
+    "MemAvailable_kib": 688148,
+    "CmaFree_kib": 102600,
+    "SwapFree_kib": 2032836,
+    "MainUI_pid": 31619,
+    "game_processes": 0,
+    "cmd_to_run_exists": false,
+    "online_mask": "4-7",
+    "runtime_sha256": "27a2f9a8fcb00761ac6673937145929e675a75c641afde221dc01f96df39d771"
+  },
+  "interpretation": {
+    "M3B_large_NVn_texture_and_depth_allocation_windows": "captured; all 41 ring windows had known storage generation",
+    "periodic_waterfall": "partial; 3/4 missed intervals, so not a causal memory-overhead comparison",
+    "Mali_driver_allocation_and_physical_residency": "unknown",
+    "source_write_content_epoch": "untracked across writers",
+    "stage_local_GL_error_GPU_inflight_and_fileback_shadow": "unobserved or unmeasured",
+    "kernel_observed_failure": "one new order-4 page-allocation failure in OFF via system_heap_allocate -> dma_heap_ioctl; no object/texture owner correlation",
+    "buffer_storage": "0 live bytes, 0 live buffers, 0 respecs in life summary",
+    "EGL": "8x8 pbuffer route; physical surface backing unknown",
+    "no_swap": false,
+    "menu_reached": false,
+    "gameplay_or_fps_verified": false
+  }
+}
