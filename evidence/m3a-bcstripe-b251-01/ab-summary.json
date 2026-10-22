@@ -1,0 +1,238 @@
+{
+  "schema_version": 1,
+  "experiment": "M3-A1 build251 same-ELF OFF/ON device A/B",
+  "classification": "INCONCLUSIVE",
+  "classification_reason": "All six controlled arms reached T2_MEMORY_FLOOR. The ON arm shows repeatable first-present memory/swap signals and the owner-105 staging path changed as intended, but an owned candidate KMS image was not obtained, so pixel parity is unverified and the default remains OFF.",
+  "device": {
+    "boot_id": "66203f22-4ac8-4a2a-a47c-cddc253d3bda",
+    "mem_total_kib": 986064,
+    "swap_total_kib": 2065884,
+    "runtime_sha256": "1bcb32a4bac2e1e30e4c64ab8bb5d8ddd58c3cc59363a785919991eac4ab6b78",
+    "build250_backup_sha256": "fd83556cd52776f4371a1644e9d013cfcb317275d14e907c331f8f2ec7cbd74d"
+  },
+  "settings": {
+    "launch_path": "Spruce principal flow",
+    "input": "none",
+    "lc2_life_events": 1,
+    "lc2_menu_ledger": 1,
+    "t2_memory_floor_mib": 96,
+    "t2_texture_budget_mib": 300,
+    "cotm_gl_error_ignore": 0,
+    "only_ab_variable": "LC2_BC_STRIPE_MEDIUM",
+    "off_value": "unset",
+    "on_value": "1"
+  },
+  "runs": [
+    {
+      "arm": "baseline-01",
+      "run_uuid": "6d57acb9-4008-43a5-a121-0a32fcaca950",
+      "log_sha256": "56f122c0fbeb6239c8d3b3cc506258819d67f61fee1f9d62b2398f2418f61023",
+      "prelaunch_kib": {"mem_available": 665424, "cma_free": 77540, "swap_free": 2034436},
+      "first_present_kib": {"mem_available": 152076, "cma_free": 19060, "swap_free": 1997060, "vmrss": 706824, "vmswap": 29224, "budget_live_bytes": 112325632},
+      "floor": {"mem_available_kib": 90032, "swap_free_kib": 1958912, "budget_live_bytes": 117441536, "charge_count": 119, "budget_event_lines": 143, "budget_event_overflow": 0},
+      "present_records": 11,
+      "menu_events": 0,
+      "stop": "T2_MEMORY_FLOOR",
+      "full_stage_records": 15,
+      "striped_upload_records": 0,
+      "max_requested_cpu_scratch_bytes": 64800000,
+      "budget_pair_replay": "reconciled",
+      "unjoined_active_budget_owner_ids": [],
+      "gl_error_markers": 0,
+      "oom_evidence": [],
+      "cleanup_errors": []
+    },
+    {
+      "arm": "candidate-01",
+      "run_uuid": "a90be04e-66d8-42cd-acbf-6bc97fc0abb5",
+      "log_sha256": "d37f7b0049c9e387f507075ea29af3096f80a145c8952fda83e0b6feee33f213",
+      "prelaunch_kib": {"mem_available": 683036, "cma_free": 96716, "swap_free": 2034432},
+      "first_present_kib": {"mem_available": 175596, "cma_free": 23832, "swap_free": 2005304, "vmrss": 671172, "vmswap": 25876, "budget_live_bytes": 112325632},
+      "floor": {"mem_available_kib": 90732, "swap_free_kib": 1994552, "budget_live_bytes": 121635840, "charge_count": 120, "budget_event_lines": 144, "budget_event_overflow": 0},
+      "present_records": 17,
+      "menu_events": 0,
+      "stop": "T2_MEMORY_FLOOR",
+      "full_stage_records": 0,
+      "striped_upload_records": 15,
+      "max_requested_cpu_scratch_bytes": 2304000,
+      "budget_pair_replay": "rejected: live budget owners do not join to texture pairs",
+      "unjoined_active_budget_owner_ids": ["288"],
+      "gl_error_markers": 0,
+      "oom_evidence": [],
+      "cleanup_errors": []
+    },
+    {
+      "arm": "baseline-02",
+      "run_uuid": "320c8488-7127-4edd-ba85-024b901494ad",
+      "log_sha256": "ba99b1a211baa7ab9e72271c7eff553825bd5eb267af97d77cabcd455c738006",
+      "prelaunch_kib": {"mem_available": 683100, "cma_free": 64812, "swap_free": 2033976},
+      "first_present_kib": {"mem_available": 138332, "cma_free": 7740, "swap_free": 1996144, "vmrss": 708740, "vmswap": 31560, "budget_live_bytes": 112325632},
+      "floor": {"mem_available_kib": 95596, "swap_free_kib": 1954148, "budget_live_bytes": 121635840, "charge_count": 120, "budget_event_lines": 144, "budget_event_overflow": 0},
+      "present_records": 15,
+      "menu_events": 0,
+      "stop": "T2_MEMORY_FLOOR",
+      "full_stage_records": 16,
+      "striped_upload_records": 0,
+      "max_requested_cpu_scratch_bytes": 64800000,
+      "budget_pair_replay": "rejected: live budget owners do not join to texture pairs",
+      "unjoined_active_budget_owner_ids": ["288"],
+      "gl_error_markers": 0,
+      "oom_evidence": [],
+      "cleanup_errors": []
+    },
+    {
+      "arm": "candidate-02",
+      "run_uuid": "9c1e2d42-527a-4352-b7d3-e5a42083a505",
+      "log_sha256": "18417ff9df8f82cfa1e983cf847f90e848f10c29539f8996113bbace0a0c5bbc",
+      "prelaunch_kib": {"mem_available": 673788, "cma_free": 51204, "swap_free": 2027620},
+      "first_present_kib": {"mem_available": 164268, "cma_free": 9732, "swap_free": 2034020, "vmrss": 701500, "vmswap": 0, "budget_live_bytes": 112325632},
+      "floor": {"mem_available_kib": 90144, "swap_free_kib": 1996572, "budget_live_bytes": 117441536, "charge_count": 119, "budget_event_lines": 143, "budget_event_overflow": 0},
+      "present_records": 11,
+      "menu_events": 0,
+      "stop": "T2_MEMORY_FLOOR",
+      "full_stage_records": 0,
+      "striped_upload_records": 15,
+      "max_requested_cpu_scratch_bytes": 2304000,
+      "budget_pair_replay": "reconciled",
+      "unjoined_active_budget_owner_ids": [],
+      "gl_error_markers": 0,
+      "oom_evidence": [],
+      "cleanup_errors": []
+    },
+    {
+      "arm": "baseline-03",
+      "run_uuid": "d11d7752-81f9-4c34-bf06-530d4bad2026",
+      "log_sha256": "d5dda96074c517e68e31e38c002cd74d0f7d04a5867668fdff8acebbee1bf9d1",
+      "prelaunch_kib": {"mem_available": 686108, "cma_free": 62600, "swap_free": 2033948},
+      "first_present_kib": {"mem_available": 146000, "cma_free": 15176, "swap_free": 2011160, "vmrss": 717116, "vmswap": 16284, "budget_live_bytes": 112325632},
+      "floor": {"mem_available_kib": 96660, "swap_free_kib": 1967384, "budget_live_bytes": 117376000, "charge_count": 118, "budget_event_lines": 142, "budget_event_overflow": 0},
+      "present_records": 11,
+      "menu_events": 0,
+      "stop": "T2_MEMORY_FLOOR",
+      "full_stage_records": 15,
+      "striped_upload_records": 0,
+      "max_requested_cpu_scratch_bytes": 64800000,
+      "budget_pair_replay": "rejected: live budget owners do not join to texture pairs",
+      "unjoined_active_budget_owner_ids": ["280"],
+      "gl_error_markers": 0,
+      "oom_evidence": [],
+      "cleanup_errors": []
+    },
+    {
+      "arm": "candidate-03",
+      "run_uuid": "aa167dd9-c698-4828-a17c-14ea2f6c8b76",
+      "log_sha256": "971f21cc6703bd756e9a49369f755695c13cc4e0b396df07e8954425857562b8",
+      "prelaunch_kib": {"mem_available": 683456, "cma_free": 54248, "swap_free": 2034200},
+      "first_present_kib": {"mem_available": 161572, "cma_free": 14336, "swap_free": 2018840, "vmrss": 701628, "vmswap": 7804, "budget_live_bytes": 112325632},
+      "floor": {"mem_available_kib": 95260, "swap_free_kib": 1968752, "budget_live_bytes": 121635840, "charge_count": 120, "budget_event_lines": 144, "budget_event_overflow": 0},
+      "present_records": 11,
+      "menu_events": 0,
+      "stop": "T2_MEMORY_FLOOR",
+      "full_stage_records": 0,
+      "striped_upload_records": 15,
+      "max_requested_cpu_scratch_bytes": 2304000,
+      "budget_pair_replay": "rejected: live budget owners do not join to texture pairs",
+      "unjoined_active_budget_owner_ids": ["280"],
+      "gl_error_markers": 0,
+      "oom_evidence": [],
+      "cleanup_errors": []
+    }
+  ],
+  "paired_deltas_candidate_minus_baseline_kib": [
+    {
+      "pair": 1,
+      "first_present": {"mem_available": 23520, "cma_free": 4772, "swap_free": 8244, "vmrss": -35652, "vmswap": -3348},
+      "floor": {"mem_available": 700, "swap_free": 35640},
+      "present_records": 6
+    },
+    {
+      "pair": 2,
+      "first_present": {"mem_available": 25936, "cma_free": 1992, "swap_free": 37876, "vmrss": -7240, "vmswap": -31560},
+      "floor": {"mem_available": -5452, "swap_free": 42424},
+      "present_records": -4
+    },
+    {
+      "pair": 3,
+      "first_present": {"mem_available": 15572, "cma_free": -840, "swap_free": 7680, "vmrss": -15488, "vmswap": -8480},
+      "floor": {"mem_available": -1400, "swap_free": 1368},
+      "present_records": 0
+    }
+  ],
+  "group_medians_kib": {
+    "baseline": {"first_mem_available": 146000, "first_cma_free": 15176, "first_swap_free": 1997060, "first_vmrss": 708740, "first_vmswap": 29224, "floor_mem_available": 95596, "floor_swap_free": 1958912, "pre_to_floor_swap_free_loss": 75524},
+    "candidate": {"first_mem_available": 164268, "first_cma_free": 14336, "first_swap_free": 2018840, "first_vmrss": 701500, "first_vmswap": 7804, "floor_mem_available": 90732, "floor_swap_free": 1994552, "pre_to_floor_swap_free_loss": 39880}
+  },
+  "owner_105_stage_behavior": {
+    "format": "BC3 0x44",
+    "size": "1920x1080",
+    "baseline_phase_records": ["initialize", "refresh"],
+    "baseline_requested_overlapping_scratch_bytes_per_upload": 10368000,
+    "candidate_phase_records": ["allocate=1", "allocate=0 refresh"],
+    "candidate_requested_overlapping_scratch_bytes_per_upload": 1228800,
+    "source_requested_delta_bytes_per_upload": 9139200,
+    "max_observed_known_cpu_scratch_bytes_baseline": 64800000,
+    "max_observed_known_cpu_scratch_bytes_candidate": 2304000,
+    "interpretation": "Requested overlapping malloc sizes from stage records only; not measured RSS, MemAvailable, swap, Mali physical residency, or FPS. Resolution/format preserved."
+  },
+  "budget_pair_replay": {
+    "reconciled_runs": ["6d57acb9-4008-43a5-a121-0a32fcaca950", "9c1e2d42-527a-4352-b7d3-e5a42083a505"],
+    "rejected_runs": [
+      {"run_uuid": "a90be04e-66d8-42cd-acbf-6bc97fc0abb5", "unjoined_active_owner_ids": ["288"]},
+      {"run_uuid": "320c8488-7127-4edd-ba85-024b901494ad", "unjoined_active_owner_ids": ["288"]},
+      {"run_uuid": "d11d7752-81f9-4c34-bf06-530d4bad2026", "unjoined_active_owner_ids": ["280"]},
+      {"run_uuid": "aa167dd9-c698-4828-a17c-14ea2f6c8b76", "unjoined_active_owner_ids": ["280"]}
+    ],
+    "texture_pair_lines_per_arm": 119,
+    "texture_pair_overflow_per_arm": 0,
+    "budget_event_overflow_per_arm": 0,
+    "interpretation": "Four of six fail-closed per-ID joins despite zero event overflows; missing pair coverage is unresolved and does not alter the independent /proc memory samples."
+  },
+  "live_kms": {
+    "baseline": {
+      "run_uuid": "3287a37d-4e62-4817-9b4c-3e00d4b2e393",
+      "boot_id": "66203f22-4ac8-4a2a-a47c-cddc253d3bda",
+      "pid": 10676,
+      "starttime": 1303489,
+      "capture_elapsed_s": 10.2949,
+      "dimensions": "1280x720",
+      "png_bytes": 25857,
+      "png_sha256_local_only": "b17fb34f4046411d506ae9e0ed6811aaff123c518aae61c786c79db15118b185",
+      "visual_observation": "NEON DOCTRINE publisher splash on black; no Lamentum title/menu/world",
+      "owner_verified_before_and_after": true
+    },
+    "candidate": {
+      "run_uuid": "7f7d6e6d-6465-4768-b842-1d830b5bef9b",
+      "scheduled_capture_elapsed_s": 8.4,
+      "process_stat_present": false,
+      "png": null,
+      "pixel_parity": "unverified"
+    },
+    "cleanup_screen": {
+      "run_uuid": "post-run cleanup; not a game run",
+      "mainui_pid": 12165,
+      "mainui_starttime": 1311172,
+      "agent_back_hold_ms": 100,
+      "dimensions": "1280x720",
+      "png_bytes": 55891,
+      "sha256_local_only": "0c32e8cdb4f35b28930aabac9b5bf5025decb914220ac14fdbc495c50e548b2c",
+      "visual_observation": "awake SpruceOS MainUI home; not Lamentum"
+    }
+  },
+  "invalid_capture_trials_not_in_ab_matrix": [
+    {"run_uuid": "74a23455-1e78-4fe2-80d2-c74996044885", "reason": "Host wrapper imported tools after spawning harness and failed with ModuleNotFoundError; no KMS capture."},
+    {"run_uuid": "f84e72c0-9c6e-4f10-be77-5840c76badd5", "reason": "Host watcher treated the previous append-only log generation as a fatal mismatch before the owned run header; no capture."},
+    {"run_uuid": "9f65dc06-fb02-4cf9-99b2-236fd6154370", "reason": "Legacy capture helper SSH/KMS command returned 1 without PNG; no capture."},
+    {"run_uuid": "e93d83ed-896b-453a-8dc6-5c4dc41ac1b3", "reason": "One-shot remote capture script referenced an unset start_monotonic field; no capture."},
+    {"run_uuid": "251bfa17-627f-4b7b-b425-e24a15ee7fcc", "reason": "One-shot remote capture script referenced an unset start_monotonic field; no capture."},
+    {"run_uuid": "7f7d6e6d-6465-4768-b842-1d830b5bef9b", "reason": "Candidate process was already gone at scheduled 8.4 s capture; no candidate PNG, so no parity comparison."}
+  ],
+  "final_device_state": {
+    "boot_id": "66203f22-4ac8-4a2a-a47c-cddc253d3bda",
+    "mainui": {"pid": 12165, "starttime": 1311172},
+    "game_processes": [],
+    "cpu_online_mask": "4-7",
+    "cpu0_to_3": {"online": "0", "mode": "0444"},
+    "screen": "awake SpruceOS MainUI after explicitly agent-injected Back; not a physical-user action"
+  },
+  "next": "Keep LC2_BC_STRIPE_MEDIUM default OFF; proceed to M3-B owner-qualified pre-first-present memory waterfall; do not enter New Game or lower the 96 MiB floor."
+}

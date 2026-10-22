@@ -156,7 +156,7 @@ share-group identity remains unverified. `/proc/pressure/memory` is unavailable.
 KMS after cleanup and an agent-injected Back wake shows SpruceOS home, not
 Lamentum. No scene, input, sound, save/load, menu, or gameplay FPS was verified.
 
-## Build251 M3-A BC3 staging candidate (host-verified, device A/B pending)
+## Build251 M3-A BC3 staging candidate (design/host fixture; device result follows)
 
 The build250 owned log identifies BC3 texture id105 (`1920x1080`, format
 `0x44`) before first present. The existing wide-atlas stripe path was not used;
@@ -175,19 +175,19 @@ decode equivalence for `1920x1080` tiled input and a partial-stripe case. Host
 suite: 281 passed. Runtime SHA-256:
 `1bcb32a4bac2e1e30e4c64ab8bb5d8ddd58c3cc59363a785919991eac4ab6b78`.
 
-Not installed or device-tested yet. The next gate is a matched, three-repeat A/B
-on this same build251, alternating flag-absent and `LC2_BC_STRIPE_MEDIUM=1`
-arms. Keep floor96/cap300/strict GL/no input; compare the full/striped scratch
-records, first-present memory/swap counters, stop outcome, GL errors and cleanup.
-Do not enter New Game. An improvement in requested scratch alone does not prove
-less RSS/swap, menu stability or gameplay FPS.
+At the time this design entry was written, build251 had not yet been installed or device-tested. The completed same-build three-pair device A/B and its limitations are recorded below; the switch remains default OFF.
+
+## Build251 M3-A1 device A/B result (2026-10-22)
+
+Six no-input same-build251 principal-flow runs alternated OFF/ON three times with floor96, cap300 and strict GL unchanged. Full run identities and metric rows are in [the compact A/B receipt](../evidence/m3a-bcstripe-b251-01/ab-summary.json); raw logs and images remain local-only.
+
+- Owner105 (`1920x1080`, BC3 `0x44`) followed the full path when OFF: `10368000` B requested overlapping scratch per upload. ON recorded striped initialize/refresh with `1228800` B per upload, resolution preserved. Across all stage records, the maximum known requested scratch was `64800000` B OFF versus `2304000` B ON. These are buffer requests, not physical-memory measurements.
+- At first present, candidate-minus-baseline was positive for `MemAvailable` and `SwapFree` and negative for `VmRSS` and `VmSwap` in all three pairs. Exact paired deltas (KiB): available `+23520/+25936/+15572`; swap-free `+8244/+37876/+7680`; RSS `-35652/-7240/-15488`; swap `-3348/-31560/-8480`. At the floor, candidate retained `35640/42424/1368` KiB more swap-free, but available memory was `+700/-5452/-1400` KiB; the floor gate still failed in every arm and menu events stayed zero. This did not achieve no-swap operation or safe menu headroom.
+- No counted GL errors, no owned OOM evidence and no cleanup errors in the six arms. The budget/pair replay reconciled two runs; four were rejected because live budget owner id288 (two runs) or id280 (two runs) had no texture-pair row despite zero journal overflow. Do not treat this as a physical-residency result.
+- Baseline live KMS run showed the `NEON DOCTRINE` publisher splash with the owned process alive; no candidate KMS image was obtained, so pixel parity is unverified. All six arms stopped at `T2_MEMORY_FLOOR`; presentation counts are not FPS.
+
+**M3-A1 classification: INCONCLUSIVE.** Keep the stripe switch default OFF, retain the 96 MiB floor/300 MiB cap, and do not enter New Game. The small/odd-mip stripe-capacity cases remain untested before any future promotion.
 
 ## Next
 
-The exact budget/storage replay closes the same-run arithmetic for this
-no-alias menu arm; it does not make the game playable or prevent swap. Validate
-the build251 medium-width stripe candidate before selecting a different
-first-present memory path. Lossy texture transcode or render-resolution changes
-still require explicit quality acceptance; do not enter New Game until the
-menu holds the safety gate. World, input, sound, save/load, no-swap, and gameplay
-30 FPS remain OPEN.
+Proceed to M3-B: a bounded, owner-qualified pre-first-present memory waterfall with a same-build instrumentation-OFF overhead arm, following [roadmap §76](performance-roadmap-30fps.md#76-build251-reassessment-evidence-led-headroom-first-playable-scene-then-real-30-fps-2026-10-22) and the [detailed implementation plan](build251-evidence-and-gameplay-roadmap.md). No texture transcode, resolution change, swap-policy change or safety-floor reduction until the measured peak owner is identified. World, input, sound, save/load, zero-swap operation and gameplay 30 FPS remain OPEN.
