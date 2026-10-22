@@ -32,6 +32,11 @@ class LauncherTests(unittest.TestCase):
                                .replace('/sys/devices/system/cpu', str(cpu)))
             env = {k: v for k, v in os.environ.items()
                    if not k.startswith(('LC2_', 'COTM_', 'T2_', 'LAMENTUM_'))}
+            no_stat = root / 'no-stat-bin'
+            no_stat.mkdir()
+            (no_stat / 'stat').write_text('#!/bin/sh\nexit 127\n')
+            (no_stat / 'stat').chmod(0o755)
+            env['PATH'] = str(no_stat) + os.pathsep + env['PATH']
             result = subprocess.run(['bash', str(launcher)], env=env)
             self.assertEqual(result.returncode, 7)
             self.assertEqual((game / 'defaults.txt').read_text().strip(), '1 0 0 0 0 96')

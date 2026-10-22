@@ -27,7 +27,7 @@ for c in 0 1 2 3; do
     p="/sys/devices/system/cpu/cpu${c}/online"
     [ -e "$p" ] || continue
     previous=$(cat "$p")
-    mode=$(stat -c '%a' "$p") || { printf 'LAMENTUM_CPU_MODE_READ_FAILED cpu=%s\n' "$c"; exit 1; }
+    mode=$(python3 -c 'import os,sys; print(format(os.stat(sys.argv[1]).st_mode & 0o777, "o"))' "$p") || { printf 'LAMENTUM_CPU_MODE_READ_FAILED cpu=%s\n' "$c"; exit 1; }
     CPU_RESTORE="$CPU_RESTORE $c:$previous:$mode"
     chmod u+w "$p" 2>/dev/null || true
     if [ "$previous" = 0 ]; then printf 1 >"$p" || true; fi
