@@ -16,7 +16,7 @@ import statistics
 import sys
 
 FIELD_RE = re.compile(r'([a-z-]+)=([0-9.]+)')
-STOP_RE = re.compile(r'STOP status=([A-Z_0-9]+)')
+STOP_RE = re.compile(r'^STOP status=([A-Z_0-9]+)', re.MULTILINE)
 
 
 def parse(path):

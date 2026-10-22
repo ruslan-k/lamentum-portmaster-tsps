@@ -171,8 +171,8 @@ static void stop(const char *reason,uint64_t caller,uint64_t detail,unsigned cod
  (void)reason;(void)caller;(void)detail;(void)code;longjmp(target,1);
 }
 static unsigned zero_bc_srgb(unsigned format){return format==0x45;}
-static void t2_texture_budget_add(uint64_t bytes,uint64_t caller) {
- (void)caller;adds++;if(bytes>cap)longjmp(target,2);charged+=bytes;
+static void t2_texture_budget_add(uint64_t bytes,uint64_t caller,uint64_t texture_id) {
+ (void)caller;(void)texture_id;adds++;if(bytes>cap)longjmp(target,2);charged+=bytes;
 }
 static unsigned nvn_texture_upload_bytes(unsigned type){return type==GL_UNSIGNED_BYTE?4:type==GL_FLOAT?16:0;}
 static void lc2_large_bc_reserve_audit(const struct nvn_texture *view,const struct nvn_texture *t,

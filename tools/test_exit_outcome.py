@@ -64,6 +64,12 @@ class ExitEvidenceTests(unittest.TestCase):
         self.assertEqual(classify_exit('STOP status=INVALID_PROBE_TIME_BUDGET\n')['kind'], 'invalid_configuration')
         self.assertEqual(classify_exit('no stop receipt')['kind'], 'exit_unknown')
 
+    def test_diagnostic_marker_containing_stop_word_is_not_a_runtime_stop(self):
+        log = 'LC2_MENU_LEDGER_PRESTOP status=gl-lock-unavailable\\n'
+        result = classify_exit(log)
+        self.assertEqual(result['kind'], 'exit_unknown')
+        self.assertEqual(result['stops'], [])
+
     def test_kill_of_different_log_pid_is_not_owned_oom(self):
         self.assertEqual(classify_exit(KILL.replace('26250', '123'), kernel_before=kernel(100),
                                      kernel_after=kernel(130, OOM), owner=OWNER)['kind'], 'sigkill_unknown')
@@ -88,7 +94,8 @@ class HarnessEvidenceIntegrationTests(unittest.TestCase):
                 (kernel(130), 0, 'runtime_timeout', False, False),
                 (kernel(130), 9, 'exit_unknown', False, True)):
             with self.subTest(kind=expected_kind), tempfile.TemporaryDirectory() as directory:
-                log = 'STOP status=TIME_LIMIT\n' + (KILL + 'exit status 137\n' if killed else '')
+                log = chr(10).join(('LC2_MENU_LEDGER_PRESTOP status=gl-lock-unavailable',
+                                    'STOP status=TIME_LIMIT')) + chr(10) + (KILL + 'exit status 137' + chr(10) if killed else '')
                 owned = dict(OWNER, elf_dev=1, elf_ino=2)
                 kernel_polls = []
                 def fake_remote(source):
@@ -128,6 +135,9 @@ class HarnessEvidenceIntegrationTests(unittest.TestCase):
                 self.assertEqual(result['termination']['kind'], expected_kind)
                 self.assertEqual(result['process_identity'], owned)
                 self.assertEqual(result['cleanup_errors'], [])
+                expected_stops = [] if changed_generation else ['TIME_LIMIT']
+                self.assertEqual(result['stops'], expected_stops)
+                self.assertEqual(result['termination']['stops'], expected_stops)
                 self.assertTrue(result['execution_verified'])
                 self.assertFalse(result['content_bindings_complete'])
                 self.assertTrue((Path(directory)/'kernel-before.json').exists())

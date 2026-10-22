@@ -1185,10 +1185,10 @@ index 0000000..fbe5673
 +#endif
 diff --git a/native/lc2_life_events.h b/native/lc2_life_events.h
 new file mode 100644
-index 0000000..e930a20
+index 0000000..acebcd2
 --- /dev/null
 +++ b/native/lc2_life_events.h
-@@ -0,0 +1,347 @@
+@@ -0,0 +1,378 @@
 +/* Bounded OBSERVATION ledger for GL storage events. Diagnostic only, default off.
 + *
 + * It answers design questions before any lifetime policy is integrated:
@@ -1214,6 +1214,9 @@ index 0000000..e930a20
 +#define LC2_LIFE_TEXTURE_LIVE_PAIR_CAP 128U
 +#define LC2_LIFE_STORAGE_EVENT_CAP 256U
 +#define LC2_LIFE_DELETE_EVENT_CAP 256U
++#ifndef LC2_LIFE_BUDGET_EVENT_CAP
++#define LC2_LIFE_BUDGET_EVENT_CAP 512U
++#endif
 +struct lc2_life_event {uint64_t name,kind,bytes,mips,nvn_id,generation;unsigned live;};
 +struct lc2_life_texture_pair {
 +    const char *phase;
@@ -1231,6 +1234,7 @@ index 0000000..e930a20
 +    uint64_t tex_pair_lines,tex_pair_overflow;
 +    uint64_t tex_live_pair_lines,tex_live_pair_overflow;
 +    uint64_t storage_event_lines,storage_event_overflow,delete_event_lines,delete_event_overflow;
++    uint64_t budget_event_lines,budget_event_overflow;
 +};
 +static struct lc2_life_events_state lc2_life_events_state_storage;
 +static inline struct lc2_life_events_state *lc2_life_events_state(void) {return &lc2_life_events_state_storage;}
@@ -1274,6 +1278,33 @@ index 0000000..e930a20
 +        (unsigned long long)bytes,(unsigned long long)total,sub,count,status?status:"unknown");
 +    if(n<0 || (size_t)n>=sizeof(line)) {s->storage_event_overflow++;return;}
 +    lc2_life_write(STDOUT_FILENO,line,(size_t)n);s->storage_event_lines++;
++}
++static inline void lc2_life_events_budget(const char *action,uint64_t nvn_id,uint64_t delta_bytes,
++        uint64_t live_bytes,uint64_t charge_count,uint64_t caller) {
++    if(!lc2_life_events_on())return;
++    struct lc2_life_events_state *s=lc2_life_events_state();
++    if(s->budget_event_lines>=LC2_LIFE_BUDGET_EVENT_CAP) {s->budget_event_overflow++;return;}
++    char line[512];int n=snprintf(line,sizeof(line),"LC2_TEXTURE_BUDGET_EVENT run-id=%s t-ns=%llu action=%s"
++        " texture-id=%llu delta-bytes=%llu live-bytes=%llu charge-count=%llu caller=%llu status=recorded\n",
++        lc2_life_events_run_id(),(unsigned long long)lc2_life_events_now_ns(),action?action:"unknown",
++        (unsigned long long)nvn_id,(unsigned long long)delta_bytes,(unsigned long long)live_bytes,
++        (unsigned long long)charge_count,(unsigned long long)caller);
++    if(n<0 || (size_t)n>=sizeof(line)) {s->budget_event_overflow++;return;}
++    lc2_life_write(STDOUT_FILENO,line,(size_t)n);s->budget_event_lines++;
++}
++static inline void lc2_life_events_budget_floor(uint64_t floor_check_ns,uint64_t budget_sample_ns,
++        unsigned long available_kib,unsigned long swap_free_kib,uint64_t live_bytes,uint64_t peak_bytes,
++        uint64_t charge_count,uint64_t event_lines,uint64_t event_overflow,const char *status,int lock_rc) {
++    if(!lc2_life_events_on())return;
++    char line[512];int n=snprintf(line,sizeof(line),"LC2_TEXTURE_BUDGET_FLOOR run-id=%s floor-check-t-ns=%llu"
++        " budget-sample-t-ns=%llu floor-available-kib=%lu floor-swap-free-kib=%lu live-bytes=%llu"
++        " peak-bytes=%llu charge-count=%llu event-lines=%llu event-overflow=%llu status=%s lock-rc=%d\n",
++        lc2_life_events_run_id(),(unsigned long long)floor_check_ns,(unsigned long long)budget_sample_ns,
++        available_kib,swap_free_kib,(unsigned long long)live_bytes,(unsigned long long)peak_bytes,
++        (unsigned long long)charge_count,(unsigned long long)event_lines,(unsigned long long)event_overflow,
++        status?status:"unknown",lock_rc);
++    if(n<0 || (size_t)n>=sizeof(line))return;
++    lc2_life_write(STDOUT_FILENO,line,(size_t)n);
 +}
 +static inline void lc2_life_events_storage(uint64_t nvn_id,uint64_t name,uint64_t kind,uint64_t bytes,unsigned subresource) {
 +    if(!lc2_life_events_on() || !name || !bytes)return;
@@ -1656,7 +1687,7 @@ index 0000000..c25256f
 +#endif
 diff --git a/native/lc2_menu_ledger.h b/native/lc2_menu_ledger.h
 new file mode 100644
-index 0000000..0608dc5
+index 0000000..3b9eb84
 --- /dev/null
 +++ b/native/lc2_menu_ledger.h
 @@ -0,0 +1,269 @@
@@ -1860,7 +1891,7 @@ index 0000000..0608dc5
 +    if(!__atomic_load_n(&lc2_menu_ledger.enabled,__ATOMIC_ACQUIRE))return;
 +    int lock_rc=pthread_mutex_trylock(&nvn_gl_completion.mutex);
 +    if(lock_rc) {
-+        printf("LC2_MENU_LEDGER_PRESTOP status=gl-lock-unavailable lock-rc=%d floor-check-t-ns=%llu floor-available-kib=%lu floor-swap-free-kib=%lu\n",
++        printf("LC2_MENU_FLOOR_CAPTURE status=gl-lock-unavailable lock-rc=%d floor-check-t-ns=%llu floor-available-kib=%lu floor-swap-free-kib=%lu\n",
 +            lock_rc,(unsigned long long)floor_check_ns,floor_available_kib,floor_swap_free_kib);
 +        fflush(stdout);return;
 +    }
@@ -4120,7 +4151,7 @@ index 0fb14ec..9e2ccfc 100644
              free(premul);free(probe);free(sprite);free(flat);free(scaled);free(awf);free(mipped);free(r8);free(advent);free(lowered);free(wrapped);free(interface_source);
              if(!status){char log[2048]={0};glGetShaderInfoLog(shaders[i],sizeof(log),NULL,log);printf("NVN_SHADER_COMPILE_ERROR %s\n",log);stop("NVN_SHADER_COMPILE_FAILED",nvn_caller,p->sources[i],21);}
 diff --git a/native/nvn_textures.h b/native/nvn_textures.h
-index 0feaef1..6797b4d 100644
+index 0feaef1..b7bd51d 100644
 --- a/native/nvn_textures.h
 +++ b/native/nvn_textures.h
 @@ -6,6 +6,14 @@
@@ -4430,7 +4461,7 @@ index 0feaef1..6797b4d 100644
 +    }
 +    lc2_large_bc_reserve_audit(view,t,nvn_texture_upload_bytes(type),bc,type,srgb,layout.bytes);
 +    lc2_bc_owner_receipt(view,t,bc,type,nvn_texture_upload_bytes(type),layout.bytes);
-+    t2_texture_budget_add(layout.bytes,nvn_caller);
++    t2_texture_budget_add(layout.bytes,nvn_caller,t->id);
 +    t->t2_budget_bytes=layout.bytes;
 +    printf("LC2_BC_GPU_RESERVE id=%"PRIu64" bytes=%"PRIu64" levels=%u materialization=first-use"
 +        " basis=decoded-format-payload driver-physical=unknown\n",t->id,layout.bytes,layout.levels);
@@ -4476,16 +4507,18 @@ index 0feaef1..6797b4d 100644
      printf("ZERO_TEXTURE_FLUSH_UPLOADED id=%"PRIu64" format=0x%x native-cpu-bytes=preserved before-sampler\n",t->id,t->b.format);
  }
  #include "zero_texture_writes.h"
-@@ -605,7 +849,8 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -605,8 +849,9 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
          /* Frente F: an eligible page gets no GL storage now (the pool holds nothing yet, MEDIDO pc-008: the
           * copy arrives later) and no budget; the copy decides between the palettized form and RGBA8. */
          t->t2_page.deferred=t2_page_eligible(&b);
 -        t->t2_budget_bytes=t->t2_page.deferred?0:size;
+-        if(t->t2_budget_bytes)t2_texture_budget_add(size,nvn_caller);
 +        t->lc2_bc_pending=lc2_bc_lazy_eligible(&b);
 +        t->t2_budget_bytes=(t->t2_page.deferred||t->lc2_bc_pending)?0:size;
-         if(t->t2_budget_bytes)t2_texture_budget_add(size,nvn_caller);
++        if(t->t2_budget_bytes)t2_texture_budget_add(size,nvn_caller,t->id);
          else if(t2_pages.deferred_logged++<4)printf("T2_PAGE_DEFERRED id=%"PRIu64" size=%ux%u rgba8-bytes=%"PRIu64" pool-flags=0x%x storage=none-until-copy\n",t->id,b.width,b.height,size,pool->flags);
  #ifdef MOMO_SHADERS
+         momo_texture_stamp(t->object,t->id);
 @@ -649,7 +894,13 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
              const char *extensions=(const char *)glGetString(GL_EXTENSIONS);
              if(!extensions || !strstr(extensions,b.format==0x35?"GL_OES_packed_depth_stencil":"GL_OES_depth24"))stop("NVN_DEPTH_BACKEND_REQUIRED",nvn_caller,b.format,20);
@@ -4598,6 +4631,15 @@ index 0feaef1..6797b4d 100644
              for(unsigned i=0;i<3;i++)if(storage->cpu_views[i])glDeleteTextures(1,&storage->cpu_views[i]);
              free(storage->cpu_snapshot);storage->cpu_snapshot=NULL;
          }
+@@ -815,7 +1099,7 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+         nvn_texture_alias_epoch_advance();
+         t2_page_finalize(t);
+         t->name=0;t->depth_buffer=0;t->live=0;nvn_gl_release();
+-        if(t->t2_budget_bytes)t2_texture_budget_sub(t->t2_budget_bytes,nvn_caller);
++        if(t->t2_budget_bytes)t2_texture_budget_sub(t->t2_budget_bytes,nvn_caller,t->id);
+         t->t2_budget_bytes=0;
+         if(!t->pool->references)stop("NVN_TEXTURE_POOL_REFERENCE",nvn_caller,a[0],24);
+         if(!--t->pool->references)t->pool->retired=0;
 diff --git a/native/nvn_vertex_stream.h b/native/nvn_vertex_stream.h
 index 9562779..e11bf24 100644
 --- a/native/nvn_vertex_stream.h
@@ -4850,10 +4892,26 @@ index 81f1ea1..96969a7 100644
  }
  static void *t2_gz_thread(void *argument) {
 diff --git a/native/t2_memwatch.h b/native/t2_memwatch.h
-index af10ee8..b0efc9c 100644
+index af10ee8..2b491f6 100644
 --- a/native/t2_memwatch.h
 +++ b/native/t2_memwatch.h
-@@ -117,19 +117,31 @@ static void t2_memwatch_step(const struct t2_meminfo *m) {
+@@ -15,6 +15,7 @@
+  */
+ #ifndef T2_MEMWATCH_H
+ #define T2_MEMWATCH_H
++#include <errno.h>
+ #include <limits.h>
+ #include <malloc.h>
+ 
+@@ -44,6 +45,7 @@ static struct {unsigned configured,floor_mib,budget_mib,swap_floor_mib,tight_mib
+                uint64_t checks;int level;unsigned calm;} t2_memwatch;
+ static struct {uint64_t live_bytes,peak_bytes,count;} t2_texture_budget;
+ static pthread_mutex_t t2_texture_budget_mutex=PTHREAD_MUTEX_INITIALIZER;
++static void t2_texture_budget_pre_stop(const struct t2_meminfo *,uint64_t);
+ 
+ static unsigned t2_memwatch_mib(const char *name,unsigned fallback) {
+     const char *v=getenv(name);
+@@ -117,19 +119,33 @@ static void t2_memwatch_step(const struct t2_meminfo *m) {
      if(m->swap_total_kib && m->swap_free_kib<t2_memwatch.lowest_swap_kib)t2_memwatch.lowest_swap_kib=m->swap_free_kib;
      if(!(t2_memwatch.checks%T2_MEMWATCH_SAMPLE_CHECKS)) {
          unsigned long rss,swap;t2_memwatch_self_status(&rss,&swap);
@@ -4876,6 +4934,7 @@ index af10ee8..b0efc9c 100644
 +        printf("T2_MEMORY_FLOOR_HIT run-id=%s t-ns=%llu available-MiB=%lu floor-MiB=%u swap-free-MiB=%lu action=exit\n",
 +               lc2_life_events_run_id(),(unsigned long long)sample_ns,available>>10,t2_memwatch.floor_mib,m->swap_free_kib>>10);
          fflush(NULL);
++        t2_texture_budget_pre_stop(m,sample_ns);
 +        lc2_menu_ledger_floor_preflight(available,m->swap_free_kib,sample_ns);
          stop("T2_MEMORY_FLOOR",0,available>>10,26);
      }
@@ -4886,10 +4945,134 @@ index af10ee8..b0efc9c 100644
 +        printf("T2_MEMORY_EXHAUSTED run-id=%s t-ns=%llu available-MiB=%lu swap-free-MiB=%lu swap-total-MiB=%lu swap-floor-MiB=%u action=exit reason=swap-full-oom-imminent\n",
 +               lc2_life_events_run_id(),(unsigned long long)sample_ns,available>>10,m->swap_free_kib>>10,m->swap_total_kib>>10,t2_memwatch.swap_floor_mib);
          fflush(NULL);
++        t2_texture_budget_pre_stop(m,sample_ns);
 +        lc2_menu_ledger_floor_preflight(available,m->swap_free_kib,sample_ns);
          stop("T2_MEMORY_EXHAUSTED",0,m->swap_free_kib>>10,26);
      }
      /* Rise at once; fall only after 10 s (40 checks) below the current level, so a boundary does not spam. */
+@@ -192,12 +208,13 @@ static void t2_memwatch_start(void) {
+     pthread_attr_destroy(&attr);
+ }
+ /* Called by the NVN texture path with the bridge lock held; the mutex only protects the counters. */
+-static void t2_texture_budget_add(uint64_t bytes,uint64_t caller) {
++static void t2_texture_budget_add(uint64_t bytes,uint64_t caller,uint64_t texture_id) {
+     t2_memwatch_configure();
+     pthread_mutex_lock(&t2_texture_budget_mutex);
+     t2_texture_budget.live_bytes+=bytes;t2_texture_budget.count++;
+     if(t2_texture_budget.live_bytes>t2_texture_budget.peak_bytes)t2_texture_budget.peak_bytes=t2_texture_budget.live_bytes;
+     uint64_t live=t2_texture_budget.live_bytes,count=t2_texture_budget.count;
++    lc2_life_events_budget("add",texture_id,bytes,live,count,caller);
+     pthread_mutex_unlock(&t2_texture_budget_mutex);
+     if(count<=8 || !(count&(count-1)) || bytes>=(16ULL<<20))
+         printf("T2_TEXTURE_BUDGET add-bytes=%llu live-MiB=%llu count=%llu budget-MiB=%u\n",
+@@ -209,10 +226,27 @@ static void t2_texture_budget_add(uint64_t bytes,uint64_t caller) {
+         stop("T2_TEXTURE_BUDGET",caller,live>>20,26);
+     }
+ }
+-static void t2_texture_budget_sub(uint64_t bytes,uint64_t caller) {
++static void t2_texture_budget_sub(uint64_t bytes,uint64_t caller,uint64_t texture_id) {
+     pthread_mutex_lock(&t2_texture_budget_mutex);
+     if(t2_texture_budget.live_bytes<bytes){pthread_mutex_unlock(&t2_texture_budget_mutex);stop("T2_TEXTURE_BUDGET_UNDERFLOW",caller,bytes,24);}
+     t2_texture_budget.live_bytes-=bytes;
++    lc2_life_events_budget("sub",texture_id,bytes,t2_texture_budget.live_bytes,t2_texture_budget.count,caller);
+     pthread_mutex_unlock(&t2_texture_budget_mutex);
+ }
++static void t2_texture_budget_pre_stop(const struct t2_meminfo *m,uint64_t floor_check_ns) {
++    if(!lc2_life_events_on())return;
++    int lock_rc=pthread_mutex_trylock(&t2_texture_budget_mutex);
++    if(lock_rc) {
++        lc2_life_events_budget_floor(floor_check_ns,0,m->available_kib,m->swap_free_kib,
++            0,0,0,0,0,lock_rc==EBUSY?"mutex-busy":"mutex-error",lock_rc);
++        return;
++    }
++    uint64_t live=t2_texture_budget.live_bytes,peak=t2_texture_budget.peak_bytes;
++    uint64_t count=t2_texture_budget.count,sample_ns=lc2_life_events_now_ns();
++    struct lc2_life_events_state *events=lc2_life_events_state();
++    uint64_t event_lines=events->budget_event_lines,event_overflow=events->budget_event_overflow;
++    pthread_mutex_unlock(&t2_texture_budget_mutex);
++    lc2_life_events_budget_floor(floor_check_ns,sample_ns,m->available_kib,m->swap_free_kib,
++        live,peak,count,event_lines,event_overflow,"sampled",0);
++}
+ #endif
+diff --git a/native/t2_page_cache.h b/native/t2_page_cache.h
+index c4b2ada..eab18b2 100644
+--- a/native/t2_page_cache.h
++++ b/native/t2_page_cache.h
+@@ -59,7 +59,7 @@ static void t2_page_cache_after_present(unsigned frame) {
+         size_t freed=(size_t)entry->w*entry->h-1;
+         cold->t2_budget_bytes-=freed;cold->t2_page.gl_bytes-=freed;
+         cold->t2_page.pending_entry=entry;cold->parameter_known=0;
+-        t2_texture_budget_sub(freed,nvn_caller);resident--;
++        t2_texture_budget_sub(freed,nvn_caller,cold->id);resident--;
+         printf("T2_PAGE_CACHE_EVICT page=%s frame=%u idle=%u freed-bytes=%zu resident=%u\n",entry->name,frame,oldest,freed,resident);
+     }
+     if(finished){glActiveTexture((GLenum)active);glBindTexture(GL_TEXTURE_2D,(GLuint)binding);}
+diff --git a/native/t2_page_lazy.h b/native/t2_page_lazy.h
+index 0f5baa6..8bb61eb 100644
+--- a/native/t2_page_lazy.h
++++ b/native/t2_page_lazy.h
+@@ -35,7 +35,7 @@ static void t2_page_lazy_materialize(struct nvn_texture *t) {
+     if(!ok || error || bytes<before){if(!retained)glDeleteTextures(2,names);stop("T2_PAGE_LAZY_UPLOAD",nvn_caller,error,21);}
+     t->parameter_known=0;t2_page_wrap_reset(&t->t2_page.blockmap_wrap);
+     t->t2_page.gl_bytes=bytes;t->t2_budget_bytes=bytes;
+-    t->t2_page.pending_entry=NULL;t2_texture_budget_add(bytes-before,nvn_caller);
++    t->t2_page.pending_entry=NULL;t2_texture_budget_add(bytes-before,nvn_caller,t->id);
+     printf("T2_PAGE_LAZY_RESIDENT page=%s id=%"PRIu64" bytes=%zu reload=%u\n",e->name,t->id,bytes,retained);
+ }
+ #endif
+diff --git a/native/t2_page_residency.h b/native/t2_page_residency.h
+index cff724e..7613be0 100644
+--- a/native/t2_page_residency.h
++++ b/native/t2_page_residency.h
+@@ -112,7 +112,7 @@ static void t2_residency_after_present(unsigned frame) {
+             glBindTexture(GL_TEXTURE_2D,(GLuint)binding==old_name || (GLuint)binding==aux[1] || (GLuint)binding==aux[2]?0:(GLuint)binding);
+             cold->t2_page.blockmap_name=cold->t2_page.palette_name=0;
+             cold->t2_budget_bytes=0;cold->t2_page.gl_bytes=0;cold->t2_page.pending_entry=entry;cold->parameter_known=0;
+-            t2_texture_budget_sub(freed,nvn_caller);
++            t2_texture_budget_sub(freed,nvn_caller,cold->id);
+             t2_residency.evictions++;t2_residency.evicted_bytes+=freed;t2_residency.evicted[cold-nvn_textures]=1;
+             printf("T2_PAGE_RESIDENCY_EVICT page=%s frame=%u idle=%u freed-bytes=%zu available-MiB=%lu evictions=%"PRIu64"\n",
+                 entry->name,frame,oldest,freed,available>>10,t2_residency.evictions);
+diff --git a/native/t2_page_substitution.h b/native/t2_page_substitution.h
+index 3d34d95..8d83f5d 100644
+--- a/native/t2_page_substitution.h
++++ b/native/t2_page_substitution.h
+@@ -462,7 +462,7 @@ static void t2_page_materialize_rgba8(struct nvn_texture *t,const uint8_t *src,u
+     glPixelStorei(GL_UNPACK_ALIGNMENT,alignment);free(rgba);
+     GLenum error=glGetError();if(error)stop("T2_PAGE_FALLBACK_GL",nvn_caller,error,21);
+     t->t2_page.deferred=0;t->t2_page.mode=0;
+-    t->t2_budget_bytes=t->size;t2_texture_budget_add(t->size,nvn_caller);
++    t->t2_budget_bytes=t->size;t2_texture_budget_add(t->size,nvn_caller,t->id);
+     t2_pages.fallback++;
+     printf("T2_PAGE_FALLBACK id=%"PRIu64" texture=%u size=%ux%u bytes=%"PRIu64" strips=%u rows-received=%u reason=%s\n",t->id,t->name,width,height,t->size,t->t2_page.strips,t->t2_page.rows_done,reason);
+     t2_page_release_staging(t);
+@@ -598,7 +598,7 @@ static unsigned t2_page_copy(struct nvn_texture *t,const uint32_t box[6],const u
+     }
+     if(!e) {
+         if(t2_pages.unmatched_logged++<4)printf("T2_PAGE_UNMATCHED id=%"PRIu64" size=%ux%u fingerprint=%s fingerprint-ns=%"PRIu64" note=RGBA8\n",t->id,t->b.width,t->b.height,hex,t1-t0);
+-        if(t->t2_page.mode){t2_page_release_gl(t);t2_texture_budget_sub(t->t2_budget_bytes,nvn_caller);t->t2_budget_bytes=0;t->t2_page.mode=0;t->t2_page.deferred=1;}
++        if(t->t2_page.mode){t2_page_release_gl(t);t2_texture_budget_sub(t->t2_budget_bytes,nvn_caller,t->id);t->t2_budget_bytes=0;t->t2_page.mode=0;t->t2_page.deferred=1;}
+         nvn_texture_copy_cpu(t,box,src,stride,level);
+         t2_page_materialize_rgba8(t,src,stride,"unmatched");
+         return 1;
+@@ -608,7 +608,7 @@ static unsigned t2_page_copy(struct nvn_texture *t,const uint32_t box[6],const u
+      * replacement of a still-cold catalogue entry) may be deferred. */
+     unsigned lazy=t2_page_lazy_enabled() && (pmode==T2_PAGE_MODE_IDX8 || pmode==T2_PAGE_MODE_COMPACT) && !t->t2_budget_bytes;
+     /* A second full copy into an already substituted page (the game re-uploading): replace. */
+-    if(t->t2_page.mode){t2_page_release_gl(t);t2_texture_budget_sub(t->t2_budget_bytes,nvn_caller);t->t2_budget_bytes=0;t->t2_page.mode=0;t->t2_page.deferred=1;}
++    if(t->t2_page.mode){t2_page_release_gl(t);t2_texture_budget_sub(t->t2_budget_bytes,nvn_caller,t->id);t->t2_budget_bytes=0;t->t2_page.mode=0;t->t2_page.deferred=1;}
+     uint64_t t2=t2_page_now();
+     size_t gl_bytes=0;
+     if(lazy){t->t2_page.pending_entry=e;goto catalogue_ready;}
+@@ -664,7 +664,7 @@ catalogue_ready:
+     t->t2_page.mode=pmode;t->t2_page.deferred=0;t->t2_page.flipped=e->flipped;
+     t->t2_page.block=e->block;t->t2_page.palettes=e->palettes;t->t2_page.entries=e->entries;t->t2_page.gl_bytes=gl_bytes;
+     strcpy(t->t2_page.name,e->name);
+-    t->t2_budget_bytes=gl_bytes;if(gl_bytes)t2_texture_budget_add(gl_bytes,nvn_caller);
++    t->t2_budget_bytes=gl_bytes;if(gl_bytes)t2_texture_budget_add(gl_bytes,nvn_caller,t->id);
+     if(lazy)printf("T2_PAGE_LAZY_DEFER page=%s id=%"PRIu64" resident-bytes=0 source=catalogue until=first-sampler\n",e->name,t->id);
+     t2_pages.substituted++;
+     /* The plain path mirrors the RGBA8 rows into the guest pool (nvn_texture_copy_cpu): 64 MiB
 diff --git a/native/zero_bc.h b/native/zero_bc.h
 index f9e31ec..a1e6b35 100644
 --- a/native/zero_bc.h

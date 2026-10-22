@@ -162,11 +162,11 @@ def main():
                 observer_error = 'observer transport unavailable at hard deadline'
                 break
     # principal.sh, not this tool, restores Spruce and the CPU online mask.
-    after = snapshot()
+    after = snapshot(expected_run_uuid=run_uuid)
     cleanup_deadline = time.monotonic() + 90
     while validate_cleanup(before, after) and time.monotonic() < cleanup_deadline:
         time.sleep(3)
-        after = snapshot()
+        after = snapshot(expected_run_uuid=run_uuid)
     errors = validate_cleanup(before, after)
     # Final records are read through the SAME owned protocol, never a raw cat/tail.
     log_parts, final_state = [], {}
@@ -191,7 +191,8 @@ def main():
     except Exception as error:
         observer_error = observer_error or str(error)
     log = ''.join(log_parts)
-    stops = re.findall(r'STOP status=(\S+)', log)
+    stops = [line[len('STOP status='):].split(' ',1)[0] for line in log.splitlines()
+             if line.startswith('STOP status=') and line[len('STOP status='):]]
     try:
         kernel_after = remote(KERNEL_PAYLOAD)
     except Exception as error:

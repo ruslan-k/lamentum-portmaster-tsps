@@ -24,7 +24,8 @@ def parse_chunk(chunk):
         'budget_adds': len(re.findall(r'T2_TEXTURE_BUDGET add-bytes=\d+', chunk)),
     }
     frames = re.findall(r'NVN_PRESENT_PIXELS frame=(\d+)', chunk)
-    stops = re.findall(r'STOP status=(\S+)', chunk)
+    stops = [line[len('STOP status='):].split(' ',1)[0] for line in chunk.splitlines()
+             if line.startswith('STOP status=') and line[len('STOP status='):]]
     budget = re.findall(r'T2_TEXTURE_BUDGET add-bytes=\d+ live-MiB=\d+ count=\d+ budget-MiB=\d+', chunk)
     return {'counters': counters, 'frame': int(frames[-1]) if frames else None,
             'stops': stops[-3:], 'budget_last': budget[-1] if budget else None,

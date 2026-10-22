@@ -2,10 +2,36 @@ import copy
 import json
 from pathlib import Path
 import unittest
-from lamentum_pad_contract import ACTIONS, parse_stat, validate_cleanup
+from lamentum_pad_contract import ACTIONS, parse_log_snapshot, parse_stat, validate_cleanup
 
 
 class PadContractTests(unittest.TestCase):
+    def test_snapshot_counters_are_scoped_to_latest_owned_log_generation(self):
+        run_a = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+        run_b = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
+        text = chr(10).join((
+            'LAMENTUM_RUN_HEADER ' + json.dumps({'run_uuid': run_a}),
+            'NVN_PRESENT_PIXELS frame=8 status=PIXELS',
+            'LC2_MENU_EVENT old=1',
+            'STOP status=OLD_RUN',
+            'LAMENTUM_RUN_HEADER ' + json.dumps({'run_uuid': run_b}),
+            'NVN_PRESENT_PIXELS frame=3 status=PIXELS',
+            'LC2_MENU_EVENT current=1',
+            'LC2_MENU_LEDGER_PRESTOP status=gl-lock-unavailable',
+            'STOP status=T2_MEMORY_FLOOR',
+        )) + chr(10)
+        current = parse_log_snapshot(text, expected_run_uuid=run_b)
+        self.assertEqual(current, {'log_run_uuid': run_b, 'log_matches_expected': True,
+                                   'frame': 3, 'menu_events': 1,
+                                   'stops': ['STOP status=T2_MEMORY_FLOOR']})
+        stale = parse_log_snapshot(text, expected_run_uuid=run_a)
+        self.assertEqual(stale, {'log_run_uuid': run_b, 'log_matches_expected': False,
+                                 'frame': None, 'menu_events': 0, 'stops': []})
+
+    def test_snapshot_remote_payload_compiles(self):
+        from lamentum_pad_contract import SNAPSHOT
+        compile('EXPECTED_RUN_UUID=None' + chr(10) + SNAPSHOT, '<snapshot>', 'exec')
+
     def test_mapping_matches_published_receipt(self):
         actions = json.loads((Path(__file__).resolve().parents[1] / 'evidence/ui-cbuf-fixed-01/control-actions.json').read_text())['actions']
         confirm = next(a for a in actions if a.get('result') == 'Options page opens')

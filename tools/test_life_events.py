@@ -8,6 +8,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 MARKER = 'diff --git a/native/lc2_life_events.h b/native/lc2_life_events.h'
 
 FIXTURE = r'''
+#define LC2_LIFE_BUDGET_EVENT_CAP 3
 #include "lc2_life_events.h"
 #include <assert.h>
 #include <limits.h>
@@ -27,7 +28,16 @@ int main(void) {
  setenv("LC2_LIFE_EVENTS","0",1);
  assert(!lc2_life_events_on());
  setenv("LC2_LIFE_EVENTS","1",1);
+ setenv("LAMENTUM_RUN_UUID","test-budget-run",1);
  assert(lc2_life_events_on());
+ lc2_life_events_budget("add",42,100,100,1,7);
+ lc2_life_events_budget("add",43,50,150,2,8);
+ lc2_life_events_budget("sub",43,20,130,2,9);
+ lc2_life_events_budget("add",44,1,131,3,10); /* bounded ring overflow */
+ assert(lc2_life_events_state()->budget_event_lines==3);
+ assert(lc2_life_events_state()->budget_event_overflow==1);
+ lc2_life_events_budget_floor(1234,2345,70304,2031356,131,150,3,3,1,"sampled",0);
+ lc2_life_events_budget_floor(5678,0,70000,2000000,0,0,0,3,1,"mutex-busy",16);
  lc2_life_events_storage(1,10,1,400,0);
  lc2_life_events_storage(1,10,1,100,1);         /* second mip extends one image */
  assert(lc2_life_events_state()->retained_bytes==500);
@@ -189,6 +199,26 @@ class LifeEventTests(unittest.TestCase):
                                 for line in out.splitlines()))
             self.assertTrue(any(line.startswith('LC2_GL_STORAGE_LIVE ') and 'generation=2' in line
                                 for line in out.splitlines()))
+            budget_events = [line for line in out.splitlines() if line.startswith('LC2_TEXTURE_BUDGET_EVENT ')]
+            self.assertEqual(len(budget_events), 3)
+            expected_budget = [
+                'action=add texture-id=42 delta-bytes=100 live-bytes=100 charge-count=1 caller=7',
+                'action=add texture-id=43 delta-bytes=50 live-bytes=150 charge-count=2 caller=8',
+                'action=sub texture-id=43 delta-bytes=20 live-bytes=130 charge-count=2 caller=9',
+            ]
+            for line, fields in zip(budget_events, expected_budget):
+                self.assertIn('run-id=test-budget-run', line)
+                self.assertRegex(line, 't-ns=[0-9]+')
+                self.assertIn(fields, line)
+            floor = next(line for line in out.splitlines() if line.startswith('LC2_TEXTURE_BUDGET_FLOOR ')
+                         and 'floor-check-t-ns=1234' in line)
+            self.assertIn('floor-available-kib=70304 floor-swap-free-kib=2031356', floor)
+            self.assertIn('live-bytes=131 peak-bytes=150 charge-count=3 event-lines=3 event-overflow=1 status=sampled', floor)
+            busy = next(line for line in out.splitlines() if line.startswith('LC2_TEXTURE_BUDGET_FLOOR ')
+                        and 'floor-check-t-ns=5678' in line)
+            self.assertIn('status=mutex-busy lock-rc=16', busy)
+            self.assertFalse(any('STOP status=' in line for line in out.splitlines()
+                                 if line.startswith('LC2_TEXTURE_BUDGET_FLOOR ')))
             self.assertEqual(out.count('LC2_LIFE_SUMMARY'), 1)
             expected = [l for l in out.splitlines() if l.startswith('EXPECT')]
             summary = [l for l in out.splitlines() if l.startswith('LC2_LIFE_SUMMARY')]

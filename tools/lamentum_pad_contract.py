@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Owner-local TSPS control and live capture receipts (not physical human input)."""
 import argparse
+import inspect
 import json
 import pathlib
+import re
 import subprocess
 import os
 from proc_metrics import sample_request
@@ -74,8 +76,33 @@ def validate_cleanup(before, after):
     return errors
 
 
+def parse_log_snapshot(text, expected_run_uuid=None):
+    headers = list(re.finditer(r'(?m)^LAMENTUM_RUN_HEADER (.+)$', text))
+    if not headers:
+        return {'log_run_uuid': None, 'log_matches_expected': None if expected_run_uuid is None else False,
+                'frame': None, 'menu_events': 0, 'stops': []}
+    match = headers[-1]
+    try:
+        run_uuid = json.loads(match.group(1)).get('run_uuid')
+    except (ValueError, TypeError, AttributeError):
+        run_uuid = None
+    matches = run_uuid is not None and (expected_run_uuid is None or run_uuid == expected_run_uuid)
+    if not matches:
+        return {'log_run_uuid': run_uuid,
+                'log_matches_expected': None if expected_run_uuid is None else False,
+                'frame': None, 'menu_events': 0, 'stops': []}
+    run_text = text[match.start():]
+    frames = re.findall(r'(?m)^NVN_PRESENT_PIXELS frame=([0-9]+)', run_text)
+    return {'log_run_uuid': run_uuid,
+            'log_matches_expected': None if expected_run_uuid is None else True,
+            'frame': int(frames[-1]) if frames else None,
+            'menu_events': run_text.count('LC2_MENU_EVENT'),
+            'stops': [line for line in run_text.splitlines() if line.startswith('STOP status=')]}
+
+
 SNAPSHOT = '''from pathlib import Path
 import json,re,hashlib,os,time
+''' + inspect.getsource(parse_log_snapshot) + '''
 procs={}
 for p in Path('/proc').iterdir():
  if p.name.isdigit():
@@ -88,7 +115,7 @@ for p in Path('/proc').iterdir():
 port=Path('/mnt/SDCARD/Roms/PORTS/lamentum-switch')
 log=port/'logs/latest.log'
 t=log.read_text(errors='replace') if log.exists() else ''
-frames=re.findall(r'NVN_PRESENT_PIXELS frame=(\\d+)',t)
+log_fields=parse_log_snapshot(t,EXPECTED_RUN_UUID)
 mem={}
 for line in Path('/proc/meminfo').read_text().splitlines():
  fields=line.split()
@@ -104,13 +131,13 @@ print(json.dumps({'processes':procs,'game':procs.get('terminator2d-ne',[])+procs
  'online':Path('/sys/devices/system/cpu/online').read_text().strip(),
  'boot_id':Path('/proc/sys/kernel/random/boot_id').read_text().strip(),'epoch_s':time.time(),'monotonic_ns':time.monotonic_ns(),
  'meminfo_kib':mem,'cpu_sysfs':cores,'psi_memory':psi_memory,
- 'frame':int(frames[-1]) if frames else None,'menu_events':t.count('LC2_MENU_EVENT'),
- 'stops':re.findall(r'STOP status=\\S+',t),'log_inode':log.stat().st_ino if log.exists() else None}))
+ 'log_inode':log.stat().st_ino if log.exists() else None,**log_fields}))
 '''
 
 
-def snapshot():
-    return remote(SNAPSHOT)
+def snapshot(expected_run_uuid=None):
+    source = 'EXPECTED_RUN_UUID=' + repr(expected_run_uuid) + chr(10) + SNAPSHOT
+    return remote(source)
 
 
 def press(action, hold_ms):

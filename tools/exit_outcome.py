@@ -19,7 +19,8 @@ print(json.dumps(data))
 
 
 def classify_exit(log, *, host_terminated=None, kernel_before=None, kernel_after=None, owner=None):
-    stops = re.findall(r'STOP status=(\S+)', log)
+    stops = [line[len('STOP status='):].split(' ',1)[0] for line in log.splitlines()
+             if line.startswith('STOP status=') and line[len('STOP status='):]]
     result = {'kind': 'exit_unknown', 'stops': stops, 'oom_evidence': []}
     if host_terminated:
         result['kind'] = 'host_timeout'

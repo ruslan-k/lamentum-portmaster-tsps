@@ -289,6 +289,14 @@ class ByteFramingTests(unittest.TestCase):
 
 
 class FoldTests(unittest.TestCase):
+    def test_diagnostic_stop_substring_does_not_create_runtime_stop(self):
+        chunk = chr(10).join((
+            'LC2_MENU_LEDGER_PRESTOP status=gl-lock-unavailable',
+            'LC2_MENU_FLOOR_CAPTURE status=gl-lock-unavailable',
+            'STOP status=T2_MEMORY_FLOOR',
+        )) + chr(10)
+        self.assertEqual(load_metrics.parse_chunk(chunk)['stops'], ['T2_MEMORY_FLOOR'])
+
     def test_counters_accumulate_and_frames_take_the_latest(self):
         first = load_metrics.parse_chunk('NVN_PRESENT_PIXELS frame=10 x\nROMFS_READ a\n')
         first.update(offset=10, size=10, rotated=False, mem={'MemAvailable': 100})
