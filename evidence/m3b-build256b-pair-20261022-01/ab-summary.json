@@ -148,7 +148,7 @@
     "source_write_content_epoch": "untracked across writers",
     "stage_local_GL_error_GPU_inflight_and_fileback_shadow": "unobserved or unmeasured",
     "kernel_observed_failure": "one new order-4 page-allocation failure in OFF via system_heap_allocate -> dma_heap_ioctl; no object/texture owner correlation",
-    "buffer_storage": "0 live bytes, 0 live buffers, 0 respecs in life summary",
+    "buffer_storage": "life summary reports 0, but class is incomplete: nvn_present.glBufferData VBO is not routed through lc2_life_events_respec; do not treat as absent",
     "EGL": "8x8 pbuffer route; physical surface backing unknown",
     "no_swap": false,
     "menu_reached": false,
