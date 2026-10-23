@@ -1991,10 +1991,10 @@ index 0000000..63958bb
 +#endif
 diff --git a/native/lc2_lifetime.h b/native/lc2_lifetime.h
 new file mode 100644
-index 0000000..fa8bd5b
+index 0000000..e6a0365
 --- /dev/null
 +++ b/native/lc2_lifetime.h
-@@ -0,0 +1,139 @@
+@@ -0,0 +1,143 @@
 +/* Portable accounting contract, NOT connected to GL or enabled in the runtime.
 + * Caller must serialize access and supply verified share-group/context epochs and timelines.
 + * Counters represent declared payload intents, NEVER physical driver residency.
@@ -2067,6 +2067,10 @@ index 0000000..fa8bd5b
 +    l->reserved_bytes-=r->bytes;r->pending=0;
 +    if(success){r->live=1;l->retained_bytes+=r->bytes;}
 +    return 1;
++}
++/* Zero is GL_NO_ERROR; true means both GL and the accounting commit succeeded. */
++static inline int lc2_life_commit_gl_result(struct lc2_lifetime *l,uint64_t token,uint32_t gl_error) {
++    return lc2_life_commit(l,token,gl_error==0) && gl_error==0;
 +}
 +static inline int lc2_life_attach(struct lc2_lifetime *l,uint64_t token) {
 +    struct lc2_life_record *r=lc2_life_find(l,token);

@@ -7,6 +7,47 @@ import unittest
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
 class LifetimeCoreTests(unittest.TestCase):
+    def test_gl_error_code_rolls_back_only_failed_respec_intent(self):
+        patch=(ROOT/'runtime/lamentum-adapter.patch').read_text()
+        marker='diff --git a/native/lc2_lifetime.h b/native/lc2_lifetime.h'
+        self.assertIn(marker,patch)
+        block=patch.split(marker,1)[1].split('diff --git ',1)[0]
+        header='\n'.join(line[1:] for line in block.splitlines()
+                          if line.startswith('+') and not line.startswith('+++'))+'\n'
+        fixture=r'''
+#include "lc2_lifetime.h"
+#include <assert.h>
+#include <stdint.h>
+static uint32_t mock_gl_storage(uint32_t error) { return error; }
+int main(void) {
+ struct lc2_lifetime l={0};uint64_t old,replacement,failed;
+ const struct lc2_life_identity identity={.share_group_epoch=1,.name=9,.kind=1};
+ assert(lc2_life_begin_scoped(&l,&identity,1,100,&old));
+ assert(lc2_life_commit_gl_result(&l,old,mock_gl_storage(0))); /* GL_NO_ERROR */
+ assert(l.retained_bytes==100 && l.reserved_bytes==0);
+ assert(lc2_life_begin_scoped(&l,&identity,1,200,&failed));
+ assert(l.retained_bytes==100 && l.reserved_bytes==200);
+ assert(!lc2_life_commit_gl_result(&l,failed,mock_gl_storage(0x0505))); /* GL_OUT_OF_MEMORY */
+ assert(l.retained_bytes==100 && l.reserved_bytes==0);
+ assert(lc2_life_find(&l,old)->live && lc2_life_find(&l,failed)==NULL);
+ assert(lc2_life_begin_scoped(&l,&identity,1,300,&replacement));
+ assert(lc2_life_commit_gl_result(&l,replacement,mock_gl_storage(0)));
+ assert(l.retained_bytes==400 && l.reserved_bytes==0);
+ assert(lc2_life_find(&l,old)->object_generation==lc2_life_find(&l,replacement)->object_generation);
+ assert(!lc2_life_can_delete(&l,old)); /* the old name still owns the replacement */
+ return 0;
+}
+'''
+        with tempfile.TemporaryDirectory() as d:
+            p=pathlib.Path(d)
+            (p/'lc2_lifetime.h').write_text(header)
+            (p/'test.c').write_text(fixture)
+            built=subprocess.run(['cc','-std=c11','-Wall','-Wextra','-Werror','-I',d,
+                                  str(p/'test.c'),'-o',str(p/'test')],capture_output=True,text=True)
+            self.assertEqual(built.returncode,0,built.stderr)
+            ran=subprocess.run([str(p/'test')],capture_output=True,text=True)
+            self.assertEqual(ran.returncode,0,ran.stderr)
+
     def test_lost_share_group_epoch_tombstones_are_not_recycled(self):
         patch = (ROOT / 'runtime/lamentum-adapter.patch').read_text()
         marker = 'diff --git a/native/lc2_lifetime.h b/native/lc2_lifetime.h'
