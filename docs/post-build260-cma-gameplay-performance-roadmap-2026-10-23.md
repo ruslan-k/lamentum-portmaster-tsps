@@ -1,6 +1,6 @@
 # Lamentum TSPS — build260 / CMA-to-gameplay execution roadmap
 
-**Post-A1 source re-audit (2026-10-23):** §11 below adds exact host-only M4-A implementation steps, an allocation-callsite census, further exact-firmware CMA investigation, a ranked sustained atlas-memory strategy, and evidence gates for W0/W1/F1. As of this review main is `c05f879`; nothing was run or deployed on TSPS and the CMA safety NO-GO is unchanged.
+**Additional post-A1 audit (2026-10-23):** §§11–12 below adds exact host-only M4-A implementation steps, an allocation-callsite census, further exact-firmware CMA investigation, a ranked sustained atlas-memory strategy, and evidence gates for W0/W1/F1. As of this review main is `c05f879`; nothing was run or deployed on TSPS and the CMA safety NO-GO is unchanged.
 
 
 > **CURRENT FOLLOW-UP — 2026-10-23, audited `main@c05f879`: K1 and A1 are DONE as host/evidence phases.** [K1 firmware/CMA evidence](../evidence/m2b-k1-kernel-cma-provenance-2026-10-23/README.md) pins the exact firmware kernel and validates order-4 fallback semantics but does not identify retained CMA pages or historical ioctl completion. [A1 replay evidence](../evidence/a1-storage-admission-offline-replay-2026-10-23/README.md) reproduces all four build259 denials with 15 focused/359 overall host tests; type-specific physical backing remains unknown. **Next actionable code: M4-A checked short-mip BC stripe scratch sizing, M4-B alloc/GL ownership coverage, and K1.4 host-side CMA-backing classification.** Do not repeat K1/A1 acquisition or deploy build260 while the CMA safety gate is closed. Detailed new source sites, patches, negative tests and branch decisions are in [§11 below](#11-post-k1a1-re-audit-at-main-c05f879-2026-10-23).
@@ -294,11 +294,11 @@ PYTHONPATH=tools python3 -m unittest discover -s tools -p 'test_*.py'
 
 ---
 
-## 11. Post-A1 source re-audit: exact host-first work packages (2026-10-23)
+## 12. Post-A1 source re-audit: exact host-first work packages (2026-10-23)
 
 **Reviewed main:** \`c05f879\` (A1 offline replay), exact checked adapter patch and existing host fixtures; no new target run, source build, game install or measured FPS in this review. This section refines §§2, 5 and 9, and supersedes suggestions to deploy M4 merely because a host fixture passes. The prior audit already covered many alternatives; below are the *specific remaining correctness gaps, their potential effect and falsifiable tests*.
 
-### 11.1 Updated verdict, progress and priority distinctions
+### 12.1 Updated verdict, progress and priority distinctions
 
 - **K1 is partially solved, not "CMA solved".** The exact firmware-kernel binary and order {8,4,0} retry path are established, but nobody has attributed the missing idle CMA pages to reclaimable movable allocations versus pinned CMA consumers. Idle \`CmaFree=15,456 KiB\` remains a **NO-GO**. A single \`nr_free_cma\` scalar cannot predict a future higher-order contiguous allocation; \`MemAvailable\` is a separate resource.
 - **A1 is COMPLETE as a formula replay**, not an admissible new allocator policy. Its 359-test host suite reproduced all four build259 denials; no tested option identifies proven CMA backing or an uncertainty allowance. Do not deploy its \`proven_CMA_only\`/mixed model, choose a margin by trial, or present the denial as a GPU-allocation failure.
@@ -306,7 +306,7 @@ PYTHONPATH=tools python3 -m unittest discover -s tools -p 'test_*.py'
 - **Persistent-resource candidates have more headroom potential but much higher correctness risk.** The source/evidence identifies BC3 atlas owners 92 (3600×3600) and 81 (3600×2160), roughly **49.44 MB + 29.66 MB of level-0 RGBA8 payload** respectively, before mips/driver overhead; these are nominal GL payloads, not physical CMA bytes. The 1920×1080 composition family can save at most 17.58 MiB nominal when scaled to 720p; it previously regressed performance and is not the first option.
 - **F1 remains blocked by W1.** A ~528-ms first BC decode, ~198-ms first GL upload, ~0.836-s historical Loading-main-thread interval, 709-MiB historical Mali/OOM report, or number of menu presents is *not* a steady playable-world frame benchmark. The first target is a correct, memory-safe, interactable world, not synthetic "30 FPS".
 
-### 11.2 PR M4-A — fix the actual stripe allocator contract (HOST ONLY, P0 preparatory)
+### 12.2 PR M4-A — fix the actual stripe allocator contract (HOST ONLY, P0 preparatory)
 
 **Owner source:** \`runtime/lamentum-adapter.patch\` → \`native/nvn_textures.h::lc2_bc_upload_stripes\`; related \`native/zero_bc_layout.h\`, \`zero_bc_decode\`, \`zero_texture_bc_pixels\`, \`tools/test_bc_layout.c\`, \`tools/test_bc_layout.py\`. Modify the overlay source in the pinned, clean, **435/435** recovered tree and regenerate the patch, not a second runtime copy.
 
@@ -318,7 +318,7 @@ PYTHONPATH=tools python3 -m unittest discover -s tools -p 'test_*.py'
 
 **Acceptance:** identical decoded bytes for admitted formats/levels; accurate max simultaneous *requested* CPU scratch and checked bounds; prior tests, 435-file source baseline and compile unchanged; fail-closed negative tests. **Expected scope:** mostly short-mip scratch; no claim of persistent headroom or pass at the existing 24-MiB CMA gate. **Abort:** decoder corruption, format mismatch, unsupported height/stride, overflow, new allocation/free asymmetry, unexpected change to GL/depth geometry.
 
-### 11.3 PR M4-B — prove allocation coverage, not merely that hooks exist (HOST ONLY)
+### 12.3 PR M4-B — prove allocation coverage, not merely that hooks exist (HOST ONLY)
 
 **Owner source:** \`native/nvn_present.h\` (previously uncovered direct \`glBufferData\`), \`native/nvn_vertex_stream.h\`, \`native/nvn_textures.h\`, \`native/lc2_gl_admission.h\`, \`native/lc2_life_events.h\`, and EGL/KMS initialization; tests in \`tools/test_gl_storage_layout.py\`, \`tools/test_ledger_bases.py\` and a new pure reducer if necessary.
 
@@ -329,7 +329,7 @@ PYTHONPATH=tools python3 -m unittest discover -s tools -p 'test_*.py'
 
 **Acceptance:** every source storage allocation site accounted for *or explicitly marked unknown*, exact ledger replay on synthetic fixtures, zero false claims of physical equivalence. **No new device run until GATE-0 is independently reopened**. Discovered hook omission is not itself measured CMA recovery.
 
-### 11.4 PR K1-B — host static CMA provenance before new risky TSPS tests (P0 safety dependency)
+### 12.4 PR K1-B — host static CMA provenance before new risky TSPS tests (P0 safety dependency)
 
 The exact extracted TG5050 vmlinux already matches the observed firmware layout. Work next from this **exact release image**, not a generic Linux 5.15 tree. Keep all firmware and proprietary extracts outside Git.
 
@@ -340,7 +340,7 @@ The exact extracted TG5050 vmlinux already matches the observed firmware layout.
 
 **Acceptance:** an auditable backing/owner hypothesis with a falsifiable non-mutating check, or an explicit \`unknown\`. An exact kernel match alone is not a go/no-go pass. An order-4 warning followed by a possible order-0 retry is not confirmed success, nor is \`cma_alloc_fail=0\` sufficient to permit launch.
 
-### 11.5 PR M4-C — qualify one *persistent* atlas/storage reduction (conditional P0, not deployable now)
+### 12.5 PR M4-C — qualify one *persistent* atlas/storage reduction (conditional P0, not deployable now)
 
 M4-A primarily reduces peak CPU staging. **To unlock gameplay the stronger hypothesis is removal of actual retained, unreclaimable GPU/guest memory**, while keeping semantic equivalence. Use M4-B owner generations and K1 backing evidence to select **one** of these mutually exclusive branches:
 
@@ -361,7 +361,7 @@ M4-A primarily reduces peak CPU staging. **To unlock gameplay the stronger hypot
 
 **Pass to promote any C branch:** 3 phase-matched, single-toggle device A/B pairs **after explicit go**, complete run/pixel identity, no new order warnings or GL errors, lower *measured* persistent footprint at the same semantic point, improved minimum headroom across CMA and \`MemAvailable\` outside control variability, and unchanged required input/audio/save workflow. Any candidate that saves only the allocation-request counter remains unqualified.
 
-### 11.6 W0/W1 game-enablement checklist (blocked, but host testable)
+### 12.6 W0/W1 game-enablement checklist (blocked, but host testable)
 
 **Do not conflate launch, title UI, "Loading", and game world.** The original game reached a New Game/Controls/Loading sequence historically, but later builds 251/256b/259 stopped before the menu. Resume at the *latest safe executable* only after GATE-0; avoid trying to find a shader in an unsafe test.
 
@@ -371,7 +371,7 @@ M4-A primarily reduces peak CPU staging. **To unlock gameplay the stronger hypot
 4. Follow actual physical gamepad press+release and character movement in **two directions**, one world interaction/dialogue/inventory return, audible audio (not only a nonzero queued PCM count), protected save+clean quit+cold-load of same checkpoint. Verify all three loops with separate run identities, no damaged existing saves and real scene progress. Loading spinner or automaton-injected input does not pass.
 5. A post-gate game run must use strict bounded watchdog and pre/post pinned kernel pressure+MainUI identity; abort on any CMA unsafe change, new allocator warning, storage refusal, OOM/kill, run identity drift, lost KMS present serial, missing cleanup or unexpected writes. Do not silently weaken floor96/cap300/GL policy as a workaround.
 
-### 11.7 F1 instrumentation and 30-FPS decision (only after W1)
+### 12.7 F1 instrumentation and 30-FPS decision (only after W1)
 
 Use an FPS **budget ledger per accepted world present**, not gross presents or an averaged Loading frame:
 
@@ -387,7 +387,7 @@ Keep \`tools/perf_sample.py\`'s already-fixed **target HZ** accounting. Require 
 
 **Feasibility stop:** after M4-A/B and two source-selected structural memory candidates, if there is no safe, repeatable W0→W1 path or recovered sustained margin, report \`not feasible with current backend and measured safety envelope\` with reasons and confidence; possible next branches are target quality trade-off, independent texture backend, or a device with more RAM. Do not indefinitely repeat unsafe margin tests.
 
-### 11.8 Exact PR order and reproducibility receipts
+### 12.8 Exact PR order and reproducibility receipts
 
 | Sequence | Proposed branch / smallest review unit | Files, proof and decision |
 | --- | --- | --- |
