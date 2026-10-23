@@ -1,5 +1,7 @@
 # Lamentum TSPS — build260 / CMA-to-gameplay execution roadmap
 
+**Most recent evidence-first reassessment (2026-10-23, source main@1604ed9):** [§13 — measured facts, exact next host PRs, CMA/device NO-GO, true gameplay/FPS gates](#13-evidence-first-execution-gates-after-the-main1604ed9-re-audit-2026-10-23). This is an audit/documentation-only continuation: no fresh device launch or FPS measurement. §13 should be read before implementing the older queues below.
+
 **Additional post-A1 audit (2026-10-23):** §§11–12 below adds exact host-only M4-A implementation steps, an allocation-callsite census, further exact-firmware CMA investigation, a ranked sustained atlas-memory strategy, and evidence gates for W0/W1/F1. As of this review main is `c05f879`; nothing was run or deployed on TSPS and the CMA safety NO-GO is unchanged.
 
 
