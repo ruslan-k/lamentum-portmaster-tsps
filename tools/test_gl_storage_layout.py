@@ -243,7 +243,13 @@ int main(void) {
 #define GL_UNSIGNED_BYTE 0x1401U
 #define GL_FLOAT 0x1406U
 struct nvn_texture_builder {unsigned width,height,depth,levels,target,samples,format;};
-struct nvn_texture {uint64_t id,t2_budget_bytes;unsigned lc2_bc_pending,host_scaled;struct nvn_texture_builder b;};
+struct nvn_pool {uint64_t object,generation;};
+struct nvn_texture {uint64_t id,t2_budget_bytes,cpu_generation;unsigned lc2_bc_pending,host_scaled;struct nvn_texture_builder b;struct nvn_pool *pool;};
+static struct nvn_texture *zero_texture_storage_state(struct nvn_texture *t){return t;}
+static int lc2_life_events_owner(const char *phase,uint64_t id,uint64_t generation,uint64_t owner,
+ uint64_t charge,uint64_t pool,uint64_t pool_generation,uint64_t cpu_generation,unsigned pool_known,const char *status) {
+ (void)phase;(void)id;(void)generation;(void)owner;(void)charge;(void)pool;(void)pool_generation;(void)cpu_generation;(void)pool_known;(void)status;return 1;
+}
 static uint64_t nvn_caller,charged,cap=300ULL<<20,last_gl,last_scratch;
 static unsigned adds,gl_calls,audits,admissions;
 static jmp_buf target;

@@ -383,5 +383,52 @@ int main(void) {
             ran = subprocess.run([str(p / 'test')], capture_output=True, text=True)
             self.assertEqual(ran.returncode, 0, ran.stderr)
 
+    def test_owner_event_ring_preserves_order_and_reports_overflow(self):
+        patch = (ROOT / 'runtime/lamentum-adapter.patch').read_text()
+        block = patch.split(MARKER, 1)[1].split('diff --git ', 1)[0]
+        header = '\n'.join(line[1:] for line in block.splitlines()
+                            if line.startswith('+') and not line.startswith('+++')) + '\n'
+        source = r'''
+#define LC2_LIFE_OWNER_EVENT_CAP 3
+#include "lc2_life_events.h"
+#include <assert.h>
+int main(void) {
+ assert(!lc2_life_events_owner("initialize-start",280,280,0,0,77,1,0,1,"owner-unresolved"));
+ setenv("LC2_LIFE_EVENTS","1",1);
+ setenv("LAMENTUM_RUN_UUID","owner-test",1);
+ assert(lc2_life_events_owner("initialize-start",280,280,0,0,77,1,0,1,"owner-unresolved"));
+ assert(lc2_life_events_owner("budget-add",280,280,0,2097152,77,1,0,1,"budget-id-only"));
+ assert(lc2_life_events_owner("initialize",280,280,280,2097152,77,1,0,1,"pair-emitted"));
+ assert(!lc2_life_events_owner("retire",280,280,280,0,77,1,0,1,"capacity-exceeded"));
+ lc2_life_events_owner_report_fd(1);
+ assert(!lc2_life_events_owner("late",280,280,280,0,77,1,0,1,"closed"));
+ return 0;
+}
+'''
+        with tempfile.TemporaryDirectory() as d:
+            p = pathlib.Path(d)
+            (p / 'lc2_life_events.h').write_text(header)
+            (p / 'test.c').write_text(source)
+            built = subprocess.run(['cc', '-std=gnu11', '-Wall', '-Wextra', '-Werror', '-I', d,
+                                    str(p / 'test.c'), '-o', str(p / 'test')], capture_output=True, text=True)
+            self.assertEqual(built.returncode, 0, built.stderr)
+            ran = subprocess.run([str(p / 'test')], capture_output=True, text=True)
+            self.assertEqual(ran.returncode, 0, ran.stderr)
+            events = [line for line in ran.stdout.splitlines()
+                      if line.startswith('LC2_TEXTURE_OWNER_EVENT ')]
+            self.assertEqual(len(events), 3)
+            self.assertIn('run-id=owner-test event-seq=1', events[0])
+            self.assertIn('phase=initialize-start nvn-id=280 object-generation=280', events[0])
+            self.assertIn('storage-owner=0 storage-owner-status=unresolved', events[0])
+            self.assertIn('source-write-generation=untracked status=owner-unresolved', events[0])
+            self.assertIn('phase=budget-add', events[1])
+            self.assertIn('charge-bytes=2097152', events[1])
+            self.assertIn('phase=initialize nvn-id=280 object-generation=280', events[2])
+            self.assertIn('storage-owner=280 storage-owner-status=resolved', events[2])
+            summary = next(line for line in ran.stdout.splitlines()
+                           if line.startswith('LC2_TEXTURE_OWNER_EVENTS_SUMMARY '))
+            self.assertIn('claimed=4 final-claimed=4 emitted=3 incomplete=0 active=0 dropped=1 format-errors=0 complete=0', summary)
+
+
 if __name__ == '__main__':
     unittest.main()

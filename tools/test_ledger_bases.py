@@ -29,6 +29,18 @@ def budget_log():
     )) + chr(10)
 
 
+def missing_pair_log(extra_records=(), pair_overflow=None, final_newline=True):
+    lines=[]
+    for line in budget_log().splitlines():
+        if line.startswith('LC2_TEXTURE_PAIR ') and ' id=43 ' in line:
+            continue
+        if line.startswith('LC2_LIFE_SUMMARY ') and pair_overflow is not None:
+            line += ' tex-pair-overflow=' + str(pair_overflow)
+        lines.append(line)
+    lines[-1:-1] = list(extra_records)
+    return chr(10).join(lines) + (chr(10) if final_newline else '')
+
+
 def samples(rows):
     return [dict(run_uuid='u-1', pid=7, starttime='9', boot_id='b-1', **r) for r in rows]
 
@@ -93,6 +105,50 @@ class BudgetReplayTests(unittest.TestCase):
         self.assertEqual(result['gl_storage']['bytes_by_kind'], {'1':20})
         self.assertEqual(result['gl_storage']['live_records'], 1)
 
+    def test_missing_pair_after_completed_initialize_is_missing_owner_path(self):
+        records = [
+            'LC2_TEXTURE_OWNER_EVENT run-id=u-1 event-seq=1 t-ns=140 phase=initialize nvn-id=43 object-generation=43 generation-basis=nvn-object-id storage-owner=43 storage-owner-status=resolved charge-bytes=30 pool-id=99 pool-generation=1 pool-status=recorded cpu-write-generation=0 source-write-generation=untracked status=pair-emitted',
+            'LC2_TEXTURE_OWNER_EVENTS_SUMMARY run-id=u-1 configured=512 claimed=1 final-claimed=1 emitted=1 incomplete=0 active=0 dropped=0 format-errors=0 complete=1',
+        ]
+        with self.assertRaisesRegex(ValueError, '43=missing_owner_path'):
+            replay_texture_budget(missing_pair_log(records), BUDGET_RUN)
+
+    def test_missing_pair_with_incomplete_owner_ring_is_log_truncated(self):
+        event = 'LC2_TEXTURE_OWNER_EVENT run-id=u-1 event-seq=1 t-ns=140 phase=initialize-start nvn-id=43 object-generation=43 generation-basis=nvn-object-id storage-owner=0 storage-owner-status=unresolved charge-bytes=0 pool-id=99 pool-generation=1 pool-status=recorded cpu-write-generation=0 source-write-generation=untracked status=started'
+        with self.assertRaisesRegex(ValueError, '43=log_truncated'):
+            replay_texture_budget(missing_pair_log([event]), BUDGET_RUN)
+
+    def test_pair_event_overflow_is_over_capacity(self):
+        with self.assertRaisesRegex(ValueError, '43=over_capacity'):
+            replay_texture_budget(missing_pair_log(pair_overflow=1), BUDGET_RUN)
+
+    def test_alias_owner_requires_an_explicit_alias_resolution(self):
+        text = budget_log().replace('id=43 object-generation=43 storage-owner=43',
+                                    'id=43 object-generation=43 storage-owner=99')
+        with self.assertRaisesRegex(ValueError, '43=alias_scope_mismatch'):
+            replay_texture_budget(text, BUDGET_RUN)
+        rows = text.splitlines()
+        rows.insert(2, 'LC2_TEXTURE_OWNER_EVENT run-id=u-1 event-seq=1 t-ns=106 phase=alias-resolve nvn-id=43 object-generation=43 generation-basis=nvn-object-id storage-owner=99 storage-owner-status=resolved charge-bytes=30 pool-id=30 pool-generation=1 pool-status=recorded cpu-write-generation=0 source-write-generation=untracked status=alias-owner-resolved')
+        rows.insert(-1, 'LC2_TEXTURE_OWNER_EVENTS_SUMMARY run-id=u-1 configured=512 claimed=1 final-claimed=1 emitted=1 incomplete=0 active=0 dropped=0 format-errors=0 complete=1')
+        result = replay_texture_budget(chr(10).join(rows)+chr(10), BUDGET_RUN)
+        self.assertEqual(result['budget']['pair_coverage']['43'], 'joined')
+
+    def test_final_unterminated_record_is_log_truncated(self):
+        with self.assertRaisesRegex(ValueError, 'log_truncated'):
+            replay_texture_budget(missing_pair_log(final_newline=False), BUDGET_RUN)
+
+    def test_future_generation_does_not_change_floor_owner_join(self):
+        late = 'LC2_TEXTURE_PAIR run-id=u-1 t-ns=170 phase=initialize id=43 object-generation=99 storage-owner=43 guest-bytes=30 charge-bytes=30 storage-status=recorded'
+        text = budget_log().replace('LC2_LIFE_SUMMARY ', late + chr(10) + 'LC2_LIFE_SUMMARY ')
+        result = replay_texture_budget(text, BUDGET_RUN)
+        self.assertEqual(result['budget']['pair_coverage']['43'], 'joined')
+
+    def test_conflicting_pair_generations_are_generation_mismatch(self):
+        pair = 'LC2_TEXTURE_PAIR run-id=u-1 t-ns=106 phase=initialize id=43 object-generation=99 storage-owner=43 guest-bytes=30 charge-bytes=30 storage-status=no-live-gl-storage'
+        text = budget_log().replace('LC2_LIFE_SUMMARY ', pair + chr(10) + 'LC2_LIFE_SUMMARY ')
+        with self.assertRaisesRegex(ValueError, '43=generation_mismatch'):
+            replay_texture_budget(text, BUDGET_RUN)
+
     def test_refuses_foreign_run_and_underflow(self):
         with self.assertRaisesRegex(ValueError, 'identity'):
             replay_texture_budget(budget_log(), dict(BUDGET_RUN, run_uuid='foreign'))
@@ -101,6 +157,36 @@ class BudgetReplayTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'underflow|transition|snapshot'):
             replay_texture_budget(broken, BUDGET_RUN)
 
+    def test_incomplete_owner_ring_blocks_an_otherwise_joined_live_owner(self):
+        event = 'LC2_TEXTURE_OWNER_EVENT run-id=u-1 event-seq=1 t-ns=175 phase=initialize-start nvn-id=43 object-generation=43 generation-basis=nvn-object-id storage-owner=0 storage-owner-status=unresolved charge-bytes=0 pool-id=99 pool-generation=1 pool-status=recorded cpu-write-generation=0 source-write-generation=untracked status=started'
+        summary = 'LC2_TEXTURE_OWNER_EVENTS_SUMMARY run-id=u-1 configured=512 claimed=1 final-claimed=1 emitted=1 incomplete=1 active=0 dropped=0 format-errors=0 complete=0'
+        lines = budget_log().splitlines()
+        lines[-1:-1] = [event, summary]
+        with self.assertRaisesRegex(ValueError, '43=log_truncated'):
+            replay_texture_budget(chr(10).join(lines)+chr(10), BUDGET_RUN)
+
+    def test_owner_event_schema_is_explicit_for_legacy_logs(self):
+        replay_texture_budget(budget_log(), BUDGET_RUN)
+        with self.assertRaisesRegex(ValueError, '43=log_truncated'):
+            replay_texture_budget(budget_log(), BUDGET_RUN, owner_events_expected=True)
+
+    def test_expected_owner_ring_summary_is_required_even_with_no_active_owners(self):
+        text = budget_log().replace(
+            'LC2_TEXTURE_BUDGET_EVENT run-id=u-1 t-ns=150 action=sub texture-id=42 delta-bytes=100 live-bytes=30 charge-count=2 caller=1 status=recorded',
+            'LC2_TEXTURE_BUDGET_EVENT run-id=u-1 t-ns=150 action=sub texture-id=42 delta-bytes=100 live-bytes=30 charge-count=2 caller=1 status=recorded' + chr(10) + 'LC2_TEXTURE_BUDGET_EVENT run-id=u-1 t-ns=155 action=sub texture-id=43 delta-bytes=30 live-bytes=0 charge-count=2 caller=1 status=recorded')
+        text = text.replace('live-bytes=30 peak-bytes=130 charge-count=2 event-lines=3',
+                            'live-bytes=0 peak-bytes=130 charge-count=2 event-lines=4')
+        text = text.replace('t-ns=170 action=add texture-id=99 delta-bytes=1 live-bytes=31',
+                            't-ns=170 action=add texture-id=99 delta-bytes=1 live-bytes=1')
+        with self.assertRaisesRegex(ValueError, 'log_truncated'):
+            replay_texture_budget(text, BUDGET_RUN, owner_events_expected=True)
+
+    def test_refuses_nonmonotonic_budget_event_timestamps(self):
+        text = budget_log().replace('t-ns=130 action=add texture-id=43',
+                                    't-ns=109 action=add texture-id=43')
+        with self.assertRaisesRegex(ValueError, 'not monotonic'):
+            replay_texture_budget(text, BUDGET_RUN)
+
     def test_refuses_busy_or_overflowed_floor_sample(self):
         busy = budget_log().replace('status=sampled lock-rc=0', 'status=mutex-busy lock-rc=16')
         with self.assertRaisesRegex(ValueError, 'snapshot'):
@@ -108,6 +194,34 @@ class BudgetReplayTests(unittest.TestCase):
         overflow = budget_log().replace('event-overflow=0 status=sampled', 'event-overflow=1 status=sampled')
         with self.assertRaisesRegex(ValueError, 'overflow'):
             replay_texture_budget(overflow, BUDGET_RUN)
+    def test_replay_classifies_pair_emitted_after_floor_but_still_fails_closed(self):
+        for missing_id in ('280', '288'):
+            text = budget_log().replace(
+                'LC2_TEXTURE_PAIR run-id=u-1 t-ns=105 phase=initialize id=43 object-generation=43 storage-owner=43 guest-bytes=30 charge-bytes=30 storage-status=no-live-gl-storage',
+                f'LC2_TEXTURE_PAIR run-id=u-1 t-ns=170 phase=initialize id={missing_id} object-generation={missing_id} storage-owner={missing_id} guest-bytes=30 charge-bytes=30 storage-status=no-live-gl-storage')
+            text = text.replace('texture-id=43', 'texture-id='+missing_id)
+            with self.assertRaisesRegex(ValueError, rf'{missing_id}=pair_not_yet_emitted'):
+                replay_texture_budget(text, BUDGET_RUN)
+
+    def test_duplicate_bc_materialize_pairs_do_not_double_charge(self):
+        pair = 'LC2_TEXTURE_PAIR run-id=u-1 t-ns=145 phase=bc-materialize id=43 object-generation=43 storage-owner=43 guest-bytes=30 charge-bytes=30 storage-status=recorded'
+        text = budget_log().replace('phase=initialize id=43', 'phase=bc-materialize id=43')
+        text = text.replace('LC2_LIFE_SUMMARY ', pair + chr(10) + 'LC2_LIFE_SUMMARY ')
+        result = replay_texture_budget(text, BUDGET_RUN)
+        self.assertEqual(result['budget']['live_ids'], ['43'])
+        self.assertEqual(result['budget']['replay_bytes'], 30)
+
+    def test_zero_charge_id_does_not_require_a_texture_pair(self):
+        text = budget_log().replace(
+            'LC2_TEXTURE_BUDGET_EVENT run-id=u-1 t-ns=150 action=sub texture-id=42 delta-bytes=100 live-bytes=30 charge-count=2',
+            'LC2_TEXTURE_BUDGET_EVENT run-id=u-1 t-ns=135 action=add texture-id=99 delta-bytes=0 live-bytes=130 charge-count=3 caller=9 status=recorded' + chr(10) + 'LC2_TEXTURE_BUDGET_EVENT run-id=u-1 t-ns=150 action=sub texture-id=42 delta-bytes=100 live-bytes=30 charge-count=3')
+        text = text.replace('peak-bytes=130 charge-count=2 event-lines=3',
+                            'peak-bytes=130 charge-count=3 event-lines=4')
+        text = text.replace('t-ns=170 action=add texture-id=99 delta-bytes=1 live-bytes=31 charge-count=3',
+                            't-ns=170 action=add texture-id=99 delta-bytes=1 live-bytes=31 charge-count=4')
+        result = replay_texture_budget(text, BUDGET_RUN)
+        self.assertEqual(result['budget']['live_ids'], ['43'])
+        self.assertEqual(result['budget']['charge_count'], 3)
 
 
 class ReconcileTests(unittest.TestCase):
