@@ -111,6 +111,26 @@ def _floor_record(log_text, run_uuid):
     return result, None
 
 
+def _m3b_interval(row, prefix, outer_start, outer_end, reasons):
+    start = _int_or_none(row.get(prefix + "-start-ns"))
+    end = _int_or_none(row.get(prefix + "-end-ns"))
+    wall = _int_or_none(row.get(prefix + "-wall-ns"))
+    if start is None or end is None or wall is None:
+        reasons.append("m3b_interval_fields_missing:" + prefix)
+        return {"start_ns": None, "end_ns": None, "wall_ns": None, "status": "missing"}
+    if start == end == wall == 0:
+        status = "unobserved"
+    elif start == 0 or end == 0 or end < start or wall != end - start:
+        reasons.append("m3b_interval_inconsistent:" + prefix)
+        status = "incomplete"
+    elif start < outer_start or end > outer_end:
+        reasons.append("m3b_interval_outside_window:" + prefix)
+        status = "incomplete"
+    else:
+        status = "observed"
+    return {"start_ns": start, "end_ns": end, "wall_ns": wall, "status": status}
+
+
 def _m3b_records(log_text, run_uuid, required):
     windows, marks = [], []
     summary = None
@@ -137,15 +157,44 @@ def _m3b_records(log_text, run_uuid, required):
                 metrics[key.replace("-", "_")] = int(value) if value and value.isdigit() else None
                 if metrics[key.replace("-", "_")] is None:
                     reasons.append("m3b_window_size_missing:" + key)
+            intervals = {name + "_interval": _m3b_interval(row, prefix, start, end, reasons)
+                        for name, prefix in (("decode", "decode"), ("gl_alloc", "gl-alloc"), ("gl_upload", "gl-upload"))}
+            size_match = re.fullmatch(r"(\d+)x(\d+)", row.get("size", ""))
+            width, height = (int(size_match.group(1)), int(size_match.group(2))) if size_match else (None, None)
+            if size_match is None:
+                reasons.append("m3b_window_size_dimensions_missing")
+            format_value = row.get("format")
+            try:
+                format_value = int(format_value, 0) if format_value is not None else None
+            except ValueError:
+                format_value = None
+                reasons.append("m3b_window_format_missing")
+            level, allocate = _int_or_none(row.get("level")), _int_or_none(row.get("allocate"))
+            if level is None or allocate not in (0, 1):
+                reasons.append("m3b_window_subresource_or_allocate_missing")
+            owner_id = _int_or_none(row.get("owner-id"))
+            owner_generation_raw = _int_or_none(row.get("owner-generation"))
+            generation_basis = row.get("generation-basis")
+            if owner_id is None or owner_generation_raw is None or generation_basis in (None, "unknown", "untracked"):
+                reasons.append("m3b_window_owner_identity_missing")
+            owner_generation = (owner_generation_raw if generation_basis not in (None, "nvn-object-id", "unknown", "untracked")
+                               else None)
+            owner_generation_status = ("source_basis_is_object_id_only" if generation_basis == "nvn-object-id"
+                                       else "unverified" if owner_generation is None else "basis_present_not_independently_proven")
             windows.append({
                 "run_uuid": run_uuid, "event_seq": seq, "phase": row.get("stage"),
-                "t_start_ns": start, "t_end_ns": end, "owner_id": _int_or_none(row.get("owner-id")),
-                "owner_generation": _int_or_none(row.get("owner-generation")),
+                "t_start_ns": start, "t_end_ns": end, **intervals,
+                "owner_id": owner_id, "owner_generation": owner_generation,
+                "owner_generation_raw": owner_generation_raw, "owner_generation_status": owner_generation_status,
+                "generation_basis": generation_basis,
                 "object": row.get("object"), "gl_name": _int_or_none(row.get("gl-name")),
                 "storage_generation": _int_or_none(row.get("storage-generation")),
                 "storage_generation_known": row.get("storage-generation-known") == "1",
+                "content_generation": _int_or_none(row.get("content-generation")),
                 "pool_id": _int_or_none(row.get("pool-id")),
-                "pool_generation": _int_or_none(row.get("pool-generation")), **metrics,
+                "pool_generation": _int_or_none(row.get("pool-generation")),
+                "width": width, "height": height, "level": level, "format": format_value,
+                "allocate": allocate, **metrics,
                 "gl_error": row.get("gl-error", "unknown"),
                 "driver_allocation": row.get("driver-allocation", "unknown"),
                 "gpu_inflight": row.get("gpu-inflight", "unknown"),
