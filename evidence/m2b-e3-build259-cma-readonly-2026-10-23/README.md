@@ -14,7 +14,11 @@ This is a read-only TSPS audit following roadmap §86. No runtime was installed 
 
 ## Kernel and DMA-BUF evidence
 
-The current boot's dmesg contained **8** order-4 `terminator2d-ne` page-allocation failures through `dma_heap_ioctl`. The latest was at kernel uptime `22380.157231 s` (PID `30017`), with `free_cma=4122` pages. Current `nr_free_cma=3864` pages is 258 pages (1,032 KiB) below that historical snapshot. This is a comparison of two observations, not a safe threshold or proof of a causal allocation. The filtered dmesg contained no explicit `out of memory`, `oom-kill`, or `killed process` match. No new matching warning appeared between the paired reads.
+The current boot's dmesg contained **8** order-4 `terminator2d-ne` page-allocation failures through `dma_heap_ioctl`. The latest was at kernel uptime `22380.157231 s` (PID `30017`), with `free_cma=4122` pages. Its exact stack includes `__alloc_pages+0xbe0/0xc20 -> system_heap_allocate+0x120/0x38c -> dma_heap_ioctl+0x14c/0x320`; all eight traces include the system-heap and DMA-heap ioctl path. Current `nr_free_cma=3864` pages is lower than that historical snapshot. This is a comparison of two observations, not a safe threshold or proof of a causal allocation. The filtered dmesg contained no explicit `out of memory`, `oom-kill`, or `killed process` match. No new matching warning appeared during the idle snapshot pair.
+
+## Version-matched source analogue (not the target vendor tree)
+
+The public [REG-Linux/linux-t527](https://github.com/REG-Linux/linux-t527) tree at commit [`9ed9cb975e8ee303c6b0d4e40a57a81f8110f8ed`](https://github.com/REG-Linux/linux-t527/tree/9ed9cb975e8ee303c6b0d4e40a57a81f8110f8ed) declares kernel 5.15.147 in its Makefile, matching the target release. Its [`system_heap.c`](https://github.com/REG-Linux/linux-t527/blob/9ed9cb975e8ee303c6b0d4e40a57a81f8110f8ed/drivers/dma-buf/heaps/system_heap.c) tries orders 8, 4, then 0; a failed `alloc_pages()` continues to the next eligible order, and the overall request fails only when no page is returned. Thus an order-4 warning can be an intermediate attempt in this analogue. The repo is not verified as the exact Spruce/vendor kernel tree, so this is **not** proof that the target retries or that the DMA-heap request succeeded.
 
 MainUI had one `/dev/dma_heap/system` FD and four DMA-BUF FDs, all `system` exporter: 16,384 B and three 3,686,400 B buffers. `/sys/kernel/dmabuf/buffers` listed matching inodes and sizes. Exporter/size metadata does **not** prove CMA backing or explain the free-CMA value.
 

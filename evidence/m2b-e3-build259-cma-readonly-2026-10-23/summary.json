@@ -34,6 +34,18 @@
     {"uptime_s": 13110.124379, "pid": 11877, "comm": "terminator2d-ne", "order": 4, "free_cma_pages": 3360, "caller": "dma_heap_ioctl"},
     {"uptime_s": 22380.157231, "pid": 30017, "comm": "terminator2d-ne", "order": 4, "free_cma_pages": 4122, "caller": "dma_heap_ioctl"}
   ],
+  "source_analogue": {
+    "repository": "REG-Linux/linux-t527",
+    "commit": "9ed9cb975e8ee303c6b0d4e40a57a81f8110f8ed",
+    "makefile_kernel_version": "5.15.147",
+    "source_url": "https://github.com/REG-Linux/linux-t527/blob/9ed9cb975e8ee303c6b0d4e40a57a81f8110f8ed/drivers/dma-buf/heaps/system_heap.c",
+    "system_heap_order_attempts": [8, 4, 0],
+    "failed_alloc_falls_back": true,
+    "target_vendor_tree_verified": false,
+    "interpretation": "Order-4 warning alone does not prove DMA-heap request failure on this analogue; target behavior remains unconfirmed."
+  },
+  "dmesg_page_allocation_warnings": 8,
+  "latest_warning": {"uptime_s": 22380.157231, "pid": 30017, "order": 4, "free_cma_pages": 4122, "stack": ["__alloc_pages+0xbe0/0xc20", "system_heap_allocate+0x120/0x38c", "dma_heap_ioctl+0x14c/0x320"]},
   "oom_kill_pattern_matches": 0,
   "dmabuf": [
     {"fd": 15, "inode": 254, "size_bytes": 16384, "exporter": "system"},
