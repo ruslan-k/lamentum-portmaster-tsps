@@ -625,3 +625,13 @@ Every agent handoff must distinguish:
 - **Next host work:** M4-B complete GL/EGL/buffer lifetime/generation census and K1-B exact firmware DMA/CMA backing; M4-C persistent atlas optimization only with owner/lifetime proof.
 
 **Historical device result remains NOT PLAYABLE, gameplay FPS unmeasured.** This policy is not a finding that build261 works on device. It corrects agent scheduling: *do the independent safe work and publish it; perform a fresh safety decision before any demanding runtime operation.*
+
+## 16. M4-B host-only source callsite census (2026-10-23)
+
+This is the first M4-B substep, **not** M4-B acceptance. The §13.7 checklist reflects its `main@1604ed9` audit snapshot; §§14–16 record later work, with the revised operation gates in §15.
+
+**Inventory:** [`tools/gl_allocation_inventory.py`](../tools/gl_allocation_inventory.py) scans all C/C++ files in `native/` and `framework/` after the overlay is applied; [`tools/gl_storage_callsite_policy.json`](../tools/gl_storage_callsite_policy.json) binds each candidate site to an explicit status and the exact source-tree digest. `build_lamentum.sh` now runs this gate after patch application and before compilation. The source snapshot has **390 files**, SHA-256 `8d244eede356a5f9e28d3a125f3d50dee8dc477b379149ca4168fb339cfd603d`; adapter base `c8d01ca1fed5adab1ae7ad920605f199bb83a72e`, runtime overlay SHA-256 `23762e1bcd4c5b759c7417647f24e1df4430bcd4fd32e56f0c2a007954db50a8`.
+
+The scan found **77** storage/copy/attachment/surface candidates: **69 direct and 8 indirect**. The ledger records **12 wrapped+unmeasured**, **65 unknown**, zero wrapped+measured and zero not-reached. The fail-closed fixture adds a new unclassified `glBufferData` path and confirms policy validation rejects it. The focused inventory tests pass **7/7**; the full tools suite passes **366/366** with no skips or errors. The detailed callsite report is [evidence §M4-B](../evidence/m4b-gl-allocation-inventory-2026-10-23/README.md).
+
+**Limits / next:** this scans a source-tree superset, not an exact compiler-unit/include-closure map; reachability of indirect NXGL candidates remains unknown. No runtime call, generation/reuse, transactional lifetime, driver allocation, backing, RSS/CMA refund, gameplay or FPS was measured. Next M4-B work: derive exact build reach, test >1024 distinct/reused GL names and re-spec/delete/alias/context-loss cases, then complete buffer/EGL owner accounting. Build261 remains uninstalled; any non-executing stage must follow §15 checks, and runtime start stays held until a fresh positive preflight.

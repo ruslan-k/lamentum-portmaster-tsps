@@ -24,6 +24,12 @@ if [[ -f "$recipe/runtime/lamentum-adapter.patch" ]]; then
     git -C "$work" apply --check "$recipe/runtime/lamentum-adapter.patch"
     git -C "$work" apply "$recipe/runtime/lamentum-adapter.patch"
 fi
+# Fail closed if any native or framework GL storage/attachment path changed
+# without a reviewed callsite/status and matching pinned source snapshot.
+python3 "$recipe/tools/gl_allocation_inventory.py" \
+    --source-root "$work" \
+    --policy "$recipe/tools/gl_storage_callsite_policy.json" \
+    --output "$output/gl-storage-inventory.json"
 : "${COTM_CC:=aarch64-linux-gnu-gcc}"
 export COTM_CC
 export COTM_NXINPUT_DIR="$work/framework/nxinput"

@@ -7,6 +7,7 @@
 - [K1 exact firmware kernel / CMA snapshots](m2b-k1-kernel-cma-provenance-2026-10-23/README.md): exact kernel warning-retry path verified, CMA backing/owner unresolved, idle CmaFree 15,456 KiB in recorded samples; **runtime unsafe at that historic checkpoint**.
 - [A1 host-only admission replay](a1-storage-admission-offline-replay-2026-10-23/README.md): all four build259 denials reproduce conservative arithmetic; physical CMA assumption unqualified.
 - [M4-A checked BC stripe sizing (host-only)](m4a-bc-stripe-capacity-2026-10-23/README.md): native fixture, pinned-container ASan/UBSan, full suite and AArch64 build pass; request sizing only, candidate uninstalled; §15 preflight required before any runtime launch.
+- [M4-B source callsite census (host-only, partial)](m4b-gl-allocation-inventory-2026-10-23/README.md): 77 source callsites scanned; 12 wrapped+unmeasured, 65 unknown; exact compile reach and lifetime/generation closure remain open.
 - [build259 margin matrix](m2b-e3-build259-margin-sweep/README.md): 64/48/32/24 MiB all stopped before menu; no further margin sweep authorized.
 - [M3B build256b observer OFF/ON](m3b-build256b-pair-20261022-01/README.md): BC/non-BC/depth windows covered, buffer/EGL/CMA ownership missing, no menu.
 - [M3A build251 BC stripe pairs](m3a-bcstripe-b251-01/README.md): CPU staging changed, all six arms stopped at memory floor; no verified persistent memory saving.
