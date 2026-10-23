@@ -30,11 +30,12 @@ The exact matched `vmlinux` (`SHA-256 806182f8823b0db340f3f9beccf303e39571deb20b
 
 - `system_heap_create` calls `dma_heap_add` with the literal heap name `system`.
 - `add_default_cma_heap` obtains the area name through `cma_get_name()` and passes it to `dma_heap_add`; `cma_get_name()` returns the CMA object's name field. `cma_heap_allocate` calls `cma_alloc`, so allocations through this implementation use the CMA API.
-- If `cma_init_reserved_mem` receives no explicit name, its compiled fallback formats `cma%d`. The live node `/dev/dma_heap/reserved` therefore cannot be tied to the default-CMA implementation merely from the word `reserved`; the name/instance join is still unresolved.
-- A bounded scan of the single executable `PT_LOAD` segment found exactly two direct AArch64 `BL` sites targeting `dma_heap_add`, at `0xffffffc0085396d8` (`system_heap_create`) and `0xffffffc00853a7a4` (`add_default_cma_heap`). This excludes other direct call sites in that linked image, not indirect/module call paths.
+- If `cma_init_reserved_mem` receives no explicit name, its compiled fallback formats `cma%d`. The live node `/dev/dma_heap/reserved` therefore indicates either an explicit CMA-area name or another registration path; do not identify it from its name alone.
+- A bounded scan of the single executable `PT_LOAD` segment found exactly two direct AArch64 `BL` sites targeting `dma_heap_add`, at `0xffffffc0085396d8` (`system_heap_create`) and `0xffffffc00853a7a4` (`add_default_cma_heap`). This is a direct-call scan of linked vmlinux only; it does not cover indirect/module call paths.
+- The initcall table places `system_heap_create` at `0xffffffc0091de2d8` immediately before `add_default_cma_heap` at `0xffffffc0091de2dc`. The live device nodes are `system` minor 0 and `reserved` minor 1, matching that registration order. Together with the two direct vmlinux call sites and the Mali module import check below, this is a **high-confidence inference** that `reserved` is the default CMA heap for this boot, but not an exhaustive module-wide proof; only the Mali module was checked for heap API imports.
 - The live `/lib/modules/5.15.147/mali_kbase.ko` was read-only copied to local scratch and SHA-256-verified against the device: 29,984,864 bytes, SHA-256 `2aaf1556a7a352caffec4db8821ea9d2f847529671321caa1a667de992d1ceb5`, Build ID `0dcaa84a5579b1122f98f29d0214723a2dff9603`. Its undefined-symbol list contains `__alloc_pages` and `dma_buf_*` operations, but not `dma_heap_add` or `cma_alloc`. Thus this Mali module does not directly register the heap through those APIs; its `__alloc_pages` route still does not prove whether its pages use CMA.
 
-**Interpretation:** the kernel provides a CMA-backed DMA-heap implementation and the live `reserved` endpoint is a plausible match for that default CMA heap, but the available evidence does not yet establish that endpoint's registration identity or prove that game GL allocations use it. Keep `DMA_HEAP_RESERVED` at *possible/unknown* for per-request attribution until the name-to-instance path and runtime consumer are closed.
+**Interpretation:** registration order and live minors strongly associate `reserved` with the default CMA heap, but the explicit name source and other-module registration paths are not fully audited. No per-buffer or game GL allocation was observed. Do not infer that Lamentum textures use this heap or that the idle CMA occupancy belongs to Lamentum.
 
 ## Owner/backing matrix and gate
 
@@ -44,11 +45,11 @@ The exact matched `vmlinux` (`SHA-256 806182f8823b0db340f3f9beccf303e39571deb20b
 | `guest_malloc` pages | **Unknown** whether/how they consume CMA pages |
 | GLES GL texture/buffer/renderbuffer | **Unknown** driver allocation path, per-call success, and physical backing |
 | `DMA_HEAP_SYSTEM` | Heap endpoint exists; per-buffer backing and relation to GL remain unknown |
-| CMA heap implementation | **Proven in matched kernel** to allocate through `cma_alloc`; actual live `reserved` endpoint/name join remains *possible/unknown* |
-| `DMA_HEAP_RESERVED` | Endpoint exists; likely default-CMA candidate, but exact registration/backing for this node remains unproven |
+| CMA heap implementation | **Proven in matched kernel** to allocate through `cma_alloc` |
+| `DMA_HEAP_RESERVED` | **High-confidence registration inference** to default-CMA heap from initcall/minor ordering; explicit name input and per-buffer consumer remain unknown |
 | Mali/KMS/GBM/EGL working buffers | **Unknown**; the DT register map does not assign a memory pool or identify runtime buffers |
 | Current CMA occupancy owner | **Unknown**; no game ran and the single free-space gauge identifies no owner |
 
-This closes only the reservation-geometry and part of the heap-implementation path in K1-B. It does not complete D-policy class attribution or provide a justified per-run uncertainty margin. Keep `T2_STORAGE_MARGIN_MIB` unset and `HOLD_RUNTIME`; build259 remains the installed runtime, and no current game ELF is available for a bounded launch.
+This closes the reservation geometry and identifies the likely default-CMA DMA-heap endpoint, but not any game allocation or physical occupancy owner. D-policy still lacks per-class peak overlap and uncertainty, so keep `T2_STORAGE_MARGIN_MIB` unset and `HOLD_RUNTIME`; build259 remains installed and no current game ELF is available for a bounded launch.
 
-**Next handoff:** close the live `reserved`-node-to-`cma_heap` registration/name join, then map Mali/GBM request consumers and measured overlap. Keep user-space scratch and GL storage as possible/unknown CMA consumers until that mapping is demonstrated.
+**Next handoff:** verify the explicit CMA name argument and trace GL/Mali/GBM consumers to the heap; measure overlapping demands without allocating test buffers. Keep user-space scratch and direct driver allocations as possible CMA consumers until proven otherwise.

@@ -77,7 +77,7 @@
       {"name": "reserved", "major": 252, "minor": 1, "sysfs_path": "/sys/devices/virtual/dma_heap/reserved"}
     ],
     "cma_device_node_visible": false,
-    "physical_backing_by_heap": "unknown"
+    "physical_backing_by_heap": "reserved maps with high confidence to the default CMA heap; system per-page class and actual per-buffer consumers remain unknown"
   },
   "kernel_heap_implementation": {
     "vmlinux_sha256": "806182f8823b0db340f3f9beccf303e39571deb20b99386ee6a76442b8761b19",
@@ -93,7 +93,13 @@
       "addresses": ["0xffffffc0085396d8", "0xffffffc00853a7a4"],
       "scope_limit": "direct AArch64 BL call sites in linked vmlinux; excludes indirect calls and modules"
     },
-    "live_reserved_heap_to_default_cma_heap": "possible, not proven; name-to-instance join open",
+    "initcall_order": {
+      "system_heap_create": "0xffffffc0091de2d8",
+      "add_default_cma_heap": "0xffffffc0091de2dc",
+      "system_precedes_cma": true
+    },
+    "live_dma_heap_minors": {"system": 0, "reserved": 1},
+    "live_reserved_heap_to_default_cma_heap": "high-confidence inference from initcall order and matching minor order; explicit CMA name input and per-buffer use unobserved",
     "mali_kbase_module": {
       "device_path": "/lib/modules/5.15.147/mali_kbase.ko",
       "bytes": 29984864,
@@ -131,7 +137,7 @@
   "limits": [
     "Effective CMA reservation geometry is proven; this does not identify which process or driver allocations consume it.",
     "The absence of standard DT memory-region references does not prove that Mali, GBM/EGL, or movable userspace pages cannot use CMA.",
-    "The system and reserved DMA-heap endpoints identify device nodes only, not the allocation path of a GL request.",
+    "The heap endpoint and static registration map do not identify which GL requests or live buffers use them; the system-heap page class and game consumer remain unknown.",
     "The one memory sample is not a fresh same-boot two-snapshot launch preflight or safety-margin approval."
   ]
 }
