@@ -1,0 +1,176 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-22",
+  "phase": "M3-B bounded pre-first-present memory observer, first same-build OFF/ON pair",
+  "classification": "inconclusive; M3-B coverage incomplete; no gameplay or FPS result",
+  "source_commit": "01e9b75c11531f5b2d82e251e158182149505a8d",
+  "device": {
+    "arch": "aarch64",
+    "boot_id": "66203f22-4ac8-4a2a-a47c-cddc253d3bda",
+    "installed_build": "build253",
+    "runtime_sha256": "7acd58704b662184d4f2103d782d911b06c40e18fe7f4505f2753a06242bc6b9",
+    "backup_path": "/mnt/SDCARD/Roms/PORTS/lamentum-switch/lamentum-nextos.before-253",
+    "backup_sha256": "1bcb32a4bac2e1e30e4c64ab8bb5d8ddd58c3cc59363a785919991eac4ab6b78",
+    "launcher_sha256_unchanged": "f32204ff1b271dd66e38f79573f75c6f562af49174ea436e81dd9417dba1354a",
+    "helper_sha256_unchanged": "abe8e4847b18a750c0796af33d887cf43714126c9751ccdc8236715cb752401a",
+    "post_run_online_cpu_mask": "4-7",
+    "post_run_cpu0_3": "offline, sysfs mode 0444",
+    "post_run_processes": "MainUI only; no Lamentum/game process; /tmp/cmd_to_run.sh absent"
+  },
+  "common_settings": {
+    "input_during_run": "none",
+    "memory_floor_mib": 96,
+    "texture_budget_mib": 300,
+    "strict_gl": true,
+    "lc2_life_events": 1,
+    "lc2_menu_ledger": 1,
+    "lc2_m3b_max_events": 64,
+    "lc2_bc_stripe_medium": "unset/default-off",
+    "device_budget_seconds": 90,
+    "external_memory_timeline": "enabled in both arms; 256-sample cap, 100 ms interval, smaps_rollup sparse cadence 4 s",
+    "only_arm_difference": "LC2_M3B_TIMELINE=0 vs 1"
+  },
+  "arms": [
+    {
+      "name": "ring-off",
+      "lc2_m3b_timeline": 0,
+      "run_uuid": "645c0df7-180f-4ef5-aa8c-8f99dc7c69b3",
+      "timeline_sha256_local_only": "69cbb520dea5cbf3175740f71669f5393afb36cfe8676cae6d4243050c30a9cf",
+      "timeline": {
+        "samples_total": 106,
+        "live_samples": 104,
+        "complete_to_process_exit": true,
+        "dropped_samples": 0,
+        "stop_reason": "exited"
+      },
+      "ring_records": 0,
+      "bc_full_stage_records": 15,
+      "bc_striped_records": 0,
+      "first_present": {
+        "frame": 1,
+        "monotonic_ns": 17811267510049,
+        "memavailable_kib": 128752,
+        "cmafree_kib": 18472,
+        "swapfree_kib": 1992936,
+        "vmrss_kib": 699240,
+        "vmswap_kib": 29460
+      },
+      "floor_stop": {
+        "reason": "T2_MEMORY_FLOOR",
+        "monotonic_ns": 17812542742817,
+        "available_kib": 90960,
+        "swapfree_kib": 1971432,
+        "texture_live_requested_bytes": 117441536,
+        "texture_charge_count": 119,
+        "menu_floor_capture": "gl-lock-unavailable; exact CMA/RSS snapshot unavailable"
+      },
+      "nearest_live_sample_before_floor": {
+        "age_ms": 46.239678,
+        "memavailable_kib": 91376,
+        "cmafree_kib": 7876,
+        "vmrss_kib": 726928,
+        "vmswap_kib": 53612
+      },
+      "swapfree_loss_prelaunch_to_floor_kib": 62208,
+      "cleanup_errors": [],
+      "owned_menu_events": 0,
+      "cleanup_screen_sha256_local_only": "e9953b2e48714ae7022076e4c5ead1fd66aff6b8e9f9db31fa988d325c2b1cb7",
+      "cleanup_screen_observation": "SpruceOS MainUI home icons; cleanup-only, not gameplay"
+    },
+    {
+      "name": "ring-on",
+      "lc2_m3b_timeline": 1,
+      "run_uuid": "774459c8-c3a0-4915-9d2c-0cd6406916a1",
+      "timeline_sha256_local_only": "c26b236076772aa8a68bfc656e6aee63606aa6520e93e75935600d7bcdd8d66d",
+      "timeline": {
+        "samples_total": 91,
+        "live_samples": 89,
+        "complete_to_process_exit": true,
+        "dropped_samples": 0,
+        "stop_reason": "exited"
+      },
+      "ring": {
+        "windows": 27,
+        "marks": 3,
+        "configured": 64,
+        "claimed": 30,
+        "final_claimed": 30,
+        "emitted": 30,
+        "incomplete": 0,
+        "active": 0,
+        "dropped": 0,
+        "format_errors": 0,
+        "ring_complete": true
+      },
+      "bc_full_stage_records": 13,
+      "bc_striped_records": 0,
+      "owner_105": {
+        "stage": "1920x1080 BC full initialize and refresh",
+        "source_compressed_bytes": 2949120,
+        "rgba_requested_bytes": 8294400,
+        "linear_requested_bytes": 2073600,
+        "requested_staging_overlap_peak_bytes": 10368000,
+        "initialization_decode_wall_ns": 85918504,
+        "initialization_gl_allocate_upload_wall_ns": 8767109,
+        "refresh_decode_wall_ns": 90274433,
+        "refresh_gl_upload_wall_ns": 12806121,
+        "storage_generation_known": true,
+        "proof_scope": "requested-overlap only; physical residency, driver allocation, GPU in-flight completion, source-write generation, and stage-local GL error remain unknown/unobserved"
+      },
+      "first_present": {
+        "frame": 1,
+        "monotonic_ns": 17938303129198,
+        "memavailable_kib": 133076,
+        "cmafree_kib": 15420,
+        "swapfree_kib": 2015460,
+        "vmrss_kib": 709752,
+        "vmswap_kib": 10384
+      },
+      "floor_stop": {
+        "reason": "T2_MEMORY_FLOOR",
+        "monotonic_ns": 17938473339243,
+        "available_kib": 84140,
+        "swapfree_kib": 2015460,
+        "texture_live_requested_bytes": 112329728,
+        "texture_charge_count": 116,
+        "menu_floor_capture": "gl-lock-unavailable; exact CMA/RSS snapshot unavailable"
+      },
+      "nearest_live_sample_before_floor": {
+        "age_ms": 64.780733,
+        "memavailable_kib": 124384,
+        "cmafree_kib": 15516,
+        "vmrss_kib": 705240,
+        "vmswap_kib": 10372,
+        "difference_from_floor_memavailable_kib": -40244
+      },
+      "swapfree_loss_prelaunch_to_floor_kib": 17664,
+      "cleanup_errors": [],
+      "owned_menu_events": 0,
+      "cleanup_screen_sha256_local_only": "deb0ea43ef9b84fa4b3787324e9ad6001e2a3aed949d3b53c7a807dc513a58f3",
+      "cleanup_screen_after_back_sha256_local_only": "ad0a77e76ec1cf559d32a86d18c41281f7c763ed17f7cb07da6217d1edf8e372",
+      "cleanup_screen_observation": "Initial capture showed the idle clock; after one released agent-injected BACK (100 ms), the awake MainUI home was captured. Cleanup only, not gameplay."
+    }
+  ],
+  "paired_deltas_on_minus_off": {
+    "first_present_kib": {
+      "memavailable": 4324,
+      "cmafree": -3052,
+      "swapfree": 22524,
+      "vmrss": 10512,
+      "vmswap": -19076
+    },
+    "floor": {
+      "memavailable_kib": -6820,
+      "swapfree_kib": 44028,
+      "texture_live_requested_bytes": -5111808,
+      "texture_charge_count": -3
+    }
+  },
+  "interpretation": [
+    "Both arms safely stopped below the 96 MiB floor before entering the menu; neither measured gameplay nor FPS.",
+    "One sequential pair is not enough for a causal overhead or memory-win claim; present counts differed (13 OFF, 2 ON) and floor snapshots were not phase-matched.",
+    "The ON ring was complete for its bounded BC-window event set, not for whole-process memory attribution; non-BC GL/EGL/renderbuffer/buffer and other heap/file-backed owners remain uncovered.",
+    "The 100 ms process sampler missed the ON floor transient: its nearest live sample was 64.8 ms before the floor and 40,244 KiB higher in MemAvailable. The floor logger could not acquire the GL lock, so exact floor CMA/RSS/VmSwap remain unknown.",
+    "Raw timelines, latest.log files, and PNG captures remain local-only; only this compact receipt is intended for Git."
+  ]
+}

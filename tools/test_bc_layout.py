@@ -36,6 +36,7 @@ class BcLayoutTests(unittest.TestCase):
             ran = subprocess.run([str(binary)], text=True, capture_output=True, timeout=90)
             self.assertEqual(ran.returncode, 0, ran.stderr)
             self.assertIn('stripe equivalence OK', ran.stdout)
+            self.assertIn('in-place equivalence OK', ran.stdout)
 
 
 if __name__ == '__main__':

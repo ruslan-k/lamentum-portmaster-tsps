@@ -1,0 +1,152 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-22",
+  "phase": "Build254 M3-B floor snapshot, first same-build ring OFF/ON device pair",
+  "classification": "floor snapshot validated on device; full M3-B waterfall incomplete; no gameplay/FPS result",
+  "source_commit": "f3029b61522aeac0b99fc47b9ff80d23b573158f",
+  "device": {
+    "arch": "aarch64",
+    "boot_id": "66203f22-4ac8-4a2a-a47c-cddc253d3bda",
+    "runtime_sha256": "b6a84e4cd423cbbd88661502c53f1f6de81ab81d1de9c504700d289e96d417e1",
+    "backup_build253_sha256": "7acd58704b662184d4f2103d782d911b06c40e18fe7f4505f2753a06242bc6b9",
+    "backup_build251_sha256": "1bcb32a4bac2e1e30e4c64ab8bb5d8ddd58c3cc59363a785919991eac4ab6b78",
+    "launcher_sha256_unchanged": "f32204ff1b271dd66e38f79573f75c6f562af49174ea436e81dd9417dba1354a",
+    "helper_sha256_unchanged": "abe8e4847b18a750c0796af33d887cf43714126c9751ccdc8236715cb752401a",
+    "post_run": "MainUI only; no game; cmd_to_run absent; online CPU mask 4-7; CPU0-3 offline mode 0444"
+  },
+  "common_settings": {
+    "input_during_run": "none",
+    "memory_floor_mib": 96,
+    "texture_budget_mib": 300,
+    "strict_gl": true,
+    "lc2_life_events": 1,
+    "lc2_menu_ledger": 1,
+    "lc2_m3b_max_events": 64,
+    "lc2_bc_stripe_medium": "unset/default-off",
+    "external_memory_timeline_interval_ms": 100,
+    "external_memory_timeline_sample_cap": 256,
+    "only_arm_difference": "LC2_M3B_TIMELINE=0 vs 1"
+  },
+  "arms": [
+    {
+      "name": "ring-off",
+      "run_uuid": "f9868a42-8ccb-4ebc-9df7-72156ab0a151",
+      "raw_timeline_sha256_local_only": "22b4d69710deb3946d436676af8f32a81fcb013e5a602864537315c4c3d4e784",
+      "timeline": {
+        "sample_count_total": 112,
+        "live_samples": 110,
+        "complete": false,
+        "dropped_samples": 3,
+        "max_gap_ms": 212.101,
+        "max_sample_duration_ms": 211.894,
+        "slow_sample_collector_cpu_ms": 4.352,
+        "stop_reason": "exited"
+      },
+      "first_present": {
+        "memavailable_kib": 141904,
+        "cmafree_kib": 7900,
+        "swapfree_kib": 1987712,
+        "vmrss_kib": 702712,
+        "vmswap_kib": 35872
+      },
+      "floor": {
+        "reason": "T2_MEMORY_FLOOR",
+        "floor_check_ns": 19345203410069,
+        "memavailable_kib": 97356,
+        "swapfree_kib": 1956736,
+        "texture_budget_live_bytes": 117441536,
+        "texture_charge_count": 119,
+        "snapshot_start_ns": 19345203466736,
+        "snapshot_end_ns": 19345203621653,
+        "snapshot_read_ns": 154917,
+        "cmafree_kib": 720,
+        "vmrss_kib": 699520,
+        "vmswap_kib": 67032,
+        "gl_trylock": "succeeded; live-set snapshot follows"
+      },
+      "m3b_ring_records": 0,
+      "floor_live_set": {
+        "views": 95,
+        "unique_owners": 95,
+        "owner_overflow": 0,
+        "life_event_overflow": 0,
+        "t2_budget_live_bytes": 117441536,
+        "unique_gl_texture_declared_bytes": 241485104,
+        "unique_gl_renderbuffer_declared_bytes": 11980800,
+        "combined_declared_gl_payload_bytes": 253465904,
+        "declared_gl_minus_t2_budget_bytes": 136024368,
+        "physical_residency": "unproven",
+        "share_group": "unverified"
+      },
+      "largest_floor_owners": [
+        {"owner": 92, "size": "3600x3600", "format": "0x44", "t2_charge_bytes": 14745600, "gl_declared_bytes": 51840000},
+        {"owner": 81, "size": "3600x2160", "format": "0x44", "t2_charge_bytes": 9216000, "gl_declared_bytes": 31104000}
+      ],
+      "swapfree_loss_prelaunch_to_floor_kib": 77312,
+      "debug_present_probe_records": 15,
+      "menu_events": 0,
+      "cleanup_errors": [],
+      "cleanup_screen_sha256_local_only": "4120375beef355bdd1d6ab8f79295542b7d384ea0b91623d89398e67aa879c94"
+    },
+    {
+      "name": "ring-on",
+      "run_uuid": "47ed1738-f227-4668-99f6-374bb43c68d5",
+      "raw_timeline_sha256_local_only": "41b4d40040d939c32565d8075d394b0a299ee08fc92ebdbb1ee132ae395abf05",
+      "timeline": {
+        "sample_count_total": 114,
+        "live_samples": 112,
+        "complete": false,
+        "dropped_samples": 7,
+        "max_gap_ms": 308.967,
+        "max_sample_duration_ms": 308.767,
+        "slow_sample_collector_cpu_ms": 4.132,
+        "stop_reason": "exited"
+      },
+      "ring": {
+        "windows": 30,
+        "marks": 3,
+        "configured": 64,
+        "claimed": 33,
+        "final_claimed": 33,
+        "emitted": 33,
+        "incomplete": 0,
+        "active": 0,
+        "dropped": 0,
+        "format_errors": 0,
+        "complete_for_bounded_ring": true
+      },
+      "largest_bc_windows": [
+        {"owner": 92, "stage": "bc-full-initialize", "size": "3600x3600", "compressed_source_bytes": 14745600, "rgba_requested_bytes": 51840000, "linear_requested_bytes": 12960000, "requested_overlap_peak_bytes": 64800000, "decode_wall_ms": 527.756, "gl_upload_wall_ms": 198.112},
+        {"owner": 81, "stage": "bc-full-initialize", "size": "3600x2160", "compressed_source_bytes": 9216000, "rgba_requested_bytes": 31104000, "linear_requested_bytes": 7776000, "requested_overlap_peak_bytes": 38880000, "decode_wall_ms": 317.397, "gl_upload_wall_ms": 50.345}
+      ],
+      "floor": {
+        "reason": "T2_MEMORY_FLOOR",
+        "floor_check_ns": 19479720224934,
+        "memavailable_kib": 86388,
+        "swapfree_kib": 1984232,
+        "texture_budget_live_bytes": 109618176,
+        "texture_charge_count": 119,
+        "snapshot_start_ns": 19479720265393,
+        "snapshot_end_ns": 19479720429351,
+        "snapshot_read_ns": 163958,
+        "cmafree_kib": 9644,
+        "vmrss_kib": 728876,
+        "vmswap_kib": 40436,
+        "gl_trylock": "unavailable; LC2_MENU_FLOOR_MEMORY was emitted before the trylock failure record"
+      },
+      "swapfree_loss_prelaunch_to_floor_kib": 48640,
+      "debug_present_probe_records": 17,
+      "menu_events": 0,
+      "cleanup_errors": [],
+      "cleanup_screen_sha256_local_only": "0b938c179ac391f410927b47ec411b2fe595e37203ff8d237ecf226424f54284"
+    }
+  ],
+  "interpretation": [
+    "The build254 one-shot floor snapshot worked in both arms; in ON it captured CmaFree/VmRSS/VmSwap even though the subsequent GL storage trylock failed with EBUSY.",
+    "The external process timeline is incomplete in both arms due missed 100 ms schedule intervals (3 OFF, 7 ON); slow rows had low collector CPU, but the blocking/descheduling cause is not established.",
+    "The bounded C ring is complete for its BC windows only; non-BC allocation classes and physical Mali residency remain unknown.",
+    "The OFF floor live-set sums 253,465,904 B of declared GL payload versus 117,441,536 B T2 budget. This is an unresolved declared-payload reconciliation, not measured physical memory or proof of an accounting bug.",
+    "The ring-OFF/ON arms reached different debug present-probe counts (15 and 17), with nonzero sampler drops; this one pair cannot establish a causal memory or overhead effect.",
+    "Both arms stopped before menu/gameplay and consumed swap. No FPS/no-swap claim is supported."
+  ]
+}

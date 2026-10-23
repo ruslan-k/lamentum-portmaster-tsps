@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-23",
+  "scope": "host-only E4 source/replay/build checkpoint; no device install or launch",
+  "roadmap": {
+    "primary": "docs/performance-roadmap-30fps.md §78 P0-1/E4",
+    "safety_gate": "docs/performance-roadmap-30fps.md §86",
+    "branch": "perf/m3b-memory-waterfall",
+    "phase_start_head": "d11f1b156e90160d319bcfd6795c5c1e3ce21c00",
+    "open_pr": 1
+  },
+  "historical_build251_replay": {
+    "identity_source": "evidence/m3a-bcstripe-b251-01/ab-summary.json",
+    "pair_records_per_arm": 119,
+    "owner_event_records_per_arm": 0,
+    "owner_event_summaries_per_arm": 0,
+    "arms": [
+      {"arm": "baseline-01", "run_uuid": "6d57acb9-4008-43a5-a121-0a32fcaca950", "log_sha256": "56f122c0fbeb6239c8d3b3cc506258819d67f61fee1f9d62b2398f2418f61023", "result": "reconciled"},
+      {"arm": "candidate-01", "run_uuid": "a90be04e-66d8-42cd-acbf-6bc97fc0abb5", "log_sha256": "d37f7b0049c9e387f507075ea29af3096f80a145c8952fda83e0b6feee33f213", "result": "288=unresolved"},
+      {"arm": "baseline-02", "run_uuid": "320c8488-7127-4edd-ba85-024b901494ad", "log_sha256": "ba99b1a211baa7ab9e72271c7eff553825bd5eb267af97d77cabcd455c738006", "result": "288=unresolved"},
+      {"arm": "candidate-02", "run_uuid": "9c1e2d42-527a-4352-b7d3-e5a42083a505", "log_sha256": "18417ff9df8f82cfa1e983cf847f90e848f10c29539f8996113bbace0a0c5bbc", "result": "reconciled"},
+      {"arm": "baseline-03", "run_uuid": "d11d7752-81f9-4c34-bf06-530d4bad2026", "log_sha256": "d5dda96074c517e68e31e38c002cd74d0f7d04a5867668fdff8acebbee1bf9d1", "result": "280=pair_not_yet_emitted", "pair_after_floor_ns": 71920625},
+      {"arm": "candidate-03", "run_uuid": "aa167dd9-c698-4828-a17c-14ea2f6c8b76", "log_sha256": "971f21cc6703bd756e9a49369f755695c13cc4e0b396df07e8954425857562b8", "result": "280=unresolved"}
+    ]
+  },
+  "source": {
+    "owner_event_capacity": 512,
+    "opt_in": "LC2_LIFE_EVENTS=1",
+    "default": "off",
+    "adapter_overlay_sha256": "72b309b02242377d7faf524fe091e9603013d5051098c0c7037ed434d661b6dd",
+    "source_diff_matches_overlay": true,
+    "identity_limit": "object generation is the monotonic NVN object ID; source-write generation remains untracked",
+    "owner_event_schema_policy": "owner_events_expected=true for schema-capable logs; false preserves legacy build251 behavior",
+    "generation_conflicts_scoped_to_floor_sample": true
+  },
+  "verification": {
+    "full_python_tests_passed": 317,
+    "focused_ledger_life_events_gl_storage_tests_passed": 45,
+    "py_compile": "pass",
+    "baseline_manifest": {"verified": 435, "failed": 0},
+    "git_apply_check": "pass",
+    "git_diff_check": "pass"
+  },
+  "build": {
+    "container": "pmjs-arm64-spruce-local:20261002-gcc10",
+    "container_digest": "sha256:e437308c01ce7af4a035c3f0652bc886e258889f66803f805bce53d05af75f0c",
+    "owner_image": "image-09",
+    "romfs_section_bytes": 1832060032,
+    "romfs_section_sha256": "80ad4427164a0b7ad61c3a3fcd955bd158635aac1ee42ebb67d01dfae279b893",
+    "runtime_path": "build-260/lamentum-nextos",
+    "runtime_bytes": 2202664,
+    "runtime_sha256": "f2930135ecc431ffab92595b6324486cbf5df0b6484138d9dcf33d8cc1c680af",
+    "architecture": "AArch64 ELF64 PIE",
+    "build_id": "ef6f6ecc292036ac70d9d5fe2b021da1a3719cef",
+    "max_glibc": "2.27",
+    "owner_event_markers_present": true,
+    "installed_on_device": false
+  },
+  "device": {
+    "rechecked_this_checkpoint": false,
+    "latest_roadmap_cma_free_kib": 15456,
+    "last_reported_installed_runtime": "build259 d72e2f69afa16dd5b846950f3fba80bc9926edcab9b2d45c57ed23faa14b9066",
+    "game_launched": false,
+    "fps_verified": false,
+    "next": "Read-only CMA investigation per §86; no install/launch until a safe baseline is established."
+  }
+}

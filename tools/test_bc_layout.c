@@ -25,6 +25,31 @@ static void check_bc3_stripe(unsigned w,unsigned h) {
     assert(memcmp(full,striped,pixels)==0);
     free(linear_source);free(tiled);free(linear_full);free(full);free(striped);
 }
+static void check_inplace(unsigned format,unsigned width,unsigned height,unsigned seed) {
+    struct zero_bc_level m;unsigned block_bytes=zero_bc_bytes(format);
+    assert(zero_bc_level_layout(width,height,block_bytes,0,&m));
+    size_t compressed=(size_t)m.blocks_x*m.blocks_y*block_bytes;
+    size_t stride=(size_t)m.blocks_x*block_bytes;
+    size_t bpp=zero_bc_float(format)?16:4;
+    size_t rgba=(size_t)width*height*bpp;
+    size_t capacity=compressed>rgba?compressed:rgba;
+    unsigned char *source=malloc(compressed),*reference=malloc(rgba),*work=malloc(capacity+32);
+    unsigned char *tiled=calloc(m.size,1);
+    assert(source&&reference&&work&&tiled);
+    for(size_t i=0;i<compressed;i++)source[i]=(unsigned char)(i*37U+(i>>8)+seed);
+    assert(zero_bc_decode(format,reference,rgba,source,compressed,width,height,stride));
+    assert(zero_bc_blocks_copy(&m,tiled,m.size,source,compressed,0,0,m.blocks_x,m.blocks_y,1));
+    memset(work,0xa5,capacity+32);
+    assert(zero_bc_blocks_copy(&m,tiled,m.size,work,capacity,0,0,m.blocks_x,m.blocks_y,0));
+    assert(zero_bc_decode_in_place(format,work,capacity,width,height,stride));
+    assert(memcmp(reference,work,rgba)==0);
+    for(size_t i=capacity;i<capacity+32;i++)assert(work[i]==0xa5);
+    memcpy(work,source,compressed);
+    assert(!zero_bc_decode_in_place(format,work,capacity-1,width,height,stride));
+    assert(!zero_bc_decode_in_place(format,work,capacity,width,height,stride+block_bytes));
+    assert(memcmp(work,source,compressed)==0);
+    free(source);free(reference);free(work);free(tiled);
+}
 int main(void) {
     assert(zero_bc_should_stripe(16,4097,0,0));
     assert(!zero_bc_should_stripe(16,4096,0,0));
@@ -71,6 +96,10 @@ int main(void) {
     assert(memcmp(full,striped,rgba_bytes)==0);
     free(linear);free(tiled);free(full);free(striped);
     check_bc3_stripe(1920,1080);
+    for(unsigned format=0x41;format<=0x50;format++)check_inplace(format,7,5,format);
+    check_inplace(0x44,3600,2160,81);
+    check_inplace(0x44,3600,3600,92);
+    printf("in-place equivalence OK\n");
     printf("BC3 layout and 8192x132/1920x1080 stripe equivalence OK blocks=%zu\n",checked);
     return 0;
 }

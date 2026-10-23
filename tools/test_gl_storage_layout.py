@@ -35,7 +35,7 @@ def descriptor(width=8192, height=8192, *, depth=1, layers=1, levels=1,
 
 
 class GlStorageLayoutTests(unittest.TestCase):
-    def calculate(self, inputs):
+    def calculate(self, inputs, args=()):
         header = overlay_header()
         self.assertIsNotNone(header, 'G0 checked GL storage calculator missing from overlay')
         assert header is not None  # narrow the type after the test assertion
@@ -50,13 +50,90 @@ class GlStorageLayoutTests(unittest.TestCase):
                                     *flags, '-I', str(root), str(source), '-o', str(binary)],
                                    text=True, capture_output=True)
             self.assertEqual(built.returncode, 0, built.stderr)
-            ran = subprocess.run([str(binary)], input=''.join(' '.join(map(str, x)) + '\n'
-                                                            for x in inputs),
+            ran = subprocess.run([str(binary), *args], input=''.join(' '.join(map(str, x)) + '\n'
+                                                               for x in inputs),
                                  text=True, capture_output=True, timeout=20)
             self.assertEqual(ran.returncode, 0, ran.stderr)
             results = [json.loads(line) for line in ran.stdout.splitlines()]
             self.assertEqual(len(results), len(inputs))
             return results
+
+    def test_memory_admission_requires_floor_plus_upload_and_margins(self):
+        self.assertEqual(self.calculate([], args=('--admission-contract',)), [])
+
+    def test_gl_storage_wrappers_admit_all_direct_storage_calls(self):
+        patch = (REPO / 'runtime/lamentum-adapter.patch').read_text()
+        def added_header(name):
+            marker=f'diff --git a/native/{name} b/native/{name}\n'
+            self.assertIn(marker,patch,f'{name} missing from public overlay')
+            block=patch.split(marker,1)[1].split('\ndiff --git ',1)[0]
+            return '\n'.join(line[1:] for line in block.splitlines()
+                              if line.startswith('+') and not line.startswith('+++'))+'\n'
+        source=r'''
+#include <assert.h>
+#include <stdint.h>
+#include <setjmp.h>
+#include <string.h>
+typedef unsigned int GLenum,GLuint;typedef int GLint,GLsizei;typedef intptr_t GLsizeiptr;
+#define GL_APIENTRY
+#define GL_TEXTURE_2D 0x0de1U
+#define GL_TEXTURE_CUBE_MAP_POSITIVE_X 0x8515U
+#define GL_RGBA 0x1908U
+#define GL_RGBA32F 0x8814U
+#define GL_UNSIGNED_BYTE 0x1401U
+#define GL_FLOAT 0x1406U
+#define GL_RENDERBUFFER 0x8d41U
+#define GL_DEPTH_COMPONENT24 0x81a6U
+#define GL_ARRAY_BUFFER 0x8892U
+#define GL_STATIC_DRAW 0x88e4U
+static uint64_t nvn_caller=7,last_gl,last_scratch,last_caller,last_owner;
+static unsigned admissions,tex_calls,rb_calls,buffer_calls;
+static jmp_buf trap;static const char *stop_reason;
+static void t2_storage_admit(uint64_t gl,uint64_t scratch,uint64_t caller,uint64_t owner) {
+ admissions++;last_gl=gl;last_scratch=scratch;last_caller=caller;last_owner=owner;
+}
+static void stop(const char *reason,uint64_t caller,uint64_t detail,int code) {
+ (void)caller;(void)detail;(void)code;stop_reason=reason;longjmp(trap,1);
+}
+static void glTexImage2D(GLenum target,GLint level,GLint internal,GLsizei width,GLsizei height,
+                         GLint border,GLenum format,GLenum type,const void *pixels) {
+ (void)target;(void)level;(void)internal;(void)width;(void)height;(void)border;(void)format;(void)type;(void)pixels;tex_calls++;
+}
+static void glRenderbufferStorage(GLenum target,GLenum internal,GLsizei width,GLsizei height) {
+ (void)target;(void)internal;(void)width;(void)height;rb_calls++;
+}
+static void glBufferData(GLenum target,GLsizeiptr size,const void *data,GLenum usage) {
+ (void)target;(void)size;(void)data;(void)usage;buffer_calls++;
+}
+#include "lc2_gl_storage.h"
+#include "lc2_gl_admission.h"
+int main(void) {
+ glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,3,2,0,GL_RGBA,GL_UNSIGNED_BYTE,0);
+ assert(admissions==1 && last_gl==24 && last_scratch==0 && last_caller==7 && last_owner==0 && tex_calls==1);
+ glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X,0,GL_RGBA,4,4,0,GL_RGBA,GL_UNSIGNED_BYTE,0);
+ assert(admissions==2 && last_gl==64 && tex_calls==2);
+ glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA32F,2,2,0,GL_RGBA,GL_FLOAT,0);
+ assert(admissions==3 && last_gl==64 && tex_calls==3);
+ glRenderbufferStorage(GL_RENDERBUFFER,GL_DEPTH_COMPONENT24,3,2);
+ assert(admissions==4 && last_gl==24 && rb_calls==1);
+ glBufferData(GL_ARRAY_BUFFER,128,0,GL_STATIC_DRAW);
+ assert(admissions==5 && last_gl==128 && buffer_calls==1);
+ unsigned before=admissions;int failed=setjmp(trap);
+ if(!failed)glTexImage2D(GL_TEXTURE_2D,0,0xdead,3,2,0,GL_RGBA,GL_UNSIGNED_BYTE,0);
+ assert(failed==1 && !strcmp(stop_reason,"T2_STORAGE_ADMISSION") && admissions==before && tex_calls==3);
+ return 0;
+}
+'''
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory)
+            (root/'lc2_gl_storage.h').write_text(added_header('lc2_gl_storage.h'))
+            (root/'lc2_gl_admission.h').write_text(added_header('lc2_gl_admission.h'))
+            (root/'fixture.c').write_text(source)
+            built=subprocess.run(['cc','-std=gnu11','-Wall','-Wextra','-Werror','-I',str(root),
+                                  str(root/'fixture.c'),'-o',str(root/'fixture')],capture_output=True,text=True)
+            self.assertEqual(built.returncode,0,built.stderr)
+            ran=subprocess.run([str(root/'fixture')],capture_output=True,text=True)
+            self.assertEqual(ran.returncode,0,ran.stderr)
 
     def test_8192_one_level_and_complete_chain(self):
         one, full, half = self.calculate([descriptor(), descriptor(levels=14),
@@ -108,8 +185,9 @@ class GlStorageLayoutTests(unittest.TestCase):
                                descriptor(3, 2, target=RB, samples=4),
                                descriptor(3, 2, internal=0x8056),
                                descriptor(3, 2, internal=RGBA16F),
-                               descriptor(3, 2, internal=RGBA32F)])
-        self.assertEqual([x['bytes'] for x in rows], [96, 480, 96, 12, 48, 96])
+                               descriptor(3, 2, internal=RGBA32F),
+                               descriptor(3, 2, target=RB, internal=0x81A6)])
+        self.assertEqual([x['bytes'] for x in rows], [96, 480, 96, 12, 48, 96, 24])
 
     def test_srgb_changes_encoding_not_payload_size(self):
         rows = self.calculate([descriptor(7, 5, levels=3, internal=f)
@@ -118,7 +196,7 @@ class GlStorageLayoutTests(unittest.TestCase):
         self.assertEqual(rows[2]['bytes'], rows[3]['bytes'])
 
     def test_unknown_and_unsized_internal_formats_are_rejected(self):
-        rows = self.calculate([descriptor(internal=f) for f in (0, 0xDEAD, 0x1908, 0x8C42, 0x81A6)])
+        rows = self.calculate([descriptor(internal=f) for f in (0, 0xDEAD, 0x1908, 0x8C42)])
         self.assertTrue(all(row['status'] == 'format' for row in rows))
         self.assertTrue(all(row['output_unchanged'] for row in rows))
 
@@ -159,14 +237,29 @@ class GlStorageLayoutTests(unittest.TestCase):
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 #include "lc2_gl_storage.h"
 #define GL_UNSIGNED_BYTE 0x1401U
 #define GL_FLOAT 0x1406U
 struct nvn_texture_builder {unsigned width,height,depth,levels,target,samples,format;};
-struct nvn_texture {uint64_t id,t2_budget_bytes;unsigned lc2_bc_pending;struct nvn_texture_builder b;};
-static uint64_t nvn_caller,charged,cap=300ULL<<20;
-static unsigned adds,gl_calls,audits;
+struct nvn_pool {uint64_t object,generation;};
+struct nvn_texture {uint64_t id,t2_budget_bytes,cpu_generation;unsigned lc2_bc_pending,host_scaled;struct nvn_texture_builder b;struct nvn_pool *pool;};
+static struct nvn_texture *zero_texture_storage_state(struct nvn_texture *t){return t;}
+static int lc2_life_events_owner(const char *phase,uint64_t id,uint64_t generation,uint64_t owner,
+ uint64_t charge,uint64_t pool,uint64_t pool_generation,uint64_t cpu_generation,unsigned pool_known,const char *status) {
+ (void)phase;(void)id;(void)generation;(void)owner;(void)charge;(void)pool;(void)pool_generation;(void)cpu_generation;(void)pool_known;(void)status;return 1;
+}
+static uint64_t nvn_caller,charged,cap=300ULL<<20,last_gl,last_scratch;
+static unsigned adds,gl_calls,audits,admissions;
 static jmp_buf target;
+static unsigned zero_bc_should_stripe(unsigned bc,unsigned width,unsigned scaled,unsigned medium) {
+ (void)medium;return bc && width>4096 && !scaled;
+}
+static unsigned lc2_bc_inplace_enabled(void){return 0;}
+static void t2_storage_admit(uint64_t gl,uint64_t scratch,uint64_t caller,uint64_t owner) {
+ (void)caller;(void)owner;admissions++;last_gl=gl;last_scratch=scratch;
+}
 static void stop(const char *reason,uint64_t caller,uint64_t detail,unsigned code) {
  (void)reason;(void)caller;(void)detail;(void)code;longjmp(target,1);
 }
@@ -190,11 +283,14 @@ int main(void) {
   .b={.width=8192,.height=8192,.depth=1,.levels=2,.target=1,.format=0x44}};
  int refusal=setjmp(target);
  if(!refusal){lc2_bc_reserve_first_use(&t,&t,GL_UNSIGNED_BYTE,16);gl_calls++;}
- assert(refusal==2 && adds==1 && audits==1 && !gl_calls && !charged && !t.t2_budget_bytes);
+ assert(refusal==2 && adds==1 && audits==1 && admissions==1 &&
+        last_gl==335544320ULL && last_scratch==5242880ULL && !gl_calls && !charged && !t.t2_budget_bytes);
  t.b.levels=1;
  assert(!setjmp(target));lc2_bc_reserve_first_use(&t,&t,GL_UNSIGNED_BYTE,16);
- assert(adds==2 && charged==268435456 && t.t2_budget_bytes==charged);
- lc2_bc_reserve_first_use(&t,&t,GL_UNSIGNED_BYTE,16);assert(adds==2);
+ assert(adds==2 && charged==268435456 && t.t2_budget_bytes==charged &&
+        admissions==2 && last_gl==268435456ULL && last_scratch==5242880ULL);
+ lc2_bc_reserve_first_use(&t,&t,GL_UNSIGNED_BYTE,16);
+ assert(adds==2 && admissions==3 && last_gl==0 && last_scratch==5242880ULL);
  t.lc2_bc_pending=0;lc2_bc_reserve_first_use(&t,&t,GL_UNSIGNED_BYTE,16);assert(adds==2);
  t.lc2_bc_pending=1;t.t2_budget_bytes--;
  if(!setjmp(target)){lc2_bc_reserve_first_use(&t,&t,GL_UNSIGNED_BYTE,16);assert(0);}

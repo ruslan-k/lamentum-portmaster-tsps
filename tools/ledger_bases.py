@@ -16,6 +16,39 @@ def _fields(line):
     return dict(re.findall(r'([A-Za-z0-9_-]+)=(\S+)', line))
 
 
+def _owner_pair_gap_status(sample_ns, pair_rows, owner_rows, last_charge_ns,
+                          net_charge, generation_mismatch, alias_mismatch,
+                          over_capacity, owner_log_incomplete):
+    if over_capacity:
+        return 'over_capacity'
+    if generation_mismatch:
+        return 'generation_mismatch'
+    if alias_mismatch:
+        return 'alias_scope_mismatch'
+    before = [r for r in pair_rows if int(r['t-ns']) <= sample_ns]
+    after = [r for r in pair_rows if int(r['t-ns']) > sample_ns]
+    after_events = [r for r in owner_rows if int(r['t-ns']) > sample_ns and
+                    r.get('phase') in ('initialize', 'bc-materialize') and r.get('status') == 'pair-emitted']
+    complete_events = [r for r in owner_rows if int(r['t-ns']) <= sample_ns and
+                       r.get('phase') in ('initialize', 'bc-materialize') and r.get('status') == 'pair-emitted']
+    if after:
+        return 'pair_not_yet_emitted'
+    if owner_log_incomplete:
+        return 'log_truncated'
+    if after_events:
+        return 'missing_owner_path'
+    if not before:
+        if complete_events:
+            return 'missing_owner_path'
+        return 'unresolved'
+    latest = before[-1]
+    if int(latest.get('charge-bytes', '-1')) != net_charge:
+        if int(latest['t-ns']) < last_charge_ns:
+            return 'missing_owner_path'
+        return 'charge_mismatch'
+    return 'joined'
+
+
 def _owned(rows, run):
     """Keep only rows of the declared run and refuse a mixed or foreign series.
 
@@ -75,11 +108,11 @@ def reconcile(ledger_text, life_text, rows, run):
     }
 
 
-def replay_texture_budget(log_text, expected_run):
-    """Replay bounded, owned T2 deltas and the declared GL-storage set at its floor sample."""
+def replay_texture_budget(log_text, expected_run, owner_events_expected=False):
+    """Replay a bounded T2/GL set; require the owner-ring receipt only for schema-capable runs."""
     max_u64 = (1 << 64) - 1
     if not log_text.endswith('\n'):
-        raise ValueError('incomplete final owned log record')
+        raise ValueError('log_truncated: incomplete final owned log record')
     lines = log_text.splitlines()
     headers = [line[len('LAMENTUM_RUN_HEADER '):] for line in lines
                if line.startswith('LAMENTUM_RUN_HEADER ')]
@@ -101,7 +134,7 @@ def replay_texture_budget(log_text, expected_run):
     if floor.get('status') != 'sampled':
         raise ValueError('floor-budget snapshot unavailable')
     if int(floor.get('event-overflow', '-1')) != 0:
-        raise ValueError('budget event overflow')
+        raise ValueError('over_capacity: budget event overflow')
     sample_ns = int(floor['budget-sample-t-ns'])
     floor_check_ns = int(floor['floor-check-t-ns'])
     if sample_ns < floor_check_ns:
@@ -110,6 +143,7 @@ def replay_texture_budget(log_text, expected_run):
     budget_rows = []
     events_after_sample = 0
     last_event_ns = -1
+    last_charge_ns = {}
     for line in lines:
         if not line.startswith('LC2_TEXTURE_BUDGET_EVENT '):
             continue
@@ -128,6 +162,7 @@ def replay_texture_budget(log_text, expected_run):
             raise ValueError('invalid budget owner or delta')
         if t_ns <= sample_ns:
             budget_rows.append(row)
+            last_charge_ns[texture_id] = t_ns
         else:
             events_after_sample += 1
     if len(budget_rows) != int(floor['event-lines']):
@@ -158,24 +193,86 @@ def replay_texture_budget(log_text, expected_run):
         raise ValueError('budget replay differs from floor snapshot')
 
     pairs = {}
+    pairs_by_id = {}
+    generation_conflicts = set()
     for line in lines:
         if not line.startswith('LC2_TEXTURE_PAIR '):
             continue
         row = _fields(line)
         if row.get('run-id') != run_uuid:
             raise ValueError('foreign texture pair')
+        texture_id = row['id']
+        pairs_by_id.setdefault(texture_id, []).append(row)
         if int(row['t-ns']) > sample_ns:
             continue
-        texture_id = row['id']
         previous = pairs.get(texture_id)
         if previous and previous.get('object-generation') != row.get('object-generation'):
-            raise ValueError('NVN object generation changed under one texture id')
+            generation_conflicts.add(texture_id)
         pairs[texture_id] = row
+    for texture_id, rows_for_id in pairs_by_id.items():
+        if len({r.get('object-generation') for r in rows_for_id if int(r['t-ns']) <= sample_ns}) > 1:
+            generation_conflicts.add(texture_id)
+    owner_events = {}
+    owner_event_lines = [line for line in lines if line.startswith('LC2_TEXTURE_OWNER_EVENT ')]
+    for line in owner_event_lines:
+        row = _fields(line)
+        if row.get('run-id') != run_uuid:
+            raise ValueError('foreign texture owner event')
+        owner_events.setdefault(row.get('nvn-id'), []).append(row)
+    for texture_id, event_rows in owner_events.items():
+        generations = {r.get('object-generation') for r in event_rows
+                       if r.get('object-generation') and int(r['t-ns']) <= sample_ns}
+        generations.update(r.get('object-generation') for r in pairs_by_id.get(texture_id, [])
+                           if r.get('object-generation') and int(r['t-ns']) <= sample_ns)
+        if len(generations) > 1:
+            generation_conflicts.add(texture_id)
+    owner_summaries = [_fields(line) for line in lines
+                       if line.startswith('LC2_TEXTURE_OWNER_EVENTS_SUMMARY ')]
+    if len(owner_summaries) > 1:
+        raise ValueError('multiple texture owner event summaries')
+    owner_summary = owner_summaries[0] if owner_summaries else None
+    if owner_summary and owner_summary.get('run-id') != run_uuid:
+        raise ValueError('foreign texture owner event summary')
+    owner_sequences = [int(_fields(line)['event-seq']) for line in owner_event_lines]
+    owner_ring_over = bool(owner_summary and (
+        int(owner_summary.get('dropped', '0')) > 0 or int(owner_summary.get('format-errors', '0')) > 0 or
+        int(owner_summary.get('claimed', '0')) > int(owner_summary.get('configured', '0'))))
+    owner_log_incomplete = bool((owner_event_lines or owner_events_expected) and not owner_summary)
+    if owner_summary:
+        emitted = int(owner_summary.get('emitted', '-1'))
+        claimed = int(owner_summary.get('claimed', '-1'))
+        final_claimed = int(owner_summary.get('final-claimed', '-1'))
+        owner_log_incomplete |= (owner_summary.get('complete') != '1' or
+            emitted != len(owner_event_lines) or claimed != final_claimed or
+            owner_sequences != list(range(1, emitted+1)) or
+            int(owner_summary.get('incomplete', '0')) > 0 or int(owner_summary.get('active', '0')) > 0)
+    summaries=[_fields(line) for line in lines if line.startswith('LC2_LIFE_SUMMARY ')]
+    if len(summaries)!=1:raise ValueError('expected one lifecycle summary')
+    summary=summaries[0]
+    pair_overflow = int(summary['tex-pair-overflow']) if 'tex-pair-overflow' in summary else None
+    over_capacity = int(floor.get('event-overflow', '0')) > 0 or bool(pair_overflow and pair_overflow > 0) or owner_ring_over
     active_ids = sorted((key for key, value in per_id.items() if value), key=int)
-    pair_missing=[];pair_mismatches=[];guest_charge_mismatches=[]
+    if owner_events_expected and owner_log_incomplete and not active_ids:
+        raise ValueError('log_truncated: expected owner event summary is missing or incomplete')
+    pair_missing=[];pair_mismatches=[];guest_charge_mismatches=[];alias_scope_mismatches=[]
+    pair_coverage={}
     guest_bytes=pair_charge_bytes=0;budget_owners=set();no_gl=[]
     live_storage={}
     storage_events=[];delete_events=[];storage_after=delete_after=0
+    def storage_identity(row):
+        group_id=row.get('share-group-id')
+        group_status=row.get('share-group','unverified')
+        if group_id is None:
+            if group_status!='unverified':raise ValueError('missing share-group identity')
+            group_id='unverified'
+        elif (group_status=='verified') != (group_id!='0'):
+            raise ValueError('inconsistent share-group identity')
+        return (group_id,row['owner'],row['gl-name'],row['kind'],row['storage-generation'])
+    def subresource_identity(row):
+        keys=('target','face','level','layer')
+        if all(field in row for field in keys):
+            return ('gl',row['target'].lower(),int(row['face']),int(row['level']),int(row['layer']))
+        return ('legacy',row.get('subresource','unknown'))
     for line in lines:
         if line.startswith('LC2_GL_STORAGE_EVENT '):
             row=_fields(line)
@@ -184,16 +281,26 @@ def replay_texture_budget(log_text, expected_run):
             if t_ns>sample_ns:
                 storage_after+=1;continue
             if row.get('status')!='recorded':raise ValueError('incomplete GL storage event')
-            key=(row['owner'],row['gl-name'],row['kind'],row['storage-generation'])
+            key=storage_identity(row)
+            subresource=subresource_identity(row)
             amount=int(row['bytes']);total=int(row['total-bytes'])
+            if amount>max_u64 or total>max_u64:raise ValueError('GL storage value overflow')
+            current=live_storage.get(key)
             if row['event']=='allocate':
-                if key in live_storage or amount!=total:raise ValueError('invalid GL storage allocation')
-                live_storage[key]=total
+                if current is not None or amount!=total:raise ValueError('invalid GL storage allocation')
+                updated={subresource:amount}
             elif row['event']=='extend':
-                if key not in live_storage or amount>max_u64-live_storage[key] or live_storage[key]+amount!=total:
-                    raise ValueError('invalid GL storage extension')
-                live_storage[key]=total
+                if current is None or subresource in current:raise ValueError('invalid GL storage extension')
+                updated=dict(current);updated[subresource]=amount
+            elif row['event']=='respec':
+                if current is None or subresource not in current:raise ValueError('invalid GL storage redefinition')
+                updated=dict(current);updated[subresource]=amount
             else:raise ValueError('unknown GL storage transition')
+            live_bytes=sum(updated.values())
+            if live_bytes>max_u64 or live_bytes!=total:raise ValueError('GL storage subresources do not match total')
+            if 'subresource-count' in row and int(row['subresource-count'])!=len(updated):
+                raise ValueError('GL storage subresource count mismatch')
+            live_storage[key]=updated
             storage_events.append(row)
         elif line.startswith('LC2_GL_STORAGE_DELETE '):
             row=_fields(line)
@@ -202,12 +309,15 @@ def replay_texture_budget(log_text, expected_run):
             if t_ns>sample_ns:
                 delete_after+=1;continue
             if row.get('matched')!='1':raise ValueError('unmatched GL storage delete')
-            key=(row['owner'],row['gl-name'],row['kind'],row['storage-generation'])
-            if key not in live_storage or live_storage[key]!=int(row['bytes']):
+            key=storage_identity(row)
+            current=live_storage.get(key)
+            if current is None or sum(current.values())!=int(row['bytes']):
                 raise ValueError('GL storage delete does not match current generation')
+            if 'subresource-count' in row and int(row['subresource-count'])!=len(current):
+                raise ValueError('GL storage delete subresource count mismatch')
             del live_storage[key]
             delete_events.append(row)
-    gl_owners={key[0] for key in live_storage}
+    gl_owners={key[1] for key in live_storage}
     for texture_id in active_ids:
         pair=pairs.get(texture_id)
         if pair is None:
@@ -219,21 +329,39 @@ def replay_texture_budget(log_text, expected_run):
         if pair_guest!=pair_charge:guest_charge_mismatches.append((texture_id,pair_guest,pair_charge))
         if pair_charge!=net:pair_mismatches.append((texture_id,pair_charge,net))
         owner=pair.get('storage-owner')
+        alias_event=any(e.get('phase')=='alias-resolve' and e.get('status')=='alias-owner-resolved' and
+                        e.get('storage-owner')==owner and int(e['t-ns'])<=sample_ns
+                        for e in owner_events.get(texture_id, []))
+        if owner!=texture_id and not alias_event:
+            alias_scope_mismatches.append(texture_id)
         if owner:budget_owners.add(owner)
         if owner not in gl_owners:no_gl.append(texture_id)
-    if pair_missing or pair_mismatches:
-        raise ValueError('live budget owners do not join to texture pairs')
+    problem_ids=set(pair_missing)|{x[0] for x in pair_mismatches}|(set(generation_conflicts)&set(active_ids))|set(alias_scope_mismatches)
+    if owner_log_incomplete:
+        problem_ids.update(active_ids)
+    for texture_id in active_ids:
+        if texture_id not in problem_ids:
+            pair_coverage[texture_id]='joined'
+            continue
+        pair=pairs.get(texture_id)
+        alias_mismatch=texture_id in alias_scope_mismatches
+        generation_mismatch=texture_id in generation_conflicts
+        net_charge=per_id[texture_id]
+        pair_coverage[texture_id]=_owner_pair_gap_status(
+            sample_ns,pairs_by_id.get(texture_id,[]),owner_events.get(texture_id,[]),
+            last_charge_ns.get(texture_id,-1),net_charge,generation_mismatch,
+            alias_mismatch,over_capacity,owner_log_incomplete)
+    if problem_ids:
+        details=', '.join(f'{key}={pair_coverage[key]}' for key in sorted(problem_ids,key=int))
+        raise ValueError('live budget owners do not join to texture pairs: '+details)
     by_kind={};count_by_kind={}
-    for (_,_,kind,_),amount in live_storage.items():
-        by_kind[kind]=by_kind.get(kind,0)+amount
+    for (_,_,_,kind,_),subresources in live_storage.items():
+        by_kind[kind]=by_kind.get(kind,0)+sum(subresources.values())
         count_by_kind[kind]=count_by_kind.get(kind,0)+1
-    summaries=[_fields(line) for line in lines if line.startswith('LC2_LIFE_SUMMARY ')]
-    if len(summaries)!=1:raise ValueError('expected one lifecycle summary')
-    summary=summaries[0]
     summary_matches=None
     if not storage_after and not delete_after:
         summary_matches=(len(live_storage)==int(summary['live']) and
-            sum(live_storage.values())==int(summary['retained']) and
+            sum(sum(subresources.values()) for subresources in live_storage.values())==int(summary['retained']) and
             count_by_kind.get('1',0)==int(summary['tex-live']) and
             by_kind.get('1',0)==int(summary['tex-bytes']) and
             count_by_kind.get('2',0)==int(summary['rb-live']) and
@@ -250,7 +378,7 @@ def replay_texture_budget(log_text, expected_run):
             'events_after_sample':events_after_sample,'add_bytes':add_bytes,'sub_bytes':sub_bytes,
             'live_ids':active_ids,'guest_bytes':guest_bytes,'pair_charge_bytes':pair_charge_bytes,
             'pair_charge_mismatches':pair_mismatches,'pair_guest_charge_mismatches':guest_charge_mismatches,
-            'pair_missing_ids':pair_missing,
+            'pair_missing_ids':pair_missing,'pair_coverage':pair_coverage,
             'budget_without_gl_storage_ids':no_gl,
             'gl_without_budget_storage_owners':sorted(gl_owners-budget_owners,key=int)},
         'gl_storage':{'events':len(storage_events),'deletes':len(delete_events),

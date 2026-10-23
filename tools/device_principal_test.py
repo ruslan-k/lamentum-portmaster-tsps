@@ -16,7 +16,7 @@ import time
 from lamentum_pad_contract import remote, snapshot, validate_cleanup
 from exit_outcome import KERNEL_PAYLOAD, classify_exit
 from load_metrics import collector_request, fold
-from proc_metrics import sample_request
+from proc_metrics import memory_timeline_request, sample_request, system_memory_request
 from run_identity import preflight_request, terminate_request, uuid_request, validate_uuid
 
 HARD_STOP_GRACE_S = 120
@@ -38,6 +38,58 @@ def confirmed_host_termination(receipt):
     return receipt if receipt.get('outcome') == 'pidfd_TERM' else None
 
 
+def store_memory_timeline(timeline, evidence_dir):
+    """Keep raw bounded samples local and return only a compact identity/hash receipt."""
+    samples=timeline.get('samples')
+    if not isinstance(samples,list) or timeline.get('sample_count')!=len(samples):
+        raise ValueError('memory timeline sample count mismatch')
+    validate_uuid(timeline['run_uuid'])
+    path=Path(evidence_dir)/'memory-timeline.raw.json'
+    raw=json.dumps(timeline,indent=2,sort_keys=True)+'\n'
+    path.write_text(raw)
+    return {'raw_file':path.name,'sha256':hashlib.sha256(raw.encode()).hexdigest(),
+            'run_uuid':timeline['run_uuid'],'identity':timeline.get('identity'),
+            'sample_count':timeline['sample_count'],
+            'live_samples':sum(sample.get('sample_status')=='ok' and sample.get('running') is True for sample in samples),
+            'prelaunch_sample_status':next((sample.get('sample_status') for sample in samples
+                if sample.get('phase')=='prelaunch'),None),
+            'complete':bool(timeline.get('complete')),
+            'dropped_samples':timeline.get('dropped_samples'),'stop_reason':timeline.get('stop_reason'),
+            'interval_ms':timeline.get('interval_ms')}
+
+
+def run_memory_timeline(remote_fn, expected, evidence_dir, prelaunch_sample=None, mainui_exit=None):
+    """Start sampling by executable identity, then bind the returned owner to this launch."""
+    hint={key:expected[key] for key in ('boot_id','elf_dev','elf_ino')}
+    timeline=remote_fn(memory_timeline_request(hint,expected['run_uuid'],expected['elf_sha256'],
+                                               max_samples=256,interval_ms=100))
+    if timeline.get('run_uuid')!=expected['run_uuid'] or timeline.get('elf_sha256')!=expected['elf_sha256']:
+        raise RuntimeError('memory timeline run/build identity mismatch')
+    if prelaunch_sample is not None:
+        if any(prelaunch_sample.get(key)!=value for key,value in
+               (('run_uuid',expected['run_uuid']),('boot_id',expected['boot_id']),
+                ('elf_sha256',expected['elf_sha256']),('elf_dev',expected['elf_dev']),('elf_ino',expected['elf_ino']))):
+            raise RuntimeError('prelaunch sample identity mismatch')
+        if prelaunch_sample.get('pid') is not None or prelaunch_sample.get('starttime') is not None:
+            raise RuntimeError('prelaunch sample unexpectedly identifies a runtime process')
+        prelaunch=dict(prelaunch_sample,seq=-1,phase='prelaunch')
+        timeline.setdefault('samples',[]).insert(0,prelaunch)
+        timeline['sample_count']=len(timeline['samples'])
+        timeline['prelaunch_sample_status']=prelaunch.get('sample_status')
+        if prelaunch.get('sample_status')!='ok':timeline['complete']=False
+    if mainui_exit is not None:
+        timeline['external_landmarks']={'mainui_exit':mainui_exit}
+    receipt=store_memory_timeline(timeline,evidence_dir)
+    identity=timeline.get('identity')
+    receipt['identity_matches_preflight']=bool(identity) and all(identity.get(k)==v for k,v in hint.items())
+    return receipt
+
+
+def memory_timeline_proves_execution(receipt):
+    """Only a live sample from the preflight executable can verify runtime execution."""
+    return bool(receipt and receipt.get('identity_matches_preflight') and receipt.get('live_samples',0)>0)
+
+
 def launch_command(run_uuid, budget, extra):
     validate_uuid(run_uuid)
     if budget <= 0:
@@ -56,13 +108,22 @@ def launch_command(run_uuid, budget, extra):
     return ' '.join(assignments) + '\n'
 
 
+def parse_args(argv=None):
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--budget',type=int,default=90)
+    parser.add_argument('--wait',type=int,default=180,help='minimum watch window; never shorter than host hard bound')
+    parser.add_argument('--env',action='append',default=[])
+    parser.add_argument('--evidence',type=Path)
+    parser.add_argument('--memory-timeline',action='store_true',
+                        help='collect a bounded owner-qualified /proc memory timeline on-device')
+    args=parser.parse_args(argv)
+    if args.memory_timeline and not args.evidence:
+        parser.error('--memory-timeline requires --evidence for local raw evidence')
+    return args
+
+
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--budget', type=int, default=90)
-    parser.add_argument('--wait', type=int, default=180, help='minimum watch window; never shorter than host hard bound')
-    parser.add_argument('--env', action='append', default=[])
-    parser.add_argument('--evidence', type=Path)
-    args = parser.parse_args()
+    args=parse_args()
     # Validate caller-controlled settings before touching the device.
     launch_command('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', args.budget, args.env)
     if args.evidence:
@@ -85,6 +146,14 @@ def main():
                 'elf_sha256': preflight['runtime']['sha256'],
                 'launcher_sha256': preflight['launcher']['sha256'],
                 'helper_sha256': preflight['helper']['sha256']}
+    prelaunch_memory_sample, prelaunch_memory_error = None, None
+    if args.memory_timeline:
+        try:
+            prelaunch_memory_sample=remote(system_memory_request(expected,run_uuid,expected['elf_sha256']))
+            menu_owner=before['processes']['MainUI'][0]
+            prelaunch_memory_sample['mainui_owner']={key:menu_owner[key] for key in ('pid','starttime') if key in menu_owner}
+        except Exception as error:
+            prelaunch_memory_error=str(error)
     if args.evidence:
         (args.evidence / 'before.json').write_text(json.dumps(before, indent=2) + '\n')
         (args.evidence / 'expected-run.json').write_text(json.dumps(expected, indent=2) + '\n')
@@ -114,6 +183,16 @@ def main():
     hard_deadline = started + args.budget + HARD_STOP_GRACE_S
     owner, log_state, host_terminated, observer_error = None, {}, None, None
     identity_errors, execution_verified, stop_attempts = [], False, []
+    memory_timeline_receipt, memory_timeline_error = None, prelaunch_memory_error
+    if args.memory_timeline:
+        try:
+            memory_timeline_receipt=run_memory_timeline(remote,expected,args.evidence,
+                prelaunch_sample=prelaunch_memory_sample,mainui_exit=stopped_menu)
+            if memory_timeline_proves_execution(memory_timeline_receipt):
+                owner=memory_timeline_receipt['identity']
+                execution_verified=True
+        except Exception as error:
+            memory_timeline_error='; '.join(filter(None,(memory_timeline_error,str(error))))
     while time.monotonic() < deadline:
         time.sleep(2)
         try:
@@ -128,8 +207,19 @@ def main():
             if not log_state.get('log_identity_qualified'):
                 continue
             header = log_state['run_header']
+            header_owner = {key: header[key] for key in ('boot_id', 'pid', 'starttime', 'elf_dev', 'elf_ino')}
+            if owner is not None and any(owner.get(key) != value for key, value in header_owner.items()):
+                if memory_timeline_receipt is not None:
+                    memory_timeline_receipt['log_owner_match'] = False
+                raise RuntimeError('timeline/process owner differs from owned run header')
+            if memory_timeline_receipt is not None:
+                timeline_owner = memory_timeline_receipt.get('identity')
+                memory_timeline_receipt['log_owner_match'] = bool(timeline_owner) and all(
+                    timeline_owner.get(key) == value for key, value in header_owner.items())
+                if memory_timeline_proves_execution(memory_timeline_receipt) and not memory_timeline_receipt['log_owner_match']:
+                    raise RuntimeError('memory timeline identity differs from run header')
             if owner is None:
-                owner = {key: header[key] for key in ('boot_id', 'pid', 'starttime', 'elf_dev', 'elf_ino')}
+                owner = header_owner
             process = remote(sample_request(expected=owner))
             if process.get('running'):
                 execution_verified = True
@@ -202,7 +292,8 @@ def main():
     result = {'cleanup_errors': errors, 'before': before, 'after': after,
               'expected_run': expected, 'process_identity': owner, 'execution_verified': execution_verified,
               'host_terminated': host_terminated, 'termination': termination,
-              'stop_attempts': stop_attempts,
+              'stop_attempts': stop_attempts, 'memory_timeline': memory_timeline_receipt,
+              'memory_timeline_error': memory_timeline_error,
               'observer_error': observer_error, 'identity_errors': identity_errors,
               'stops': stops, 'killed_without_stop': is_killed_without_stop(log, stops),
               'runtime_ok': termination['kind'] == 'runtime_timeout' and not observer_error and execution_verified,

@@ -1,0 +1,260 @@
+{
+  "schema": "lamentum-m2b-e3-margin-sweep-v1",
+  "date": "2026-10-23",
+  "device": {
+    "boot_id": "66203f22-4ac8-4a2a-a47c-cddc253d3bda",
+    "kernel": "5.15.147",
+    "soc": "sun55iw3"
+  },
+  "binary": {
+    "build": 259,
+    "sha256": "d72e2f69afa16dd5b846950f3fba80bc9926edcab9b2d45c57ed23faa14b9066"
+  },
+  "common_run_config": {
+    "principal_flow": true,
+    "budget_s": 90,
+    "wait_s": 240,
+    "memory_timeline_interval_ms": 100,
+    "floor_mib": 96,
+    "texture_budget_mib": 300,
+    "strict_gl": true,
+    "lc2_life_events": 1,
+    "lc2_menu_ledger": 1,
+    "lc2_m3b_timeline": 0,
+    "new_game_entered": false,
+    "input_during_game_runs": false,
+    "margin_was_per_run_only": true,
+    "launcher_margin_default": null
+  },
+  "arms": [
+    {
+      "margin_mib": 64,
+      "run_uuid": "c11ee013-91bf-46c0-80d6-41ebd44b3a89",
+      "checks": 106,
+      "allowed": 105,
+      "refused": 1,
+      "decision": "deny",
+      "reason": "cmafree-margin",
+      "owner": 61,
+      "request_gl_bytes": 0,
+      "request_scratch_bytes": 5400000,
+      "available_at_refusal_kib": 540244,
+      "cmafree_at_refusal_kib": 70516,
+      "required_cma_bytes": 72508864,
+      "memory_before_kib": {
+        "MemAvailable": 684528,
+        "CmaFree": 103132,
+        "SwapFree": 2032836
+      },
+      "memory_after_kib": {
+        "MemAvailable": 683616,
+        "CmaFree": 97380,
+        "SwapFree": 2032836
+      },
+      "timeline": {
+        "sample_count": 31,
+        "live_ok_samples": 29,
+        "complete": false,
+        "dropped_samples": 0,
+        "stop_reason": "unavailable"
+      },
+      "storage_events_before_denial": 53,
+      "storage_events_after_denial": 0,
+      "kernel_memory_warnings": [],
+      "cleanup_errors": [],
+      "mainui_pid_after": 24547,
+      "menu_events": 0,
+      "presented_frame": null,
+      "cleanup_screenshots": [
+        {
+          "file": "cleanup-mainui.png",
+          "sha256": "39dfa866abdc38ce63ae3faae2c0e7fe842cc3703d5d055d5eb1dbcbe7db2002",
+          "state": "idle clock/lock overlay"
+        },
+        {
+          "file": "cleanup-mainui-awake.png",
+          "sha256": "e04cd0bdb81345de6397f92ff0261cb6ef04e273dc7e0afc1c92e81fd2ead097",
+          "state": "awake Spruce MainUI after released 100 ms BACK"
+        }
+      ]
+    },
+    {
+      "margin_mib": 48,
+      "run_uuid": "8bc3f0cd-e245-4637-bdd5-5a81cc98f1e3",
+      "checks": 192,
+      "allowed": 191,
+      "refused": 1,
+      "decision": "deny",
+      "reason": "cmafree-margin",
+      "owner": 77,
+      "request_gl_bytes": 0,
+      "request_scratch_bytes": 10368000,
+      "available_at_refusal_kib": 524708,
+      "cmafree_at_refusal_kib": 47316,
+      "required_cma_bytes": 60699648,
+      "memory_before_kib": {
+        "MemAvailable": 684508,
+        "CmaFree": 97524,
+        "SwapFree": 2033604
+      },
+      "memory_after_kib": {
+        "MemAvailable": 683360,
+        "CmaFree": 88436,
+        "SwapFree": 2033604
+      },
+      "timeline": {
+        "sample_count": 19,
+        "live_ok_samples": 17,
+        "complete": true,
+        "dropped_samples": 0,
+        "stop_reason": "exited"
+      },
+      "storage_events_before_denial": 96,
+      "storage_events_after_denial": 0,
+      "kernel_memory_warnings": [],
+      "cleanup_errors": [],
+      "mainui_pid_after": 26236,
+      "menu_events": 0,
+      "presented_frame": null,
+      "cleanup_screenshot_sha256": "66f401ddd6bd83a5d2314158fd82e0ddfdad1c07416b0d5540c59111abe6920c"
+    },
+    {
+      "margin_mib": 32,
+      "run_uuid": "c4157aca-ffd0-4738-a686-f80cf06b30ca",
+      "checks": 177,
+      "allowed": 176,
+      "refused": 1,
+      "decision": "deny",
+      "reason": "cmafree-margin",
+      "owner": 0,
+      "request_gl_bytes": 512000,
+      "request_scratch_bytes": 0,
+      "available_at_refusal_kib": 509188,
+      "cmafree_at_refusal_kib": 30520,
+      "required_cma_bytes": 34066432,
+      "memory_before_kib": {
+        "MemAvailable": 685216,
+        "CmaFree": 88436,
+        "SwapFree": 2033604
+      },
+      "memory_after_kib": {
+        "MemAvailable": 682100,
+        "CmaFree": 87712,
+        "SwapFree": 2033604
+      },
+      "timeline": {
+        "sample_count": 18,
+        "live_ok_samples": 16,
+        "complete": true,
+        "dropped_samples": 0,
+        "stop_reason": "exited"
+      },
+      "storage_events_before_denial": 88,
+      "storage_events_after_denial": 0,
+      "kernel_memory_warnings": [],
+      "cleanup_errors": [],
+      "mainui_pid_after": 27231,
+      "menu_events": 0,
+      "presented_frame": null,
+      "cleanup_screenshot_sha256": "44d2aed0d212fb6553e8d71af06d910526a1d903ef245dc5ab4b3012399e7428"
+    },
+    {
+      "margin_mib": 24,
+      "run_uuid": "143d309a-cf1e-4df3-981c-b475ad69c895",
+      "checks": 193,
+      "allowed": 192,
+      "refused": 1,
+      "decision": "deny",
+      "reason": "cmafree-margin",
+      "owner": 0,
+      "request_gl_bytes": 8294400,
+      "request_scratch_bytes": 0,
+      "available_at_refusal_kib": 493096,
+      "cmafree_at_refusal_kib": 12664,
+      "required_cma_bytes": 33460224,
+      "memory_before_kib": {
+        "MemAvailable": 685432,
+        "CmaFree": 87716,
+        "SwapFree": 2033604
+      },
+      "memory_after_kib": {
+        "MemAvailable": 683476,
+        "CmaFree": 14244,
+        "SwapFree": 2033604
+      },
+      "timeline": {
+        "sample_count": 19,
+        "live_ok_samples": 17,
+        "complete": true,
+        "dropped_samples": 0,
+        "stop_reason": "exited",
+        "last_cmafree_sample_kib": 17248
+      },
+      "storage_events_before_denial": 96,
+      "storage_events_after_denial": 0,
+      "kernel_memory_warnings": [],
+      "cleanup_errors": [],
+      "mainui_pid_after": 28250,
+      "menu_events": 0,
+      "presented_frame": null,
+      "cleanup_screenshot_sha256": "32467510dde832469c1bd045525a90fbc0cab6931a96088ad3fa17540fc13907"
+    }
+  ],
+  "margin24_postflight_after_20s": {
+    "MemAvailable_kib": 686364,
+    "CmaFree_kib": 15384,
+    "SwapFree_kib": 2033604,
+    "processes": ["runtime.sh", "principal.sh", "MainUI"],
+    "online_cpus": "4-7",
+    "debugfs_dma_buf_cma_mali_paths_available": false
+  },
+  "post_margin24_readonly_sample": {
+    "page_size_bytes": 4096,
+    "MemAvailable_kib": 685980,
+    "CmaTotal_kib": 131072,
+    "CmaFree_kib": 15416,
+    "nr_free_cma_pages": 3854,
+    "SwapFree_kib": 2033604,
+    "cma_alloc_success_current": 36,
+    "cma_alloc_fail_current": 0,
+    "mainui_pid": 28250,
+    "mainui_dma_heap_fd": "/dev/dma_heap/system",
+    "game_processes": [],
+    "runtime_sha256": "d72e2f69afa16dd5b846950f3fba80bc9926edcab9b2d45c57ed23faa14b9066",
+    "counter_attribution": "no before/after baseline; current counters do not attribute this sweep"
+  },
+  "latest_readonly_preflight": {
+    "boot_id": "66203f22-4ac8-4a2a-a47c-cddc253d3bda",
+    "runtime_sha256": "d72e2f69afa16dd5b846950f3fba80bc9926edcab9b2d45c57ed23faa14b9066",
+    "MemAvailable_kib": 686396,
+    "CmaFree_kib": 15456,
+    "SwapFree_kib": 2033604,
+    "mainui": {"pid": 28250, "starttime": 4031805},
+    "game_processes": [],
+    "cmd_to_run_exists": false,
+    "online_cpus": "4-7",
+    "cpu0_3": "offline, mode 0444"
+  },
+  "idle_30s_cma_pair": {
+    "boot_id": "66203f22-4ac8-4a2a-a47c-cddc253d3bda",
+    "runtime_sha256": "d72e2f69afa16dd5b846950f3fba80bc9926edcab9b2d45c57ed23faa14b9066",
+    "processes_both_samples": [{"comm": "MainUI", "pid": 28250, "starttime": 4031805}],
+    "first": {"CmaTotal_kib": 131072, "CmaFree_kib": 15456, "nr_free_cma_pages": 3864, "MemAvailable_kib": 685988, "SwapFree_kib": 2033604, "cma_alloc_success": 36, "cma_alloc_fail": 0},
+    "second_after_s": {"interval_s": 30, "CmaTotal_kib": 131072, "CmaFree_kib": 15456, "nr_free_cma_pages": 3864, "MemAvailable_kib": 685348, "SwapFree_kib": 2033604, "cma_alloc_success": 36, "cma_alloc_fail": 0},
+    "conclusion": "CMA stayed low and idle counters did not move; this does not attribute the prior drop."
+  },
+  "mainui_dmabuf_fds": {
+    "pid": 28250,
+    "exporter": "system",
+    "buffers": [
+      {"fd": 15, "size_bytes": 16384, "count": 4},
+      {"fd": 35, "size_bytes": 3686400, "count": 5},
+      {"fd": 36, "size_bytes": 3686400, "count": 5},
+      {"fd": 37, "size_bytes": 3686400, "count": 5}
+    ],
+    "total_size_bytes": 11075584,
+    "physical_cma_residency": "unknown"
+  },
+  "stop_decision": "Do not test below 24 MiB or enter New Game. The margin24 run left CmaFree at 14,244 KiB immediately and 15,384 KiB after 20 s, below the previous order-4 warning context (4,122 pages = 16,488 KiB). A later 30 s idle pair remained at 15,456 KiB; MainUI has system-exporter DMA-BUF FDs, but physical CMA attribution is unknown. Investigate CMA accounting/retention before another launch.",
+  "conclusion": "All four arms stopped before menu on the typed cmafree-margin guard. SwapFree was unchanged within each arm; no new kernel OOM/page-allocation warning occurred. The admission guard refused the next request before any subsequent LC2_GL_STORAGE_EVENT. No menu, gameplay, or FPS result."
+}
