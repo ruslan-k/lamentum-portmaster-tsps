@@ -20,7 +20,7 @@ This source interpretation does **not** apply to the historical build256b ON log
 
 ## Host fixture
 
-`tools/test_life_events.py::test_texture_owner_generation_tracks_nvn_identity_separately_from_gl_storage` checks the applied tree/overlay, compiles the exact `zero_next_object_id()` implementation with the `lc2_life_events` event header, and pins the production `nvn_textures.h` owner/pair callsite expressions. It verifies NVN IDs 1/2 remain distinct when the same GL name is reused at storage generations 1/2. This is source-linked host evidence, **not** execution of `nvnTextureInitialize`, a GL call, or a game. Focused `test_life_events`: **12/12**; full tools suite with required source fixture: **430/430**, zero skips.
+`tools/test_life_events.py::test_texture_owner_generation_tracks_nvn_identity_separately_from_gl_storage` checks the applied tree/overlay, compiles the exact `zero_next_object_id()` implementation with the `lc2_life_events` event header, and pins the production `nvn_textures.h` owner/pair callsite expressions. It verifies NVN IDs 1/2 remain distinct when the same GL name is reused at storage generations 1/2. `test_candidate_share_group_epoch_drives_storage_identity` compiles the exact root share-group ID/key helpers and generation increment branch from `nvn_bridge.h`; it verifies no-context returns zero and reused GL names in successive groups receive independent generations. These are source-linked host tests, **not** EGL/GL/game runtime tests. Focused `test_life_events`: **13/13**; full tools suite with required source fixture: **431/431**, zero skips.
 
 ## Next gate
 

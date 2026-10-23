@@ -758,5 +758,83 @@ int main(void) {
         self.assertIn('owner=2 gl-name=7 kind=1 storage-generation=2',gl_events[-1])
 
 
+    def test_candidate_share_group_epoch_drives_storage_identity(self):
+        """Compile the source-bound EGL epoch helper; this is not an EGL/game run."""
+        adapter_src = pathlib.Path(os.environ.get('LAMENTUM_ADAPTER_SRC', ROOT.parent / 'adapter-src'))
+        required = os.environ.get('LAMENTUM_REQUIRE_ZERO_STORAGE_ALIAS_TEST') == '1'
+        if not adapter_src.is_dir():
+            if required:
+                self.fail(f'required adapter source missing: {adapter_src}')
+            self.skipTest(f'adapter source unavailable: {adapter_src}')
+        patch = (ROOT / 'runtime/lamentum-adapter.patch').read_bytes()
+        diff = subprocess.run(['git', '-C', str(adapter_src), 'diff', '--binary'], capture_output=True)
+        self.assertEqual(diff.returncode, 0, diff.stderr.decode(errors='replace'))
+        self.assertEqual(diff.stdout, patch)
+        policy = json.loads((ROOT / 'tools/gl_storage_callsite_policy.json').read_text())
+        self.assertEqual(source_tree_identity(adapter_src)['sha256'], policy['source_tree_sha256'])
+
+        bridge = (adapter_src / 'native/nvn_bridge.h').read_text()
+        self.assertIn('nvn_gl_share_group_generation++;', bridge)
+        self.assertIn('return nvn_device.context==EGL_NO_CONTEXT?0:nvn_gl_share_group_generation;', bridge)
+        gen_start = bridge.index('static uint64_t nvn_gl_share_group_generation;')
+        key_start = bridge.index('static inline struct lc2_life_storage_key nvn_gl_storage_key', gen_start)
+        gen_helpers = bridge[gen_start:key_start]
+        key_end = bridge.index('static struct {int configured;', key_start)
+        key_helper = bridge[key_start:key_end]
+        create_start = bridge.index('if(nvn_device.context!=EGL_NO_CONTEXT) {')
+        create_end = bridge.index('    nvn_device.render_surface', create_start)
+        create_group = bridge[create_start:create_end]
+        events_marker = 'diff --git a/native/lc2_life_events.h b/native/lc2_life_events.h'
+        block = patch.decode().split(events_marker, 1)[1].split('diff --git ', 1)[0]
+        events = '\n'.join(line[1:] for line in block.splitlines()
+                            if line.startswith('+') and not line.startswith('+++')) + '\n'
+        source = r'''
+#include <assert.h>
+#include <stdint.h>
+#include <stdlib.h>
+typedef void *EGLContext;
+#define EGL_NO_CONTEXT ((EGLContext)0)
+static struct {EGLContext context;} nvn_device;
+static uint64_t nvn_caller=1;
+static void stop(const char *reason,uint64_t caller,uint64_t detail,unsigned code) {
+    (void)reason;(void)caller;(void)detail;(void)code;abort();
+}
+#include "lc2_life_events.h"
+''' + gen_helpers + key_helper + r'''
+static void create_group(void) {
+''' + create_group + r'''
+}
+int main(void) {
+    setenv("LC2_LIFE_EVENTS","1",1);
+    assert(nvn_gl_share_group_id()==0);
+    nvn_device.context=(EGLContext)(uintptr_t)0xa000;create_group();
+    struct lc2_life_storage_key first=nvn_gl_storage_key(7,1,0x0de1,0,0,0);
+    assert(first.share_group==1);
+    lc2_life_events_storage_key(101,&first,64);
+    nvn_device.context=EGL_NO_CONTEXT;assert(nvn_gl_share_group_id()==0);
+    nvn_device.context=(EGLContext)(uintptr_t)0xb000;create_group();
+    struct lc2_life_storage_key second=nvn_gl_storage_key(7,1,0x0de1,0,0,0);
+    assert(second.share_group==2);
+    lc2_life_events_storage_key(102,&second,64);
+    uint64_t min=0,max=0;
+    assert(lc2_life_events_storage_generation(101,1,&min,&max) && min==1 && max==1);
+    assert(lc2_life_events_storage_generation(102,1,&min,&max) && min==1 && max==1);
+    assert(lc2_life_events_state()->live==2);
+    return 0;
+}
+'''
+        with tempfile.TemporaryDirectory() as d:
+            p = pathlib.Path(d)
+            (p / 'lc2_life_events.h').write_text(events)
+            (p / 'share_group.c').write_text(source)
+            built = subprocess.run(['cc','-std=gnu11','-Wall','-Wextra','-Werror','-Wno-unused-function',
+                                    '-I',str(p),'-I',str(adapter_src/'native'),
+                                    str(p/'share_group.c'),'-o',str(p/'share_group')],
+                                   capture_output=True,text=True)
+            self.assertEqual(built.returncode,0,built.stderr)
+            ran = subprocess.run([str(p/'share_group')],capture_output=True,text=True)
+            self.assertEqual(ran.returncode,0,ran.stderr)
+
+
 if __name__ == '__main__':
     unittest.main()
