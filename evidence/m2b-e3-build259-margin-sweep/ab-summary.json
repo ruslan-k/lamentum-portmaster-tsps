@@ -235,6 +235,26 @@
     "online_cpus": "4-7",
     "cpu0_3": "offline, mode 0444"
   },
-  "stop_decision": "Do not test below 24 MiB or enter New Game. The margin24 run left CmaFree at 14,244 KiB immediately and 15,384 KiB after 20 s, below the previous order-4 warning context (4,122 pages = 16,488 KiB). Cause and physical backing are unknown; investigate CMA accounting/retention before another launch.",
+  "idle_30s_cma_pair": {
+    "boot_id": "66203f22-4ac8-4a2a-a47c-cddc253d3bda",
+    "runtime_sha256": "d72e2f69afa16dd5b846950f3fba80bc9926edcab9b2d45c57ed23faa14b9066",
+    "processes_both_samples": [{"comm": "MainUI", "pid": 28250, "starttime": 4031805}],
+    "first": {"CmaTotal_kib": 131072, "CmaFree_kib": 15456, "nr_free_cma_pages": 3864, "MemAvailable_kib": 685988, "SwapFree_kib": 2033604, "cma_alloc_success": 36, "cma_alloc_fail": 0},
+    "second_after_s": {"interval_s": 30, "CmaTotal_kib": 131072, "CmaFree_kib": 15456, "nr_free_cma_pages": 3864, "MemAvailable_kib": 685348, "SwapFree_kib": 2033604, "cma_alloc_success": 36, "cma_alloc_fail": 0},
+    "conclusion": "CMA stayed low and idle counters did not move; this does not attribute the prior drop."
+  },
+  "mainui_dmabuf_fds": {
+    "pid": 28250,
+    "exporter": "system",
+    "buffers": [
+      {"fd": 15, "size_bytes": 16384, "count": 4},
+      {"fd": 35, "size_bytes": 3686400, "count": 5},
+      {"fd": 36, "size_bytes": 3686400, "count": 5},
+      {"fd": 37, "size_bytes": 3686400, "count": 5}
+    ],
+    "total_size_bytes": 11075584,
+    "physical_cma_residency": "unknown"
+  },
+  "stop_decision": "Do not test below 24 MiB or enter New Game. The margin24 run left CmaFree at 14,244 KiB immediately and 15,384 KiB after 20 s, below the previous order-4 warning context (4,122 pages = 16,488 KiB). A later 30 s idle pair remained at 15,456 KiB; MainUI has system-exporter DMA-BUF FDs, but physical CMA attribution is unknown. Investigate CMA accounting/retention before another launch.",
   "conclusion": "All four arms stopped before menu on the typed cmafree-margin guard. SwapFree was unchanged within each arm; no new kernel OOM/page-allocation warning occurred. The admission guard refused the next request before any subsequent LC2_GL_STORAGE_EVENT. No menu, gameplay, or FPS result."
 }
