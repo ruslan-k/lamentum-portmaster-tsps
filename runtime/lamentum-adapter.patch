@@ -1991,10 +1991,10 @@ index 0000000..63958bb
 +#endif
 diff --git a/native/lc2_lifetime.h b/native/lc2_lifetime.h
 new file mode 100644
-index 0000000..e6a0365
+index 0000000..50685c4
 --- /dev/null
 +++ b/native/lc2_lifetime.h
-@@ -0,0 +1,143 @@
+@@ -0,0 +1,156 @@
 +/* Portable accounting contract, NOT connected to GL or enabled in the runtime.
 + * Caller must serialize access and supply verified share-group/context epochs and timelines.
 + * Counters represent declared payload intents, NEVER physical driver residency.
@@ -2009,7 +2009,7 @@ index 0000000..e6a0365
 +struct lc2_life_record {
 +    uint64_t token,object_generation,timeline,bytes,last_reader;
 +    struct lc2_life_identity identity;
-+    unsigned pending,live,views,retiring,lost,share_group_lost;
++    unsigned pending,live,views,retiring,lost,share_group_lost,outcome_unknown;
 +};
 +struct lc2_life_timeline {uint64_t id,completed;};
 +struct lc2_lifetime {
@@ -2034,7 +2034,7 @@ index 0000000..e6a0365
 +static inline int lc2_life_begin_scoped(struct lc2_lifetime *l,const struct lc2_life_identity *identity,
 +        uint64_t timeline,uint64_t bytes,uint64_t *token) {
 +    if(!l||!identity||!identity->name||!identity->share_group_epoch||!identity->kind||
-+       !timeline||!bytes||!token||l->sequence==UINT64_MAX)return 0;
++       !bytes||!token||l->sequence==UINT64_MAX)return 0;
 +    if(bytes>UINT64_MAX-l->reserved_bytes || l->retained_bytes>UINT64_MAX-l->reserved_bytes-bytes)return 0;
 +    unsigned slot=LC2_LIFE_CAP,clock_slot=LC2_LIFE_CAP;uint64_t object_generation=0;
 +    for(unsigned i=0;i<LC2_LIFE_CAP;i++) {
@@ -2046,24 +2046,30 @@ index 0000000..e6a0365
 +            object_generation=r->object_generation;
 +        }
 +    }
-+    struct lc2_life_timeline *clock=lc2_life_timeline(l,timeline);
-+    if(!clock)for(unsigned i=0;i<LC2_LIFE_CAP;i++)if(!l->timelines[i].id){clock_slot=i;break;}
-+    if(slot==LC2_LIFE_CAP || (!clock&&clock_slot==LC2_LIFE_CAP))return 0;
-+    if(!clock)l->timelines[clock_slot]=(struct lc2_life_timeline){.id=timeline};
++    struct lc2_life_timeline *clock=timeline?lc2_life_timeline(l,timeline):NULL;
++    if(timeline && !clock)for(unsigned i=0;i<LC2_LIFE_CAP;i++)if(!l->timelines[i].id){clock_slot=i;break;}
++    if(slot==LC2_LIFE_CAP || (timeline&&!clock&&clock_slot==LC2_LIFE_CAP))return 0;
++    if(timeline && !clock)l->timelines[clock_slot]=(struct lc2_life_timeline){.id=timeline};
 +    uint64_t generation=++l->sequence;
 +    l->records[slot]=(struct lc2_life_record){.token=generation,
 +        .object_generation=object_generation?object_generation:generation,.identity=*identity,
 +        .timeline=timeline,.bytes=bytes,.pending=1,.views=1};
 +    l->reserved_bytes+=bytes;*token=generation;return 1;
 +}
++/* Storage-only intent: without a completion domain it may never be reclaimed here. */
++static inline int lc2_life_begin_storage_only(struct lc2_lifetime *l,
++        const struct lc2_life_identity *identity,uint64_t bytes,uint64_t *token) {
++    return lc2_life_begin_scoped(l,identity,0,bytes,token);
++}
 +static inline int lc2_life_begin(struct lc2_lifetime *l,uint64_t name,uint64_t group,
 +        uint64_t kind,uint64_t timeline,uint64_t bytes,uint64_t *token) {
++    if(!timeline)return 0;
 +    const struct lc2_life_identity identity={.share_group_epoch=group,.name=name,.kind=kind};
 +    return lc2_life_begin_scoped(l,&identity,timeline,bytes,token);
 +}
 +static inline int lc2_life_commit(struct lc2_lifetime *l,uint64_t token,int success) {
 +    struct lc2_life_record *r=lc2_life_find(l,token);
-+    if(!r||!r->pending||r->lost)return 0;
++    if(!r||!r->pending||r->lost||r->outcome_unknown)return 0;
 +    l->reserved_bytes-=r->bytes;r->pending=0;
 +    if(success){r->live=1;l->retained_bytes+=r->bytes;}
 +    return 1;
@@ -2071,6 +2077,13 @@ index 0000000..e6a0365
 +/* Zero is GL_NO_ERROR; true means both GL and the accounting commit succeeded. */
 +static inline int lc2_life_commit_gl_result(struct lc2_lifetime *l,uint64_t token,uint32_t gl_error) {
 +    return lc2_life_commit(l,token,gl_error==0) && gl_error==0;
++}
++/* Keep the pending byte reservation when the GL result cannot be attributed. */
++static inline int lc2_life_mark_unknown(struct lc2_lifetime *l,uint64_t token) {
++    if(!l)return 0;
++    struct lc2_life_record *r=lc2_life_find(l,token);
++    if(!r||!r->pending||r->lost||r->outcome_unknown)return 0;
++    r->outcome_unknown=1;return 1;
 +}
 +static inline int lc2_life_attach(struct lc2_lifetime *l,uint64_t token) {
 +    struct lc2_life_record *r=lc2_life_find(l,token);
