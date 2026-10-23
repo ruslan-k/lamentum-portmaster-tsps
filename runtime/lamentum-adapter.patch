@@ -1991,14 +1991,14 @@ index 0000000..63958bb
 +#endif
 diff --git a/native/lc2_lifetime.h b/native/lc2_lifetime.h
 new file mode 100644
-index 0000000..50685c4
+index 0000000..a703f88
 --- /dev/null
 +++ b/native/lc2_lifetime.h
-@@ -0,0 +1,156 @@
-+/* Portable accounting contract, NOT connected to GL or enabled in the runtime.
-+ * Caller must serialize access and supply verified share-group/context epochs and timelines.
-+ * Counters represent declared payload intents, NEVER physical driver residency.
-+ * No GL calls, host allocation, guessed completion, admission or automatic free.
+@@ -0,0 +1,191 @@
++/* Portable accounting contract, NOT a direct GL caller or physical-residency meter.
++ * Caller serializes access and supplies verified share-group/context epochs; storage-only paths
++ * deliberately carry no completion proof. Counters are logical payload intents, never residency.
++ * No host allocation or automatic free.
 + */
 +#ifndef LC2_LIFETIME_H
 +#define LC2_LIFETIME_H
@@ -2017,6 +2017,15 @@ index 0000000..50685c4
 +    struct lc2_life_timeline timelines[LC2_LIFE_CAP];
 +    uint64_t sequence,reserved_bytes,retained_bytes;
 +};
++typedef uint32_t (*lc2_life_gl_error_reader)(void);
++typedef void (*lc2_life_gl_storage_operation)(void *);
++enum lc2_life_gl_storage_status {
++    LC2_LIFE_GL_STORAGE_REFUSED=0,
++    LC2_LIFE_GL_STORAGE_COMMITTED,
++    LC2_LIFE_GL_STORAGE_PREEXISTING_ERROR,
++    LC2_LIFE_GL_STORAGE_OUTCOME_UNKNOWN
++};
++struct lc2_life_gl_storage_result {enum lc2_life_gl_storage_status status;uint32_t error;uint64_t token;};
 +static inline struct lc2_life_record *lc2_life_find(struct lc2_lifetime *l,uint64_t token) {
 +    for(unsigned i=0;i<LC2_LIFE_CAP;i++)
 +        if(token && l->records[i].token==token && (l->records[i].pending||l->records[i].live))return &l->records[i];
@@ -2074,16 +2083,42 @@ index 0000000..50685c4
 +    if(success){r->live=1;l->retained_bytes+=r->bytes;}
 +    return 1;
 +}
-+/* Zero is GL_NO_ERROR; true means both GL and the accounting commit succeeded. */
++/* Use a nonzero result only when the caller can prove the operation did not take effect. */
 +static inline int lc2_life_commit_gl_result(struct lc2_lifetime *l,uint64_t token,uint32_t gl_error) {
 +    return lc2_life_commit(l,token,gl_error==0) && gl_error==0;
 +}
-+/* Keep the pending byte reservation when the GL result cannot be attributed. */
++/* Keep the pending byte reservation when the storage outcome cannot be classified. */
 +static inline int lc2_life_mark_unknown(struct lc2_lifetime *l,uint64_t token) {
 +    if(!l)return 0;
 +    struct lc2_life_record *r=lc2_life_find(l,token);
 +    if(!r||!r->pending||r->lost||r->outcome_unknown)return 0;
 +    r->outcome_unknown=1;return 1;
++}
++/* This consumes GL errors; use only where the caller owns that diagnostic queue. */
++static inline uint32_t lc2_life_gl_drain_errors(lc2_life_gl_error_reader read_error) {
++    uint32_t first=0,error;
++    while((error=read_error())!=0)if(!first)first=error;
++    return first;
++}
++/* operation must issue one storage call only; a preexisting error skips it. */
++static inline struct lc2_life_gl_storage_result lc2_life_gl_storage_transaction(
++        struct lc2_lifetime *l,const struct lc2_life_identity *identity,uint64_t bytes,
++        lc2_life_gl_error_reader read_error,lc2_life_gl_storage_operation operation,void *context) {
++    struct lc2_life_gl_storage_result result={0};
++    if(!l||!identity||!identity->share_group_epoch||!identity->name||!identity->kind||
++       !bytes||!read_error||!operation)return result;
++    result.error=lc2_life_gl_drain_errors(read_error);
++    if(result.error){result.status=LC2_LIFE_GL_STORAGE_PREEXISTING_ERROR;return result;}
++    if(!lc2_life_begin_storage_only(l,identity,bytes,&result.token))return result;
++    operation(context);
++    result.error=lc2_life_gl_drain_errors(read_error);
++    if(result.error) {
++        result.status=lc2_life_mark_unknown(l,result.token)?LC2_LIFE_GL_STORAGE_OUTCOME_UNKNOWN:LC2_LIFE_GL_STORAGE_REFUSED;
++        return result;
++    }
++    if(lc2_life_commit_gl_result(l,result.token,0))result.status=LC2_LIFE_GL_STORAGE_COMMITTED;
++    else if(lc2_life_mark_unknown(l,result.token))result.status=LC2_LIFE_GL_STORAGE_OUTCOME_UNKNOWN;
++    return result;
 +}
 +static inline int lc2_life_attach(struct lc2_lifetime *l,uint64_t token) {
 +    struct lc2_life_record *r=lc2_life_find(l,token);
@@ -3174,6 +3209,89 @@ index 0564e33..a176125 100644
      region_insert((struct region){address,size,permission,6,"service_shared_memory",0},pc);
  }
  struct transfer_region {uint64_t address,size;unsigned permission,original_perm,original_attr,open;void *buffer;};
+diff --git a/native/momo_stencil_bench.h b/native/momo_stencil_bench.h
+index 96852f8..f883223 100644
+--- a/native/momo_stencil_bench.h
++++ b/native/momo_stencil_bench.h
+@@ -7,10 +7,24 @@
+  * write lands at all. This bench answers it without any game state. */
+ #ifndef MOMO_STENCIL_BENCH_H
+ #define MOMO_STENCIL_BENCH_H
+-static void momo_stencil_selftest(void) {
+-    static int done;
+-    if(done || !getenv("MOMO_STENCIL_SELFTEST"))return;
+-    done=1;
++#include "lc2_lifetime.h"
++static uint32_t momo_stencil_gl_error(void) { return (uint32_t)glGetError(); }
++static void momo_stencil_store_texture(void *unused) {
++    (void)unused;glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,64,64,0,GL_RGBA,GL_UNSIGNED_BYTE,NULL);
++}
++static void momo_stencil_store_renderbuffer(void *unused) {
++    (void)unused;glRenderbufferStorage(GL_RENDERBUFFER,0x88f0,64,64);
++}
++static const char *momo_stencil_storage_status(enum lc2_life_gl_storage_status status) {
++    switch(status) {
++        case LC2_LIFE_GL_STORAGE_COMMITTED:return "committed";
++        case LC2_LIFE_GL_STORAGE_PREEXISTING_ERROR:return "preexisting-error";
++        case LC2_LIFE_GL_STORAGE_OUTCOME_UNKNOWN:return "outcome-unknown";
++        default:return "ledger-refused";
++    }
++}
++static __attribute__((noinline)) void momo_stencil_selftest_run(void) {
++    struct lc2_lifetime life={0};
+     static const char *vs="attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}";
+     static const char *fs="precision mediump float;uniform vec4 c;void main(){gl_FragColor=c;}";
+     GLuint program=glCreateProgram(),shaders[2];
+@@ -27,19 +41,30 @@ static void momo_stencil_selftest(void) {
+     if(!linked){printf("MOMO_STENCIL_SELFTEST status=link-failed\n");return;}
+     while(glGetError()!=GL_NO_ERROR){}   /* start from a clean error state */
+     GLint previous=0;glGetIntegerv(GL_FRAMEBUFFER_BINDING,&previous);
+-    GLuint texture=0,depth=0,fbo=0;
++    GLuint texture=0,depth=0,fbo=0;uint64_t group=nvn_gl_share_group_id();
+     glGenTextures(1,&texture);glBindTexture(GL_TEXTURE_2D,texture);
+-    glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,64,64,0,GL_RGBA,GL_UNSIGNED_BYTE,NULL);
+-    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
++    struct lc2_life_gl_storage_result texture_result=lc2_life_gl_storage_transaction(
++        &life,&(struct lc2_life_identity){.share_group_epoch=group,.name=texture,.kind=1},64U*64U*4U,
++        momo_stencil_gl_error,momo_stencil_store_texture,NULL);
++    if(texture_result.status==LC2_LIFE_GL_STORAGE_COMMITTED) {
++        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
++        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
++    }
+     glGenRenderbuffers(1,&depth);glBindRenderbuffer(GL_RENDERBUFFER,depth);
+-    glRenderbufferStorage(GL_RENDERBUFFER,0x88f0,64,64);   /* GL_DEPTH24_STENCIL8_OES, as the game's D24S8 */
++    struct lc2_life_gl_storage_result renderbuffer_result=lc2_life_gl_storage_transaction(
++        &life,&(struct lc2_life_identity){.share_group_epoch=group,.name=depth,.kind=2},64U*64U*4U,
++        momo_stencil_gl_error,momo_stencil_store_renderbuffer,NULL);
+     glGenFramebuffers(1,&fbo);glBindFramebuffer(GL_FRAMEBUFFER,fbo);
+     glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,texture,0);
+     glFramebufferRenderbuffer(GL_FRAMEBUFFER,GL_DEPTH_ATTACHMENT,GL_RENDERBUFFER,depth);
+     glFramebufferRenderbuffer(GL_FRAMEBUFFER,GL_STENCIL_ATTACHMENT,GL_RENDERBUFFER,depth);
+     GLenum status=glCheckFramebufferStatus(GL_FRAMEBUFFER);
+-    GLenum setup_error=glGetError();
++    GLenum setup_error=lc2_life_gl_drain_errors(momo_stencil_gl_error);
+     GLint stencil_bits=0;glGetIntegerv(GL_STENCIL_BITS,&stencil_bits);
++    printf("MOMO_STENCIL_STORAGE scope=one-shot group=%llu texture=%s texture-error=0x%x renderbuffer=%s renderbuffer-error=0x%x retained-bytes=%llu reserved-bytes=%llu completion=unproven\n",
++        (unsigned long long)group,momo_stencil_storage_status(texture_result.status),texture_result.error,
++        momo_stencil_storage_status(renderbuffer_result.status),renderbuffer_result.error,
++        (unsigned long long)life.retained_bytes,(unsigned long long)life.reserved_bytes);
+     glViewport(0,0,64,64);glDisable(GL_SCISSOR_TEST);glDisable(GL_BLEND);glDisable(GL_DEPTH_TEST);
+     glClearColor(0,0,0,1);glClearStencil(0);glClear(GL_COLOR_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
+     glUseProgram(program);
+@@ -74,7 +99,12 @@ static void momo_stencil_selftest(void) {
+     glDeleteProgram(program);
+     nvn_render_state.valid=0;
+ }
+-
++static void momo_stencil_selftest(void) {
++    static int done;
++    if(done || !getenv("MOMO_STENCIL_SELFTEST"))return;
++    done=1;
++    momo_stencil_selftest_run();
++}
+ /* MOMO_STENCIL_PROBE=1: right after a draw that wrote the stencil, paint the pixels whose stencil now
+  * equals 1 and count them. It answers "did the mask write land?" inside the game's own framebuffer,
+  * which no state dump can. Diagnostic only: it paints into the frame. */
 diff --git a/native/nvn_async_frame.h b/native/nvn_async_frame.h
 index 8e7c3b6..e8854a6 100644
 --- a/native/nvn_async_frame.h

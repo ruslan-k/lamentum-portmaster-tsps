@@ -7,6 +7,47 @@ import unittest
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
 class LifetimeCoreTests(unittest.TestCase):
+    def test_gl_storage_transaction_isolates_preexisting_and_operation_errors(self):
+        patch=(ROOT/'runtime/lamentum-adapter.patch').read_text()
+        marker='diff --git a/native/lc2_lifetime.h b/native/lc2_lifetime.h'
+        self.assertIn(marker,patch)
+        block=patch.split(marker,1)[1].split('diff --git ',1)[0]
+        header='\n'.join(line[1:] for line in block.splitlines()
+                          if line.startswith('+') and not line.startswith('+++'))+'\n'
+        fixture=r'''
+#include "lc2_lifetime.h"
+#include <assert.h>
+static uint32_t queued_error,post_error;static unsigned calls;
+static uint32_t mock_gl_error(void){uint32_t e=queued_error;queued_error=0;return e;}
+static void mock_storage(void *unused){(void)unused;calls++;queued_error=post_error;post_error=0;}
+int main(void){
+ struct lc2_lifetime l={0};
+ const struct lc2_life_identity a={.share_group_epoch=1,.name=1,.kind=1};
+ struct lc2_life_gl_storage_result r=lc2_life_gl_storage_transaction(&l,&a,16,mock_gl_error,mock_storage,NULL);
+ assert(r.status==LC2_LIFE_GL_STORAGE_COMMITTED && r.error==0 && r.token);
+ assert(calls==1 && l.retained_bytes==16 && l.reserved_bytes==0);
+ const struct lc2_life_identity b={.share_group_epoch=1,.name=2,.kind=1};queued_error=0x0501;
+ r=lc2_life_gl_storage_transaction(&l,&b,32,mock_gl_error,mock_storage,NULL);
+ assert(r.status==LC2_LIFE_GL_STORAGE_PREEXISTING_ERROR && r.error==0x0501 && !r.token);
+ assert(calls==1 && l.retained_bytes==16 && l.reserved_bytes==0);
+ const struct lc2_life_identity c={.share_group_epoch=1,.name=3,.kind=1};post_error=0x0505;
+ r=lc2_life_gl_storage_transaction(&l,&c,64,mock_gl_error,mock_storage,NULL);
+ assert(r.status==LC2_LIFE_GL_STORAGE_OUTCOME_UNKNOWN && r.error==0x0505 && r.token);
+ assert(calls==2 && l.retained_bytes==16 && l.reserved_bytes==64);
+ assert(lc2_life_find(&l,r.token)->pending && lc2_life_find(&l,r.token)->outcome_unknown);
+ return 0;
+}
+'''
+        with tempfile.TemporaryDirectory() as d:
+            p=pathlib.Path(d)
+            (p/'lc2_lifetime.h').write_text(header)
+            (p/'test.c').write_text(fixture)
+            built=subprocess.run(['cc','-std=c11','-Wall','-Wextra','-Werror','-I',d,
+                                  str(p/'test.c'),'-o',str(p/'test')],capture_output=True,text=True)
+            self.assertEqual(built.returncode,0,built.stderr)
+            ran=subprocess.run([str(p/'test')],capture_output=True,text=True)
+            self.assertEqual(ran.returncode,0,ran.stderr)
+
     def test_storage_only_commit_has_no_completion_or_refund_path(self):
         patch=(ROOT/'runtime/lamentum-adapter.patch').read_text()
         marker='diff --git a/native/lc2_lifetime.h b/native/lc2_lifetime.h'
