@@ -137,7 +137,7 @@ int main(void) {
  /* The stop-path formatter must agree with printf digit-for-digit: a stray leading
   * or trailing digit silently misreports every counter by 10x. */
  char expect[768];
- snprintf(expect,sizeof expect," storage-calls=%llu extends=%llu deletes=%llu delete-with-views=%llu name-reuse=%llu retained=%llu peak=%llu live=%llu alias-views=%llu overflow=%llu tex-bytes=%llu tex-live=%llu rb-bytes=%llu rb-live=%llu buf-bytes=%llu buf-live=%llu respecs=%llu tex-l0=%llu tex-mips=%llu tex-scaled=%llu tex-half=%llu tex-charged=%llu tex-uncharged=%llu tex-guest=%llu tex-pair-lines=%llu tex-pair-overflow=%llu tex-live-pair-lines=%llu tex-live-pair-overflow=%llu storage-event-lines=%llu storage-event-overflow=%llu delete-event-lines=%llu delete-event-overflow=%llu",
+ snprintf(expect,sizeof expect," storage-calls=%llu extends=%llu deletes=%llu delete-with-views=%llu name-reuse=%llu retained=%llu peak=%llu live=%llu alias-views=%llu overflow=%llu generation-history-overflow=%llu live-owner-overflow=%llu tex-bytes=%llu tex-live=%llu rb-bytes=%llu rb-live=%llu buf-bytes=%llu buf-live=%llu respecs=%llu tex-l0=%llu tex-mips=%llu tex-scaled=%llu tex-half=%llu tex-charged=%llu tex-uncharged=%llu tex-guest=%llu tex-pair-lines=%llu tex-pair-overflow=%llu tex-live-pair-lines=%llu tex-live-pair-overflow=%llu storage-event-lines=%llu storage-event-overflow=%llu delete-event-lines=%llu delete-event-overflow=%llu",
   (unsigned long long)lc2_life_events_state()->storage_calls,
   (unsigned long long)lc2_life_events_state()->extends,
   (unsigned long long)lc2_life_events_state()->deletes,
@@ -148,6 +148,8 @@ int main(void) {
   (unsigned long long)lc2_life_events_state()->live,
   (unsigned long long)lc2_life_events_state()->alias_views,
   (unsigned long long)lc2_life_events_state()->overflow,
+  (unsigned long long)lc2_life_events_state()->generation_history_overflow,
+  (unsigned long long)lc2_life_events_state()->live_owner_overflow,
   (unsigned long long)lc2_life_events_state()->kind_bytes[1],
   (unsigned long long)lc2_life_events_state()->kind_live[1],
   (unsigned long long)lc2_life_events_state()->kind_bytes[2],
@@ -177,6 +179,157 @@ int main(void) {
 '''
 
 class LifeEventTests(unittest.TestCase):
+    def test_identical_gl_names_in_distinct_share_groups_have_independent_lifetimes(self):
+        patch = (ROOT / 'runtime/lamentum-adapter.patch').read_text()
+        block = patch.split(MARKER, 1)[1].split('diff --git ', 1)[0]
+        header = '\n'.join(line[1:] for line in block.splitlines()
+                             if line.startswith('+') and not line.startswith('+++')) + '\n'
+        source = r'''
+#include "lc2_life_events.h"
+#include <assert.h>
+int main(void) {
+ setenv("LC2_LIFE_EVENTS","1",1);
+ struct lc2_life_events_state *s=lc2_life_events_state();
+ const struct lc2_life_storage_key a={.share_group=1,.name=42,.kind=1,.target=0x0de1};
+ const struct lc2_life_storage_key b={.share_group=2,.name=42,.kind=1,.target=0x0de1};
+ lc2_life_events_storage_key(11,&a,64);
+ lc2_life_events_storage_key(22,&b,96);
+ uint64_t lo=0,hi=0,bytes=0;unsigned records=0;
+ assert(s->live==2 && s->generation_history_overflow==0 && s->live_owner_overflow==0);
+ assert(lc2_life_events_storage_generation(11,1,&lo,&hi) && lo==1 && hi==1);
+ assert(lc2_life_events_storage_generation(22,1,&lo,&hi) && lo==1 && hi==1);
+ lc2_life_events_delete_key(&a,0);
+ assert(s->live==1);
+ assert(lc2_life_events_storage_payload(22,1,&bytes,&records) && bytes==96 && records==1);
+ lc2_life_events_storage_key(33,&a,128);
+ assert(lc2_life_events_storage_generation(33,1,&lo,&hi) && lo==2 && hi==2);
+ assert(lc2_life_events_storage_generation(22,1,&lo,&hi) && lo==1 && hi==1);
+ assert(s->live==2 && s->name_reuse==1);
+ return 0;
+}
+'''
+        with tempfile.TemporaryDirectory() as d:
+            p=pathlib.Path(d)
+            (p/'lc2_life_events.h').write_text(header)
+            (p/'share_groups.c').write_text(source)
+            built=subprocess.run(['cc','-std=gnu11','-Wall','-Wextra','-Werror','-I',d,
+                                  str(p/'share_groups.c'),'-o',str(p/'share_groups')],capture_output=True,text=True)
+            self.assertEqual(built.returncode,0,built.stderr)
+            ran=subprocess.run([str(p/'share_groups')],capture_output=True,text=True)
+            self.assertEqual(ran.returncode,0,ran.stderr)
+
+    def test_1024_create_delete_pairs_and_24_reuses_preserve_generations(self):
+        patch = (ROOT / 'runtime/lamentum-adapter.patch').read_text()
+        block = patch.split(MARKER, 1)[1].split('diff --git ', 1)[0]
+        header = '\n'.join(line[1:] for line in block.splitlines()
+                             if line.startswith('+') and not line.startswith('+++')) + '\n'
+        source = r'''
+#include "lc2_life_events.h"
+#include <assert.h>
+int main(void) {
+ setenv("LC2_LIFE_EVENTS","1",1);
+ struct lc2_life_events_state *s=lc2_life_events_state();
+ for(uint64_t i=1;i<=1024;i++) {
+  const struct lc2_life_storage_key key={.share_group=7,.name=i,.kind=1,.target=0x0de1};
+  lc2_life_events_storage_key(i,&key,64);
+  lc2_life_events_delete_key(&key,0);
+ }
+ assert(s->deletes==1024 && s->live==0);
+ assert(s->generation_history_overflow==0 && s->live_owner_overflow==0);
+ assert(s->storage_event_overflow>0 && s->delete_event_overflow>0);
+ for(uint64_t i=0;i<24;i++) {
+  const struct lc2_life_storage_key key={.share_group=7,.name=1,.kind=1,.target=0x0de1};
+  lc2_life_events_storage_key(2000+i,&key,64);
+  lc2_life_events_delete_key(&key,0);
+ }
+ uint64_t last=0;
+ for(unsigned i=0;i<LC2_LIFE_GENERATION_CAP;i++)
+  if(s->generations[i].share_group==7 && s->generations[i].name==1 && s->generations[i].kind==1)
+   last=s->generations[i].last_generation;
+ assert(last==25 && s->name_reuse==24);
+ assert(s->deletes==1048 && s->live==0);
+ assert(s->generation_history_overflow==0 && s->live_owner_overflow==0);
+ return 0;
+}
+'''
+        with tempfile.TemporaryDirectory() as d:
+            p=pathlib.Path(d)
+            (p/'lc2_life_events.h').write_text(header)
+            (p/'churn.c').write_text(source)
+            built=subprocess.run(['cc','-std=gnu11','-Wall','-Wextra','-Werror','-I',d,
+                                  str(p/'churn.c'),'-o',str(p/'churn')],capture_output=True,text=True)
+            self.assertEqual(built.returncode,0,built.stderr)
+            ran=subprocess.run([str(p/'churn')],capture_output=True,text=True)
+            self.assertEqual(ran.returncode,0,ran.stderr)
+
+    def test_generation_history_supports_more_than_1024_distinct_and_reused_keys(self):
+        patch = (ROOT / 'runtime/lamentum-adapter.patch').read_text()
+        block = patch.split(MARKER, 1)[1].split('diff --git ', 1)[0]
+        header = '\n'.join(line[1:] for line in block.splitlines()
+                             if line.startswith('+') and not line.startswith('+++')) + '\n'
+        source = r'''
+#include "lc2_life_events.h"
+#include <assert.h>
+int main(void) {
+ unsigned reused=99;
+ for(uint64_t i=1;i<=1200;i++) {
+  assert(lc2_life_generation_next(7,i,1,&reused)==1);
+  assert(reused==0);
+ }
+ for(uint64_t i=1;i<=1200;i++) {
+  assert(lc2_life_generation_next(7,i,1,&reused)==2);
+  assert(reused==1);
+ }
+ return 0;
+}
+'''
+        with tempfile.TemporaryDirectory() as d:
+            p=pathlib.Path(d)
+            (p/'lc2_life_events.h').write_text(header)
+            (p/'generation.c').write_text(source)
+            built=subprocess.run(['cc','-std=gnu11','-Wall','-Wextra','-Werror','-I',d,
+                                  str(p/'generation.c'),'-o',str(p/'generation')],capture_output=True,text=True)
+            self.assertEqual(built.returncode,0,built.stderr)
+            ran=subprocess.run([str(p/'generation')],capture_output=True,text=True)
+            self.assertEqual(ran.returncode,0,ran.stderr)
+
+    def test_generation_and_live_owner_exhaustion_are_separate_failures(self):
+        patch = (ROOT / 'runtime/lamentum-adapter.patch').read_text()
+        block = patch.split(MARKER, 1)[1].split('diff --git ', 1)[0]
+        header = '\n'.join(line[1:] for line in block.splitlines()
+                            if line.startswith('+') and not line.startswith('+++')) + '\n'
+        source = r'''
+#include "lc2_life_events.h"
+#include <assert.h>
+#include <string.h>
+int main(void) {
+ struct lc2_life_events_state *s=lc2_life_events_state();unsigned reused=0;
+ for(uint64_t i=1;i<=LC2_LIFE_GENERATION_CAP;i++)
+  assert(lc2_life_generation_next(7,i,1,&reused)==1);
+ assert(lc2_life_generation_next(7,LC2_LIFE_GENERATION_CAP+1,1,&reused)==0);
+ assert(s->generation_history_overflow==1 && s->live_owner_overflow==0);
+ memset(s,0,sizeof(*s));
+ s->generations[0]=(struct lc2_life_generation_history){.share_group=7,.name=1,.kind=1,.last_generation=UINT64_MAX};
+ assert(lc2_life_generation_next(7,1,1,&reused)==0);
+ assert(s->generation_history_overflow==1 && s->live_owner_overflow==0);
+ memset(s,0,sizeof(*s));setenv("LC2_LIFE_EVENTS","1",1);
+ for(unsigned i=1;i<=LC2_LIFE_EVENT_CAP;i++)lc2_life_events_storage(i,i,1,1,0);
+ assert(s->generation_history_overflow==0 && s->live_owner_overflow==0);
+ lc2_life_events_storage(LC2_LIFE_EVENT_CAP+1,LC2_LIFE_EVENT_CAP+1,1,1,0);
+ assert(s->generation_history_overflow==0 && s->live_owner_overflow==1);
+ return 0;
+}
+'''
+        with tempfile.TemporaryDirectory() as d:
+            p=pathlib.Path(d)
+            (p/'lc2_life_events.h').write_text(header)
+            (p/'exhaustion.c').write_text(source)
+            built=subprocess.run(['cc','-std=gnu11','-Wall','-Wextra','-Werror','-I',d,
+                                  str(p/'exhaustion.c'),'-o',str(p/'exhaustion')],capture_output=True,text=True)
+            self.assertEqual(built.returncode,0,built.stderr)
+            ran=subprocess.run([str(p/'exhaustion')],capture_output=True,text=True)
+            self.assertEqual(ran.returncode,0,ran.stderr)
+
     def test_observation_contract(self):
         patch = (ROOT / 'runtime/lamentum-adapter.patch').read_text()
         self.assertIn(MARKER, patch)

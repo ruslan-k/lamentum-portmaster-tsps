@@ -1317,10 +1317,10 @@ index 0000000..fbe5673
 +#endif
 diff --git a/native/lc2_life_events.h b/native/lc2_life_events.h
 new file mode 100644
-index 0000000..5afe8e2
+index 0000000..63958bb
 --- /dev/null
 +++ b/native/lc2_life_events.h
-@@ -0,0 +1,661 @@
+@@ -0,0 +1,668 @@
 +/* Bounded OBSERVATION ledger for GL storage events. Diagnostic only, default off.
 + *
 + * It answers design questions before any lifetime policy is integrated:
@@ -1342,6 +1342,8 @@ index 0000000..5afe8e2
 +#include <time.h>
 +#include <unistd.h>
 +#define LC2_LIFE_EVENT_CAP 512U
++/* shortcut: 2048 retained GL-name histories; raise only if source-qualified churn exceeds this bound. */
++#define LC2_LIFE_GENERATION_CAP 2048U
 +#define LC2_LIFE_TEXTURE_PAIR_CAP 128U
 +#define LC2_LIFE_TEXTURE_LIVE_PAIR_CAP 128U
 +#define LC2_LIFE_STORAGE_EVENT_CAP 256U
@@ -1375,7 +1377,7 @@ index 0000000..5afe8e2
 +struct lc2_life_storage_key {uint64_t share_group,name,kind,target;unsigned face,level,layer;};
 +struct lc2_life_event {uint64_t share_group,name,kind,bytes,mips,nvn_id,generation;unsigned live;};
 +struct lc2_life_subresource {uint64_t share_group,name,kind,generation,target,bytes;unsigned face,level,layer,live;};
-+struct lc2_life_generation_history {uint64_t share_group,name,kind,last_generation;unsigned seen;};
++struct lc2_life_generation_history {uint64_t share_group,name,kind,last_generation;};
 +struct lc2_life_texture_pair {
 +    const char *phase;
 +    uint64_t timestamp_ns,nvn_id,storage_owner,object,guest_bytes,charge_bytes;
@@ -1391,8 +1393,9 @@ index 0000000..5afe8e2
 +struct lc2_life_events_state {
 +    struct lc2_life_event entries[LC2_LIFE_EVENT_CAP];
 +    struct lc2_life_subresource subresources[LC2_LIFE_EVENT_CAP];
-+    struct lc2_life_generation_history generations[LC2_LIFE_EVENT_CAP];
++    struct lc2_life_generation_history generations[LC2_LIFE_GENERATION_CAP];
 +    uint64_t storage_calls,extends,deletes,delete_with_views,name_reuse,overflow;
++    uint64_t generation_history_overflow,live_owner_overflow;
 +    uint64_t retained_bytes,peak_bytes,live,alias_views;
 +    uint64_t kind_bytes[4],kind_live[4],respecs;
 +    uint64_t tex_level0_bytes,tex_mip_bytes,tex_scaled_bytes,tex_half_bytes;
@@ -1616,17 +1619,17 @@ index 0000000..5afe8e2
 +    struct lc2_life_events_state *s=lc2_life_events_state();
 +    struct lc2_life_generation_history *free_slot=NULL;
 +    if(reused)*reused=0;
-+    for(unsigned i=0;i<LC2_LIFE_EVENT_CAP;i++) {
++    for(unsigned i=0;i<LC2_LIFE_GENERATION_CAP;i++) {
 +        struct lc2_life_generation_history *h=&s->generations[i];
 +        if(h->share_group==share_group && h->name==name && h->kind==kind) {
-+            if(h->last_generation==UINT64_MAX)return 0;
-+            if(reused)*reused=h->seen;
-+            h->seen=1;return ++h->last_generation;
++            if(h->last_generation==UINT64_MAX){s->generation_history_overflow++;return 0;}
++            if(reused)*reused=1;
++            return ++h->last_generation;
 +        }
 +        if(!h->name && !free_slot)free_slot=h;
 +    }
-+    if(!free_slot)return 0;
-+    *free_slot=(struct lc2_life_generation_history){.share_group=share_group,.name=name,.kind=kind,.last_generation=1,.seen=1};
++    if(!free_slot){s->generation_history_overflow++;return 0;}
++    *free_slot=(struct lc2_life_generation_history){.share_group=share_group,.name=name,.kind=kind,.last_generation=1};
 +    return 1;
 +}
 +static inline void lc2_life_storage_event(const char *event,uint64_t nvn_id,
@@ -1707,7 +1710,8 @@ index 0000000..5afe8e2
 +    unsigned part_slot=LC2_LIFE_EVENT_CAP;
 +    for(unsigned i=0;i<LC2_LIFE_EVENT_CAP;i++)if(!s->subresources[i].live){part_slot=i;break;}
 +    if(part_slot==LC2_LIFE_EVENT_CAP) {
-+        s->overflow++;lc2_life_storage_event(e?"extend":"allocate",nvn_id,key,e?e->generation:0,bytes,e?e->bytes:0,e?e->mips:0,"subresource-table-overflow");return;
++        s->live_owner_overflow++;s->overflow++;
++        lc2_life_storage_event(e?"extend":"allocate",nvn_id,key,e?e->generation:0,bytes,e?e->bytes:0,e?e->mips:0,"subresource-table-overflow");return;
 +    }
 +    unsigned new_object=0,object_slot=LC2_LIFE_EVENT_CAP;
 +    uint64_t generation=0,object_bytes=e?e->bytes:0,object_subresources=e?e->mips:0;
@@ -1718,7 +1722,8 @@ index 0000000..5afe8e2
 +    if(!e) {
 +        for(unsigned i=0;i<LC2_LIFE_EVENT_CAP;i++)if(!s->entries[i].name){object_slot=i;break;}
 +        if(object_slot==LC2_LIFE_EVENT_CAP) {
-+            s->overflow++;lc2_life_storage_event("allocate",nvn_id,key,0,bytes,0,0,"object-table-overflow");return;
++            s->live_owner_overflow++;s->overflow++;
++            lc2_life_storage_event("allocate",nvn_id,key,0,bytes,0,0,"object-table-overflow");return;
 +        }
 +        unsigned reused=0;
 +        generation=lc2_life_generation_next(key->share_group,key->name,key->kind,&reused);
@@ -1957,6 +1962,8 @@ index 0000000..5afe8e2
 +        {" delete-with-views=",&s->delete_with_views},{" name-reuse=",&s->name_reuse},
 +        {" retained=",&s->retained_bytes},{" peak=",&s->peak_bytes},{" live=",&s->live},
 +        {" alias-views=",&s->alias_views},{" overflow=",&s->overflow},
++        {" generation-history-overflow=",&s->generation_history_overflow},
++        {" live-owner-overflow=",&s->live_owner_overflow},
 +        {" tex-bytes=",&s->kind_bytes[1]},{" tex-live=",&s->kind_live[1]},
 +        {" rb-bytes=",&s->kind_bytes[2]},{" rb-live=",&s->kind_live[2]},
 +        {" buf-bytes=",&s->kind_bytes[3]},{" buf-live=",&s->kind_live[3]},

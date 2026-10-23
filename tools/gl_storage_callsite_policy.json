@@ -1,6 +1,6 @@
 {
-  "adapter_patch_sha256": "23762e1bcd4c5b759c7417647f24e1df4430bcd4fd32e56f0c2a007954db50a8",
-  "audit_scope": "All C/C++ files under native/ and framework/ in the exact build-261 patched source tree. Runtime reachability and physical backing are not inferred.",
+  "adapter_patch_sha256": "6c549b09797a403390d4ced13e770bc35c65f74d70240a01f2ec77f6e258eba4",
+  "audit_scope": "All C/C++ files under native/ and framework/ in the exact build-262 patched source tree. Runtime reachability and physical backing are not inferred.",
   "call_sites": [
     {
       "id": "framework/nxgl/src/nxgl_gles2.c|glBufferData|indirect|nxgl_gles2_pfn_glBufferData|1",
@@ -390,5 +390,5 @@
   ],
   "schema_version": 1,
   "source_base_commit": "c8d01ca1fed5adab1ae7ad920605f199bb83a72e",
-  "source_tree_sha256": "8d244eede356a5f9e28d3a125f3d50dee8dc477b379149ca4168fb339cfd603d"
+  "source_tree_sha256": "1b995ea13bab7aa2afcf865f68006b095a401c3cc71b8321f83c778a052dabfb"
 }

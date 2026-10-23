@@ -859,8 +859,25 @@
     "texture-copy": 3,
     "texture-storage": 38
   },
+  "generation_history": {
+    "capacity": 2048,
+    "previous_capacity": 512,
+    "distinct_and_reused_keys_tested": 1200,
+    "create_delete_pairs_tested": 1024,
+    "same_name_reuses_after_delete_tested": 24,
+    "same_numeric_gl_name_in_distinct_share_groups_tested": true,
+    "storage_and_delete_event_ring_overflow_tested": true,
+    "capacity_exhaustion_fails_closed": true,
+    "uint64_generation_wrap_fails_closed": true,
+    "overflow_counters": ["generation_history_overflow", "live_owner_overflow"],
+    "existing_live_owner_capacity": 512,
+    "state_size_bytes": {"baseline": 155504, "candidate": 200576, "delta": 45072},
+    "aarch64_elf_bss_bytes": {"build261": 12809440, "build262": 12854512, "delta": 45072},
+    "dynamic_allocation_added": false,
+    "scope": "host-only instrumentation ledger; BSS/RSS/CMA effect not measured on device"
+  },
   "limitations": [
-    "This inventory scans every C/C++ file in native/ and framework/ from the exact patched build261 source tree; it is a superset of compiler inputs, not a compiler-closure report.",
+    "This inventory scans every C/C++ file in native/ and framework/ from the exact patched build262 source tree; it is a superset of compiler inputs, not a compiler-closure report.",
     "No device runtime sample establishes callsite reach, allocation success, physical backing, retained bytes, RSS, CMA reclamation, gameplay, or FPS.",
     "65 callsites remain unknown; 12 are statically wrapped but unmeasured. No callsite is marked wrapped+measured or not reached.",
     "The indirect NXGL dispatcher candidates are recorded, but whether each is included in this adapter build is not yet proven."
@@ -868,18 +885,18 @@
   "provenance": {
     "candidate_installed": false,
     "device_actions": 0,
-    "host_candidate_build": "build261",
-    "host_candidate_sha256": "0958651d1e9cb1333023c9a9418be781b6cf2b49d628dc5b9a8c122a80c96332",
+    "host_candidate_build": "build262-m4b-generation",
+    "host_candidate_sha256": "dd13d4ab300fdaa1f51acd78e105a55a02af1de6de05526328d2242b07da1cbc",
     "historical_readonly_cma_free_kib": 15456,
     "runtime_preflight": "not performed in this source-census task",
-    "runtime_adapter_patch_sha256": "23762e1bcd4c5b759c7417647f24e1df4430bcd4fd32e56f0c2a007954db50a8",
+    "runtime_adapter_patch_sha256": "6c549b09797a403390d4ced13e770bc35c65f74d70240a01f2ec77f6e258eba4",
     "source_base_commit": "c8d01ca1fed5adab1ae7ad920605f199bb83a72e"
   },
   "schema_version": 1,
   "scope": "static source census only; execution and physical backing remain unverified",
   "source_tree": {
     "file_count": 390,
-    "sha256": "8d244eede356a5f9e28d3a125f3d50dee8dc477b379149ca4168fb339cfd603d"
+    "sha256": "1b995ea13bab7aa2afcf865f68006b095a401c3cc71b8321f83c778a052dabfb"
   },
   "status_counts": {
     "unknown": 65,
@@ -887,8 +904,11 @@
   },
   "verification": {
     "focused_inventory_tests": {"tests_run": 7, "failures": 0, "errors": 0, "skipped": 0},
-    "full_python_suite": {"tests_run": 366, "failures": 0, "errors": 0, "skipped": 0},
+    "focused_generation_lifetime_tests": {"tests_run": 10, "failures": 0, "errors": 0, "skipped": 0},
+    "full_python_suite": {"tests_run": 370, "failures": 0, "errors": 0, "skipped": 0},
+    "baseline_manifest": {"files": 435, "status": "pass"},
     "actual_source_tree_cli_scan": {"call_sites": 77, "source_files": 390, "status": "pass"},
+    "pinned_aarch64_cross_build": {"container_digest": "sha256:e437308c01ce7af4a035c3f0652bc886e258889f66803f805bce53d05af75f0c", "build_id": "9395a24ac719269308b30476f8631349f47242a4", "max_glibc": "2.27", "binary_bytes": 2206936, "sha256": "dd13d4ab300fdaa1f51acd78e105a55a02af1de6de05526328d2242b07da1cbc", "installed": false},
     "build_script_bash_syntax": "pass"
   }
 }
