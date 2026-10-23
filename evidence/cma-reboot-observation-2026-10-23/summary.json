@@ -14,7 +14,13 @@
     "old_boot_id": "15b97fe4-5c48-412c-ba39-92efb1823286",
     "new_boot_id": "76212e98-f521-4f2e-8e93-76f58f48991a",
     "agent_reboot_command_sent": false,
-    "operator_or_system_initiator": "unknown",
+    "operator_or_system_initiator": "operator-confirmed",
+    "initiator_at_capture": "unknown",
+    "initiator_confirmation_after_capture": {
+      "operator_confirmed_initiated_transition": true,
+      "confirmation_source": "direct user response",
+      "agent_reboot_command_sent": false
+    },
     "estimated_boot_time_utc": "2026-10-23T13:52:34.987430Z",
     "estimate_method": "remote uptime 64.62 s at 2026-10-23T13:53:39.607430Z",
     "transition_window_utc": ["2026-10-23T13:47:34.332501Z", "2026-10-23T13:53:04.658724Z"],

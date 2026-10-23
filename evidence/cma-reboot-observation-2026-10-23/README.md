@@ -2,7 +2,7 @@
 
 ## Event and scope
 
-A fresh check after the operator's approval found boot ID `76212e98-f521-4f2e-8e93-76f58f48991a`, different from preflight boot `15b97fe4-5c48-412c-ba39-92efb1823286`. The agent had **not** sent a reboot command. Estimated boot time is `13:52:34.987Z`; the boot transition occurred after the last pre-transition dmesg capture at `13:47:34.333Z` and before the first new-boot snapshot at `13:53:04.659Z`. Its initiator is unknown; the operator may have performed the approved reboot. No further reboot was issued.
+A fresh check after the operator's approval found boot ID `76212e98-f521-4f2e-8e93-76f58f48991a`, different from preflight boot `15b97fe4-5c48-412c-ba39-92efb1823286`. The agent had **not** sent a reboot command. Estimated boot time is `13:52:34.987Z`; the boot transition occurred after the last pre-transition dmesg capture at `13:47:34.333Z` and before the first new-boot snapshot at `13:53:04.659Z`. Its initiator was unknown at capture; the operator later confirmed initiating this transition. No further reboot was issued.
 
 ## Measurements
 
@@ -20,7 +20,7 @@ The preboot reference was a single `CmaFree=2,008 KiB` sample at `13:43:29Z`, no
 
 ## Conclusion and gate
 
-The new boot began with high free CMA and stayed at that level for the first 15 minutes without Lamentum running. This argues against rapid CMA depletion during ordinary early boot in the observed idle state and shows the prior low reading was not a permanent hardware-capacity ceiling. It does **not** identify what occupied CMA before the boot, rule out slower/later workload growth, or justify a game allocation reserve. The observed return is associated with the boot transition, but the agent did not initiate it and its cause has not been confirmed.
+The new boot began with high free CMA and stayed at that level for the first 15 minutes without Lamentum running. This argues against rapid CMA depletion during ordinary early boot in the observed idle state and shows the prior low reading was not a permanent hardware-capacity ceiling. It does **not** identify what occupied CMA before the boot, rule out slower/later workload growth, or justify a game allocation reserve. The operator later confirmed initiating the transition; the agent did not issue the reboot command. The cause of the preboot CMA recovery is not established.
 
 **Runtime remains `HOLD_RUNTIME`.** No game was launched. `T2_STORAGE_MARGIN_MIB` remains unset; any future probe still requires the existing complete D-preflight and an independently justified positive class-specific reserve. The observed boot is counted; do not reboot again for this experiment.
 
