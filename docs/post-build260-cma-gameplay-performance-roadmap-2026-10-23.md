@@ -89,7 +89,7 @@ Current checked arithmetic is: `required_available = 96 MiB + (GL + scratch + ma
 
 **M4-E — CPU scheduling and command replay, DEFERRED.** Prior `LC2_CBUF_SUBIMAGE` and generic render scale failed to show useful previous gains. A ~528 ms BC decode or 198 ms upload on an early allocation window is not a steady-world frame cost. After safe playability, profile whether repeated per-frame texture refresh, GL state churn, SVC, major faults, thread starvation or shader compilation causes *exclusive* frame delay; only then optimize the top measured owner. Don't enable unsafe async replay, deletion/pageout without completion fences, or swap/timing hacks as substitutes for physical headroom.
 
-**M4 pass:** a matched pair or repeated set of `same run phase/same pixels/same request class` demonstrates lower **minimum** `MemAvailable`, `CmaFree` pressure, `VmHWM`, `VmSwap` and swap/fault rate beyond control variability, with no new kernel warnings/GL errors; corrected formulation: higher minima for MemAvailable and CmaFree, lower VmHWM/VmSwap and less swap/fault pressure. Use at least three qualifying pairs before default promotion. A merely lower requested scratch count is a hypothesis, not acceptance.
+**M4 pass:** at least three qualifying, phase-matched A/B pairs with the same pixels and request class show **higher minimum** `MemAvailable` and `CmaFree`, **lower** `VmHWM`, `VmSwap` and swap/fault pressure outside control variability, without new kernel warnings or GL errors. Treat differences in CMA-movable pages and driver allocations as separately uncertain unless K1 establishes their semantics. A merely lower requested scratch count is a hypothesis, not acceptance.
 
 ## 6. E4: finish the ID280/288 owner-pair investigation without falsifying old logs
 
