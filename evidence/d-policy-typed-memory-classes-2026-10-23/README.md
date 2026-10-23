@@ -51,4 +51,4 @@ The `proven_CMA_only` and `mixed_two_ledger` models refuse these unknown bases (
 - Current source inventory: 390 files, 77 GL/EGL candidates; 12 `wrapped+unmeasured`, 65 `unknown`.
 - No production policy, launcher default, or device state changed. `T2_STORAGE_MARGIN_MIB` remains unset; no current game ELF was built/installed and no game launch was attempted.
 
-**Next D-policy evidence:** exact firmware-backed attribution of GL storage and userspace scratch pages, plus measured peak overlap and uncertainty. Until those inputs exist, keep `proven_cma_bytes` unknown and maintain **HOLD_RUNTIME**; obtain explicit approval before any one-run safety-margin change.
+K1-B now confirms the active 128 MiB CMA pool at `0x73800000`, but not whether GL, `guest_malloc`, or either DMA-heap endpoint uses it. Next D-policy evidence is the exact `reserved`/`system` heap registration and Mali/GBM allocation path plus measured overlap/uncertainty. Until those inputs exist, keep `proven_cma_bytes` unknown and maintain **HOLD_RUNTIME**; obtain explicit approval before any one-run safety-margin change.

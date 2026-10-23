@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "audit_date": "2026-10-23",
+  "phase": "K1-B live effective CMA region and DMA-heap inventory",
+  "target": {
+    "firmware_version": "1.0.1",
+    "kernel_release": "5.15.147",
+    "architecture": "aarch64",
+    "model": "sun55iw3",
+    "compatible": ["allwinner,a523", "arm,sun55iw3p1"],
+    "boot_id": "15b97fe4-5c48-412c-ba39-92efb1823286"
+  },
+  "capture": {
+    "captured_utc": "2026-10-23T09:48:50.687Z",
+    "captured_unix_ns": 1792748930687810856,
+    "method": "read-only Python stdlib probe streamed over established ssh tsps",
+    "probe_sha256_local_scratch": "e36d7ff61b547e919b2d03bd979db40c7a146a105610ed0deebaa17c36b18dbf",
+    "device_files_written": false,
+    "game_launch_attempted": false,
+    "memory_scope": "single gauge sample; not a paired D preflight"
+  },
+  "device_tree": {
+    "ram": {"address": "0x40000000", "size_bytes": 1073741824},
+    "reserved_memory": [
+      {"node": "reserved-memory/bl31", "address": "0x48000000", "size_bytes": 16777216}
+    ],
+    "linux_cma_default_node": false,
+    "memory_region_references_found": 0,
+    "nodes_scanned": 758,
+    "mali": {
+      "compatible": "arm,mali-valhall",
+      "register_address": "0x01800000",
+      "register_size_bytes": 65536,
+      "standard_memory_region_reference": false
+    },
+    "display_engine": {
+      "compatible": "allwinner,display-engine-v350",
+      "register_address": "0x05000000",
+      "register_size_bytes": 4194304,
+      "standard_memory_region_reference": false
+    }
+  },
+  "cma": {
+    "cmdline_token": "cma=128M",
+    "kernel_config": {
+      "CONFIG_CMA": "y",
+      "CONFIG_DMA_CMA": "y",
+      "CONFIG_CMA_SIZE_MBYTES": "16",
+      "CONFIG_CMA_SIZE_SEL_MBYTES": "y",
+      "CONFIG_CMA_AREAS": "32",
+      "CONFIG_DMABUF_HEAPS_CMA": "y",
+      "CONFIG_DMABUF_HEAPS_SYSTEM": "y"
+    },
+    "boot_log": "cma: Reserved 128 MiB at 0x0000000073800000",
+    "iomem_range": {
+      "start": "0x73800000",
+      "end_inclusive": "0x7b7fffff",
+      "bytes": 134217728,
+      "mib": 128
+    },
+    "meminfo_total_kib": 131072,
+    "single_sample": {
+      "CmaFree_kib": 130412,
+      "MemAvailable_kib": 671620,
+      "SwapFree_kib": 2065884,
+      "nr_free_cma_pages": 32603,
+      "cma_alloc_success": 8,
+      "cma_alloc_fail": 0
+    },
+    "pool_geometry": "proven for this boot",
+    "occupancy_owner": "unknown"
+  },
+  "dma_heaps": {
+    "sysfs_cma_area_exposed": false,
+    "devices": [
+      {"name": "system", "major": 252, "minor": 0, "sysfs_path": "/sys/devices/virtual/dma_heap/system"},
+      {"name": "reserved", "major": 252, "minor": 1, "sysfs_path": "/sys/devices/virtual/dma_heap/reserved"}
+    ],
+    "cma_device_node_visible": false,
+    "physical_backing_by_heap": "unknown"
+  },
+  "validation": {
+    "probe_py_compile": "pass",
+    "parser_self_checks": "4 assertions passed",
+    "full_host_suite_run_this_phase": false
+  },
+  "disposition": {
+    "runtime_gate": "HOLD_RUNTIME",
+    "T2_STORAGE_MARGIN_MIB": "unset",
+    "installed_runtime": "build259",
+    "current_game_elf_available": false,
+    "gameplay_or_fps_verified": false
+  },
+  "limits": [
+    "Effective CMA reservation geometry is proven; this does not identify which process or driver allocations consume it.",
+    "The absence of standard DT memory-region references does not prove that Mali, GBM/EGL, or movable userspace pages cannot use CMA.",
+    "The system and reserved DMA-heap endpoints identify device nodes only, not the allocation path of a GL request.",
+    "The one memory sample is not a fresh same-boot two-snapshot launch preflight or safety-margin approval."
+  ]
+}
