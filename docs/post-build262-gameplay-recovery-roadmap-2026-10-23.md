@@ -291,3 +291,9 @@ This is a host/target-CPU diagnostic delta on `main`; it is not the transactiona
 
 **Next:** finish offline D-policy/class attribution, then request explicit approval before any one-run safety-margin change. Only after that, repeat a fresh preflight and consider one 15–30 s principal-flow no-input game diagnostic; no New Game.
 
+### 10.10 D-policy source request-class audit (host-only; 2026-10-23)
+
+The first source map for `t2_storage_admit()` is recorded in [the D-policy receipt](../evidence/d-policy-typed-memory-classes-2026-10-23/README.md). It enumerates 13 callers: three generic direct GL texture/renderbuffer/buffer wrappers (`gl_bytes`), nine scratch-only CPU decode/snapshot/shadow requests, and one BC first-use request combining decoded GL intent with scratch peak. `nvn_bridge.h` installs the wrappers before `nvn_textures.h`; these are pre-call admission requests, not GL-success or backing receipts.
+
+**Disposition: D-policy remains incomplete.** Source can distinguish requested GL payload from requested userspace scratch, but it cannot prove which pages occupy CMA, peak physical overlap, driver allocation success, or uncertainty reserve. A1's four source-bound refusals still replay exactly; `proven_cma_bytes` and driver uncertainty remain null where unobserved, so the proven-CMA and mixed models fail closed. The fresh stable 130,412 KiB D0 pair is allocator state only and does not qualify a launch. Keep `T2_STORAGE_MARGIN_MIB` unset; do not change the launcher or attempt D until exact backing/overlap evidence and an explicitly reviewed one-run margin exist.
+

@@ -40,4 +40,4 @@ These are stable allocator observations, not proof that a title allocation will 
 
 ## Next
 
-Complete the offline D-policy/class-attribution review. Before any one-run margin or runtime launch, obtain explicit approval for the reviewed value, then take a fresh preflight and use only the Spruce principal flow for a 15–30 s no-input diagnostic. New Game remains unauthorized; no gameplay or 30 FPS result exists.
+The first source-only request-class map is now recorded in [the D-policy receipt](../d-policy-typed-memory-classes-2026-10-23/README.md). It distinguishes GL payload intent, CPU scratch and combined requests, but does not prove physical backing or peak overlap. Before any one-run margin or runtime launch, exact firmware-backed class/overlap evidence and explicit approval for the reviewed value are required; then take another fresh preflight and use only the Spruce principal flow. New Game remains unauthorized; no gameplay or 30 FPS result exists.
