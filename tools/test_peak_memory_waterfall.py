@@ -114,7 +114,7 @@ class PeakMemoryWaterfallTests(unittest.TestCase):
         self.assertEqual(window["storage_generation"], 1)
         self.assertIsNone(window["owner_generation"])
         self.assertEqual(window["owner_generation_raw"], 42)
-        self.assertEqual(window["owner_generation_status"], "source_basis_is_object_id_only")
+        self.assertEqual(window["owner_generation_status"], "source_policy_unbound")
         self.assertEqual(window["present_serial_status"], "not_emitted_by_m3b")
         self.assertEqual(result["kernel_warning_deltas"]["status"], "observed")
         self.assertTrue(result["owned_events"])
@@ -134,6 +134,27 @@ class PeakMemoryWaterfallTests(unittest.TestCase):
                                  kernel_warning_deltas={"boot_id": RUN["boot_id"], "capture_status": "ok", "records": []})
         self.assertEqual(result["status"], "incomplete")
         self.assertIn("m3b_window_owner_identity_missing", result["incomplete_reasons"])
+
+    def test_unrecognized_generation_basis_stays_raw(self):
+        text = owned_log().replace("generation-basis=nvn-object-id", "generation-basis=opaque-id")
+        result = build_waterfall(text, timeline(),
+                                 [cma_snapshot(151, 2000), cma_snapshot(181, 2000)], RUN,
+                                 memory_floor_mib=64,
+                                 kernel_warning_deltas={"boot_id": RUN["boot_id"], "capture_status": "ok", "records": []})
+        window = result["m3b_windows"][0]
+        self.assertIsNone(window["owner_generation"])
+        self.assertEqual(window["owner_generation_raw"], 42)
+        self.assertEqual(window["owner_generation_status"], "unverified_basis")
+
+    def test_nvn_object_id_mismatch_is_incomplete(self):
+        text = owned_log().replace("owner-id=42 owner-generation=42 generation-basis=nvn-object-id",
+                                   "owner-id=42 owner-generation=43 generation-basis=nvn-object-id")
+        result = build_waterfall(text, timeline(),
+                                 [cma_snapshot(151, 2000), cma_snapshot(181, 2000)], RUN,
+                                 kernel_warning_deltas={"boot_id": RUN["boot_id"], "capture_status": "ok", "records": []})
+        self.assertEqual(result["status"], "incomplete")
+        self.assertIn("m3b_window_nvn_object_id_mismatch", result["incomplete_reasons"])
+        self.assertIsNone(result["m3b_windows"][0]["owner_generation"])
 
     def test_cli_round_trips_bounded_owned_bundle(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -159,6 +180,8 @@ class PeakMemoryWaterfallTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             payload = json.loads(result.stdout)
             self.assertEqual(payload["status"], "complete")
+            self.assertIsNone(payload["m3b_windows"][0]["owner_generation"])
+            self.assertEqual(payload["m3b_windows"][0]["owner_generation_status"], "source_policy_unbound")
             self.assertEqual(payload["input_sha256"]["cma_snapshots"], [
                 hashlib.sha256(path.read_bytes()).hexdigest() for path in cma_files])
             self.assertEqual(payload["input_sha256"]["log_current_copy"],

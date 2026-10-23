@@ -177,10 +177,20 @@ def _m3b_records(log_text, run_uuid, required):
             generation_basis = row.get("generation-basis")
             if owner_id is None or owner_generation_raw is None or generation_basis in (None, "unknown", "untracked"):
                 reasons.append("m3b_window_owner_identity_missing")
-            owner_generation = (owner_generation_raw if generation_basis not in (None, "nvn-object-id", "unknown", "untracked")
-                               else None)
-            owner_generation_status = ("source_basis_is_object_id_only" if generation_basis == "nvn-object-id"
-                                       else "unverified" if owner_generation is None else "basis_present_not_independently_proven")
+            if generation_basis == "nvn-object-id":
+                if owner_id is None or owner_generation_raw is None:
+                    owner_generation_status = "identity_missing"
+                    owner_generation = None
+                elif owner_id != owner_generation_raw:
+                    reasons.append("m3b_window_nvn_object_id_mismatch")
+                    owner_generation_status = "basis_value_mismatch"
+                    owner_generation = None
+                else:
+                    owner_generation_status = "source_policy_unbound"
+                    owner_generation = None
+            else:
+                owner_generation_status = "unverified_basis" if generation_basis not in (None, "unknown", "untracked") else "unverified"
+                owner_generation = None
             windows.append({
                 "run_uuid": run_uuid, "event_seq": seq, "phase": row.get("stage"),
                 "t_start_ns": start, "t_end_ns": end, **intervals,
