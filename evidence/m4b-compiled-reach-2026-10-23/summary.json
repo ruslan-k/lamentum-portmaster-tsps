@@ -1,0 +1,1949 @@
+{
+  "adapter_patch_sha256": "6c549b09797a403390d4ced13e770bc35c65f74d70240a01f2ec77f6e258eba4",
+  "analysis_tool": {
+    "commands_sha256_checked": "b95fc3c0175c658f4c089482e765785e1b6bebc2159faaf68a1d6da64a3b71a4",
+    "path": "tools/gl_compiled_reach.py",
+    "sha256": "f31a452619c987078dba8d66a8251ef5d3feaba45028faf154ca52cb48d16196"
+  },
+  "build_trace": {
+    "commands_jsonl_sha256": "b95fc3c0175c658f4c089482e765785e1b6bebc2159faaf68a1d6da64a3b71a4",
+    "commands_sha256": "b95fc3c0175c658f4c089482e765785e1b6bebc2159faaf68a1d6da64a3b71a4",
+    "compile_invocations": 35,
+    "compiler_invocations": 36,
+    "direct_link_source_units": [
+      "framework/nxcompat/src/nxcompat_sdl_optional.c",
+      "framework/nxcompat/src/nxcompat_settings.c",
+      "framework/nxcompat/src/nxcompat_video.c",
+      "native/entry.S",
+      "native/input_gptk.c",
+      "native/loader.c",
+      "native/nvn_bridge.S",
+      "native/nxgl_frame_proof_adapter.c",
+      "native/t2_runtime_health.c",
+      "native/t2_video.c"
+    ],
+    "final_link_invocations": 1,
+    "link_input_archives": 1,
+    "link_input_objects": 32,
+    "link_invocations": 1,
+    "link_uses_gc_sections": true,
+    "per_tu_dependency_and_preprocess_records": 45,
+    "per_unit_dependency_preprocessor_records": 45,
+    "preprocessed_bytes": 24986688,
+    "preprocessed_summaries_sha256": "425c70f9f10cc4e8d9a4c9b4ea4c16a68981c4c290d73cfcbcc1cdc308883e36",
+    "response_file_uses": 0,
+    "translation_unit_extensions": {
+      ".S": 2,
+      ".c": 43
+    },
+    "translation_unit_paths": [
+      "framework/nxaudio/src/nxaudio.c",
+      "framework/nxaudio/src/nxaudio_receipt.c",
+      "framework/nxaudio/src/nxaudio_runtime.c",
+      "framework/nxcompat/src/nxcompat_sdl_optional.c",
+      "framework/nxcompat/src/nxcompat_settings.c",
+      "framework/nxcompat/src/nxcompat_video.c",
+      "framework/nxgl/adapters/nxgl_nxloader_provider.c",
+      "framework/nxgl/adapters/nxgl_provider_discovery_adapter.c",
+      "framework/nxgl/src/nxgl_arbiter.c",
+      "framework/nxgl/src/nxgl_diagnostics.c",
+      "framework/nxgl/src/nxgl_logic.c",
+      "framework/nxgl/src/nxgl_metrics.c",
+      "framework/nxgl/src/nxgl_present.c",
+      "framework/nxgl/src/nxgl_provider_recovery.c",
+      "framework/nxgl/src/nxgl_sdl2.c",
+      "framework/nxgl/src/nxgl_sdl_hint.c",
+      "framework/nxinput/engine-glue/nxc6_glue.c",
+      "framework/nxinput/src/nxinput_authority.c",
+      "framework/nxinput/src/nxinput_authority_v5.c",
+      "framework/nxinput/src/nxinput_decision.c",
+      "framework/nxinput/src/nxinput_godot.c",
+      "framework/nxinput/src/nxinput_gptk.c",
+      "framework/nxinput/src/nxinput_gptk4.c",
+      "framework/nxinput/src/nxinput_gptk4_bridge.c",
+      "framework/nxinput/src/nxinput_gptk4_preinit.c",
+      "framework/nxinput/src/nxinput_gptk_live.c",
+      "framework/nxinput/src/nxinput_gptk_loader.c",
+      "framework/nxinput/src/nxinput_gptk_motion.c",
+      "framework/nxinput/src/nxinput_gptk_preinit.c",
+      "framework/nxinput/src/nxinput_livedb.c",
+      "framework/nxinput/src/nxinput_portmaster.c",
+      "framework/nxinput/src/nxinput_provider.c",
+      "framework/nxinput/src/nxinput_provider_linux.c",
+      "framework/nxinput/src/nxinput_sdl.c",
+      "framework/nxinput/src/nxinput_sdl_seam.c",
+      "framework/nxinput/src/nxinput_sha256.c",
+      "framework/nxinput/src/nxinput_sovereign.c",
+      "framework/nxinput/src/nxinput_translate.c",
+      "native/entry.S",
+      "native/input_gptk.c",
+      "native/loader.c",
+      "native/nvn_bridge.S",
+      "native/nxgl_frame_proof_adapter.c",
+      "native/t2_runtime_health.c",
+      "native/t2_video.c"
+    ],
+    "translation_units": 45,
+    "unique_project_dependencies": 275
+  },
+  "call_sites": [
+    {
+      "api": "glBufferData",
+      "callee": "nxgl_gles2_pfn_glBufferData",
+      "compiled_status": "compiled-unreachable",
+      "dispatch": "indirect",
+      "id": "framework/nxgl/src/nxgl_gles2.c|glBufferData|indirect|nxgl_gles2_pfn_glBufferData|1",
+      "kind": "buffer-storage",
+      "line": 191,
+      "link_input_proof": "no direct source or compiled object from this site's translation units is linked",
+      "link_input_status": "not-in-link-input",
+      "link_input_units": [],
+      "live_section_retained": "unknown",
+      "matched_tokens": [],
+      "path": "framework/nxgl/src/nxgl_gles2.c",
+      "proof": "source path is absent from every direct translation unit dependency closure",
+      "source_status": "unknown",
+      "translation_units": []
+    },
+    {
+      "api": "glCompressedTexImage2D",
+      "callee": "nxgl_gles2_pfn_glCompressedTexImage2D",
+      "compiled_status": "compiled-unreachable",
+      "dispatch": "indirect",
+      "id": "framework/nxgl/src/nxgl_gles2.c|glCompressedTexImage2D|indirect|nxgl_gles2_pfn_glCompressedTexImage2D|1",
+      "kind": "texture-storage",
+      "line": 200,
+      "link_input_proof": "no direct source or compiled object from this site's translation units is linked",
+      "link_input_status": "not-in-link-input",
+      "link_input_units": [],
+      "live_section_retained": "unknown",
+      "matched_tokens": [],
+      "path": "framework/nxgl/src/nxgl_gles2.c",
+      "proof": "source path is absent from every direct translation unit dependency closure",
+      "source_status": "unknown",
+      "translation_units": []
+    },
+    {
+      "api": "glCopyTexImage2D",
+      "callee": "nxgl_gles2_pfn_glCopyTexImage2D",
+      "compiled_status": "compiled-unreachable",
+      "dispatch": "indirect",
+      "id": "framework/nxgl/src/nxgl_gles2.c|glCopyTexImage2D|indirect|nxgl_gles2_pfn_glCopyTexImage2D|1",
+      "kind": "texture-copy",
+      "line": 202,
+      "link_input_proof": "no direct source or compiled object from this site's translation units is linked",
+      "link_input_status": "not-in-link-input",
+      "link_input_units": [],
+      "live_section_retained": "unknown",
+      "matched_tokens": [],
+      "path": "framework/nxgl/src/nxgl_gles2.c",
+      "proof": "source path is absent from every direct translation unit dependency closure",
+      "source_status": "unknown",
+      "translation_units": []
+    },
+    {
+      "api": "glCopyTexSubImage2D",
+      "callee": "nxgl_gles2_pfn_glCopyTexSubImage2D",
+      "compiled_status": "compiled-unreachable",
+      "dispatch": "indirect",
+      "id": "framework/nxgl/src/nxgl_gles2.c|glCopyTexSubImage2D|indirect|nxgl_gles2_pfn_glCopyTexSubImage2D|1",
+      "kind": "texture-copy",
+      "line": 203,
+      "link_input_proof": "no direct source or compiled object from this site's translation units is linked",
+      "link_input_status": "not-in-link-input",
+      "link_input_units": [],
+      "live_section_retained": "unknown",
+      "matched_tokens": [],
+      "path": "framework/nxgl/src/nxgl_gles2.c",
+      "proof": "source path is absent from every direct translation unit dependency closure",
+      "source_status": "unknown",
+      "translation_units": []
+    },
+    {
+      "api": "glFramebufferRenderbuffer",
+      "callee": "nxgl_gles2_pfn_glFramebufferRenderbuffer",
+      "compiled_status": "compiled-unreachable",
+      "dispatch": "indirect",
+      "id": "framework/nxgl/src/nxgl_gles2.c|glFramebufferRenderbuffer|indirect|nxgl_gles2_pfn_glFramebufferRenderbuffer|1",
+      "kind": "framebuffer-attachment",
+      "line": 225,
+      "link_input_proof": "no direct source or compiled object from this site's translation units is linked",
+      "link_input_status": "not-in-link-input",
+      "link_input_units": [],
+      "live_section_retained": "unknown",
+      "matched_tokens": [],
+      "path": "framework/nxgl/src/nxgl_gles2.c",
+      "proof": "source path is absent from every direct translation unit dependency closure",
+      "source_status": "unknown",
+      "translation_units": []
+    },
+    {
+      "api": "glFramebufferTexture2D",
+      "callee": "nxgl_gles2_pfn_glFramebufferTexture2D",
+      "compiled_status": "compiled-unreachable",
+      "dispatch": "indirect",
+      "id": "framework/nxgl/src/nxgl_gles2.c|glFramebufferTexture2D|indirect|nxgl_gles2_pfn_glFramebufferTexture2D|1",
+      "kind": "framebuffer-attachment",
+      "line": 226,
+      "link_input_proof": "no direct source or compiled object from this site's translation units is linked",
+      "link_input_status": "not-in-link-input",
+      "link_input_units": [],
+      "live_section_retained": "unknown",
+      "matched_tokens": [],
+      "path": "framework/nxgl/src/nxgl_gles2.c",
+      "proof": "source path is absent from every direct translation unit dependency closure",
+      "source_status": "unknown",
+      "translation_units": []
+    },
+    {
+      "api": "glRenderbufferStorage",
+      "callee": "nxgl_gles2_pfn_glRenderbufferStorage",
+      "compiled_status": "compiled-unreachable",
+      "dispatch": "indirect",
+      "id": "framework/nxgl/src/nxgl_gles2.c|glRenderbufferStorage|indirect|nxgl_gles2_pfn_glRenderbufferStorage|1",
+      "kind": "renderbuffer-storage",
+      "line": 272,
+      "link_input_proof": "no direct source or compiled object from this site's translation units is linked",
+      "link_input_status": "not-in-link-input",
+      "link_input_units": [],
+      "live_section_retained": "unknown",
+      "matched_tokens": [],
+      "path": "framework/nxgl/src/nxgl_gles2.c",
+      "proof": "source path is absent from every direct translation unit dependency closure",
+      "source_status": "unknown",
+      "translation_units": []
+    },
+    {
+      "api": "glTexImage2D",
+      "callee": "nxgl_gles2_pfn_glTexImage2D",
+      "compiled_status": "compiled-unreachable",
+      "dispatch": "indirect",
+      "id": "framework/nxgl/src/nxgl_gles2.c|glTexImage2D|indirect|nxgl_gles2_pfn_glTexImage2D|1",
+      "kind": "texture-storage",
+      "line": 283,
+      "link_input_proof": "no direct source or compiled object from this site's translation units is linked",
+      "link_input_status": "not-in-link-input",
+      "link_input_units": [],
+      "live_section_retained": "unknown",
+      "matched_tokens": [],
+      "path": "framework/nxgl/src/nxgl_gles2.c",
+      "proof": "source path is absent from every direct translation unit dependency closure",
+      "source_status": "unknown",
+      "translation_units": []
+    },
+    {
+      "api": "glTexImage2D",
+      "callee": "glTexImage2D",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/momo_stencil_bench.h|glTexImage2D|direct|glTexImage2D|1",
+      "kind": "texture-storage",
+      "line": 32,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "lc2_gl_tex_image2d_admit"
+      ],
+      "path": "native/momo_stencil_bench.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glRenderbufferStorage",
+      "callee": "glRenderbufferStorage",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/momo_stencil_bench.h|glRenderbufferStorage|direct|glRenderbufferStorage|1",
+      "kind": "renderbuffer-storage",
+      "line": 35,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "lc2_gl_renderbuffer_storage_admit"
+      ],
+      "path": "native/momo_stencil_bench.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glFramebufferTexture2D",
+      "callee": "glFramebufferTexture2D",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/momo_stencil_bench.h|glFramebufferTexture2D|direct|glFramebufferTexture2D|1",
+      "kind": "framebuffer-attachment",
+      "line": 37,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "glFramebufferTexture2D"
+      ],
+      "path": "native/momo_stencil_bench.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glFramebufferRenderbuffer",
+      "callee": "glFramebufferRenderbuffer",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/momo_stencil_bench.h|glFramebufferRenderbuffer|direct|glFramebufferRenderbuffer|1",
+      "kind": "framebuffer-attachment",
+      "line": 38,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "glFramebufferRenderbuffer"
+      ],
+      "path": "native/momo_stencil_bench.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glFramebufferRenderbuffer",
+      "callee": "glFramebufferRenderbuffer",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/momo_stencil_bench.h|glFramebufferRenderbuffer|direct|glFramebufferRenderbuffer|2",
+      "kind": "framebuffer-attachment",
+      "line": 39,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "glFramebufferRenderbuffer"
+      ],
+      "path": "native/momo_stencil_bench.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glFramebufferTexture2D",
+      "callee": "glFramebufferTexture2D",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/momo_texture_stats.h|glFramebufferTexture2D|direct|glFramebufferTexture2D|1",
+      "kind": "framebuffer-attachment",
+      "line": 32,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "glFramebufferTexture2D"
+      ],
+      "path": "native/momo_texture_stats.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "eglCreatePbufferSurface",
+      "callee": "eglCreatePbufferSurface",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/nvn_bridge.h|eglCreatePbufferSurface|direct|eglCreatePbufferSurface|1",
+      "kind": "egl-surface",
+      "line": 137,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "eglCreatePbufferSurface"
+      ],
+      "path": "native/nvn_bridge.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glCopyTexSubImage2D",
+      "callee": "glCopyTexSubImage2D",
+      "compiled_status": "compiled-unreachable",
+      "dispatch": "direct",
+      "id": "native/nvn_direct_composition.h|glCopyTexSubImage2D|direct|glCopyTexSubImage2D|1",
+      "kind": "texture-copy",
+      "line": 126,
+      "link_input_proof": "no direct source or compiled object from this site's translation units is linked",
+      "link_input_status": "not-in-link-input",
+      "link_input_units": [],
+      "live_section_retained": "unknown",
+      "matched_tokens": [],
+      "path": "native/nvn_direct_composition.h",
+      "proof": "source path is absent from every direct translation unit dependency closure",
+      "source_status": "unknown",
+      "translation_units": []
+    },
+    {
+      "api": "glTexImage2D",
+      "callee": "glTexImage2D",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/nvn_fb_present.h|glTexImage2D|direct|glTexImage2D|1",
+      "kind": "texture-storage",
+      "line": 57,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "lc2_gl_tex_image2d_admit"
+      ],
+      "path": "native/nvn_fb_present.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glFramebufferTexture2D",
+      "callee": "glFramebufferTexture2D",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/nvn_fb_present.h|glFramebufferTexture2D|direct|glFramebufferTexture2D|1",
+      "kind": "framebuffer-attachment",
+      "line": 63,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "glFramebufferTexture2D"
+      ],
+      "path": "native/nvn_fb_present.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glFramebufferTexture2D",
+      "callee": "glFramebufferTexture2D",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/nvn_framebuffers.h|glFramebufferTexture2D|direct|glFramebufferTexture2D|1",
+      "kind": "framebuffer-attachment",
+      "line": 109,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "glFramebufferTexture2D"
+      ],
+      "path": "native/nvn_framebuffers.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glFramebufferRenderbuffer",
+      "callee": "glFramebufferRenderbuffer",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/nvn_framebuffers.h|glFramebufferRenderbuffer|direct|glFramebufferRenderbuffer|1",
+      "kind": "framebuffer-attachment",
+      "line": 110,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "glFramebufferRenderbuffer"
+      ],
+      "path": "native/nvn_framebuffers.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glFramebufferRenderbuffer",
+      "callee": "glFramebufferRenderbuffer",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/nvn_framebuffers.h|glFramebufferRenderbuffer|direct|glFramebufferRenderbuffer|2",
+      "kind": "framebuffer-attachment",
+      "line": 111,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "glFramebufferRenderbuffer"
+      ],
+      "path": "native/nvn_framebuffers.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glTexImage2D",
+      "callee": "glTexImage2D",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/nvn_megaman_wave.h|glTexImage2D|direct|glTexImage2D|1",
+      "kind": "texture-storage",
+      "line": 41,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "lc2_gl_tex_image2d_admit"
+      ],
+      "path": "native/nvn_megaman_wave.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glFramebufferTexture2D",
+      "callee": "glFramebufferTexture2D",
+      "compiled_status": "compiled-unreachable",
+      "dispatch": "direct",
+      "id": "native/nvn_normal_pass.h|glFramebufferTexture2D|direct|glFramebufferTexture2D|1",
+      "kind": "framebuffer-attachment",
+      "line": 109,
+      "link_input_proof": "no direct source or compiled object from this site's translation units is linked",
+      "link_input_status": "not-in-link-input",
+      "link_input_units": [],
+      "live_section_retained": "unknown",
+      "matched_tokens": [],
+      "path": "native/nvn_normal_pass.h",
+      "proof": "source path is absent from every direct translation unit dependency closure",
+      "source_status": "unknown",
+      "translation_units": []
+    },
+    {
+      "api": "glTexImage2D",
+      "callee": "glTexImage2D",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/nvn_packaged_lazy.h|glTexImage2D|direct|glTexImage2D|1",
+      "kind": "texture-storage",
+      "line": 37,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "lc2_gl_tex_image2d_admit"
+      ],
+      "path": "native/nvn_packaged_lazy.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glTexImage2D",
+      "callee": "glTexImage2D",
+      "compiled_status": "unknown",
+      "dispatch": "direct",
+      "id": "native/nvn_present.h|glTexImage2D|direct|glTexImage2D|1",
+      "kind": "texture-storage",
+      "line": 102,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [],
+      "path": "native/nvn_present.h",
+      "proof": "source path is included, but the exact callsite line/token is absent from preprocessed output",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glFramebufferTexture2D",
+      "callee": "glFramebufferTexture2D",
+      "compiled_status": "unknown",
+      "dispatch": "direct",
+      "id": "native/nvn_present.h|glFramebufferTexture2D|direct|glFramebufferTexture2D|1",
+      "kind": "framebuffer-attachment",
+      "line": 104,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [],
+      "path": "native/nvn_present.h",
+      "proof": "source path is included, but the exact callsite line/token is absent from preprocessed output",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glBufferData",
+      "callee": "glBufferData",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/nvn_present.h|glBufferData|direct|glBufferData|1",
+      "kind": "buffer-storage",
+      "line": 179,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "lc2_gl_buffer_data_admit"
+      ],
+      "path": "native/nvn_present.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "wrapped+unmeasured",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glFramebufferTexture2D",
+      "callee": "glFramebufferTexture2D",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/nvn_present.h|glFramebufferTexture2D|direct|glFramebufferTexture2D|2",
+      "kind": "framebuffer-attachment",
+      "line": 295,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "glFramebufferTexture2D"
+      ],
+      "path": "native/nvn_present.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glTexImage2D",
+      "callee": "glTexImage2D",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/nvn_render.h|glTexImage2D|direct|glTexImage2D|1",
+      "kind": "texture-storage",
+      "line": 337,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "lc2_gl_tex_image2d_admit"
+      ],
+      "path": "native/nvn_render.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glFramebufferTexture2D",
+      "callee": "glFramebufferTexture2D",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/nvn_render.h|glFramebufferTexture2D|direct|glFramebufferTexture2D|1",
+      "kind": "framebuffer-attachment",
+      "line": 461,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "glFramebufferTexture2D"
+      ],
+      "path": "native/nvn_render.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glBufferData",
+      "callee": "glBufferData",
+      "compiled_status": "unknown",
+      "dispatch": "direct",
+      "id": "native/nvn_render.h|glBufferData|direct|glBufferData|1",
+      "kind": "buffer-storage",
+      "line": 549,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [],
+      "path": "native/nvn_render.h",
+      "proof": "source path is included, but the exact callsite line/token is absent from preprocessed output",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glTexImage2D",
+      "callee": "glTexImage2D",
+      "compiled_status": "unknown",
+      "dispatch": "direct",
+      "id": "native/nvn_render.h|glTexImage2D|direct|glTexImage2D|2",
+      "kind": "texture-storage",
+      "line": 550,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [],
+      "path": "native/nvn_render.h",
+      "proof": "source path is included, but the exact callsite line/token is absent from preprocessed output",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glFramebufferTexture2D",
+      "callee": "glFramebufferTexture2D",
+      "compiled_status": "unknown",
+      "dispatch": "direct",
+      "id": "native/nvn_render.h|glFramebufferTexture2D|direct|glFramebufferTexture2D|2",
+      "kind": "framebuffer-attachment",
+      "line": 554,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [],
+      "path": "native/nvn_render.h",
+      "proof": "source path is included, but the exact callsite line/token is absent from preprocessed output",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glTexImage2D",
+      "callee": "glTexImage2D",
+      "compiled_status": "unknown",
+      "dispatch": "direct",
+      "id": "native/nvn_render.h|glTexImage2D|direct|glTexImage2D|3",
+      "kind": "texture-storage",
+      "line": 704,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [],
+      "path": "native/nvn_render.h",
+      "proof": "source path is included, but the exact callsite line/token is absent from preprocessed output",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glTexImage2D",
+      "callee": "glTexImage2D",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/nvn_render.h|glTexImage2D|direct|glTexImage2D|4",
+      "kind": "texture-storage",
+      "line": 1067,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "lc2_gl_tex_image2d_admit"
+      ],
+      "path": "native/nvn_render.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glFramebufferTexture2D",
+      "callee": "glFramebufferTexture2D",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/nvn_render.h|glFramebufferTexture2D|direct|glFramebufferTexture2D|3",
+      "kind": "framebuffer-attachment",
+      "line": 1806,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "glFramebufferTexture2D"
+      ],
+      "path": "native/nvn_render.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glFramebufferTexture2D",
+      "callee": "glFramebufferTexture2D",
+      "compiled_status": "unknown",
+      "dispatch": "direct",
+      "id": "native/nvn_texture_diagnostic.h|glFramebufferTexture2D|direct|glFramebufferTexture2D|1",
+      "kind": "framebuffer-attachment",
+      "line": 35,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [],
+      "path": "native/nvn_texture_diagnostic.h",
+      "proof": "source path is included, but the exact callsite line/token is absent from preprocessed output",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glTexImage2D",
+      "callee": "glTexImage2D",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/nvn_textures.h|glTexImage2D|direct|glTexImage2D|1",
+      "kind": "texture-storage",
+      "line": 469,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "lc2_gl_tex_image2d_admit"
+      ],
+      "path": "native/nvn_textures.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "wrapped+unmeasured",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glTexImage2D",
+      "callee": "glTexImage2D",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/nvn_textures.h|glTexImage2D|direct|glTexImage2D|2",
+      "kind": "texture-storage",
+      "line": 515,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "lc2_gl_tex_image2d_admit"
+      ],
+      "path": "native/nvn_textures.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "wrapped+unmeasured",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glTexImage2D",
+      "callee": "glTexImage2D",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/nvn_textures.h|glTexImage2D|direct|glTexImage2D|3",
+      "kind": "texture-storage",
+      "line": 695,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "lc2_gl_tex_image2d_admit"
+      ],
+      "path": "native/nvn_textures.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "wrapped+unmeasured",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glTexImage2D",
+      "callee": "glTexImage2D",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/nvn_textures.h|glTexImage2D|direct|glTexImage2D|4",
+      "kind": "texture-storage",
+      "line": 896,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "lc2_gl_tex_image2d_admit"
+      ],
+      "path": "native/nvn_textures.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "wrapped+unmeasured",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glRenderbufferStorage",
+      "callee": "glRenderbufferStorage",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/nvn_textures.h|glRenderbufferStorage|direct|glRenderbufferStorage|1",
+      "kind": "renderbuffer-storage",
+      "line": 1073,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "lc2_gl_renderbuffer_storage_admit"
+      ],
+      "path": "native/nvn_textures.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "wrapped+unmeasured",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glTexImage2D",
+      "callee": "glTexImage2D",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/nvn_textures.h|glTexImage2D|direct|glTexImage2D|5",
+      "kind": "texture-storage",
+      "line": 1113,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "lc2_gl_tex_image2d_admit"
+      ],
+      "path": "native/nvn_textures.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "wrapped+unmeasured",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glTexImage2D",
+      "callee": "glTexImage2D",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/nvn_textures.h|glTexImage2D|direct|glTexImage2D|6",
+      "kind": "texture-storage",
+      "line": 1163,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "lc2_gl_tex_image2d_admit"
+      ],
+      "path": "native/nvn_textures.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "wrapped+unmeasured",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glBufferData",
+      "callee": "glBufferData",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/nvn_vertex_stream.h|glBufferData|direct|glBufferData|1",
+      "kind": "buffer-storage",
+      "line": 28,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "lc2_gl_buffer_data_admit"
+      ],
+      "path": "native/nvn_vertex_stream.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "wrapped+unmeasured",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glBufferData",
+      "callee": "glBufferData",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/nvn_vertex_stream.h|glBufferData|direct|glBufferData|2",
+      "kind": "buffer-storage",
+      "line": 91,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "lc2_gl_buffer_data_admit"
+      ],
+      "path": "native/nvn_vertex_stream.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "wrapped+unmeasured",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glBufferData",
+      "callee": "glBufferData",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/nvn_vertex_stream.h|glBufferData|direct|glBufferData|3",
+      "kind": "buffer-storage",
+      "line": 161,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "lc2_gl_buffer_data_admit"
+      ],
+      "path": "native/nvn_vertex_stream.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "wrapped+unmeasured",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "eglCreatePbufferSurface",
+      "callee": "eglCreatePbufferSurface",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/nvn_window.h|eglCreatePbufferSurface|direct|eglCreatePbufferSurface|1",
+      "kind": "egl-surface",
+      "line": 104,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "eglCreatePbufferSurface"
+      ],
+      "path": "native/nvn_window.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "eglCreateWindowSurface",
+      "callee": "eglCreateWindowSurface",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/nvn_window.h|eglCreateWindowSurface|direct|eglCreateWindowSurface|1",
+      "kind": "egl-surface",
+      "line": 107,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "eglCreateWindowSurface"
+      ],
+      "path": "native/nvn_window.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "wrapped+unmeasured",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glTexImage2D",
+      "callee": "glTexImage2D",
+      "compiled_status": "unknown",
+      "dispatch": "direct",
+      "id": "native/nvn_window.h|glTexImage2D|direct|glTexImage2D|1",
+      "kind": "texture-storage",
+      "line": 133,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [],
+      "path": "native/nvn_window.h",
+      "proof": "source path is included, but the exact callsite line/token is absent from preprocessed output",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "eglCreateWindowSurface",
+      "callee": "eglCreateWindowSurface",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/nvn_window.h|eglCreateWindowSurface|direct|eglCreateWindowSurface|2",
+      "kind": "egl-surface",
+      "line": 196,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "eglCreateWindowSurface"
+      ],
+      "path": "native/nvn_window.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glTexImage2D",
+      "callee": "glTexImage2D",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/t2_page_cache.h|glTexImage2D|direct|glTexImage2D|1",
+      "kind": "texture-storage",
+      "line": 57,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "lc2_gl_tex_image2d_admit"
+      ],
+      "path": "native/t2_page_cache.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glTexImage2D",
+      "callee": "glTexImage2D",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/t2_page_compact_runtime.h|glTexImage2D|direct|glTexImage2D|1",
+      "kind": "texture-storage",
+      "line": 68,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "lc2_gl_tex_image2d_admit"
+      ],
+      "path": "native/t2_page_compact_runtime.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glTexImage2D",
+      "callee": "glTexImage2D",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/t2_page_compact_runtime.h|glTexImage2D|direct|glTexImage2D|2",
+      "kind": "texture-storage",
+      "line": 70,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "lc2_gl_tex_image2d_admit"
+      ],
+      "path": "native/t2_page_compact_runtime.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glTexImage2D",
+      "callee": "glTexImage2D",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/t2_page_substitution.h|glTexImage2D|direct|glTexImage2D|1",
+      "kind": "texture-storage",
+      "line": 461,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "lc2_gl_tex_image2d_admit"
+      ],
+      "path": "native/t2_page_substitution.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glTexImage2D",
+      "callee": "glTexImage2D",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/t2_page_substitution.h|glTexImage2D|direct|glTexImage2D|2",
+      "kind": "texture-storage",
+      "line": 531,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "lc2_gl_tex_image2d_admit"
+      ],
+      "path": "native/t2_page_substitution.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glTexImage2D",
+      "callee": "glTexImage2D",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/t2_page_substitution.h|glTexImage2D|direct|glTexImage2D|3",
+      "kind": "texture-storage",
+      "line": 534,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "lc2_gl_tex_image2d_admit"
+      ],
+      "path": "native/t2_page_substitution.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glTexImage2D",
+      "callee": "glTexImage2D",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/t2_page_substitution.h|glTexImage2D|direct|glTexImage2D|4",
+      "kind": "texture-storage",
+      "line": 637,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "lc2_gl_tex_image2d_admit"
+      ],
+      "path": "native/t2_page_substitution.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glTexImage2D",
+      "callee": "glTexImage2D",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/t2_page_substitution.h|glTexImage2D|direct|glTexImage2D|5",
+      "kind": "texture-storage",
+      "line": 639,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "lc2_gl_tex_image2d_admit"
+      ],
+      "path": "native/t2_page_substitution.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glTexImage2D",
+      "callee": "glTexImage2D",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/t2_page_substitution.h|glTexImage2D|direct|glTexImage2D|6",
+      "kind": "texture-storage",
+      "line": 641,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "lc2_gl_tex_image2d_admit"
+      ],
+      "path": "native/t2_page_substitution.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glTexImage2D",
+      "callee": "glTexImage2D",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/t2_page_substitution.h|glTexImage2D|direct|glTexImage2D|7",
+      "kind": "texture-storage",
+      "line": 649,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "lc2_gl_tex_image2d_admit"
+      ],
+      "path": "native/t2_page_substitution.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glTexImage2D",
+      "callee": "glTexImage2D",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/t2_page_substitution.h|glTexImage2D|direct|glTexImage2D|8",
+      "kind": "texture-storage",
+      "line": 651,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "lc2_gl_tex_image2d_admit"
+      ],
+      "path": "native/t2_page_substitution.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glTexImage2D",
+      "callee": "glTexImage2D",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/t2_page_substitution.h|glTexImage2D|direct|glTexImage2D|9",
+      "kind": "texture-storage",
+      "line": 791,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "lc2_gl_tex_image2d_admit"
+      ],
+      "path": "native/t2_page_substitution.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glFramebufferTexture2D",
+      "callee": "glFramebufferTexture2D",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/t2_page_substitution.h|glFramebufferTexture2D|direct|glFramebufferTexture2D|1",
+      "kind": "framebuffer-attachment",
+      "line": 792,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "glFramebufferTexture2D"
+      ],
+      "path": "native/t2_page_substitution.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glTexImage2D",
+      "callee": "glTexImage2D",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/t2_texture_index.h|glTexImage2D|direct|glTexImage2D|1",
+      "kind": "texture-storage",
+      "line": 213,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "lc2_gl_tex_image2d_admit"
+      ],
+      "path": "native/t2_texture_index.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glTexImage2D",
+      "callee": "glTexImage2D",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/t2_texture_index.h|glTexImage2D|direct|glTexImage2D|2",
+      "kind": "texture-storage",
+      "line": 217,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "lc2_gl_tex_image2d_admit"
+      ],
+      "path": "native/t2_texture_index.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glTexImage2D",
+      "callee": "glTexImage2D",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/t2_texture_index.h|glTexImage2D|direct|glTexImage2D|3",
+      "kind": "texture-storage",
+      "line": 328,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "lc2_gl_tex_image2d_admit"
+      ],
+      "path": "native/t2_texture_index.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glTexImage2D",
+      "callee": "glTexImage2D",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/t2_texture_index.h|glTexImage2D|direct|glTexImage2D|4",
+      "kind": "texture-storage",
+      "line": 331,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "lc2_gl_tex_image2d_admit"
+      ],
+      "path": "native/t2_texture_index.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glTexImage2D",
+      "callee": "glTexImage2D",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/t2_texture_index.h|glTexImage2D|direct|glTexImage2D|5",
+      "kind": "texture-storage",
+      "line": 334,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "lc2_gl_tex_image2d_admit"
+      ],
+      "path": "native/t2_texture_index.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glTexImage2D",
+      "callee": "glTexImage2D",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/t2_texture_stream.h|glTexImage2D|direct|glTexImage2D|1",
+      "kind": "texture-storage",
+      "line": 42,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "lc2_gl_tex_image2d_admit"
+      ],
+      "path": "native/t2_texture_stream.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glFramebufferRenderbuffer",
+      "callee": "glFramebufferRenderbuffer",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/zero_depth_copy.h|glFramebufferRenderbuffer|direct|glFramebufferRenderbuffer|1",
+      "kind": "framebuffer-attachment",
+      "line": 134,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "glFramebufferRenderbuffer"
+      ],
+      "path": "native/zero_depth_copy.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glFramebufferRenderbuffer",
+      "callee": "glFramebufferRenderbuffer",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/zero_depth_copy.h|glFramebufferRenderbuffer|direct|glFramebufferRenderbuffer|2",
+      "kind": "framebuffer-attachment",
+      "line": 135,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "glFramebufferRenderbuffer"
+      ],
+      "path": "native/zero_depth_copy.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glFramebufferRenderbuffer",
+      "callee": "glFramebufferRenderbuffer",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/zero_depth_framebuffer.h|glFramebufferRenderbuffer|direct|glFramebufferRenderbuffer|1",
+      "kind": "framebuffer-attachment",
+      "line": 69,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "glFramebufferRenderbuffer"
+      ],
+      "path": "native/zero_depth_framebuffer.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glFramebufferRenderbuffer",
+      "callee": "glFramebufferRenderbuffer",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/zero_depth_framebuffer.h|glFramebufferRenderbuffer|direct|glFramebufferRenderbuffer|2",
+      "kind": "framebuffer-attachment",
+      "line": 70,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "glFramebufferRenderbuffer"
+      ],
+      "path": "native/zero_depth_framebuffer.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glTexImage2D",
+      "callee": "glTexImage2D",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/zero_mip_clamp_runtime.h|glTexImage2D|direct|glTexImage2D|1",
+      "kind": "texture-storage",
+      "line": 35,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "lc2_gl_tex_image2d_admit"
+      ],
+      "path": "native/zero_mip_clamp_runtime.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glTexImage2D",
+      "callee": "glTexImage2D",
+      "compiled_status": "compiled-reachable",
+      "dispatch": "direct",
+      "id": "native/zero_mip_clamp_runtime.h|glTexImage2D|direct|glTexImage2D|2",
+      "kind": "texture-storage",
+      "line": 54,
+      "link_input_proof": "translation unit is passed directly to the final link command",
+      "link_input_status": "link-input-confirmed",
+      "link_input_units": [
+        "native/loader.c"
+      ],
+      "live_section_retained": "unknown",
+      "matched_tokens": [
+        "lc2_gl_tex_image2d_admit"
+      ],
+      "path": "native/zero_mip_clamp_runtime.h",
+      "proof": "active preprocessed source line invokes the API, callee, or known wrapper token",
+      "source_status": "unknown",
+      "translation_units": [
+        "native/loader.c"
+      ]
+    },
+    {
+      "api": "glFramebufferTexture2D",
+      "callee": "glFramebufferTexture2D",
+      "compiled_status": "compiled-unreachable",
+      "dispatch": "direct",
+      "id": "native/zero_texture_readback.h|glFramebufferTexture2D|direct|glFramebufferTexture2D|1",
+      "kind": "framebuffer-attachment",
+      "line": 35,
+      "link_input_proof": "no direct source or compiled object from this site's translation units is linked",
+      "link_input_status": "not-in-link-input",
+      "link_input_units": [],
+      "live_section_retained": "unknown",
+      "matched_tokens": [],
+      "path": "native/zero_texture_readback.h",
+      "proof": "source path is absent from every direct translation unit dependency closure",
+      "source_status": "unknown",
+      "translation_units": []
+    }
+  ],
+  "compiled_status_counts": {
+    "compiled-reachable": 58,
+    "compiled-unreachable": 11,
+    "unknown": 8
+  },
+  "inventory_sha256": "31222396afb2d009ca4fcfe1407e16a5867141fbab17e4a3bf83944ca39fadb2",
+  "limitations": [
+    "Compiled reach is separate from linker section retention, runtime execution, allocation success, and physical backing.",
+    "The final link uses --gc-sections; no link map/retained-section proof was collected.",
+    "Eight included-path callsites remain unknown because their exact preprocessed line/token was not matched.",
+    "No device action or game runtime was part of this H1 trace phase.",
+    "The trace-capture wrapper and preprocessing materializer remain scratch-only; this committed analyzer consumes their local trace outputs."
+  ],
+  "link_input_status_counts": {
+    "link-input-confirmed": 66,
+    "not-in-link-input": 11
+  },
+  "phase": "M4-B H1 compile-reach trace checkpoint (partial)",
+  "schema_version": 1,
+  "source_base_commit": "c8d01ca1fed5adab1ae7ad920605f199bb83a72e",
+  "source_status_counts": {
+    "unknown": 65,
+    "wrapped+unmeasured": 12
+  },
+  "source_tree": {
+    "file_count": 390,
+    "sha256": "1b995ea13bab7aa2afcf865f68006b095a401c3cc71b8321f83c778a052dabfb"
+  },
+  "toolchain": {
+    "compiler": "aarch64-linux-gnu-gcc 9.4.0",
+    "container_id": "sha256:e437308c01ce7af4a035c3f0652bc886e258889f66803f805bce53d05af75f0c",
+    "container_image": "pmjs-arm64-spruce-local:20261002-gcc10",
+    "defines": [
+      "MESA_EGL_NO_X11_HEADERS",
+      "MOMO_SHADERS=1",
+      "T2_SWITCH_INPUT=1",
+      "ZERO_ZX_GAME=0",
+      "_POSIX_C_SOURCE=200809L"
+    ],
+    "include_dirs": [
+      "/image",
+      "/usr/include/SDL2",
+      "/work/build-263-h1-compile-reach/provider-build/nxaudio",
+      "/work/build-263-h1-compile-reach/shaders",
+      "/work/build-263-h1-compile-reach/source/framework/nxcompat/include",
+      "/work/build-263-h1-compile-reach/source/framework/nxgl/adapters",
+      "/work/build-263-h1-compile-reach/source/framework/nxgl/include",
+      "/work/build-263-h1-compile-reach/source/framework/nxgl/src",
+      "/work/build-263-h1-compile-reach/source/framework/nxinput/engine-glue",
+      "/work/build-263-h1-compile-reach/source/framework/nxinput/include",
+      "/work/build-263-h1-compile-reach/source/framework/nxloader/include"
+    ],
+    "response_files": [],
+    "target": "aarch64-linux-gnu",
+    "trace_wrapper_sha256": "7238c6c523412497ec0242fa3d1c8b0af356be48e4013b8fc4162e17c1bf8a5c",
+    "wrapper_extra_flags": [
+      "-DZERO_ZX_GAME=0",
+      "-Wno-error=unused-result",
+      "-Wno-error=unused-function"
+    ]
+  },
+  "trace_build_artifact": {
+    "build_id": "827b6d7413b3ebeee9100f905b34ffb86278593b",
+    "bytes": 2206944,
+    "installed": false,
+    "max_glibc": "2.27",
+    "purpose": "compile-trace rebuild only; not a deployment candidate",
+    "sha256": "54d280b9ca7c76b1417f80ffc9480b632ef55b29524138b59fea9fd4c3e07026"
+  },
+  "unknown_paths": {
+    "native/nvn_present.h": 2,
+    "native/nvn_render.h": 4,
+    "native/nvn_texture_diagnostic.h": 1,
+    "native/nvn_window.h": 1
+  },
+  "unreachable_paths": {
+    "framework/nxgl/src/nxgl_gles2.c": 8,
+    "native/nvn_direct_composition.h": 1,
+    "native/nvn_normal_pass.h": 1,
+    "native/zero_texture_readback.h": 1
+  },
+  "verification": {
+    "compiled_statuses_match_receipt": true,
+    "focused_tests": "16/16 passed",
+    "full_host_suite": "386/386 passed",
+    "link_input_statuses": {
+      "link-input-confirmed": 66,
+      "not-in-link-input": 11
+    },
+    "reproduced_trace_sites": 77,
+    "response_files": []
+  }
+}
