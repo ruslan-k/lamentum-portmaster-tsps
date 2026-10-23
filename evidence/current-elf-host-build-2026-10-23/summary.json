@@ -57,7 +57,7 @@
     "final_sha256_recomputed": true
   },
   "disposition": {
-    "status": "HOST_BUILT_NOT_INSTALLED",
+    "status": "HOST_BUILT_AT_CAPTURE; LATER_STAGED_INERTLY_NOT_RUN",
     "installed_runtime_remains": "build259",
     "device_files_written": false,
     "game_launch_attempted": false,

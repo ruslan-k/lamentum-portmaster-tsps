@@ -1,6 +1,6 @@
 # Current post-H2a host ELF build — 2026-10-23
 
-This is the first full native ELF built from the refreshed post-H2a source snapshot. It is a **host build only**: not transferred, installed, or launched on Longan. It supersedes neither the historical build262 artifact nor the installed build259 runtime.
+This is the first full native ELF built from the refreshed post-H2a source snapshot. At build capture it was a host-only candidate; subsequent inert staging is recorded separately. It remains unactivated and unlaunched. It supersedes neither the historical build262 artifact nor the installed build259 runtime.
 
 ## Inputs pinned and verified
 
@@ -17,7 +17,7 @@ This is the first full native ELF built from the refreshed post-H2a source snaps
 - Maximum required GLIBC: `2.27` (Longan firmware reports glibc `2.33`).
 - Paired `run_identity.py` SHA-256 `abe8e4847b18a750c0796af33d887cf43714126c9751ccdc8236715cb752401a`.
 - The build's shader-diagnostic sanitizer reported `count=4`; the final native-build and copied candidate hashes matched. Compiler output contained only the `unused-result` / `unused-function` warning classes explicitly downgraded by the wrapper; the build completed without errors.
-- Local scratch artifact; not in Git or on the device.
+- At build capture, the artifact was local scratch and not in Git. A later inert candidate copy was read back and hash-verified; see [the staging/preflight receipt](../current-host-elf-staging-preflight-2026-10-23/README.md).
 
 This differs from the historical build262 ELF (`dd13d4ab…`) because that artifact was built from the earlier source-tree hash `1b995ea…`; this candidate is built from the refreshed `3fcc9e…` tree. Do not report the hashes as the same build.
 
@@ -26,4 +26,4 @@ This differs from the historical build262 ELF (`dd13d4ab…`) because that artif
 - Baseline manifest **435/435**; adapter patch apply-check passed; build-time 77-site inventory passed.
 - `PYTHONPATH=tools python3 -m unittest discover -s tools -p 'test_*.py'`: **405 tests passed**, suite `OK`.
 - `readelf` confirmed ELF64, AArch64, PIE, Build ID and GLIBC requirements; final SHA-256 was recomputed.
-- No device files/settings changed; no game launched; build259 remains installed. The candidate is **HOST_BUILT_NOT_INSTALLED**. `T2_STORAGE_MARGIN_MIB` remains unset and D remains **HOLD_RUNTIME** pending actual request-to-allocator routing, peak/uncertainty accounting, safe staging checks and a reviewed one-run reserve.
+- No device files/settings changed during the build. A later S-only step staged the candidate inertly; build259 remains the active runtime and no game was launched. `T2_STORAGE_MARGIN_MIB` remains unset; latest D preflight is recorded separately and **HOLD_RUNTIME** remains in force.

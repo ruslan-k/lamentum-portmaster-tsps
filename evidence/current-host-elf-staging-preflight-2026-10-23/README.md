@@ -1,0 +1,34 @@
+# Current-source ELF staging and D preflight — 2026-10-23
+
+## Inert staging verified
+
+On the same Longan boot (`15b97fe4-5c48-412c-ba39-92efb1823286`, firmware `1.0.1`, kernel `5.15.147`), an S-only check found one MainUI (`PID 2369`, starttime `1079`), the principal supervisor (`PID 2196`, starttime `1023`), no game process, and no `/tmp/cmd_to_run.sh`. The active build259 ELF remained SHA-256 `d72e2f69afa16dd5b846950f3fba80bc9926edcab9b2d45c57ed23faa14b9066`; launcher hash was `f32204ff1b271dd66e38f79573f75c6f562af49174ea436e81dd9417dba1354a`. SD free space before copy: **3,323,133,952 bytes**.
+
+The refreshed host ELF and paired helper were copied to the inert hidden path `/mnt/SDCARD/Roms/PORTS/lamentum-switch/.candidate-h2a-20261023/`. Readback verified:
+
+- candidate ELF: **2,203,096 bytes**, SHA-256 `c46714403f22074d92710192d1164cfe0b7a4f62f1a4890ffb7a1e224c542332`;
+- helper: **8,310 bytes**, SHA-256 `abe8e4847b18a750c0796af33d887cf43714126c9751ccdc8236715cb752401a`;
+- the staged directory contains exactly those two files and no launcher; active build259, launcher, and ROMFS section were not overwritten.
+
+The existing device `lamentum-romfs.section` is **1,832,060,032 bytes**. Its read-only SHA-256 check matched the local owner-image section exactly: `80ad4427164a0b7ad61c3a3fcd955bd158635aac1ee42ebb67d01dfae279b893`. The target-side sequential read took **33.379 s**; no device file was written by the hash operation.
+
+## Fresh D preflight and hold
+
+The bounded `cma_readonly_snapshot.py` / `cma_readonly_compare.py` pair **before** the section hash was complete and stable:
+
+- `11:05:29.659Z` → `11:05:55.338Z`, same boot; `CmaFree=130,412 KiB` both times, `MemAvailable=671,620→671,916 KiB`, `SwapFree=2,065,884 KiB` unchanged;
+- CMA success/fail counters stayed `8/0`; `nr_free_cma=32,603`; 31 free CMA order-10 blocks; MainUI identity and DMA-FD set unchanged; no game process.
+
+The next complete same-boot pair, **after** hashing the 1.83 GB section, showed a substantially different allocator state:
+
+- `11:09:25.644Z` → `11:09:51.320Z`; `CmaFree=532→576 KiB`, `MemAvailable=669,640→669,720 KiB`, `Cached=578,624→578,652 KiB`, `SwapFree=2,065,116 KiB` unchanged within the pair;
+- `nr_free_cma=133→144`; CMA success/fail remained `8/0`, no swap-in/out, no compaction or migration delta in this pair; complete CMA page-type histogram but **no free CMA blocks at orders 7–10**;
+- MainUI PID/starttime/executable and DMA-FD set remained stable; no game process.
+
+After a further **60.694 s** idle interval, another complete pair stayed low: `CmaFree=604 KiB` both samples, `nr_free_cma=151` both, no order-7-or-higher CMA blocks, `MemAvailable=671,244→670,800 KiB`, `SwapFree=2,065,116 KiB` unchanged. A later single read at `11:18:54.911Z` still showed `CmaFree=604 KiB`, `MemAvailable=665,844 KiB`, `SwapFree=2,065,116 KiB`; boot was unchanged, the candidate directory still held the two staged files, and no principal command was pending. That last read is a gauge check, not another full preflight pair. A filtered dmesg check after the section hash found no OOM/page-allocation/CMA-failure warning lines.
+
+**Important observed association:** between the pre-hash and post-hash pairs, `Cached` rose from `145,640` to `578,624 KiB` while `CmaFree` fell from `130,412` to `532 KiB`. This followed the large read-only ROMFS hash. It is a correlation, not proof that those file-cache pages occupied CMA. No `drop_caches`, compaction, sysfs policy change, reboot, or game launch was attempted. I will not repeat the large section scan during this test sequence.
+
+**D decision: HOLD_RUNTIME.** The latest free CMA is about 0.6 MiB with no high-order CMA blocks—below the historical danger context—and the post-read state has not recovered during idle sampling. The candidate is staged but inert; `T2_STORAGE_MARGIN_MIB` remains unset. Do not launch from this state. Re-evaluate only after passive recovery is independently observed and actual GL/DMA-BUF demand plus uncertainty are reviewed; no New Game or FPS claim.
+
+Raw snapshot JSON, comparisons, and device command output remain local-only under Hermes scratch. The staged candidate is the only device write from this phase; active runtime/launcher/helper and owner section remain unchanged.

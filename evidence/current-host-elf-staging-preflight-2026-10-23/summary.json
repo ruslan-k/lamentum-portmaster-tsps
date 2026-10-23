@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "recorded_utc": "2026-10-23T11:15:02Z",
+  "phase": "current host ELF inert staging and D preflight",
+  "target": {
+    "firmware_version": "1.0.1",
+    "kernel_release": "5.15.147",
+    "boot_id": "15b97fe4-5c48-412c-ba39-92efb1823286",
+    "model": "sun55iw3"
+  },
+  "staging": {
+    "status": "STAGED_READBACK_VERIFIED_NOT_RUN",
+    "candidate_directory": "/mnt/SDCARD/Roms/PORTS/lamentum-switch/.candidate-h2a-20261023",
+    "candidate_directory_entries": ["lamentum-nextos", "run_identity.py"],
+    "launcher_in_candidate": false,
+    "device_files_written": true,
+    "active_build259_sha256_unchanged": "d72e2f69afa16dd5b846950f3fba80bc9926edcab9b2d45c57ed23faa14b9066",
+    "active_launcher_sha256_unchanged": "f32204ff1b271dd66e38f79573f75c6f562af49174ea436e81dd9417dba1354a",
+    "candidate_elf": {"bytes": 2203096, "sha256": "c46714403f22074d92710192d1164cfe0b7a4f62f1a4890ffb7a1e224c542332"},
+    "candidate_helper": {"bytes": 8310, "sha256": "abe8e4847b18a750c0796af33d887cf43714126c9751ccdc8236715cb752401a"},
+    "romfs_section": {
+      "bytes": 1832060032,
+      "sha256": "80ad4427164a0b7ad61c3a3fcd955bd158635aac1ee42ebb67d01dfae279b893",
+      "matches_local_owner_image": true,
+      "read_only_hash_elapsed_seconds": 33.378715014
+    },
+    "pre_copy_free_bytes": 3323133952,
+    "mainui_pid_starttime": [2369, 1079],
+    "principal_pid_starttime": [2196, 1023],
+    "game_processes": [],
+    "pending_principal_command": false
+  },
+  "d_preflight": {
+    "pre_hash_pair": {
+      "timestamps_utc": ["2026-10-23T11:05:29.659Z", "2026-10-23T11:05:55.338Z"],
+      "comparison_status": "complete",
+      "cmafree_kib": [130412, 130412],
+      "memavailable_kib": [671620, 671916],
+      "cached_kib": [145640, 145640],
+      "swapfree_kib": [2065884, 2065884],
+      "nr_free_cma_pages": [32603, 32603],
+      "cma_alloc_success_fail": [[8, 0], [8, 0]],
+      "free_cma_order10_blocks": [31, 31],
+      "mainui_identity_same": true,
+      "mainui_dma_fds_same": true,
+      "game_processes": 0
+    },
+    "post_hash_pair": {
+      "timestamps_utc": ["2026-10-23T11:09:25.644Z", "2026-10-23T11:09:51.320Z"],
+      "comparison_status": "complete",
+      "cmafree_kib": [532, 576],
+      "memavailable_kib": [669640, 669720],
+      "cached_kib": [578624, 578652],
+      "swapfree_kib": [2065116, 2065116],
+      "nr_free_cma_pages": [133, 144],
+      "cma_alloc_success_fail": [[8, 0], [8, 0]],
+      "cma_free_blocks_order0_to_10": [
+        {"0": 30, "1": 2, "2": 2, "3": 1, "4": 1, "5": 0, "6": 1, "7": 0, "8": 0, "9": 0, "10": 0},
+        {"0": 37, "1": 4, "2": 2, "3": 1, "4": 1, "5": 0, "6": 1, "7": 0, "8": 0, "9": 0, "10": 0}
+      ],
+      "mainui_identity_same": true,
+      "mainui_dma_fds_same": true,
+      "game_processes": 0
+    },
+    "idle_pair_after_60s": {
+      "timestamps_utc": ["2026-10-23T11:12:07.361Z", "2026-10-23T11:13:08.056Z"],
+      "comparison_status": "complete",
+      "cmafree_kib": [604, 604],
+      "memavailable_kib": [671244, 670800],
+      "cached_kib": [578824, 578972],
+      "swapfree_kib": [2065116, 2065116],
+      "nr_free_cma_pages": [151, 151],
+      "cma_free_blocks_order7_or_higher": [0, 0],
+      "mainui_identity_same": true,
+      "mainui_dma_fds_same": true,
+      "game_processes": 0
+    },
+    "latest_single_sample": {
+      "captured_utc": "2026-10-23T11:18:54.911Z",
+      "boot_id": "15b97fe4-5c48-412c-ba39-92efb1823286",
+      "cmafree_kib": 604,
+      "memavailable_kib": 665844,
+      "swapfree_kib": 2065116,
+      "candidate_directory_entries": ["lamentum-nextos", "run_identity.py"],
+      "pending_principal_command": false,
+      "scope": "single read-only gauge; not a complete D pair"
+    },
+    "dmesg_pressure_filter": {"returncode": 0, "matching_lines": 0},
+    "page_size_bytes": 4096,
+    "cpu_online": "4-7"
+  },
+  "interpretation": {
+    "cache_and_cma_shift_causal": false,
+    "observed_cross_phase_cached_change_kib": 432984,
+    "observed_cross_phase_cmafree_change_kib": -129880,
+    "runtime_gate": "HOLD_RUNTIME",
+    "hold_reason": "latest CmaFree 604 KiB, no order-7+ CMA blocks, well below prior danger context; GL/DMA-BUF demand and uncertainty remain unresolved",
+    "T2_STORAGE_MARGIN_MIB": "unset",
+    "game_launched": false,
+    "newgame_entered": false
+  },
+  "local_raw_evidence": {
+    "path_root": "Hermes scratch; not committed",
+    "pre_hash_snapshot_sha256": ["15568202d99f12292031eedb16dd8be260fa41de65de6393de8c55e41895b874", "40f90b8cd0ad366ae64732a7f86adef069cd043d16518f9750e11c90a0e64c49"],
+    "pre_hash_comparison_sha256": "b628a41b125b3416eb94010d0d10394d8a8f52fbd15e889f1538173dd5f17b68",
+    "post_hash_snapshot_sha256": ["a99beaaf7a8d8f1383f46d0f6d3978bf7a9875d51f09332baa662bf4caf2836c", "ac6dd9f517de9c47d0f46875a0c6f8710a732494878469e425dd45d488b06b93"],
+    "post_hash_comparison_sha256": "fb37f948cd8f1ee1c07e901069385bf48a466226b0a2e6017775742e7b3d239e",
+    "idle_snapshot_sha256": ["fcafaecfb949ca9ba145a1972fecfe59375ce78e1a3b546ffd9401322b0e30d6", "74225a9566c0e75021e5de7ee0262d2671bef4f2ddda05d3f5f3f21e6732ab67"],
+    "idle_comparison_sha256": "6f4d0d4927dda5541e7a35e9f20585e21bccc724441f29092ca83cbf2aecdb71"
+  }
+}
