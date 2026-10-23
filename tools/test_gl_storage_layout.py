@@ -231,6 +231,11 @@ int main(void) {
         start = added.find('static void lc2_bc_reserve_first_use(')
         self.assertGreaterEqual(start, 0, 'first-use admission still charges only the base mip')
         end = added.index('/* LC2_BC_RESERVE_FIRST_USE_END */', start)
+        helper_start = added.find('/* LC2_BC_STRIPE_GEOMETRY_BEGIN */')
+        self.assertGreaterEqual(helper_start, 0, 'checked stripe geometry helper missing from overlay')
+        helper_end = added.find('/* LC2_BC_STRIPE_GEOMETRY_END */', helper_start)
+        self.assertGreaterEqual(helper_end, helper_start)
+        stripe_helper = added[helper_start:helper_end + len('/* LC2_BC_STRIPE_GEOMETRY_END */')]
         source = r'''
 #include <assert.h>
 #include <setjmp.h>
@@ -240,6 +245,7 @@ int main(void) {
 #include <stdlib.h>
 #include <string.h>
 #include "lc2_gl_storage.h"
+''' + stripe_helper + r'''
 #define GL_UNSIGNED_BYTE 0x1401U
 #define GL_FLOAT 0x1406U
 struct nvn_texture_builder {unsigned width,height,depth,levels,target,samples,format;};
@@ -253,9 +259,6 @@ static int lc2_life_events_owner(const char *phase,uint64_t id,uint64_t generati
 static uint64_t nvn_caller,charged,cap=300ULL<<20,last_gl,last_scratch;
 static unsigned adds,gl_calls,audits,admissions;
 static jmp_buf target;
-static unsigned zero_bc_should_stripe(unsigned bc,unsigned width,unsigned scaled,unsigned medium) {
- (void)medium;return bc && width>4096 && !scaled;
-}
 static unsigned lc2_bc_inplace_enabled(void){return 0;}
 static void t2_storage_admit(uint64_t gl,uint64_t scratch,uint64_t caller,uint64_t owner) {
  (void)caller;(void)owner;admissions++;last_gl=gl;last_scratch=scratch;
@@ -297,6 +300,12 @@ int main(void) {
  t.t2_budget_bytes=0;
  if(!setjmp(target)){lc2_bc_reserve_first_use(&t,&t,0xDEAD,16);assert(0);}
  assert(adds==2);
+ t.b.width=4097;t.b.height=9;t.b.levels=1;
+ assert(!setjmp(target));lc2_bc_reserve_first_use(&t,&t,GL_UNSIGNED_BYTE,16);
+ assert(adds==3);assert(admissions==4);assert(last_gl==147492);assert(last_scratch==196692);
+ struct zero_bc_stripe_geometry actual;struct zero_bc_full_geometry full;
+ assert(zero_bc_select_stripe(16,4097,9,4,128,0,0,0,&actual,&full)==ZERO_BC_STRIPE_ROWS);
+ assert(actual.scratch_peak_u64==last_scratch);
  /* Existing eligibility remains single-level: this fixture tests the guard's
   * future-proof refusal, not a newly enabled multilevel lazy upload path. */
  puts("CHECKED_ADMISSION_OK");return 0;
@@ -316,6 +325,10 @@ int main(void) {
             ran = subprocess.run([str(exe)], capture_output=True, text=True, timeout=10)
             self.assertEqual(ran.returncode, 0, ran.stderr)
             self.assertIn('CHECKED_ADMISSION_OK', ran.stdout)
+        self.assertIn('zero_bc_stripe_geometry(width,height,bpp,block_bytes,128,&plan)', added)
+        self.assertIn('zero_texture_bc_pixels(t,level,box,pixels,current.pixel_capacity);', added)
+        self.assertIn('glTexSubImage2D(GL_TEXTURE_2D,level,0,y,width,rows,spec.external,spec.type,pixels);', patch)
+        self.assertIn('t2_storage_admit(0,plan.scratch_peak_u64', added)
         # Exact public source ordering, not an assertion about driver allocation:
         # the full-chain charge must precede the first GL storage/bind call. A
         # non-GL declaration (the upload-triple resolution) may sit between them.

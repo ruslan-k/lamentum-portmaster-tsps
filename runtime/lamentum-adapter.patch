@@ -4776,7 +4776,7 @@ index 0fb14ec..9e2ccfc 100644
              free(premul);free(probe);free(sprite);free(flat);free(scaled);free(awf);free(mipped);free(r8);free(advent);free(lowered);free(wrapped);free(interface_source);
              if(!status){char log[2048]={0};glGetShaderInfoLog(shaders[i],sizeof(log),NULL,log);printf("NVN_SHADER_COMPILE_ERROR %s\n",log);stop("NVN_SHADER_COMPILE_FAILED",nvn_caller,p->sources[i],21);}
 diff --git a/native/nvn_textures.h b/native/nvn_textures.h
-index 0feaef1..7584ba8 100644
+index 0feaef1..99e402a 100644
 --- a/native/nvn_textures.h
 +++ b/native/nvn_textures.h
 @@ -6,6 +6,14 @@
@@ -4996,7 +4996,7 @@ index 0feaef1..7584ba8 100644
  static void zero_texture_pool_flushed(struct nvn_pool *pool,uint64_t offset,uint64_t bytes) {
      if(!bytes)return;
      for(unsigned i=0;i<4096;i++) {
-@@ -478,14 +592,257 @@ static void zero_texture_bc_pixels(struct nvn_texture *t,unsigned level,const ui
+@@ -478,14 +592,254 @@ static void zero_texture_bc_pixels(struct nvn_texture *t,unsigned level,const ui
          stop("ZERO_BC_MIP_STORAGE",nvn_caller,t->id,24);
      unsigned x=box?box[0]/4:0,y=box?box[1]/4:0,width=box?box[3]:m.width,height=box?box[4]:m.height;
      unsigned nx=(width+3)/4,ny=(height+3)/4;size_t linear_bytes=(size_t)nx*ny*m.bytes;
@@ -5089,17 +5089,16 @@ index 0feaef1..7584ba8 100644
 +    return lc2_m3b_window_begin(&descriptor);
 +}
 +static void lc2_bc_upload_stripes(struct nvn_texture *t,unsigned level,unsigned width,unsigned height,unsigned allocate) {
-+    unsigned type=nvn_cpu_image_upload_type(t),bpp=nvn_texture_upload_bytes(type);
++    unsigned type=nvn_cpu_image_upload_type(t),bpp=nvn_texture_upload_bytes(type),block_bytes=zero_bc_bytes(t->b.format);
 +    struct lc2_gl_upload spec=lc2_gl_upload_for(t,type);
-+    size_t capacity=(size_t)width*128*bpp;
-+    unsigned first_rows=height<128?height:128;
-+    size_t linear_capacity=(size_t)((width+3)/4)*((first_rows+3)/4)*zero_bc_bytes(t->b.format);
-+    struct lc2_m3b_window *m3b=lc2_m3b_texture_begin(t,level,width,height,bpp,capacity,linear_capacity,
++    struct zero_bc_stripe_geometry plan;
++    if(!zero_bc_stripe_geometry(width,height,bpp,block_bytes,128,&plan))
++        stop("T2_STORAGE_ADMISSION",nvn_caller,t->id,26);
++    struct lc2_m3b_window *m3b=lc2_m3b_texture_begin(t,level,width,height,bpp,plan.pixel_capacity,plan.linear_capacity,
 +        0,allocate,allocate?"bc-stripe-initialize":"bc-stripe-refresh");
-+    if(UINT64_MAX-(uint64_t)capacity<(uint64_t)linear_capacity)stop("T2_STORAGE_ADMISSION",nvn_caller,t->id,26);
-+    t2_storage_admit(0,(uint64_t)capacity+linear_capacity,nvn_caller,t->id);
-+    uint8_t *pixels=malloc(capacity);
-+    if(!pixels)stop("LC2_BC_STRIPE_MEMORY",nvn_caller,capacity,21);
++    t2_storage_admit(0,plan.scratch_peak_u64,nvn_caller,t->id);
++    uint8_t *pixels=malloc(plan.pixel_capacity);
++    if(!pixels)stop("LC2_BC_STRIPE_MEMORY",nvn_caller,plan.pixel_capacity,21);
 +    if(allocate) {
 +        uint64_t begin=m3b?lc2_life_events_now_ns():0;
 +        glTexImage2D(GL_TEXTURE_2D,level,spec.internal,width,height,0,spec.external,spec.type,NULL);
@@ -5107,9 +5106,13 @@ index 0feaef1..7584ba8 100644
 +    }
 +    for(unsigned y=0;y<height;y+=128) {
 +        unsigned rows=height-y;if(rows>128)rows=128;
++        struct zero_bc_stripe_geometry current;
++        if(!zero_bc_stripe_geometry(width,rows,bpp,block_bytes,128,&current) || current.rows!=rows ||
++           current.pixel_capacity>plan.pixel_capacity || current.linear_capacity>plan.linear_capacity)
++            stop("T2_STORAGE_ADMISSION",nvn_caller,t->id,26);
 +        uint32_t box[6]={0,y,0,width,rows,1};
 +        uint64_t decode_begin=m3b?lc2_life_events_now_ns():0;
-+        zero_texture_bc_pixels(t,level,box,pixels,(size_t)width*rows*bpp);
++        zero_texture_bc_pixels(t,level,box,pixels,current.pixel_capacity);
 +        if(m3b)lc2_m3b_decode_mark(m3b,decode_begin,lc2_life_events_now_ns());
 +        uint64_t upload_begin=m3b?lc2_life_events_now_ns():0;
 +        glTexSubImage2D(GL_TEXTURE_2D,level,0,y,width,rows,spec.external,spec.type,pixels);
@@ -5136,7 +5139,7 @@ index 0feaef1..7584ba8 100644
 +    }
 +    free(pixels);
 +    if(m3b)lc2_m3b_window_finish(m3b,lc2_life_events_now_ns());
-+    printf("LC2_BC_STRIPED_UPLOAD id=%"PRIu64" level=%u allocate=%u size=%ux%u temporary-bytes=%zu linear-temporary-bytes=%zu known-cpu-scratch-peak-bytes=%zu resolution=preserved\n",t->id,level,allocate,width,height,capacity,linear_capacity,capacity+linear_capacity);
++    printf("LC2_BC_STRIPED_UPLOAD id=%"PRIu64" level=%u allocate=%u size=%ux%u temporary-bytes=%zu linear-temporary-bytes=%zu known-cpu-scratch-peak-bytes=%zu resolution=preserved\n",t->id,level,allocate,width,height,plan.pixel_capacity,plan.linear_capacity,plan.scratch_peak);
 +    /* Optional memory experiment: ask the kernel to page out the preserved
 +     * compressed CPU mirror after upload, never discard or rewrite it. */
 +    const char *pageout=getenv("LC2_TEXTURE_PAGEOUT");
@@ -5219,20 +5222,14 @@ index 0feaef1..7584ba8 100644
 +    enum lc2_gl_storage_status status=lc2_gl_storage_calculate(&descriptor,&layout);
 +    if(status!=LC2_GL_STORAGE_OK)stop("LC2_BC_STORAGE_LAYOUT",nvn_caller,status,24);
 +    unsigned output_bpp=nvn_texture_upload_bytes(type),width=t->b.width,height=t->b.height;
-+    uint64_t rgba_bytes=(uint64_t)width*height*output_bpp,linear_bytes=(uint64_t)((width+3)/4)*((height+3)/4)*bc;
 +    const char *medium_option=getenv("LC2_BC_STRIPE_MEDIUM");
 +    unsigned medium=medium_option && !strcmp(medium_option,"1");
-+    uint64_t scratch_peak=rgba_bytes;
-+    if(zero_bc_should_stripe(bc,width,t->host_scaled,medium)) {
-+        unsigned rows=height<128?height:128;
-+        uint64_t stripe_bytes=(uint64_t)width*128*output_bpp;
-+        uint64_t stripe_linear=(uint64_t)((width+3)/4)*((rows+3)/4)*bc;
-+        if(UINT64_MAX-stripe_bytes<stripe_linear)stop("LC2_BC_STORAGE_LAYOUT",nvn_caller,t->id,24);
-+        scratch_peak=stripe_bytes+stripe_linear;
-+    } else if(rgba_bytes<linear_bytes || !lc2_bc_inplace_enabled()) {
-+        if(UINT64_MAX-scratch_peak<linear_bytes)stop("LC2_BC_STORAGE_LAYOUT",nvn_caller,t->id,24);
-+        scratch_peak+=linear_bytes;
-+    }
++    struct zero_bc_stripe_geometry stripe_plan;
++    struct zero_bc_full_geometry full_plan;
++    unsigned stripe_choice=zero_bc_select_stripe(bc,width,height,output_bpp,128,t->host_scaled,medium,
++        lc2_bc_inplace_enabled(),&stripe_plan,&full_plan);
++    if(stripe_choice==ZERO_BC_STRIPE_INVALID)stop("LC2_BC_STORAGE_LAYOUT",nvn_caller,t->id,24);
++    uint64_t scratch_peak=stripe_choice==ZERO_BC_STRIPE_ROWS?stripe_plan.scratch_peak_u64:full_plan.scratch_peak_u64;
 +    if(t->t2_budget_bytes) {
 +        if(t->t2_budget_bytes!=layout.bytes)stop("LC2_BC_STORAGE_CHARGE_MISMATCH",nvn_caller,t->id,24);
 +        t2_storage_admit(0,scratch_peak,nvn_caller,t->id);
@@ -5255,7 +5252,7 @@ index 0feaef1..7584ba8 100644
      t=zero_texture_storage_state(t);
      if(!__atomic_exchange_n(&t->zero_cpu_dirty,0,__ATOMIC_ACQ_REL))return;
      t2_page_require_rgba8(t,"T2_PAGE_CPU_REFRESH_REQUIRED");
-@@ -494,25 +851,77 @@ static void zero_texture_refresh(struct nvn_texture *t) {
+@@ -494,25 +848,84 @@ static void zero_texture_refresh(struct nvn_texture *t) {
          stop("ZERO_TEXTURE_CPU_GPU_COHERENCE_REQUIRED",nvn_caller,t->id,20);
      unsigned width=t->b.width,height=t->b.height,bc=zero_bc_bytes(t->b.format);
      unsigned type=nvn_cpu_image_upload_type(t),output_bpp=nvn_texture_upload_bytes(type);
@@ -5265,11 +5262,18 @@ index 0feaef1..7584ba8 100644
 +    struct lc2_gl_upload spec=lc2_gl_upload_for(t,type);
      glBindTexture(GL_TEXTURE_2D,t->name);GLint alignment;glGetIntegerv(GL_UNPACK_ALIGNMENT,&alignment);glPixelStorei(GL_UNPACK_ALIGNMENT,1);
      for(unsigned level=0;level<t->b.levels;level++) {
-+        if(zero_bc_should_stripe(bc,width,t->host_scaled,medium_stripes)) {
-+            lc2_bc_upload_stripes(t,level,width,height,t->lc2_bc_pending);
-+            if(width>1)width>>=1;
-+            if(height>1)height>>=1;
-+            continue;
++        if(bc) {
++            struct zero_bc_stripe_geometry stripe_plan;
++            struct zero_bc_full_geometry full_plan;
++            unsigned stripe_choice=zero_bc_select_stripe(bc,width,height,output_bpp,128,t->host_scaled,
++                medium_stripes,lc2_bc_inplace_enabled(),&stripe_plan,&full_plan);
++            if(stripe_choice==ZERO_BC_STRIPE_INVALID)stop("LC2_BC_STORAGE_LAYOUT",nvn_caller,t->id,24);
++            if(stripe_choice==ZERO_BC_STRIPE_ROWS) {
++                lc2_bc_upload_stripes(t,level,width,height,t->lc2_bc_pending);
++                if(width>1)width>>=1;
++                if(height>1)height>>=1;
++                continue;
++            }
 +        }
          uint64_t row=bc?(uint64_t)((width+3)/4)*bc:(uint64_t)width*nvn_texture_format_bytes(t->b.format);
          uint64_t stride=t->b.flags&0x50?t->b.stride:row;
@@ -5338,7 +5342,7 @@ index 0feaef1..7584ba8 100644
      printf("ZERO_TEXTURE_FLUSH_UPLOADED id=%"PRIu64" format=0x%x native-cpu-bytes=preserved before-sampler\n",t->id,t->b.format);
  }
  #include "zero_texture_writes.h"
-@@ -602,11 +1011,14 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -602,11 +1015,14 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
          }
          if(slot==4096)stop("NVN_TEXTURE_CAPACITY",nvn_caller,slot,21);
          struct nvn_texture *t=&nvn_textures[slot];*t=(struct nvn_texture){.object=a[0],.id=zero_next_object_id(),.size=size,.b=b,.pool=pool};
@@ -5355,7 +5359,7 @@ index 0feaef1..7584ba8 100644
          else if(t2_pages.deferred_logged++<4)printf("T2_PAGE_DEFERRED id=%"PRIu64" size=%ux%u rgba8-bytes=%"PRIu64" pool-flags=0x%x storage=none-until-copy\n",t->id,b.width,b.height,size,pool->flags);
  #ifdef MOMO_SHADERS
          momo_texture_stamp(t->object,t->id);
-@@ -648,8 +1060,20 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -648,8 +1064,20 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
          else if(nvn_texture_format_depth(b.format)) {
              const char *extensions=(const char *)glGetString(GL_EXTENSIONS);
              if(!extensions || !strstr(extensions,b.format==0x35?"GL_OES_packed_depth_stencil":"GL_OES_depth24"))stop("NVN_DEPTH_BACKEND_REQUIRED",nvn_caller,b.format,20);
@@ -5377,7 +5381,7 @@ index 0feaef1..7584ba8 100644
              glBindRenderbuffer(GL_RENDERBUFFER,0);
              if(b.format==0x34)printf("NVN_DEPTH_CONVERSION guest=DEPTH32F host=DEPTH24 precision-reduced rendering-validation-pending\n");
          } else {
-@@ -664,6 +1088,7 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -664,6 +1092,7 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
                  const char *extensions=(const char *)glGetString(GL_EXTENSIONS);
                  if(!extensions || !strstr(extensions,"GL_EXT_sRGB"))stop("ZERO_SRGB_TEXTURE_BACKEND_REQUIRED",nvn_caller,b.format,20);
              }
@@ -5385,7 +5389,7 @@ index 0feaef1..7584ba8 100644
              glGenTextures(1,&t->name);if(!t->name)stop("NVN_TEXTURE_GL_NAME",nvn_caller,t->id,21);glBindTexture(GL_TEXTURE_2D,t->name);
  #if ZERO_ZX_GAME
              /* This backend exposes NVN's storage-level limit directly. Mali
-@@ -673,17 +1098,47 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -673,17 +1102,47 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
                  glTexParameteri(GL_TEXTURE_2D,0x813d,b.levels-1);
  #endif
              unsigned width=b.width,height=b.height;
@@ -5440,7 +5444,7 @@ index 0feaef1..7584ba8 100644
                      const uint8_t *src=nvn_pointer(pool->address+b.offset,size,PROT_READ);
                      if(!megaman_blocklinear_rgba8_decode(rgba,bytes,src,size,width,height,b.packaged_layout))
                          stop("NVN_TEXTURE_PACKAGED_DECODE",nvn_caller,b.packaged_layout,20);
-@@ -693,12 +1148,23 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -693,12 +1152,23 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
                      for(unsigned y=0;y<height;y++)if(!nvn_texture_decode_upload(b.format,b.swizzle,upload_type,rgba+(size_t)y*width*upload_bpp,src+y*stride,width))
                          stop("NVN_TEXTURE_INITIAL_FORMAT",nvn_caller,b.format,20);
                  }
@@ -5466,7 +5470,7 @@ index 0feaef1..7584ba8 100644
  #if MEGAMAN_HOST_DIAGNOSTIC
                  /* Observation remains an independent RGBA8 reference; packed
                   * UNORM5 may truthfully differ by one readback code value. */
-@@ -715,11 +1181,12 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -715,11 +1185,12 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
  #endif
                  nvn_texdiag_initialize_end(t,i,rgba);
                  free(rgba);
@@ -5480,7 +5484,7 @@ index 0feaef1..7584ba8 100644
  #endif
              nvn_texture_parameters(t,GL_NEAREST,GL_NEAREST,GL_CLAMP_TO_EDGE,GL_CLAMP_TO_EDGE);
              glBindTexture(GL_TEXTURE_2D,0);
-@@ -731,6 +1198,16 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -731,6 +1202,16 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
              if(slot<4096 && slot+1>__atomic_load_n(&nvn_textures_high,__ATOMIC_RELAXED))
                  __atomic_store_n(&nvn_textures_high,slot+1,__ATOMIC_RELEASE);
          }
@@ -5497,7 +5501,7 @@ index 0feaef1..7584ba8 100644
          pool->references++;nvn_gl_release();
          /* MOMO_TEXTURE_IDENTITY: pool+offset of every texture, so two render targets of the same size can
           * be told apart from two names for one piece of memory (the scene lands in one target while the post
-@@ -749,7 +1226,9 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -749,7 +1230,9 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
      if(id==NI_nvnTexturePoolRegisterTexture) {
          struct nvn_descriptor_pool *d=NULL;
          for(unsigned i=0;i<32;i++)if(nvn_descriptor_pools[i].live&&nvn_descriptor_pools[i].object==a[0]&&nvn_descriptor_pools[i].type==1)d=&nvn_descriptor_pools[i];
@@ -5508,7 +5512,7 @@ index 0feaef1..7584ba8 100644
          struct nvn_texture *t=nvn_texture_find(a[2]);struct nvn_descriptor *slot=&d->entries[a[1]];
          if(a[3] && !megaman_texture_view_identity(nvn_pointer(a[3],MEGAMAN_TEXTURE_VIEW_BYTES,PROT_READ),t->b.levels) &&
             !aw_texture_view_identity_native(nvn_pointer(a[3],MEGAMAN_TEXTURE_VIEW_BYTES,PROT_READ),&t->b,t->aw_native_format))
-@@ -787,6 +1266,9 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -787,6 +1270,9 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
      }
      struct nvn_texture *t=nvn_texture_find(a[0]);
      if(id==NI_nvnTextureFinalize) {
@@ -5518,7 +5522,7 @@ index 0feaef1..7584ba8 100644
          /* Descriptors keep the old identity so a later stale draw is rejected;
           * they do not keep freed guest storage alive. GL completes/deletes the
           * actual resource, while a replacement receives a new identity. */
-@@ -802,10 +1284,20 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -802,10 +1288,20 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
          unsigned delete_storage=zero_texture_storage_release(t);
          if(delete_storage) {
              zero_depth_framebuffer_forget(storage->id);
@@ -5542,7 +5546,7 @@ index 0feaef1..7584ba8 100644
              free(storage->cpu_snapshot);storage->cpu_snapshot=NULL;
          }
          t->cpu_snapshot=NULL;
-@@ -815,7 +1307,7 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -815,7 +1311,7 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
          nvn_texture_alias_epoch_advance();
          t2_page_finalize(t);
          t->name=0;t->depth_buffer=0;t->live=0;nvn_gl_release();
@@ -6138,7 +6142,7 @@ index f9e31ec..9719544 100644
 +}
  #endif
 diff --git a/native/zero_bc_layout.h b/native/zero_bc_layout.h
-index 71d584f..dfb9639 100644
+index 71d584f..e89e29b 100644
 --- a/native/zero_bc_layout.h
 +++ b/native/zero_bc_layout.h
 @@ -14,7 +14,10 @@ static inline unsigned zero_bc_default_height(unsigned blocks_y) {
@@ -6153,17 +6157,82 @@ index 71d584f..dfb9639 100644
      unsigned base_h=zero_bc_default_height((height+3)/4);size_t offset=0;
      for(unsigned i=0;;i++) {
          unsigned nx=(width+3)/4,ny=(height+3)/4,h=base_h;
-@@ -31,6 +34,13 @@ static inline size_t zero_bc_block_address(const struct zero_bc_level *m,unsigne
+@@ -31,6 +34,78 @@ static inline size_t zero_bc_block_address(const struct zero_bc_level *m,unsigne
      return (y/(8U<<m->h))*(m->stride/64)*block_size+(byte_x/64)*block_size+
          ((y/8)&((1U<<m->h)-1))*512+(byte_x&32)*8+(y&6)*32+(byte_x&16)*2+(y&1)*16+(byte_x&15);
  }
-+/* Keep the existing wide-atlas stripe path by default. Medium-width BC stripes
-+ * are a reversible staging-memory experiment, enabled by an exact caller flag. */
++/* LC2_BC_STRIPE_GEOMETRY_BEGIN */
++enum zero_bc_stripe_choice {
++    ZERO_BC_STRIPE_INVALID = 0,
++    ZERO_BC_STRIPE_FULL = 1,
++    ZERO_BC_STRIPE_ROWS = 2
++};
++struct zero_bc_full_geometry {
++    size_t pixel_bytes, linear_bytes, scratch_peak;
++    uint64_t scratch_peak_u64;
++};
++struct zero_bc_stripe_geometry {
++    unsigned rows;
++    size_t pixel_capacity, linear_capacity, scratch_peak;
++    uint64_t scratch_peak_u64;
++};
++static inline unsigned zero_bc_size_mul(size_t a,size_t b,size_t *out) {
++    if(!out || (a && b>SIZE_MAX/a))return 0;
++    *out=a*b;return 1;
++}
++static inline unsigned zero_bc_size_add(size_t a,size_t b,size_t *out) {
++    if(!out || b>SIZE_MAX-a)return 0;
++    *out=a+b;return 1;
++}
++static inline unsigned zero_bc_geometry_valid(size_t width,size_t height,size_t bpp,size_t block_bytes) {
++    return width && height && width<=8192 && height<=8192 && (bpp==4 || bpp==16) &&
++        (block_bytes==8 || block_bytes==16);
++}
 +static inline unsigned zero_bc_should_stripe(unsigned block_bytes,unsigned width,
 +        unsigned host_scaled,unsigned medium_enabled) {
 +    if(!block_bytes || host_scaled)return 0;
 +    return width>4096U || (medium_enabled && width>=1024U && width<=4096U);
 +}
++static inline unsigned zero_bc_full_geometry(size_t width,size_t height,size_t bpp,size_t block_bytes,
++        unsigned inplace,struct zero_bc_full_geometry *out) {
++    if(!out || inplace>1 || !zero_bc_geometry_valid(width,height,bpp,block_bytes))return 0;
++    size_t pixel_count,rgba,blocks_x=width/4+(width%4!=0),blocks_y=height/4+(height%4!=0);
++    size_t blocks,linear,peak;uint64_t peak_u64;
++    if(!zero_bc_size_mul(width,height,&pixel_count) || !zero_bc_size_mul(pixel_count,bpp,&rgba) ||
++       !zero_bc_size_mul(blocks_x,blocks_y,&blocks) || !zero_bc_size_mul(blocks,block_bytes,&linear))return 0;
++    peak=rgba;
++    if(rgba<linear || !inplace)if(!zero_bc_size_add(peak,linear,&peak))return 0;
++    peak_u64=(uint64_t)peak;if((size_t)peak_u64!=peak)return 0;
++    *out=(struct zero_bc_full_geometry){rgba,linear,peak,peak_u64};
++    return 1;
++}
++static inline unsigned zero_bc_stripe_geometry(size_t width,size_t height,size_t bpp,size_t block_bytes,
++        size_t rows_limit,struct zero_bc_stripe_geometry *out) {
++    if(!out || !zero_bc_geometry_valid(width,height,bpp,block_bytes) || !rows_limit || rows_limit>128)return 0;
++    size_t rows=height<rows_limit?height:rows_limit,pixel_count,rgba;
++    size_t blocks_x=width/4+(width%4!=0),blocks_y=rows/4+(rows%4!=0),blocks,linear,peak;
++    uint64_t peak_u64;
++    if(!zero_bc_size_mul(width,rows,&pixel_count) || !zero_bc_size_mul(pixel_count,bpp,&rgba) ||
++       !zero_bc_size_mul(blocks_x,blocks_y,&blocks) || !zero_bc_size_mul(blocks,block_bytes,&linear) ||
++       !zero_bc_size_add(rgba,linear,&peak))return 0;
++    peak_u64=(uint64_t)peak;if((size_t)peak_u64!=peak)return 0;
++    *out=(struct zero_bc_stripe_geometry){(unsigned)rows,rgba,linear,peak,peak_u64};
++    return 1;
++}
++/* Eligibility is separate from size selection. Medium stripes are selected
++ * only when the checked requested scratch peak is strictly smaller. */
++static inline unsigned zero_bc_select_stripe(size_t block_bytes,size_t width,size_t height,size_t bpp,
++        size_t rows_limit,unsigned host_scaled,unsigned medium_enabled,unsigned inplace,
++        struct zero_bc_stripe_geometry *stripe,struct zero_bc_full_geometry *full) {
++    if(!stripe || !full || !rows_limit || rows_limit>128 ||
++       !zero_bc_full_geometry(width,height,bpp,block_bytes,inplace,full))return ZERO_BC_STRIPE_INVALID;
++    if(!zero_bc_should_stripe((unsigned)block_bytes,(unsigned)width,host_scaled,medium_enabled))
++        return ZERO_BC_STRIPE_FULL;
++    if(!zero_bc_stripe_geometry(width,height,bpp,block_bytes,rows_limit,stripe))return ZERO_BC_STRIPE_INVALID;
++    if(width>4096)return ZERO_BC_STRIPE_ROWS;
++    return stripe->scratch_peak<full->scratch_peak?ZERO_BC_STRIPE_ROWS:ZERO_BC_STRIPE_FULL;
++}
++/* LC2_BC_STRIPE_GEOMETRY_END */
  /* Coordinates are compressed blocks, pitches/lengths are bytes. Padding in the
   * tiled destination is untouched. Caller owns overlap-safe source staging. */
  static inline unsigned zero_bc_blocks_copy(const struct zero_bc_level *m,void *tiled,size_t tiled_bytes,

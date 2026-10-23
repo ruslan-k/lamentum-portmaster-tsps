@@ -1,0 +1,124 @@
+{
+  "schema_version": 2,
+  "phase": "M4-A checked BC stripe sizing (host-only)",
+  "date": "2026-10-23",
+  "main_base_commit": "1604ed90bc39f4834bfa23de71401bc9f94661fe",
+  "integration_base_commit": "815c8c6ff2de4c87faa26b6d68c69a6094d63b03",
+  "source_overlay": {
+    "base_commit": "c8d01ca1fed5adab1ae7ad920605f199bb83a72e",
+    "runtime_patch": "runtime/lamentum-adapter.patch",
+    "patch_bytes": 401617,
+    "patch_sha256": "23762e1bcd4c5b759c7417647f24e1df4430bcd4fd32e56f0c2a007954db50a8",
+    "overlay_diff_byte_identical": true,
+    "pristine_apply_check": "passed",
+    "baseline_manifest": {
+      "files": 435,
+      "passed": 435,
+      "sha256": "f8d9ebbb0051faa2a141248031061e20934121ed07953e512b06393cd133300b"
+    },
+    "native_headers": {
+      "zero_bc_layout.h": "7b7fa2ec2e1b837c038926b46c0a4cb899019a0f0813388e80d735bb90304d87",
+      "nvn_textures.h": "aada1fb2ec8f914950509b04b8871f5c2bd34c09f9eb2911571916704efc45af"
+    }
+  },
+  "change": {
+    "helpers": ["zero_bc_stripe_geometry", "zero_bc_full_geometry", "zero_bc_select_stripe"],
+    "stripe_geometry": "checked width * min(height, rows_limit) * bpp plus ceil(width/4) * ceil(rows/4) * block_bytes; rows_limit in 1..128",
+    "full_geometry": "checked pixel and compressed-block workspace; representable in size_t and uint64_t",
+    "medium_selection": "only if stripe requested peak is strictly smaller than full peak",
+    "callers": ["lc2_bc_reserve_first_use", "lc2_bc_upload_stripes"],
+    "row_upload": "per-stripe checked byte count; GL upload height remains actual rows",
+    "default_medium_flag_changed": false,
+    "format_resolution_mip_semantics_changed": false
+  },
+  "capacity_examples_bc3_rgba8": [
+    {"width": 4096, "height": 1, "old_peak_bytes": 2113536, "corrected_peak_bytes": 32768},
+    {"width": 4097, "height": 9, "old_peak_bytes": 2146864, "corrected_peak_bytes": 196692},
+    {"width": 1023, "height": 63, "old_peak_bytes": 589312, "corrected_peak_bytes": 323332},
+    {"width": 1920, "height": 1080, "old_peak_bytes": 1228800, "corrected_peak_bytes": 1228800},
+    {"width": 4097, "height": 131, "old_peak_bytes": 2622464, "corrected_peak_bytes": 2622464}
+  ],
+  "historical_device_limit": {
+    "value": 16383,
+    "evidence": [
+      {"local_log": "bc-layout-01/latest.log", "line": 8424, "sha256": "5555ceba36f419d01b8e2a78bfd8575520881beacb5281e6d8696b5ed4bf05a0"},
+      {"local_log": "sdl-refresh-01/latest.log", "line": 8346, "sha256": "033d688fa276c232f609cb168579a0ebc36d1a7dab68b648d691c78786b6220d"}
+    ],
+    "raw_logs_published": false
+  },
+  "native_fixture": {
+    "required_profile": {"result": "passed", "tests_run": 1, "skipped": 0, "failures": 0, "errors": 0, "exit_code": 0},
+    "asan_ubsan_profile": {
+      "result": "passed",
+      "tests_run": 1,
+      "skipped": 0,
+      "failures": 0,
+      "errors": 0,
+      "exit_code": 0,
+      "container_image": "pmjs-arm64-spruce-local@sha256:e437308c01ce7af4a035c3f0652bc886e258889f66803f805bce53d05af75f0c"
+    },
+    "fixture_sha256": "926d9cf267da66abdbc568e7809ccce7f5194e36003e3ead2bed77991d1aab20",
+    "runner_sha256": "c886c5fea1da7456fd824417ee72bc89795ae3abdf46b365fd0e532913cc1f7d",
+    "counts": {
+      "stripe_decode_byte_parity": 86,
+      "compressed_source_preserved": 86,
+      "guarded_buffers": 258,
+      "stripe_regions_exactly_once": 244,
+      "metadata_mips_8192_squared_bc1_bc3": 28,
+      "inplace_cases": 18,
+      "rejected_inputs": 15,
+      "stripe_selection_cases": 5
+    }
+  },
+  "reservation_fixture": {
+    "test_module": "test_gl_storage_layout",
+    "tests_passed": 14,
+    "result": "passed",
+    "preflight_peak_equals_upload_plan": true,
+    "gl_bytes_4097x9": 147492,
+    "scratch_bytes_4097x9": 196692,
+    "actual_gl_row_bounds_source_checked": true,
+    "test_sha256": "dea1dc7c8186f6936ef4e21c130fc2b86bbfdf02ebcff25f85881413072b7b44"
+  },
+  "full_tools_suite": {
+    "tests": 359,
+    "passed": 359,
+    "skipped": 0,
+    "failures": 0,
+    "errors": 0,
+    "exit_code": 0,
+    "duration_seconds": 12.299
+  },
+  "python_compilation": "passed",
+  "git_diff_check": "passed",
+  "owner_image": {
+    "directory": "image-09 (local-only input)",
+    "romfs_section_bytes": 1832060032,
+    "romfs_section_sha256": "80ad4427164a0b7ad61c3a3fcd955bd158635aac1ee42ebb67d01dfae279b893",
+    "image_table_sha256": "11c1cf8fdad4b70ea13cd96502306d48a7ed256fa9d5010b6ae6deb89a1ca1fb",
+    "module_identities_sha256": "423833e6a91c9037ec9ddbf40c441377456a42432f34c064c0bee16f7d4c8efa",
+    "romfs_matches_image_table": true
+  },
+  "host_build": {
+    "candidate": "build-261/lamentum-nextos (local-only; not installed)",
+    "container_image": "pmjs-arm64-spruce-local@sha256:e437308c01ce7af4a035c3f0652bc886e258889f66803f805bce53d05af75f0c",
+    "result": "success",
+    "elf_class": "ELF64",
+    "machine": "AArch64",
+    "type": "PIE",
+    "build_id": "43aa590ec1209841671e9ad0d8de726d9f5f90a2",
+    "bytes": 2206776,
+    "sha256": "0958651d1e9cb1333023c9a9418be781b6cf2b49d628dc5b9a8c122a80c96332",
+    "max_glibc": "2.27",
+    "warnings": ["baseline ignored write() results", "unused optional functions"]
+  },
+  "device": {
+    "actions": 0,
+    "candidate_installed": false,
+    "game_launched": false,
+    "latest_known_idle_cmafree_kib": 15456,
+    "go_no_go": "NO-GO"
+  },
+  "conclusion": "M4-A host correctness passed: checked stripe sizing and native decode fixtures are complete, the pinned AArch64 candidate builds, and medium stripes remain default-off. This validates requested scratch only, not physical memory savings, device safety, gameplay, or FPS.",
+  "next": "M4-B host-only allocation-lifetime coverage; device A/B remains blocked by the independent CMA gate."
+}
