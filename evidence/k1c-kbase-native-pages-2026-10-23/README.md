@@ -31,7 +31,7 @@ With the live parameter at `0`, the module selects `0x00100dc2` (`GFP_HIGHUSER |
 
 This is strong evidence that the **native Kbase page-pool path** under the observed configuration requests non-movable system pages and does not reach CMA through the generic unmovable fallback. It narrows that allocator class; it does not prove that every texture, renderbuffer, buffer, EGL/GBM allocation or GL request uses this path. The module imports DMA-BUF APIs, so imported buffers may have another backing path. No per-buffer owner, GL-to-ioctl join, live allocation, or overlap was observed.
 
-Do not reclassify all `gl_bytes` or `scratch_bytes`, set `proven_cma_bytes` for a whole request class, or reduce the safety reserve from this finding alone. Keep `T2_STORAGE_MARGIN_MIB` unset and `HOLD_RUNTIME` until actual request routing, peak overlap/uncertainty, current ELF and reviewed one-run margin are established.
+This narrows the native Kbase page-pool class; it does not prove that a GL object uses that path. A refreshed current-source host ELF was built afterward and remains uninstalled; see [the host-build receipt](../current-elf-host-build-2026-10-23/README.md). Do not reclassify all `gl_bytes`/`scratch_bytes` or reduce the reserve from this finding alone. Keep `T2_STORAGE_MARGIN_MIB` unset and `HOLD_RUNTIME` until actual request routing, peak overlap/uncertainty and a reviewed one-run reserve are established.
 
 ## Verification
 

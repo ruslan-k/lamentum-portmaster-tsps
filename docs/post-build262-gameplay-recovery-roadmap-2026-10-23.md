@@ -324,5 +324,19 @@ The module trace joins `kbase_alloc_phy_pages_helper` → `kbase_mem_pool_alloc_
 
 This narrows one allocator class; it does not prove that any given Lamentum texture/renderbuffer/buffer or one of the 13 admission requests reaches this path. The module imports DMA-BUF APIs, so imported DMA-BUF and other Mali/GBM/EGL allocation paths remain unresolved. No live buffer, owner, or peak-overlap join was captured. Do not reclassify all GL/scratch bytes or reduce the reserve from K1-C alone.
 
-**Disposition:** no device files/settings were changed and no game was launched. Build262 remains uninstalled; `T2_STORAGE_MARGIN_MIB` remains unset and **HOLD_RUNTIME** remains in force. Next: build the current ELF from the pinned baseline/owner image, then join actual GL request paths to native Kbase versus DMA-BUF/GBM allocations and establish peak overlap/uncertainty before any bounded launch.
+**Disposition at K1-C capture:** no device files/settings were changed and no game was launched. The current-source host ELF was subsequently built; see §10.14. It remains uninstalled, `T2_STORAGE_MARGIN_MIB` remains unset and **HOLD_RUNTIME** remains in force. Actual GL request routing, peak overlap/uncertainty and a reviewed one-run reserve remain open.
+
+### 10.14 Current post-H2a source host ELF build (2026-10-23)
+
+The [host-build receipt](../evidence/current-elf-host-build-2026-10-23/README.md) records a fresh full native AArch64 build from the refreshed post-H2a source tree. This is a **host-only candidate**, not a device-tested build.
+
+- Recovered baseline `runtime-src`: manifest SHA-256 `f8d9ebbb0051faa2a141248031061e20934121ed07953e512b06393cd133300b`; **435/435** files verified and `runtime/lamentum-adapter.patch` apply-check passed. The source directory has no Git HEAD, so the manifest—not a Git commit—pins its contents.
+- Local-only owner image `image-09`: 18 files / 1,898,916,986 bytes, inventory SHA-256 `a4e734d4f3b90f4c87b676c2247f699c5739786d29a66270cdfb0c87fe09e335`; its RomFS section is 1,832,060,032 bytes, SHA-256 `80ad4427164a0b7ad61c3a3fcd955bd158635aac1ee42ebb67d01dfae279b893`. No owner bytes are committed.
+- Pinned container ID `sha256:e437308c01ce7af4a035c3f0652bc886e258889f66803f805bce53d05af75f0c`. The post-overlay source inventory is 390 files, SHA-256 `3fcc9e78155ecdfd71507e860c5120d313a6a2d81967eed2ece572215cf38689`, 77 storage callsites (12 `wrapped+unmeasured`, 65 `unknown`); the build-time policy gate passed.
+- Output: ELF64 AArch64 PIE, 2,203,096 bytes, Build ID `5b1b3412da7b43442a0ebf097e904cb8cbef0c8e`, SHA-256 `c46714403f22074d92710192d1164cfe0b7a4f62f1a4890ffb7a1e224c542332`, max GLIBC `2.27`; paired `run_identity.py` SHA-256 `abe8e4847b18a750c0796af33d887cf43714126c9751ccdc8236715cb752401a`. Shader diagnostic sanitizer reported four changes.
+- Current full host suite: **405 tests passed, OK**. `readelf` identity/ABI checks and final SHA recomputation passed.
+
+This candidate is from source-tree hash `3fcc9e…`; historical build262 SHA `dd13d4…` came from earlier tree `1b995ea…`. Keep those builds distinct. Candidate and helper remain only in local scratch; build259 remains installed. No device files/settings were changed and no game was launched.
+
+**Next:** perform a read-only staging check (device idle, no pending principal command, section identity/size, space, installed hashes and rollback path). If clean, stage the candidate inertly without launching. A separate fresh, complete same-boot D preflight and a defensible reviewed reserve are still required before any bounded runtime; no margin change or New Game is authorized by this host build.
 

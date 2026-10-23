@@ -49,6 +49,6 @@ The `proven_CMA_only` and `mixed_two_ledger` models refuse these unknown bases (
 
 - A1 offline replay focused tests: **15/15**.
 - Current source inventory: 390 files, 77 GL/EGL candidates; 12 `wrapped+unmeasured`, 65 `unknown`.
-- No production policy, launcher default, or device state changed. `T2_STORAGE_MARGIN_MIB` remains unset; no current game ELF was built/installed and no game launch was attempted.
+- No production policy, launcher default, or device state changed in this source-map audit. `T2_STORAGE_MARGIN_MIB` remains unset. At that audit checkpoint no current game ELF was built/installed; the later post-H2a host ELF is recorded in [the host-build receipt](../current-elf-host-build-2026-10-23/README.md) and remains uninstalled. No game launch was attempted.
 
 K1-B now gives a high-confidence mapping of live `/dev/dma_heap/reserved` to the default CMA heap: the linked initcall order and DMA-heap minors align, and `cma_heap_allocate` calls `cma_alloc`. K1-C additionally identifies the live native Kbase page-pool path at migration parameter `0`: it requests `GFP_HIGHUSER|__GFP_ZERO`, whose exact-kernel Unmovable fallback excludes CMA. This narrows only that native path; the 13 storage-admission callers are not joined to it, and imported DMA-BUF/GBM/EGL routes remain unknown. Do not assign all `gl_bytes` or `scratch_bytes` to a physical class from this finding. Keep `proven_cma_bytes` unknown for unmapped requests and maintain **HOLD_RUNTIME**; the per-run margin remains unreviewed.

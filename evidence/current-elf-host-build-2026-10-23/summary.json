@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "captured_utc": "2026-10-23T10:55:03Z",
+  "phase": "post-H2a current host ELF build",
+  "baseline": {
+    "id": "runtime-src (local-only)",
+    "git_head": null,
+    "git_state": "unborn master; files pinned by manifest",
+    "manifest_sha256": "f8d9ebbb0051faa2a141248031061e20934121ed07953e512b06393cd133300b",
+    "manifest_files_passed": 435,
+    "adapter_patch_apply_check": "pass"
+  },
+  "owner_image": {
+    "id": "image-09",
+    "local_only": true,
+    "file_count": 18,
+    "total_bytes": 1898916986,
+    "inventory_sha256": "a4e734d4f3b90f4c87b676c2247f699c5739786d29a66270cdfb0c87fe09e335",
+    "inventory_digest_method": "sorted top-level file name + NUL + size + NUL + file SHA-256 + newline",
+    "romfs_section_bytes": 1832060032,
+    "romfs_section_sha256": "80ad4427164a0b7ad61c3a3fcd955bd158635aac1ee42ebb67d01dfae279b893",
+    "module_identities_sha256": "423833e6a91c9037ec9ddbf40c441377456a42432f34c064c0bee16f7d4c8efa",
+    "contents_committed": false
+  },
+  "build_environment": {
+    "container": "pmjs-arm64-spruce-local:20261002-gcc10",
+    "container_image_id": "sha256:e437308c01ce7af4a035c3f0652bc886e258889f66803f805bce53d05af75f0c",
+    "container_architecture": "amd64",
+    "compiler_wrapper": "tools/cc-lamentum.sh",
+    "build_script": "build_lamentum.sh"
+  },
+  "patched_source_inventory": {
+    "file_count": 390,
+    "sha256": "3fcc9e78155ecdfd71507e860c5120d313a6a2d81967eed2ece572215cf38689",
+    "call_site_count": 77,
+    "status_counts": {"wrapped+unmeasured": 12, "unknown": 65}
+  },
+  "elf": {
+    "location": "local scratch; not committed",
+    "class": "ELF64 AArch64 PIE",
+    "size_bytes": 2203096,
+    "build_id": "5b1b3412da7b43442a0ebf097e904cb8cbef0c8e",
+    "sha256": "c46714403f22074d92710192d1164cfe0b7a4f62f1a4890ffb7a1e224c542332",
+    "max_glibc_requirement": "2.27",
+    "shader_diagnostic_sanitizer_count": 4
+  },
+  "paired_helper": {
+    "name": "run_identity.py",
+    "sha256": "abe8e4847b18a750c0796af33d887cf43714126c9751ccdc8236715cb752401a"
+  },
+  "validation": {
+    "baseline_manifest": "435/435 pass",
+    "patch_apply_check": "pass",
+    "build_callsite_policy_gate": "77 sites passed",
+    "full_host_suite": "405 passed; OK",
+    "readelf_identity_and_glibc_check": "pass",
+    "final_sha256_recomputed": true
+  },
+  "disposition": {
+    "status": "HOST_BUILT_NOT_INSTALLED",
+    "installed_runtime_remains": "build259",
+    "device_files_written": false,
+    "game_launch_attempted": false,
+    "T2_STORAGE_MARGIN_MIB": "unset",
+    "runtime_gate": "HOLD_RUNTIME"
+  }
+}
