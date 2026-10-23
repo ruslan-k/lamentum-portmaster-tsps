@@ -258,7 +258,7 @@ def replay_texture_budget(log_text, expected_run, owner_events_expected=False):
     pair_coverage={}
     guest_bytes=pair_charge_bytes=0;budget_owners=set();no_gl=[]
     live_storage={}
-    storage_events=[];delete_events=[];storage_after=delete_after=0
+    storage_events=[];delete_events=[];storage_after=delete_after=0;call_result_counts={}
     def storage_identity(row):
         group_id=row.get('share-group-id')
         group_status=row.get('share-group','unverified')
@@ -302,6 +302,8 @@ def replay_texture_budget(log_text, expected_run, owner_events_expected=False):
                 raise ValueError('GL storage subresource count mismatch')
             live_storage[key]=updated
             storage_events.append(row)
+            result=row.get('call-result','unknown')
+            call_result_counts[result]=call_result_counts.get(result,0)+1
         elif line.startswith('LC2_GL_STORAGE_DELETE '):
             row=_fields(line)
             if row.get('run-id')!=run_uuid:raise ValueError('foreign GL storage delete')
@@ -384,7 +386,7 @@ def replay_texture_budget(log_text, expected_run, owner_events_expected=False):
         'gl_storage':{'events':len(storage_events),'deletes':len(delete_events),
             'events_after_sample':storage_after,'deletes_after_sample':delete_after,
             'live_records':len(live_storage),'bytes_by_kind':by_kind,'records_by_kind':count_by_kind,
-            'summary_matches':summary_matches},
+            'summary_matches':summary_matches,'call_results_by_status':dict(sorted(call_result_counts.items()))},
     }
 
 

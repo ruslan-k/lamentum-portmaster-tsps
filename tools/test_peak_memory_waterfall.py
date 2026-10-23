@@ -100,6 +100,7 @@ class PeakMemoryWaterfallTests(unittest.TestCase):
         self.assertEqual(result["status"], "complete", result["incomplete_reasons"])
         self.assertEqual(result["ledgers"]["cpu_bc_staging"]["peak_requested_bytes"], 500)
         self.assertEqual(result["ledgers"]["gl_nominal_storage"]["bytes_by_kind"], {})
+        self.assertEqual(result["ledgers"]["gl_nominal_storage"]["call_results_by_status"], {"unobserved": 1})
         self.assertIsNone(result["ledgers"]["driver_dma"]["proven_cma_bytes"])
         self.assertEqual(result["ledgers"]["process_pages"][0]["VmRSS_kib"], 700000)
         self.assertEqual(result["cma"]["snapshots"][0]["CmaFree_kib"], 2000)

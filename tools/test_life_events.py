@@ -457,9 +457,9 @@ int main(void) {
                                 'gl-texture-bytes=80 gl-texture-records=1 gl-texture-generation-min=1 gl-texture-generation-max=1 '
                                 'gl-renderbuffer-bytes=999 gl-renderbuffer-records=1 gl-renderbuffer-generation-min=1 '
                                 'gl-renderbuffer-generation-max=1 storage-status=recorded' in line for line in pairs))
-            self.assertTrue(any(line.startswith('LC2_GL_STORAGE_EVENT ') and
-                                'event=extend owner=42 gl-name=420 kind=1 storage-generation=1 bytes=50 total-bytes=250 subresource=1' in line
-                                for line in out.splitlines()))
+            storage_event = next(line for line in out.splitlines() if line.startswith('LC2_GL_STORAGE_EVENT ') and
+                                 'event=extend owner=42 gl-name=420 kind=1 storage-generation=1 bytes=50 total-bytes=250 subresource=1' in line)
+            self.assertIn('status=recorded call-result=unobserved', storage_event)
             self.assertTrue(any(line.startswith('LC2_GL_STORAGE_DELETE ') and
                                 'owner=42 gl-name=420 kind=1 storage-generation=1 bytes=250' in line
                                 for line in out.splitlines()))

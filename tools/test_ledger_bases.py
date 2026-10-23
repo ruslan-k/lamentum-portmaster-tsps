@@ -19,7 +19,7 @@ def budget_log():
         'LC2_TEXTURE_PAIR run-id=u-1 t-ns=100 phase=initialize id=42 object-generation=42 storage-owner=42 guest-bytes=100 charge-bytes=100 storage-status=recorded',
         'LC2_TEXTURE_PAIR run-id=u-1 t-ns=105 phase=initialize id=43 object-generation=43 storage-owner=43 guest-bytes=30 charge-bytes=30 storage-status=no-live-gl-storage',
         'LC2_TEXTURE_BUDGET_EVENT run-id=u-1 t-ns=110 action=add texture-id=42 delta-bytes=100 live-bytes=100 charge-count=1 caller=1 status=recorded',
-        'LC2_GL_STORAGE_EVENT run-id=u-1 t-ns=120 event=allocate owner=42 gl-name=9 kind=1 storage-generation=1 bytes=400 total-bytes=400 status=recorded',
+        'LC2_GL_STORAGE_EVENT run-id=u-1 t-ns=120 event=allocate owner=42 gl-name=9 kind=1 storage-generation=1 bytes=400 total-bytes=400 status=recorded call-result=unobserved',
         'LC2_TEXTURE_BUDGET_EVENT run-id=u-1 t-ns=130 action=add texture-id=43 delta-bytes=30 live-bytes=130 charge-count=2 caller=1 status=recorded',
         'LC2_GL_STORAGE_DELETE run-id=u-1 t-ns=140 owner=42 gl-name=9 kind=1 storage-generation=1 bytes=400 matched=1',
         'LC2_TEXTURE_BUDGET_EVENT run-id=u-1 t-ns=150 action=sub texture-id=42 delta-bytes=100 live-bytes=30 charge-count=2 caller=1 status=recorded',
@@ -60,6 +60,9 @@ class BudgetReplayTests(unittest.TestCase):
         self.assertEqual(result['budget']['pair_guest_charge_mismatches'], [])
         self.assertEqual(result['budget']['budget_without_gl_storage_ids'], ['43'])
         self.assertEqual(result['gl_storage']['live_records'], 0)
+        self.assertEqual(result['gl_storage']['call_results_by_status'], {'unobserved': 1})
+        legacy = replay_texture_budget(budget_log().replace(' call-result=unobserved', ''), BUDGET_RUN)
+        self.assertEqual(legacy['gl_storage']['call_results_by_status'], {'unknown': 1})
         self.assertTrue(result['gl_storage']['summary_matches'])
 
     def test_replays_same_subresource_redefinition_and_mip_extension(self):

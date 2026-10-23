@@ -1317,7 +1317,7 @@ index 0000000..fbe5673
 +#endif
 diff --git a/native/lc2_life_events.h b/native/lc2_life_events.h
 new file mode 100644
-index 0000000..bd7cfcf
+index 0000000..8c3e63a
 --- /dev/null
 +++ b/native/lc2_life_events.h
 @@ -0,0 +1,672 @@
@@ -1639,7 +1639,7 @@ index 0000000..bd7cfcf
 +    if(s->storage_event_lines>=LC2_LIFE_STORAGE_EVENT_CAP) {s->storage_event_overflow++;return;}
 +    char sub[16];if(!key || key->level==UINT_MAX)snprintf(sub,sizeof(sub),"unknown");else snprintf(sub,sizeof(sub),"%u",key->level);
 +    char line[768];int n=snprintf(line,sizeof(line),"LC2_GL_STORAGE_EVENT run-id=%s t-ns=%llu event=%s owner=%llu gl-name=%llu"
-+        " kind=%llu storage-generation=%llu bytes=%llu total-bytes=%llu subresource=%s subresource-count=%u status=%s"
++        " kind=%llu storage-generation=%llu bytes=%llu total-bytes=%llu subresource=%s subresource-count=%u status=%s call-result=unobserved"
 +        " share-group=%s share-group-id=%llu target=0x%llx face=%u level=%s layer=%u completion=unobserved\n",
 +        lc2_life_events_run_id(),(unsigned long long)lc2_life_events_now_ns(),event?event:"unknown",
 +        (unsigned long long)nvn_id,(unsigned long long)(key?key->name:0),(unsigned long long)(key?key->kind:0),

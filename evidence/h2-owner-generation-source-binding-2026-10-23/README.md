@@ -5,8 +5,8 @@
 ## Independently checked identity chain
 
 - `runtime/lamentum-adapter.patch` SHA-256: `5ab2d36f5dcb1fdc275bfcaa55b9be8cfcc2dace10044bc9c932f5083a0dee62`.
-- The local applied `adapter-src` diff has the same SHA-256. Its base is `c8d01ca1fed5adab1ae7ad920605f199bb83a72e`.
-- Re-running `tools/gl_allocation_inventory.py` on that applied tree produced 390 source files, source-tree SHA-256 `3fcc9e78155ecdfd71507e860c5120d313a6a2d81967eed2ece572215cf38689`, and 77 classified callsites (12 `wrapped+unmeasured`, 65 `unknown`). This exactly matches `current-elf-host-build-2026-10-23/summary.json`.
+- At build time, the applied `adapter-src` diff had the same SHA-256; its base is `c8d01ca1fed5adab1ae7ad920605f199bb83a72e`.
+- The build-time applied tree inventory was 390 source files, SHA-256 `3fcc9e78155ecdfd71507e860c5120d313a6a2d81967eed2ece572215cf38689`, and 77 classified callsites (12 `wrapped+unmeasured`, 65 `unknown`). This matches `current-elf-host-build-2026-10-23/summary.json`.
 - The current ELF receipt binds that source inventory and overlay to ELF SHA-256 `c46714403f22074d92710192d1164cfe0b7a4f62f1a4890ffb7a1e224c542332`, Build ID `5b1b3412da7b43442a0ebf097e904cb8cbef0c8e`. Existing staging readback evidence records the same candidate ELF; it remains not run.
 - Source file hashes in the applied tree: `native/nvn_memory.h` `1e3bf3c97cb5c0dd28e9f290aad9606c18e6c1b2a72b0d9aea2c1618de4d3db9`; `native/nvn_textures.h` `aada1fb2ec8f914950509b04b8871f5c2bd34c09f9eb2911571916704efc45af`.
 
@@ -17,6 +17,10 @@
 Therefore, for a run whose recorded ELF SHA-256 is exactly the candidate hash above, `generation-basis=nvn-object-id` identifies a monotonically assigned NVN object identity within that process. It is not a GL name generation, GL storage generation, pool-write generation, or physical allocation identity. GL name/storage generations and pool generations remain separate fields. Physical backing and completion remain unknown.
 
 This source interpretation does **not** apply to the historical build256b ON log: its ELF differs, so that run's `owner-generation` remains raw/semantically unknown. No runtime behavior, admission rule, deletion, margin, firmware, or device state was changed for this receipt.
+
+## Unbuilt follow-up overlay
+
+A later host-only telemetry edit adds `call-result=unobserved` to `LC2_GL_STORAGE_EVENT`; it explicitly separates ledger-record status from GL-call outcome and does not read/drain the GL error queue. Current unbuilt overlay SHA-256 is `030b2eaa6b942f90e293c5d1cc766e7dafece67cee5553f7dd8982d47eaad5d5`; source-tree SHA-256 is `422485fa93a7336023dbdf0ba93a21465937787ca3590fa672a67a63d8ec7f9f` (390 files, 77 callsites unchanged). The staged ELF `c4671440…` remains bound to the earlier build-time overlay/source hashes above; it does **not** contain this telemetry field. No device binary was replaced or run.
 
 ## Host fixture
 
