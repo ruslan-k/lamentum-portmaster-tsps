@@ -65,6 +65,39 @@ class BudgetReplayTests(unittest.TestCase):
         self.assertEqual(legacy['gl_storage']['call_results_by_status'], {'unknown': 1})
         self.assertTrue(result['gl_storage']['summary_matches'])
 
+    def test_call_id_requires_ordered_begin_result_and_storage_records(self):
+        begin = ('LC2_TEXTURE_OWNER_EVENT run-id=u-1 event-seq=1 call-id=1 t-ns=115 phase=cpu-view-glTexImage2D '
+                 'nvn-id=42 object-generation=42 generation-basis=nvn-object-id storage-owner=42 '
+                 'storage-owner-status=resolved charge-bytes=0 pool-id=99 pool-generation=1 pool-status=recorded '
+                 'cpu-write-generation=1 storage-bytes=400 source-write-generation=untracked status=attempt-recorded')
+        result = ('LC2_TEXTURE_OWNER_EVENT run-id=u-1 event-seq=2 call-id=1 t-ns=120 phase=cpu-view-glTexImage2D '
+                  'nvn-id=42 object-generation=42 generation-basis=nvn-object-id storage-owner=42 '
+                  'storage-owner-status=resolved charge-bytes=0 pool-id=99 pool-generation=1 pool-status=recorded '
+                  'cpu-write-generation=1 storage-bytes=400 source-write-generation=untracked status=call-result-unobserved')
+
+        def make_log(include_result):
+            lines=[]
+            for line in budget_log().splitlines():
+                if line.startswith('LC2_GL_STORAGE_EVENT '):
+                    line += ' call-id=1'
+                if line.startswith('LC2_LIFE_SUMMARY '):
+                    events=[begin]+([result] if include_result else [])
+                    lines.extend(events)
+                    count=len(events)
+                    lines.append(f'LC2_TEXTURE_OWNER_EVENTS_SUMMARY run-id=u-1 configured=512 claimed={count} final-claimed={count} emitted={count} incomplete=0 active=0 dropped=0 format-errors=0 complete=1')
+                lines.append(line)
+            return chr(10).join(lines)+chr(10)
+
+        complete = replay_texture_budget(make_log(True), BUDGET_RUN)
+        self.assertEqual(complete['gl_storage']['call_attempts_correlated'],1)
+        with self.assertRaisesRegex(ValueError,'storage_call_id_incomplete:1'):
+            replay_texture_budget(make_log(False), BUDGET_RUN)
+        mismatched = make_log(True).replace(
+            'storage-bytes=400 source-write-generation=untracked status=call-result-unobserved',
+            'storage-bytes=399 source-write-generation=untracked status=call-result-unobserved')
+        with self.assertRaisesRegex(ValueError,'storage_call_id_mismatch:1'):
+            replay_texture_budget(mismatched, BUDGET_RUN)
+
     def test_replays_same_subresource_redefinition_and_mip_extension(self):
         lines=[]
         for line in budget_log().splitlines():

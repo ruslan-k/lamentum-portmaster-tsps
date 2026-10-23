@@ -212,13 +212,19 @@ def replay_texture_budget(log_text, expected_run, owner_events_expected=False):
     for texture_id, rows_for_id in pairs_by_id.items():
         if len({r.get('object-generation') for r in rows_for_id if int(r['t-ns']) <= sample_ns}) > 1:
             generation_conflicts.add(texture_id)
-    owner_events = {}
+    owner_events = {};owner_call_events={}
     owner_event_lines = [line for line in lines if line.startswith('LC2_TEXTURE_OWNER_EVENT ')]
     for line in owner_event_lines:
         row = _fields(line)
         if row.get('run-id') != run_uuid:
             raise ValueError('foreign texture owner event')
         owner_events.setdefault(row.get('nvn-id'), []).append(row)
+        call_id=row.get('call-id','0')
+        if call_id!='0':
+            try:call_id=str(int(call_id))
+            except ValueError:raise ValueError('invalid storage call id')
+            if call_id=='0':raise ValueError('invalid storage call id')
+            owner_call_events.setdefault(call_id,[]).append(row)
     for texture_id, event_rows in owner_events.items():
         generations = {r.get('object-generation') for r in event_rows
                        if r.get('object-generation') and int(r['t-ns']) <= sample_ns}
@@ -258,7 +264,7 @@ def replay_texture_budget(log_text, expected_run, owner_events_expected=False):
     pair_coverage={}
     guest_bytes=pair_charge_bytes=0;budget_owners=set();no_gl=[]
     live_storage={}
-    storage_events=[];delete_events=[];storage_after=delete_after=0;call_result_counts={}
+    storage_events=[];delete_events=[];storage_after=delete_after=0;call_result_counts={};storage_call_events={}
     def storage_identity(row):
         group_id=row.get('share-group-id')
         group_status=row.get('share-group','unverified')
@@ -304,6 +310,12 @@ def replay_texture_budget(log_text, expected_run, owner_events_expected=False):
             storage_events.append(row)
             result=row.get('call-result','unknown')
             call_result_counts[result]=call_result_counts.get(result,0)+1
+            call_id=row.get('call-id','0')
+            if call_id!='0':
+                try:call_id=str(int(call_id))
+                except ValueError:raise ValueError('invalid storage call id')
+                if call_id=='0':raise ValueError('invalid storage call id')
+                storage_call_events.setdefault(call_id,[]).append(row)
         elif line.startswith('LC2_GL_STORAGE_DELETE '):
             row=_fields(line)
             if row.get('run-id')!=run_uuid:raise ValueError('foreign GL storage delete')
@@ -319,6 +331,32 @@ def replay_texture_budget(log_text, expected_run, owner_events_expected=False):
                 raise ValueError('GL storage delete subresource count mismatch')
             del live_storage[key]
             delete_events.append(row)
+    call_ids=set(storage_call_events)
+    call_ids.update(call_id for call_id,rows in owner_call_events.items()
+                    if any(int(row['t-ns'])<=sample_ns for row in rows))
+    call_attempts_correlated=0
+    if call_ids and (owner_log_incomplete or not owner_summary or owner_summary.get('complete')!='1'):
+        raise ValueError('storage_call_id_owner_ring_incomplete')
+    for call_id in sorted(call_ids,key=int):
+        owner_rows=[row for row in owner_call_events.get(call_id,[]) if int(row['t-ns'])<=sample_ns]
+        storage_rows=storage_call_events.get(call_id,[])
+        if len(owner_rows)!=2 or len(storage_rows)!=1:
+            raise ValueError(f'storage_call_id_incomplete:{call_id}')
+        owner_rows.sort(key=lambda row:int(row['event-seq']))
+        begin,result=owner_rows
+        storage=storage_rows[0]
+        byte_count=int(begin['storage-bytes'])
+        if (begin.get('status')!='attempt-recorded' or result.get('status')!='call-result-unobserved' or
+                begin.get('phase')!=result.get('phase') or begin.get('nvn-id')!=result.get('nvn-id') or
+                begin.get('object-generation')!=result.get('object-generation') or
+                begin.get('storage-owner')!=result.get('storage-owner') or
+                result.get('storage-bytes')!=begin.get('storage-bytes') or
+                int(begin['event-seq'])>=int(result['event-seq']) or
+                int(begin['t-ns'])>int(result['t-ns']) or int(result['t-ns'])>int(storage['t-ns']) or
+                storage.get('call-result')!='unobserved' or storage.get('owner')!=begin.get('nvn-id') or
+                int(storage['bytes'])!=byte_count):
+            raise ValueError(f'storage_call_id_mismatch:{call_id}')
+        call_attempts_correlated+=1
     gl_owners={key[1] for key in live_storage}
     for texture_id in active_ids:
         pair=pairs.get(texture_id)
@@ -386,7 +424,8 @@ def replay_texture_budget(log_text, expected_run, owner_events_expected=False):
         'gl_storage':{'events':len(storage_events),'deletes':len(delete_events),
             'events_after_sample':storage_after,'deletes_after_sample':delete_after,
             'live_records':len(live_storage),'bytes_by_kind':by_kind,'records_by_kind':count_by_kind,
-            'summary_matches':summary_matches,'call_results_by_status':dict(sorted(call_result_counts.items()))},
+            'summary_matches':summary_matches,'call_results_by_status':dict(sorted(call_result_counts.items())),
+            'call_attempts_correlated':call_attempts_correlated},
     }
 
 

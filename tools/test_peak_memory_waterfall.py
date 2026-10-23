@@ -76,7 +76,8 @@ def cma_snapshot(stamp, cmafree):
 
 
 def owned_log(*, floor_memory=True, m3b=True):
-    rows = budget_log().splitlines()
+    rows = [line.replace("call-result=unobserved", "call-result=unobserved call-id=1")
+            if line.startswith("LC2_GL_STORAGE_EVENT ") else line for line in budget_log().splitlines()]
     insert = next(i for i, line in enumerate(rows) if line.startswith("LC2_LIFE_SUMMARY "))
     extra = []
     if floor_memory:
@@ -87,7 +88,11 @@ def owned_log(*, floor_memory=True, m3b=True):
             "LC2_M3B_SUMMARY run-id=u-1 configured=64 claimed=1 final-claimed=1 emitted=1 incomplete=0 active=0 dropped=0 format-errors=0 complete=1",
         ])
     extra.append("T2_MEMWATCH_SAMPLE checks=40 available-MiB=90 swap-free-MiB=10 vmrss-MiB=700 vmswap-MiB=1 level=0")
-    extra.append("LC2_TEXTURE_OWNER_EVENTS_SUMMARY run-id=u-1 configured=512 claimed=0 final-claimed=0 emitted=0 incomplete=0 active=0 dropped=0 format-errors=0 complete=1")
+    extra.extend([
+        "LC2_TEXTURE_OWNER_EVENT run-id=u-1 event-seq=1 call-id=1 t-ns=119 phase=cpu-view-glTexImage2D nvn-id=42 object-generation=42 generation-basis=nvn-object-id storage-owner=42 storage-owner-status=resolved charge-bytes=0 pool-id=99 pool-generation=1 pool-status=recorded cpu-write-generation=1 storage-bytes=400 source-write-generation=untracked status=attempt-recorded",
+        "LC2_TEXTURE_OWNER_EVENT run-id=u-1 event-seq=2 call-id=1 t-ns=120 phase=cpu-view-glTexImage2D nvn-id=42 object-generation=42 generation-basis=nvn-object-id storage-owner=42 storage-owner-status=resolved charge-bytes=0 pool-id=99 pool-generation=1 pool-status=recorded cpu-write-generation=1 storage-bytes=400 source-write-generation=untracked status=call-result-unobserved",
+        "LC2_TEXTURE_OWNER_EVENTS_SUMMARY run-id=u-1 configured=512 claimed=2 final-claimed=2 emitted=2 incomplete=0 active=0 dropped=0 format-errors=0 complete=1",
+    ])
     rows[insert:insert] = extra
     return "\n".join(rows) + "\n"
 
@@ -120,6 +125,14 @@ class PeakMemoryWaterfallTests(unittest.TestCase):
         self.assertEqual(result["kernel_warning_deltas"]["status"], "observed")
         self.assertTrue(result["owned_events"])
         self.assertTrue(all(event["boot_id"] == RUN["boot_id"] for event in result["owned_events"]))
+        call_events = [event for event in result["owned_events"] if event["fields"].get("call-id") == "1"]
+        self.assertEqual(len(call_events),3)
+        attempt_states = [event["fields"].get("status") for event in call_events
+                          if event["event_type"] == "LC2_TEXTURE_OWNER_EVENT"]
+        self.assertEqual(attempt_states,["attempt-recorded","call-result-unobserved"])
+        self.assertEqual(result["ledgers"]["gl_nominal_storage"]["call_attempts_correlated"],1)
+        self.assertTrue(any(event["event_type"] == "LC2_GL_STORAGE_EVENT" and
+                            event["fields"].get("call-result") == "unobserved" for event in call_events))
         self.assertEqual(result["memory_samples"][0]["m3b_windows_overlapping_read"], [1])
         self.assertEqual(result["time_joins"]["floor_to_process"],
                          {"status": "interval_overlap", "sample_seqs": [0]})
@@ -315,6 +328,10 @@ class PeakMemoryWaterfallTests(unittest.TestCase):
                 output.append(line)
                 output.append("LC2_TEXTURE_PAIR run-id=u-1 t-ns=106 phase=initialize id=44 object-generation=44 storage-owner=43 guest-bytes=30 charge-bytes=30 storage-status=recorded")
                 continue
+            if line.startswith("LC2_TEXTURE_OWNER_EVENT ") and "call-id=1 " in line:
+                line=line.replace("nvn-id=42", "nvn-id=43").replace("object-generation=42", "object-generation=43").replace("storage-owner=42", "storage-owner=43")
+                output.append(line)
+                continue
             if line.startswith("LC2_GL_STORAGE_EVENT "):
                 output.append(line.replace("owner=42", "owner=43"))
                 continue
@@ -328,12 +345,12 @@ class PeakMemoryWaterfallTests(unittest.TestCase):
                 line = line.replace("live-bytes=30 peak-bytes=130 charge-count=2 event-lines=3",
                                     "live-bytes=60 peak-bytes=160 charge-count=3 event-lines=4")
             if line.startswith("LC2_TEXTURE_OWNER_EVENTS_SUMMARY "):
-                line = line.replace("claimed=0 final-claimed=0 emitted=0", "claimed=1 final-claimed=1 emitted=1")
+                line = line.replace("claimed=2 final-claimed=2 emitted=2", "claimed=3 final-claimed=3 emitted=3")
             if line.startswith("LC2_LIFE_SUMMARY "):
                 output.append("LC2_LIFE_SUMMARY share-group=unverified storage-calls=1 extends=0 deletes=0 delete-with-views=0 name-reuse=0 retained=400 peak=400 live=1 overflow=0 tex-bytes=400 tex-live=1 rb-bytes=0 rb-live=0 storage-event-lines=1 storage-event-overflow=0 delete-event-lines=0 delete-event-overflow=0")
                 continue
             output.append(line)
-        output.insert(1, "LC2_TEXTURE_OWNER_EVENT run-id=u-1 event-seq=1 t-ns=105 phase=alias-resolve nvn-id=44 object-generation=44 generation-basis=nvn-object-id storage-owner=43 storage-owner-status=resolved charge-bytes=30 pool-id=99 pool-generation=1 pool-status=recorded cpu-write-generation=0 source-write-generation=untracked status=alias-owner-resolved")
+        output.insert(next(i for i,line in enumerate(output) if line.startswith("LC2_TEXTURE_OWNER_EVENTS_SUMMARY ")), "LC2_TEXTURE_OWNER_EVENT run-id=u-1 event-seq=3 call-id=0 t-ns=121 phase=alias-resolve nvn-id=44 object-generation=44 generation-basis=nvn-object-id storage-owner=43 storage-owner-status=resolved charge-bytes=30 pool-id=99 pool-generation=1 pool-status=recorded cpu-write-generation=0 storage-bytes=0 source-write-generation=untracked status=alias-owner-resolved")
         result = build_waterfall("\n".join(output) + "\n", timeline(),
                                  [cma_snapshot(151, 2000), cma_snapshot(181, 2000)],
                                  RUN, memory_floor_mib=64, kernel_warning_deltas={"boot_id": RUN["boot_id"], "capture_status": "ok", "records": []})

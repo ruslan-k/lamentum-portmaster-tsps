@@ -836,5 +836,93 @@ int main(void) {
             self.assertEqual(ran.returncode,0,ran.stderr)
 
 
+    def test_storage_attempt_call_id_pairs_begin_result_and_nominal_storage(self):
+        """Source-contract fixture; it does not compile nvnTextureInitialize or call real GL."""
+        adapter_src = pathlib.Path(os.environ.get('LAMENTUM_ADAPTER_SRC', ROOT.parent / 'adapter-src'))
+        required = os.environ.get('LAMENTUM_REQUIRE_ZERO_STORAGE_ALIAS_TEST') == '1'
+        if not adapter_src.is_dir():
+            if required:
+                self.fail(f'required adapter source missing: {adapter_src}')
+            self.skipTest(f'adapter source unavailable: {adapter_src}')
+        patch = (ROOT / 'runtime/lamentum-adapter.patch').read_bytes()
+        diff = subprocess.run(['git', '-C', str(adapter_src), 'diff', '--binary'], capture_output=True)
+        self.assertEqual(diff.returncode, 0, diff.stderr.decode(errors='replace'))
+        self.assertEqual(diff.stdout, patch)
+        policy = json.loads((ROOT / 'tools/gl_storage_callsite_policy.json').read_text())
+        self.assertEqual(source_tree_identity(adapter_src)['sha256'], policy['source_tree_sha256'])
+        textures = (adapter_src / 'native/nvn_textures.h').read_text()
+        start = textures.index('static GLuint nvn_texture_cpu_view_name')
+        end = textures.index('#include "nvn_packaged_lazy.h"', start)
+        path = textures[start:end]
+        begin = path.index('lc2_life_events_storage_attempt_begin(')
+        gl_call = path.index('glTexImage2D(')
+        returned = path.index('lc2_life_events_storage_attempt_result(')
+        stored = path.index('lc2_life_events_storage_key(')
+        self.assertLess(begin, gl_call)
+        self.assertLess(gl_call, returned)
+        self.assertLess(returned, stored)
+
+        marker = 'diff --git a/native/lc2_life_events.h b/native/lc2_life_events.h'
+        block = patch.decode().split(marker, 1)[1].split('diff --git ', 1)[0]
+        events = '\n'.join(line[1:] for line in block.splitlines()
+                            if line.startswith('+') and not line.startswith('+++')) + '\n'
+        source = r'''
+#include <assert.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include "lc2_life_events.h"
+static unsigned gl_calls,gl_error_reads;
+static void fake_glTexImage2D(void){gl_calls++;}
+static uint32_t fake_glGetError(void){gl_error_reads++;return 0;}
+int main(void) {
+    struct lc2_life_storage_key key={.share_group=1,.name=7,.kind=1,.target=0x0de1,.call_id=99};
+    uint64_t id=lc2_life_events_storage_attempt_begin(7,7,&key,64,9,2,3,"cpu-view-glTexImage2D");
+    assert(id==0 && key.call_id==0);
+    fake_glTexImage2D();
+    assert(!lc2_life_events_storage_attempt_result(id,7,7,&key,64,9,2,3,"cpu-view-glTexImage2D"));
+    lc2_life_events_storage_key(7,&key,64);
+    setenv("LC2_LIFE_EVENTS","1",1);
+    id=lc2_life_events_storage_attempt_begin(7,7,&key,64,9,2,3,"cpu-view-glTexImage2D");
+    assert(id==1 && key.call_id==1);
+    fake_glTexImage2D();
+    assert(lc2_life_events_storage_attempt_result(id,7,7,&key,64,9,2,3,"cpu-view-glTexImage2D"));
+    lc2_life_events_storage_key(7,&key,64);
+    assert(gl_calls==2 && gl_error_reads==0);
+    struct lc2_life_storage_key overflow={.share_group=1,.name=8,.kind=1,.target=0x0de1};
+    lc2_life_events_state()->storage_call_sequence=UINT64_MAX;
+    assert(lc2_life_events_storage_attempt_begin(8,8,&overflow,64,9,2,3,"cpu-view-glTexImage2D")==0);
+    assert(overflow.call_id==0 && lc2_life_events_state()->overflow==1);
+    lc2_life_events_owner_report_fd(1);
+    return 0;
+}
+'''
+        with tempfile.TemporaryDirectory() as d:
+            p = pathlib.Path(d)
+            (p / 'lc2_life_events.h').write_text(events)
+            (p / 'storage_attempt.c').write_text(source)
+            built = subprocess.run(['cc','-std=gnu11','-Wall','-Wextra','-Werror','-Wno-unused-function',
+                                    '-I',str(p),'-I',str(adapter_src/'native'),
+                                    str(p/'storage_attempt.c'),'-o',str(p/'storage_attempt')],
+                                   capture_output=True,text=True)
+            self.assertEqual(built.returncode,0,built.stderr)
+            ran = subprocess.run([str(p/'storage_attempt')],capture_output=True,text=True)
+            self.assertEqual(ran.returncode,0,ran.stderr)
+        owner_events = [line for line in ran.stdout.splitlines() if line.startswith('LC2_TEXTURE_OWNER_EVENT ')]
+        self.assertEqual(len(owner_events),2)
+        self.assertTrue(all('call-id=1' in line and 'storage-bytes=64' in line for line in owner_events))
+        self.assertIn('status=attempt-recorded',owner_events[0])
+        self.assertIn('status=call-result-unobserved',owner_events[1])
+        begin_ns=int(owner_events[0].split('t-ns=')[1].split()[0])
+        result_ns=int(owner_events[1].split('t-ns=')[1].split()[0])
+        self.assertLessEqual(begin_ns,result_ns)
+        storage_event = next(line for line in ran.stdout.splitlines() if line.startswith('LC2_GL_STORAGE_EVENT '))
+        storage_ns=int(storage_event.split('t-ns=')[1].split()[0])
+        self.assertLessEqual(result_ns,storage_ns)
+        self.assertIn('call-id=1',storage_event)
+        self.assertIn('call-result=unobserved',storage_event)
+        summary = next(line for line in ran.stdout.splitlines() if line.startswith('LC2_TEXTURE_OWNER_EVENTS_SUMMARY '))
+        self.assertIn('complete=1',summary)
+
+
 if __name__ == '__main__':
     unittest.main()

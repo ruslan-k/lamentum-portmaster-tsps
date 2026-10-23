@@ -526,7 +526,7 @@ def build_waterfall(log_text, memory_timeline, cma_snapshots, expected_run, *,
         gl = accounting["gl_storage"]
         guest_ledger = {key: budget.get(key) for key in (
             "guest_bytes", "pair_charge_bytes", "live_bytes", "peak_bytes", "live_ids", "pair_coverage")}
-        gl_ledger = {key: gl.get(key) for key in ("bytes_by_kind", "records_by_kind", "live_records", "summary_matches", "call_results_by_status")}
+        gl_ledger = {key: gl.get(key) for key in ("bytes_by_kind", "records_by_kind", "live_records", "summary_matches", "call_results_by_status", "call_attempts_correlated")}
     else:
         guest_ledger = {"status": "unknown", "live_bytes": None, "peak_bytes": None}
         gl_ledger = {"status": "unknown", "bytes_by_kind": None, "live_records": None}
