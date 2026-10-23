@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-23",
+  "scope": "read-only TSPS CMA audit; no install or game launch",
+  "roadmap": {
+    "current": "docs/performance-roadmap-30fps.md §86/§88",
+    "branch": "perf/m3b-memory-waterfall",
+    "published_parent": "e040532617be2bd569c5f69102aa6e478cc447d8"
+  },
+  "device": {
+    "alias": "tsps",
+    "boot_id": "66203f22-4ac8-4a2a-a47c-cddc253d3bda",
+    "kernel": "5.15.147",
+    "installed_runtime_sha256": "d72e2f69afa16dd5b846950f3fba80bc9926edcab9b2d45c57ed23faa14b9066",
+    "mainui": {"pid": 28250, "starttime": "4031805", "state": "S"},
+    "principal_sh_pid": 2191,
+    "target_game_processes": [],
+    "cpu_online": "4-7",
+    "cpu0_3": {"online": "0", "mode": "0444"},
+    "page_size_bytes": 4096
+  },
+  "idle_snapshots": [
+    {"uptime_s": 49440.12, "cma_total_kib": 131072, "cma_free_kib": 15456, "nr_free_cma_pages": 3864, "cma_alloc_success": 36, "cma_alloc_fail": 0, "mem_available_kib": 683448, "swap_free_kib": 2033604},
+    {"uptime_s": 49460.52, "cma_total_kib": 131072, "cma_free_kib": 15456, "nr_free_cma_pages": 3864, "cma_alloc_success": 36, "cma_alloc_fail": 0, "mem_available_kib": 683528, "swap_free_kib": 2033604},
+    {"uptime_s": 49804.28, "cma_total_kib": 131072, "cma_free_kib": 15456, "nr_free_cma_pages": 3864, "cma_alloc_success": 36, "cma_alloc_fail": 0, "mem_available_kib": 683320, "swap_free_kib": 2033604}
+  ],
+  "dmesg_page_allocations": [
+    {"uptime_s": 1707.207876, "pid": 6991, "comm": "terminator2d-ne", "order": 4, "free_cma_pages": 5940, "caller": "dma_heap_ioctl"},
+    {"uptime_s": 4215.957898, "pid": 13382, "comm": "terminator2d-ne", "order": 4, "free_cma_pages": 876, "caller": "dma_heap_ioctl"},
+    {"uptime_s": 6558.591794, "pid": 18799, "comm": "terminator2d-ne", "order": 4, "free_cma_pages": 3637, "caller": "dma_heap_ioctl"},
+    {"uptime_s": 11731.999197, "pid": 30873, "comm": "terminator2d-ne", "order": 4, "free_cma_pages": 6733, "caller": "dma_heap_ioctl"},
+    {"uptime_s": 11879.485788, "pid": 604, "comm": "terminator2d-ne", "order": 4, "free_cma_pages": 2431, "caller": "dma_heap_ioctl"},
+    {"uptime_s": 12435.290270, "pid": 5314, "comm": "terminator2d-ne", "order": 4, "free_cma_pages": 1674, "caller": "dma_heap_ioctl"},
+    {"uptime_s": 13110.124379, "pid": 11877, "comm": "terminator2d-ne", "order": 4, "free_cma_pages": 3360, "caller": "dma_heap_ioctl"},
+    {"uptime_s": 22380.157231, "pid": 30017, "comm": "terminator2d-ne", "order": 4, "free_cma_pages": 4122, "caller": "dma_heap_ioctl"}
+  ],
+  "oom_kill_pattern_matches": 0,
+  "dmabuf": [
+    {"fd": 15, "inode": 254, "size_bytes": 16384, "exporter": "system"},
+    {"fd": 35, "inode": 256, "size_bytes": 3686400, "exporter": "system"},
+    {"fd": 36, "inode": 258, "size_bytes": 3686400, "exporter": "system"},
+    {"fd": 37, "inode": 257, "size_bytes": 3686400, "exporter": "system"}
+  ],
+  "debugfs": {
+    "config_debug_fs": "y",
+    "config_cma_debugfs": "not set",
+    "mounted_before": false,
+    "mount_attempts_failed_busy": true,
+    "mounted_after": false,
+    "temporary_mountpoint_remains": false,
+    "mem_view_read": false
+  },
+  "verdict": "CmaFree remains 15456 KiB in idle snapshots; underlying CMA retention/allocation owner is unknown; no launch is safe to claim from this evidence."
+}
