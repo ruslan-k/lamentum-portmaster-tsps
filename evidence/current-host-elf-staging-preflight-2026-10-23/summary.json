@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "recorded_utc": "2026-10-23T11:15:02Z",
+  "recorded_utc": "2026-10-23T11:35:20Z",
   "phase": "current host ELF inert staging and D preflight",
   "target": {
     "firmware_version": "1.0.1",
@@ -75,7 +75,7 @@
       "mainui_dma_fds_same": true,
       "game_processes": 0
     },
-    "latest_single_sample": {
+    "single_sample_at_11_18": {
       "captured_utc": "2026-10-23T11:18:54.911Z",
       "boot_id": "15b97fe4-5c48-412c-ba39-92efb1823286",
       "cmafree_kib": 604,
@@ -85,7 +85,48 @@
       "pending_principal_command": false,
       "scope": "single read-only gauge; not a complete D pair"
     },
-    "dmesg_pressure_filter": {"returncode": 0, "matching_lines": 0},
+    "recovery_recheck_pair": {
+      "timestamps_utc": ["2026-10-23T11:32:56.701Z", "2026-10-23T11:33:32.568Z"],
+      "comparison_status": "complete",
+      "boot_id": "15b97fe4-5c48-412c-ba39-92efb1823286",
+      "cmafree_kib": [608, 608],
+      "memavailable_kib": [660428, 664040],
+      "cached_kib": [579092, 579092],
+      "swapfree_kib": [2065116, 2065116],
+      "nr_free_cma_pages": [152, 152],
+      "cma_alloc_success_fail": [[8, 0], [8, 0]],
+      "cma_free_blocks_order7_to10": [[0, 0, 0, 0], [0, 0, 0, 0]],
+      "mainui_identity_same": true,
+      "mainui_dma_fds_same": true,
+      "installed_runtime_identity_same": true,
+      "game_processes": [0, 0],
+      "pending_principal_command": false,
+      "pending_check_utc": "2026-10-23T11:33:55.118Z",
+      "comparison_deltas": {
+        "CmaFree_kib": 0,
+        "MemAvailable_kib": 3612,
+        "Cached_kib": 0,
+        "SwapFree_kib": 0,
+        "nr_free_cma_pages": 0,
+        "cma_alloc_success_delta": 0,
+        "cma_alloc_fail_delta": 0,
+        "pgfault_delta": 166962,
+        "pgmajfault_delta": 0,
+        "compact_stall_delta": 0,
+        "compact_fail_delta": 0,
+        "compact_success_delta": 0,
+        "pgmigrate_success_delta": 0,
+        "pgmigrate_fail_delta": 0,
+        "pswpin_delta": 0,
+        "pswpout_delta": 0
+      },
+      "local_raw_evidence": {
+        "path": "Hermes scratch/lamentum-d-preflight-20261023-04",
+        "snapshot_sha256": ["a6010f4ed5bc841f2073871318650333769167dfc1bf936aaa14668f8efea676", "94a663ab685d55a44feb66954a21d24eb11a753bfa81b1b29d34e93241ad9a07"],
+        "comparison_sha256": "a00884818c08960fac79ddb4b9b4542295f7a5d07d7ec92cb5da2a8a07455288"
+      }
+    },
+    "dmesg_pressure_filter": {"returncode": 0, "matching_lines": 0, "captured_after_section_hash_before_recovery_recheck": true},
     "page_size_bytes": 4096,
     "cpu_online": "4-7"
   },
@@ -94,7 +135,7 @@
     "observed_cross_phase_cached_change_kib": 432984,
     "observed_cross_phase_cmafree_change_kib": -129880,
     "runtime_gate": "HOLD_RUNTIME",
-    "hold_reason": "latest CmaFree 604 KiB, no order-7+ CMA blocks, well below prior danger context; GL/DMA-BUF demand and uncertainty remain unresolved",
+    "hold_reason": "latest complete same-boot pair CmaFree 608 KiB, no order-7+ CMA blocks, well below prior danger context; GL/DMA-BUF demand and uncertainty remain unresolved",
     "T2_STORAGE_MARGIN_MIB": "unset",
     "game_launched": false,
     "newgame_entered": false

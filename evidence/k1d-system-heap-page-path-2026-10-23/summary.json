@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "audit_date": "2026-10-23",
+  "phase": "K1-D matched system DMA-heap page path",
+  "matched_vmlinux": {
+    "sha256": "806182f8823b0db340f3f9beccf303e39571deb20b99386ee6a76442b8761b19",
+    "build_id": "175a7f4d4731ebfbbdeb7695329115202f8b813a"
+  },
+  "kernel_functions": {
+    "system_heap_create_registers": "system",
+    "system_heap_ops_address": "0xffffffc008cf7b20",
+    "system_heap_allocate_address": "0xffffffc008539b54",
+    "system_heap_allocate_call_to___alloc_pages": "0xffffffc008539c70",
+    "system_heap_gfp_table_address": "0xffffffc008cf7b28",
+    "system_heap_gfp_masks": ["0x001521c2", "0x00140dc2", "0x00140dc2"],
+    "direct_cma_alloc_call_in_function": false
+  },
+  "gfp_and_fallback": {
+    "__GFP_MOVABLE": "0x00000008",
+    "__GFP_RECLAIMABLE": "0x00000010",
+    "system_heap_masks_set_movable": false,
+    "system_heap_masks_set_reclaimable": false,
+    "migratetype_enum": ["Unmovable", "Movable", "Reclaimable", "HighAtomic", "CMA", "Isolate"],
+    "cma_enum_value": 4,
+    "unmovable_fallback": ["Reclaimable", "Movable", "sentinel(6)"],
+    "unmovable_fallback_contains_cma": false
+  },
+  "read_only_target_snapshot_reuse": {
+    "boot_id": "15b97fe4-5c48-412c-ba39-92efb1823286",
+    "snapshot_times_utc": ["2026-10-23T11:09:25.644Z", "2026-10-23T11:09:51.320Z"],
+    "dma_buf_inventory_status": "ok",
+    "global_entry_count": 6,
+    "global_exporters": ["system"],
+    "global_sizes_bytes": [16384, 3686400, 3686400, 3686400, 16384, 3686400],
+    "mainui_fd_set_stable": true,
+    "mainui_has_system_heap_fd": true,
+    "mainui_reserved_heap_fd_observed": false,
+    "game_processes": 0
+  },
+  "limits": [
+    "No Lamentum GL call or object was joined to the system heap.",
+    "Exporter name/size and allocator code do not establish physical ownership of any game buffer.",
+    "Other Kbase, DMA-BUF import, GBM/EGL and reserved-CMA paths remain unclassified for the game."
+  ],
+  "runtime_disposition": {
+    "candidate_status": "STAGED_READBACK_VERIFIED_NOT_RUN",
+    "active_runtime": "build259",
+    "latest_cmafree_kib": 608,
+    "latest_preflight_pair_utc": ["2026-10-23T11:32:56.701Z", "2026-10-23T11:33:32.568Z"],
+    "latest_cmafree_pair_kib": [608, 608],
+    "latest_cma_free_blocks_order7_to10": [0, 0, 0, 0],
+    "latest_pair_status": "complete_same_boot",
+    "latest_game_processes": [0, 0],
+    "latest_pending_principal_command": false,
+    "T2_STORAGE_MARGIN_MIB": "unset",
+    "runtime_gate": "HOLD_RUNTIME",
+    "game_launched": false,
+    "gameplay_or_fps_verified": false
+  },
+  "validation": {
+    "matched_vmlinux_assertions": 8,
+    "full_host_suite_run_this_phase": false,
+    "new_device_actions": 0
+  }
+}

@@ -44,12 +44,14 @@ The exact matched `vmlinux` (`SHA-256 806182f8823b0db340f3f9beccf303e39571deb20b
 | CMA pool base/size | **Proven for this boot**: boot log + `cma=128M` + `CmaTotal` + matching `/proc/iomem` range |
 | `guest_malloc` pages | **Unknown** whether/how they consume CMA pages |
 | GLES GL texture/buffer/renderbuffer | **Unknown** driver allocation path, per-call success, and physical backing |
-| `DMA_HEAP_SYSTEM` | Heap endpoint exists; per-buffer backing and relation to GL remain unknown |
+| `DMA_HEAP_SYSTEM` | Generic allocator path is non-movable `__alloc_pages` (see [K1-D](../k1d-system-heap-page-path-2026-10-23/README.md)); per-buffer backing and relation to GL remain unknown |
 | CMA heap implementation | **Proven in matched kernel** to allocate through `cma_alloc` |
 | `DMA_HEAP_RESERVED` | **High-confidence registration inference** to default-CMA heap from initcall/minor ordering; explicit name input and per-buffer consumer remain unknown |
 | Mali/KMS/GBM/EGL working buffers | **Unknown**; the DT register map does not assign a memory pool or identify runtime buffers |
 | Current CMA occupancy owner | **Unknown**; no game ran and the single free-space gauge identifies no owner |
 
-This closes the reservation geometry and identifies the likely default-CMA DMA-heap endpoint, but not any game allocation or physical occupancy owner. D-policy still lacks per-class peak overlap and uncertainty, so keep `T2_STORAGE_MARGIN_MIB` unset and `HOLD_RUNTIME`; build259 remains installed and no current game ELF is available for a bounded launch.
+This closes the reservation geometry and identifies the likely default-CMA DMA-heap endpoint, but not any game allocation or physical occupancy owner. D-policy still lacks per-class peak overlap and uncertainty, so keep `T2_STORAGE_MARGIN_MIB` unset and `HOLD_RUNTIME`; build259 remains active, while the current-source ELF candidate is inertly staged and not run.
 
-**Next handoff:** verify the explicit CMA name argument and trace GL/Mali/GBM consumers to the heap; measure overlapping demands without allocating test buffers. Keep user-space scratch and direct driver allocations as possible CMA consumers until proven otherwise.
+**Follow-up:** [K1-D](../k1d-system-heap-page-path-2026-10-23/README.md) later traces the generic `system_heap_allocate` path to `__alloc_pages` with masks lacking `__GFP_MOVABLE` and `__GFP_RECLAIMABLE`; the matched Unmovable fallback excludes CMA. That classifies the generic system heap allocator, not individual buffers or Lamentum's GL requests.
+
+**Next:** trace user-mode GL/EGL/GBM routing and imports to `system`, `reserved`, or native Kbase; measure overlapping demands without allocating test buffers. Keep unjoined game requests and scratch as unknown until proven otherwise.

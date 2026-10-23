@@ -77,7 +77,7 @@
       {"name": "reserved", "major": 252, "minor": 1, "sysfs_path": "/sys/devices/virtual/dma_heap/reserved"}
     ],
     "cma_device_node_visible": false,
-    "physical_backing_by_heap": "reserved maps with high confidence to the default CMA heap; system per-page class and actual per-buffer consumers remain unknown"
+    "physical_backing_by_heap": "reserved maps with high confidence to the default CMA heap; K1-D later classifies the generic system_heap_allocate path as non-movable and not CMA-eligible through Unmovable fallback; per-buffer backing and game consumers remain unproven"
   },
   "kernel_heap_implementation": {
     "vmlinux_sha256": "806182f8823b0db340f3f9beccf303e39571deb20b99386ee6a76442b8761b19",
@@ -137,7 +137,7 @@
   "limits": [
     "Effective CMA reservation geometry is proven; this does not identify which process or driver allocations consume it.",
     "The absence of standard DT memory-region references does not prove that Mali, GBM/EGL, or movable userspace pages cannot use CMA.",
-    "The heap endpoint and static registration map do not identify which GL requests or live buffers use them; the system-heap page class and game consumer remain unknown.",
+    "The heap endpoint and static registration map do not identify which GL requests or live buffers use them; K1-D later classifies the generic system_heap_allocate path but does not map live buffer pages or game consumers.",
     "The one memory sample is not a fresh same-boot two-snapshot launch preflight or safety-margin approval."
   ]
 }
