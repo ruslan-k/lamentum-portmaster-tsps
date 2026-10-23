@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "audit_date": "2026-10-23",
+  "phase": "K1-C live Mali native page-allocation path",
+  "capture": {
+    "captured_utc": "2026-10-23T10:45:17.795Z",
+    "method": "read-only Python stdlib probe streamed over established SSH",
+    "probe_sha256_local_scratch": "0f5a54e582dccef83305f8edfe5fc32bd30e3924ec7be960cba9cb97526fe299",
+    "device_files_written": false,
+    "game_launch_attempted": false
+  },
+  "target": {
+    "firmware_version": "1.0.1",
+    "kernel_release": "5.15.147",
+    "architecture": "aarch64",
+    "model": "sun55iw3",
+    "boot_id": "15b97fe4-5c48-412c-ba39-92efb1823286"
+  },
+  "live_mali_state": {
+    "module_path": "/lib/modules/5.15.147/mali_kbase.ko",
+    "module_bytes": 29984864,
+    "module_sha256": "2aaf1556a7a352caffec4db8821ea9d2f847529671321caa1a667de992d1ceb5",
+    "module_build_id": "0dcaa84a5579b1122f98f29d0214723a2dff9603",
+    "module_sha256_matches_k1b": true,
+    "kbase_page_migration_enabled": {"value": 0, "mode_octal": "0444"},
+    "boot_log": "[    2.875701] mali 1800000.gpu: No memory group manager is configured",
+    "loaded_module_count": 9
+  },
+  "matched_vmlinux": {
+    "sha256": "806182f8823b0db340f3f9beccf303e39571deb20b99386ee6a76442b8761b19",
+    "build_id": "175a7f4d4731ebfbbdeb7695329115202f8b813a",
+    "gfpflag_names_address": "0xffffffc008caa170",
+    "fallbacks_address": "0xffffffc008caa7f8",
+    "migratetype_names_address": "0xffffffc008caa868"
+  },
+  "module_static_path": [
+    {"from": "kbase_alloc_phy_pages_helper", "to": "kbase_mem_pool_alloc_pages", "r2_address": "0x08002d9c"},
+    {"from": "kbase_mem_pool_alloc_pages", "to": "kbase_mem_alloc_page", "r2_address": "0x0801fdbc"},
+    {"from": "kbase_mem_init", "operation": "stores kbase_native_mgm_dev at device+0x1518", "r2_address_range": "0x08001470-0x08001480"},
+    {"from": "kbase_native_mgm_dev[0]", "to": "kbase_native_mgm_alloc", "relocation": "section-relative .data+0x0 -> .text+0x8094"},
+    {"from": "kbase_mem_alloc_page", "operation": "selects GFP flags from kbase_page_migration_enabled and calls manager slot 0", "r2_address_range": "0x0801e63c-0x0801e668"},
+    {"from": "kbase_native_mgm_alloc", "to": "__alloc_pages", "r2_address": "0x080080f0"}
+  ],
+  "gfp_flags": {
+    "migration_disabled_value": 0,
+    "migration_disabled_mask": "0x00100dc2",
+    "migration_disabled_decoded": "GFP_HIGHUSER | __GFP_ZERO",
+    "migration_enabled_mask": "0x01100dca",
+    "migration_enabled_decoded": "GFP_HIGHUSER_MOVABLE | __GFP_ZERO",
+    "matched_kernel_masks": {
+      "GFP_HIGHUSER": "0x00100cc2",
+      "GFP_HIGHUSER_MOVABLE": "0x01100cca",
+      "__GFP_ZERO": "0x00000100",
+      "__GFP_MOVABLE": "0x00000008"
+    }
+  },
+  "migratetype_fallbacks": {
+    "enum_order": ["Unmovable", "Movable", "Reclaimable", "HighAtomic", "CMA", "Isolate"],
+    "cma_enum_value": 4,
+    "unmovable_fallback_row": ["Reclaimable", "Movable", "sentinel(6)"],
+    "unmovable_row_includes_cma": false
+  },
+  "interpretation": {
+    "native_kbase_page_pool_class": "current path requests GFP_HIGHUSER|__GFP_ZERO; matched kernel unmovable fallback does not include CMA",
+    "all_gl_requests_mapped_to_this_path": false,
+    "dma_buf_import_path_classified": false,
+    "peak_overlap_and_per_buffer_owner_known": false,
+    "runtime_gate": "HOLD_RUNTIME",
+    "T2_STORAGE_MARGIN_MIB": "unset"
+  },
+  "validation": {
+    "gfp_name_and_mask_checks": 6,
+    "migratetype_and_fallback_checks": 2,
+    "module_hash_matches_k1b": true,
+    "full_host_suite_run_this_phase": false
+  }
+}
