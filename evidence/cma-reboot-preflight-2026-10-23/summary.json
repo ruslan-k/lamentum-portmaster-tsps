@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "stage": "PREPARED_AWAITING_EXPLICIT_OPERATOR_AUTHORIZATION",
-  "reboot_executed": false,
+  "stage": "PREBOOT_PREFLIGHT_RECORDED",
+  "reboot_executed_at_capture": false,
   "captured_utc": "2026-10-23T13:43:29.448215Z",
   "target": {
     "boot_id": "15b97fe4-5c48-412c-ba39-92efb1823286",
@@ -88,10 +88,13 @@
     "boot_init_script": "/etc/init.d/S50sshd",
     "boot_keys_script": "/etc/init.d/S65ssh_keys",
     "init_runner": "/etc/init.d/rcS invokes /etc/init.d/S??* start",
-    "post_reboot_ssh_recovery_verified": false,
+    "post_reboot_ssh_recovery_verified": true,
+    "post_reboot_boot_id": "76212e98-f521-4f2e-8e93-76f58f48991a",
+    "post_reboot_capture_utc": "2026-10-23T13:53:39.607430Z",
     "reboot_binary_available": "/sbin/reboot"
   },
-  "planned_experiment_after_authorization": {
+  "planned_experiment_design": {
+    "execution_status": "A boot transition was later observed; see ../cma-reboot-observation-2026-10-23/summary.json. The agent did not issue the reboot command and the initiator remains unknown.",
     "reboot_count": 1,
     "method": "one normal controlled reboot; no force flag",
     "baseline": "earliest complete stable post-boot snapshot with boot ID, MainUI/principal identity, no game/pending command, allocator and DMA-BUF inventory",

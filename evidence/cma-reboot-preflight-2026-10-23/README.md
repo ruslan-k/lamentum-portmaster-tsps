@@ -1,6 +1,6 @@
 # CMA recovery experiment — preflight and authorization gate
 
-**Status: prepared, not executed. No reboot has occurred.** This is a bounded recovery diagnosis for the temporary CMA runtime blocker; it does not classify the project as unachievable. Reboot execution awaits explicit operator authorization.
+**Historical preflight capture before the observed boot transition.** At this capture, no reboot had occurred and explicit operator authorization was pending. A later boot-ID change and post-boot samples are recorded in [the observation receipt](../cma-reboot-observation-2026-10-23/README.md). The agent did not issue a reboot command; who initiated the transition remains unconfirmed.
 
 ## Pre-reboot checks (2026-10-23 13:43–13:47 UTC)
 
@@ -15,12 +15,8 @@
 
 The complete single snapshot at `13:43:29.448Z` reported `CmaFree=2,008 KiB` of `131,072 KiB`. The free CMA histogram had orders 0–6 `[93,21,13,7,6,3,1]`, with no free order-7+ blocks. Its 499-page histogram sum differed from `nr_free_cma=502` by 3 pages; the difference is preserved, not normalized. Six global DMA-BUFs were `system` exporter. The separate filtered dmesg capture at `13:47:34.333Z` matched zero allocation/OOM/CMA/Mali warnings; `/proc/pressure/memory` was unavailable. This is not a D pair or launch clearance.
 
-## Experiment after authorization
+## Planned procedure (preflight capture)
 
-1. Perform exactly one normal controlled reboot; no force flag and no other state changes.
-2. Wait for SSH recovery and a changed boot ID. Save the first reachable sample, then identify the earliest complete stable snapshot with MainUI/principal identities, no game/pending command, buddy orders and DMA-BUF inventory.
-3. Capture follow-ups at device uptime approximately 60, 300 and 900 seconds. Each record will include `CmaFree`, buddy/free-CMA orders, zoneinfo/vmstat, DMA-BUF inventory, process identities, memory PSI if exposed, and filtered kernel allocation/OOM/CMA/Mali warnings.
-4. Compare within the new boot. Pageblock migration types and free-order histograms are not proof of active movable owners; DMA-BUF exporter/size is not proof of CMA backing. Label pinned/Mali-private ownership `unknown` unless directly supported.
-5. Do not launch Lamentum merely because CMA rises. Keep `T2_STORAGE_MARGIN_MIB` unset; the complete D-preflight and independently justified positive class-specific reserve remain mandatory.
+The planned sequence was one normal reboot followed by samples at device uptime 60, 300 and 900 seconds. A boot-ID transition was subsequently observed and the post-boot measurements are in the [observation receipt](../cma-reboot-observation-2026-10-23/README.md). The agent did not send a reboot command; the transition's initiator is unconfirmed. **Do not issue another reboot for this experiment.** No game launch is justified by the high post-boot `CmaFree`: `T2_STORAGE_MARGIN_MIB` remains unset and the independent class-specific reserve/D gate are still required.
 
 No reboot, game launch, compaction, cache drop, kernel setting change, firmware change, or admission bypass was performed in this preparation. Machine-readable details and local backup paths are in `summary.json` (the backup binaries remain local-only under Hermes scratch).
