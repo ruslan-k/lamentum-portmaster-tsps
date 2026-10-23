@@ -25,7 +25,6 @@ def _matches(row, expected, keys):
 
 
 def _timeline_records(timeline, expected):
-    keys = ("run_uuid", "boot_id", "pid", "starttime", "elf_sha256")
     identity = timeline.get("identity")
     if not isinstance(identity, dict) or not _matches(timeline, expected, ("run_uuid", "elf_sha256")):
         raise ValueError("memory timeline run identity mismatch")
@@ -40,10 +39,22 @@ def _timeline_records(timeline, expected):
         raise ValueError("memory timeline samples must be a list")
     records = []
     reasons = []
-    last_seq = last_ns = -1
-    for row in samples:
-        if not isinstance(row, dict) or not _matches(row, expected, keys):
-            raise ValueError("mixed process identity in memory samples")
+    last_seq, last_ns = -2, -1
+    for index, row in enumerate(samples):
+        if not isinstance(row, dict) or not _matches(row, expected, ("run_uuid", "boot_id", "elf_sha256")):
+            raise ValueError("memory timeline run identity mismatch")
+        prelaunch = row.get("phase") == "prelaunch"
+        if prelaunch:
+            if (index != 0 or row.get("seq") != -1 or row.get("pid") is not None
+                    or row.get("starttime") is not None or row.get("sample_status") != "ok"
+                    or row.get("running") is not False):
+                raise ValueError("invalid prelaunch system sample")
+        else:
+            if not _matches(row, expected, ("pid", "starttime")):
+                raise ValueError("mixed process identity in memory samples")
+            if type(row.get("seq")) is not int or row["seq"] < 0:
+                raise ValueError("runtime memory timeline sequence is invalid")
+
         seq, stamp = row.get("seq"), row.get("t_monotonic_ns")
         if type(seq) is not int or seq <= last_seq:
             raise ValueError("memory timeline sequence is not strictly increasing")
@@ -53,16 +64,17 @@ def _timeline_records(timeline, expected):
         status = row.get("sample_status")
         if status not in ("ok", "exited"):
             reasons.append("memory_sample_" + str(status or "missing_status"))
-        if status == "ok" and row.get("running") is not True:
+        if not prelaunch and status == "ok" and row.get("running") is not True:
             reasons.append("memory_sample_running_state_mismatch")
         records.append({
             "run_uuid": row.get("run_uuid"), "boot_id": row.get("boot_id"),
             "pid": row.get("pid"), "starttime": row.get("starttime"),
             "elf_sha256": row.get("elf_sha256"), "monotonic_ns": stamp,
-            "seq": seq, "phase": row.get("phase"), "sample_status": status,
+            "seq": seq, "phase": row.get("phase"), "sample_scope": "prelaunch_system" if prelaunch else "runtime_process",
+            "sample_status": status,
             "present_serial": row.get("present_serial"),
             "present_serial_status": "observed" if type(row.get("present_serial")) is int else "unobserved",
-            "process_kib": dict(row.get("process") or {}),
+            "process_kib": {} if prelaunch else dict(row.get("process") or {}),
             "system_kib": dict(row.get("system") or {}),
             "pressure_memory": row.get("pressure_memory"),
             "pressure_status": "observed" if row.get("pressure_memory") is not None else "unavailable",
@@ -431,16 +443,17 @@ def build_waterfall(log_text, memory_timeline, cma_snapshots, expected_run, *,
         end = row["monotonic_ns"] + duration if type(duration) is int and duration >= 0 else None
         row["read_end_monotonic_ns"] = end
         row["m3b_windows_overlapping_read"] = [window["event_seq"] for window in windows
-            if end is not None and window["t_start_ns"] <= end and window["t_end_ns"] >= row["monotonic_ns"]]
+            if row["sample_scope"] == "runtime_process" and end is not None and window["t_start_ns"] <= end and window["t_end_ns"] >= row["monotonic_ns"]]
         row["owned_event_log_indices_overlapping_read"] = [event["log_index"] for event in owned_events
-            if end is not None and type(event["monotonic_ns"]) is int
+            if row["sample_scope"] == "runtime_process" and end is not None and type(event["monotonic_ns"]) is int
             and row["monotonic_ns"] <= event["monotonic_ns"] <= end]
 
     floor_start = floor.get("snapshot_start_ns") if floor else None
     floor_end = floor.get("snapshot_end_ns") if floor else None
     if type(floor_start) is int and type(floor_end) is int:
         floor_sample_seqs = [row["seq"] for row in memory_records
-                             if type(row.get("read_end_monotonic_ns")) is int
+                             if row["sample_scope"] == "runtime_process"
+                             and type(row.get("read_end_monotonic_ns")) is int
                              and row["monotonic_ns"] <= floor_end
                              and row["read_end_monotonic_ns"] >= floor_start]
         floor_join_status = "interval_overlap" if floor_sample_seqs else "no_interval_overlap"
@@ -450,7 +463,8 @@ def build_waterfall(log_text, memory_timeline, cma_snapshots, expected_run, *,
     for index, point in enumerate(cma_rows):
         cma_sample_joins.append({"cma_snapshot_index": index,
             "memory_sample_seqs": [row["seq"] for row in memory_records
-                if type(row.get("read_end_monotonic_ns")) is int
+                if row["sample_scope"] == "runtime_process"
+                and type(row.get("read_end_monotonic_ns")) is int
                 and row["monotonic_ns"] <= point["monotonic_ns"] <= row["read_end_monotonic_ns"]]})
 
     memwatch = []
@@ -490,7 +504,7 @@ def build_waterfall(log_text, memory_timeline, cma_snapshots, expected_run, *,
             "fileback_mirror": {"bytes": None, "status": "unmeasured"},
             "egl_gbm_display": {"bytes": None, "status": "unmeasured"},
             "process_pages": [{"monotonic_ns": row["monotonic_ns"], **row["process_kib"]}
-                              for row in memory_records],
+                              for row in memory_records if row["sample_scope"] == "runtime_process"],
             "driver_dma": {"proven_cma_bytes": None, "pinned_cma_bytes": None,
                            "mali_private_bytes": None, "physical_attribution": "unknown"},
         },

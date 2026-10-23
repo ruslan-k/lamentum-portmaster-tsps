@@ -188,6 +188,33 @@ class PeakMemoryWaterfallTests(unittest.TestCase):
                              hashlib.sha256(log.read_bytes()).hexdigest())
             self.assertNotIn("combined_bytes", payload)
 
+    def test_prelaunch_system_sample_is_preserved_but_not_counted_as_runtime(self):
+        data = timeline()
+        prelaunch = dict(data["samples"][0], pid=None, starttime=None, seq=-1,
+                         t_monotonic_ns=120, phase="prelaunch", running=False)
+        prelaunch["process"] = {key: None for key in data["samples"][0]["process"]}
+        data["samples"] = [prelaunch] + data["samples"]
+        data["sample_count"] = len(data["samples"])
+        result = build_waterfall(owned_log(), data,
+                                 [cma_snapshot(151, 2000), cma_snapshot(181, 2000)], RUN,
+                                 memory_floor_mib=64,
+                                 kernel_warning_deltas={"boot_id": RUN["boot_id"], "capture_status": "ok", "records": []})
+        self.assertEqual(result["status"], "complete", result["incomplete_reasons"])
+        self.assertEqual(result["memory_samples"][0]["sample_scope"], "prelaunch_system")
+        self.assertEqual(result["memory_samples"][0]["system_kib"]["CmaFree_kib"], 2000)
+        self.assertEqual(result["memory_samples"][0]["process_kib"], {})
+        self.assertEqual(len(result["ledgers"]["process_pages"]), 2)
+        self.assertEqual(result["time_joins"]["floor_to_process"],
+                         {"status": "interval_overlap", "sample_seqs": [0]})
+        self.assertEqual(result["memory_samples"][0]["m3b_windows_overlapping_read"], [])
+        self.assertEqual(result["time_joins"]["cma_to_process"][0]["memory_sample_seqs"], [0])
+        bad_prelaunch = dict(prelaunch, pid=RUN["pid"])
+        bad = dict(data, samples=[bad_prelaunch] + data["samples"][1:])
+        with self.assertRaisesRegex(ValueError, "invalid prelaunch system sample"):
+            build_waterfall(owned_log(), bad,
+                            [cma_snapshot(151, 2000), cma_snapshot(181, 2000)], RUN,
+                            kernel_warning_deltas={"boot_id": RUN["boot_id"], "capture_status": "ok", "records": []})
+
     def test_missing_kernel_warning_capture_is_incomplete(self):
         result = build_waterfall(owned_log(), timeline(),
                                  [cma_snapshot(151, 2000), cma_snapshot(181, 2000)], RUN,
