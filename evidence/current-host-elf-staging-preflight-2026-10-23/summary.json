@@ -36,7 +36,7 @@
     "bytes": 1773,
     "mode": "0755",
     "device_path": "/mnt/SDCARD/Roms/PORTS/lamentum-switch/.candidate-h2a-20261023/Lamentum.sh",
-    "status": "HOST_VERIFIED_NOT_STAGED",
+    "status": "STAGED_READBACK_VERIFIED_NOT_RUN",
     "non_autostart": "hidden candidate directory; no PortMaster root launcher entry changed",
     "runtime_and_helper_target": "candidate ELF and run_identity.py in the same hidden directory; production asset CWD retained",
     "device_sysfs_mutations": false,
@@ -44,7 +44,27 @@
     "fixed_guard_environment": {"T2_MEMORY_FLOOR_MIB": 96, "T2_TEXTURE_BUDGET_MIB": 300, "COTM_GL_ERROR_IGNORE": 0, "COTM_ASYNC_QUEUE": 0, "T2_GPU_PIPELINE": 0, "LC2_TEXTURE_PAGEOUT": 0, "LC2_BC_STRIPE_MEDIUM": 0},
     "T2_STORAGE_MARGIN_MIB": "not assigned by launcher; current environment is unset and future D run remains gated",
     "focused_tests_passed": 18,
-    "full_tools_suite_passed": 406
+    "process_census_focused_tests_passed": 27,
+    "full_tools_suite_passed": 413,
+    "device_readback": {
+      "captured_utc": "2026-10-23T12:51:43.062604Z",
+      "sha256_match": true,
+      "mode": "0777",
+      "executable": true,
+      "candidate_directory_entries": ["Lamentum.sh", "lamentum-nextos", "run_identity.py"],
+      "temporary_file_absent": true,
+      "active_build259_unchanged": true,
+      "active_root_launcher_unchanged": true,
+      "root_lamentum_launcher_count": 1,
+      "mainui_pid_starttime": [2369, 1079],
+      "principal_pid_starttime": [2196, 1023],
+      "game_processes": 0,
+      "pending_principal_command": false,
+      "candidate_path_fd_owners": [],
+      "blocking_proc_errors": [],
+      "sd_free_bytes": 3320807424,
+      "cmafree_single_kib": 700
+    }
   },
   "d_preflight": {
     "pre_hash_pair": {
@@ -164,6 +184,14 @@
       "scope": "complete single snapshot; not a paired D preflight",
       "local_snapshot_sha256": "1f991ec6096fab552e3b9ee64059cddbe09a4a18a72e8e43c4131c3d57f5e388"
     },
+    "post_stage_D_pair_receipt": {
+      "timestamps_utc": ["2026-10-23T12:52:30.558321Z", "2026-10-23T12:52:56.246752Z"],
+      "comparison_status": "complete",
+      "cmafree_kib": [792, 1332],
+      "free_cma_blocks_order7_to10": [[0, 0, 0, 0], [0, 0, 0, 0]],
+      "runtime_gate": "HOLD_RUNTIME",
+      "receipt": "../d-preflight-poststage-2026-10-23/summary.json"
+    },
     "subsequent_k1f_followup": {
       "receipt": "../k1f-cma-owners-debugfs-2026-10-23/summary.json",
       "latest_complete_pair_timestamps_utc": ["2026-10-23T12:11:19.540873Z", "2026-10-23T12:11:55.851181Z"],
@@ -180,7 +208,7 @@
     "observed_cross_phase_cached_change_kib": 432984,
     "observed_cross_phase_cmafree_change_kib": -129880,
     "runtime_gate": "HOLD_RUNTIME",
-    "hold_reason": "latest complete same-boot pair CmaFree 608 KiB, no order-7+ CMA blocks, well below prior danger context; GL/DMA-BUF demand and uncertainty remain unresolved",
+    "hold_reason": "latest complete post-stage D pair at 12:52Z has CmaFree 792→1,332 KiB, no free CMA blocks order 7–10; GL/DMA-BUF demand and uncertainty remain unresolved",
     "T2_STORAGE_MARGIN_MIB": "unset",
     "game_launched": false,
     "newgame_entered": false

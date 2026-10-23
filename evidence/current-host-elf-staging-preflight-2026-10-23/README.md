@@ -8,7 +8,7 @@ The refreshed host ELF and paired helper were copied to the inert hidden path `/
 
 - candidate ELF: **2,203,096 bytes**, SHA-256 `c46714403f22074d92710192d1164cfe0b7a4f62f1a4890ffb7a1e224c542332`;
 - helper: **8,310 bytes**, SHA-256 `abe8e4847b18a750c0796af33d887cf43714126c9751ccdc8236715cb752401a`;
-- the staged directory contains exactly those two files and no launcher; active build259, launcher, and ROMFS section were not overwritten.
+- at the initial ELF/helper-only stage, the hidden directory contained exactly those two files and no launcher; active build259, launcher, and ROMFS section were not overwritten.
 
 The existing device `lamentum-romfs.section` is **1,832,060,032 bytes**. Its read-only SHA-256 check matched the local owner-image section exactly: `80ad4427164a0b7ad61c3a3fcd955bd158635aac1ee42ebb67d01dfae279b893`. The target-side sequential read took **33.379 s**; no device file was written by the hash operation.
 
@@ -29,14 +29,14 @@ After a further **60.694 s** idle interval, another complete pair stayed low: `C
 
 **Important observed association:** between the pre-hash and post-hash pairs, `Cached` rose from `145,640` to `578,624 KiB` while `CmaFree` fell from `130,412` to `532 KiB`. This followed the large read-only ROMFS hash. It is a correlation, not proof that those file-cache pages occupied CMA. No `drop_caches`, compaction, sysfs policy change, reboot, or game launch was attempted. I will not repeat the large section scan during this test sequence.
 
-**D decision: HOLD_RUNTIME.** The latest complete same-boot pair is still about 0.6 MiB `CmaFree`, with no high-order CMA blocks; passive idle sampling did not recover the post-read state. The candidate is staged but inert; `T2_STORAGE_MARGIN_MIB` remains unset. Do not launch from this state. Re-evaluate only after passive recovery is independently observed and actual GL/DMA-BUF demand plus uncertainty are reviewed; no New Game or FPS claim.
+**Initial D decision (11:32–11:33Z): `HOLD_RUNTIME`.** That complete pair was about 0.6 MiB `CmaFree` with no high-order CMA blocks. It is now superseded by the [post-stage D receipt](../d-preflight-poststage-2026-10-23/README.md), which records the fresh 12:52Z pair. `T2_STORAGE_MARGIN_MIB` remains unset; no game or New Game run.
 
-Raw snapshot JSON, comparisons, and device command output remain local-only under Hermes scratch. The staged candidate is the only device write from this phase; active runtime/launcher/helper and owner section remain unchanged.
+Raw snapshot JSON, comparisons, and device command output remain local-only under Hermes scratch. The initial stage wrote the ELF/helper into the hidden candidate directory; the later S phase added only `Lamentum.sh` there. Active build259, root launcher, and ROMFS section remain unchanged.
 
-**Subsequent read-only follow-up:** this phase's 11:32Z recovery pair and 11:49Z single sample are superseded as the latest measurements by the complete 12:11Z pair and owner/debugfs audit in [K1-F](../k1f-cma-owners-debugfs-2026-10-23/README.md). It remained at `CmaFree=608 KiB`, with no order-7+ blocks; no game or lifecycle action occurred.
+**Subsequent read-only follow-ups:** K1-F's complete 12:11Z pair and owner/debugfs audit are recorded in [K1-F](../k1f-cma-owners-debugfs-2026-10-23/README.md). The newer post-stage 12:52Z pair and interpretation are in the [post-stage D receipt](../d-preflight-poststage-2026-10-23/README.md); neither establishes recovery, a leak, or a safe runtime reserve.
 
-## Candidate launcher prepared (host-verified; device copy pending S gate)
+## Candidate launcher (host-verified; S readback verified, not run)
 
 `candidate-Lamentum.sh` is the candidate-specific launcher for the hidden directory. It keeps the production asset working directory but resolves the ELF/helper/log under `.candidate-h2a-20261023`, so it cannot run build259 or overwrite the production log. It is not placed at a PortMaster-discovered root path. It makes no `/sys` writes or CPU hotplug changes, fixes the no-input window at 30 seconds, pins `T2_MEMORY_FLOOR_MIB=96`, `T2_TEXTURE_BUDGET_MIB=300`, strict GL, synchronous queue, pageout off and BC medium stripe off; it does not assign a storage margin. SHA-256 `1a90c4efc55074d2d6ae4ac51134522e1cc7ac33cca6025ccb14d269715c18a7`, size 1,773 bytes, mode 0755.
 
-Host validation: `bash -n` passed. `tools/test_launcher.py` exercised the candidate launcher with the real `run_identity.py` helper and a fake ELF, verified the emitted launcher/helper/ELF hashes, confirmed unsafe inherited overrides do not relax the fixed guards, and confirmed the fake runtime's exit status propagates. The focused admission/launcher set passed 18 tests; the complete tools suite passed 406 tests. **This launcher has not yet been copied to the device**; it remains an S-stage operation pending a fresh storage/busy-state/identity check and readback. The D runtime gate is still held.
+Host validation: `bash -n` passed. `tools/test_launcher.py` exercised the candidate launcher with the real `run_identity.py` helper and a fake ELF, verified the emitted launcher/helper/ELF hashes, confirmed unsafe inherited overrides do not relax the fixed guards, and confirmed the fake runtime's exit status propagates. The focused admission/launcher tests passed 18/18 at the launcher checkpoint; the later process-census changes passed 27/27 focused K1 tests, including a confirmed process-exit race during executable lookup; the full tools suite passed 413/413. The launcher was read back at `12:51:43.062604Z` with exact hash and executable mode. **It remains not run.** The fresh post-stage D pair is in [the D receipt](../d-preflight-poststage-2026-10-23/README.md); runtime remains held.

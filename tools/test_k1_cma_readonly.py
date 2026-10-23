@@ -1,3 +1,4 @@
+import errno
 import gzip
 import json
 import os
@@ -5,6 +6,7 @@ import shutil
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from cma_readonly_snapshot import (
     MAX_PROC_TEXT_BYTES,
@@ -175,6 +177,16 @@ class ReadOnlySnapshotTests(unittest.TestCase):
         (game / "comm").write_text("lamentum-nextos\n")
         (game / "stat").write_text(proc_stat(101, "lamentum-nextos", starttime=201))
         (game / "exe").symlink_to(runtime)
+        shell = root / "bin/bash"
+        shell.parent.mkdir(parents=True)
+        shell.write_text("fixture shell")
+        principal = proc / "102"
+        (principal / "fd").mkdir(parents=True)
+        (principal / "comm").write_text("principal.sh\n")
+        (principal / "stat").write_text(proc_stat(102, "principal.sh", starttime=202))
+        (principal / "exe").symlink_to(shell)
+        (principal / "cmdline").write_bytes(b"/bin/bash /mnt/SDCARD/spruce/scripts/principal.sh\\0")
+        (root / "tmp").mkdir()
         return root
 
     def test_snapshot_is_bounded_redacts_cmdline_and_keeps_unavailable_distinct(self):
@@ -199,6 +211,129 @@ class ReadOnlySnapshotTests(unittest.TestCase):
             self.assertNotIn("DO_NOT_EMIT", json.dumps(snap))
             self.assertEqual(snap["dma_buf"]["status"], "unavailable")
 
+    def test_s_preflight_is_non_atomic_and_passes_stable_mainui_principal_without_game(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = self._fixture_root(directory)
+            shutil.rmtree(root / "proc/101")
+            snap = collect_snapshot(root=str(root))
+            processes = snap["processes"]
+            self.assertEqual(processes["snapshot_consistency"], "sequential_non_atomic")
+            self.assertEqual(processes["principal"][0]["pid"], 102)
+            self.assertEqual(processes["principal"][0]["starttime"], 202)
+            self.assertFalse(processes["pending_principal_command"])
+            self.assertEqual(processes["process_identity_status"], "ready")
+            self.assertTrue(processes["process_identity_checks"]["mainui_unique_identity"])
+            self.assertTrue(processes["process_identity_checks"]["principal_unique_identity"])
+
+    def test_s_preflight_holds_for_game_or_pending_principal_command(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = self._fixture_root(directory)
+            snap = collect_snapshot(root=str(root))
+            self.assertEqual(snap["processes"]["process_identity_status"], "hold")
+            self.assertFalse(snap["processes"]["process_identity_checks"]["no_game_process"])
+            (root / "tmp/cmd_to_run.sh").write_text("pending\n")
+            shutil.rmtree(root / "proc/101")
+            pending = collect_snapshot(root=str(root))
+            self.assertTrue(pending["processes"]["pending_principal_command"])
+            self.assertEqual(pending["processes"]["process_identity_status"], "hold")
+            self.assertFalse(pending["processes"]["process_identity_checks"]["no_pending_principal_command"])
+
+    def test_s_preflight_holds_when_principal_identity_is_missing(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = self._fixture_root(directory)
+            shutil.rmtree(root / "proc/101")
+            shutil.rmtree(root / "proc/102")
+            snap = collect_snapshot(root=str(root))
+            self.assertEqual(snap["processes"]["process_identity_status"], "hold")
+            self.assertFalse(snap["processes"]["process_identity_checks"]["principal_unique_identity"])
+
+    def test_enoent_is_transient_only_when_process_directory_disappears(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = self._fixture_root(directory)
+            stale = root / "proc/104"
+            (stale / "fd").mkdir(parents=True)
+            (stale / "comm").write_text("shortlived\n")
+            (stale / "stat").write_text(proc_stat(104, "shortlived", starttime=204))
+            (stale / "exe").symlink_to(root / "bin/bash")
+            original = Path.read_text
+            def exit_during_comm(path, *args, **kwargs):
+                if path == stale / "comm":
+                    shutil.rmtree(stale)
+                    raise FileNotFoundError(errno.ENOENT, "exited", str(path))
+                return original(path, *args, **kwargs)
+            with patch.object(Path, "read_text", exit_during_comm):
+                snap = collect_snapshot(root=str(root))
+            processes = snap["processes"]
+            self.assertEqual(processes["transient_exit_count"], 1)
+            self.assertEqual(processes["persistent_read_errors"], [])
+            self.assertEqual(processes["status"], "ok")
+            self.assertEqual(snap["sample_status"], "complete")
+
+    def test_enoent_during_exe_read_is_transient_when_process_directory_disappears(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = self._fixture_root(directory)
+            shutil.rmtree(root / "proc/101")
+            stale = root / "proc/104"
+            (stale / "fd").mkdir(parents=True)
+            (stale / "comm").write_text("shortlived\\n")
+            (stale / "stat").write_text(proc_stat(104, "shortlived", starttime=204))
+            (stale / "exe").symlink_to(root / "bin/bash")
+            original_stat = os.stat
+
+            def exit_during_exe(path, *args, **kwargs):
+                if Path(path) == stale / "exe":
+                    shutil.rmtree(stale)
+                    raise FileNotFoundError(errno.ENOENT, "exited", str(path))
+                return original_stat(path, *args, **kwargs)
+
+            with patch("cma_readonly_snapshot.os.stat", side_effect=exit_during_exe):
+                snap = collect_snapshot(root=str(root))
+            processes = snap["processes"]
+            self.assertEqual(processes["transient_exit_count"], 1)
+            self.assertEqual(processes["unreadable_exe_count"], 0)
+            self.assertEqual(processes["persistent_read_error_count"], 0)
+            self.assertEqual(processes["status"], "ok")
+            self.assertEqual(snap["sample_status"], "complete")
+
+    def test_live_pid_eacces_and_persistent_enoent_are_hold(self):
+        for error in (PermissionError(errno.EACCES, "denied"), FileNotFoundError(errno.ENOENT, "still present")):
+            with self.subTest(error=type(error).__name__), tempfile.TemporaryDirectory() as directory:
+                root = self._fixture_root(directory)
+                process = root / "proc/104"
+                (process / "fd").mkdir(parents=True)
+                (process / "stat").write_text(proc_stat(104, "blocked", starttime=204))
+                (process / "exe").symlink_to(root / "bin/bash")
+                (process / "comm").write_text("blocked\n")
+                original = Path.read_text
+                def fail_live_read(path, *args, **kwargs):
+                    if path == process / "comm":
+                        raise type(error)(error.errno, str(error), str(path))
+                    return original(path, *args, **kwargs)
+                with patch.object(Path, "read_text", fail_live_read):
+                    snap = collect_snapshot(root=str(root))
+                self.assertEqual(snap["processes"]["status"], "partial")
+                self.assertGreaterEqual(snap["processes"]["persistent_read_error_count"], 1)
+                self.assertEqual(snap["sample_status"], "partial")
+
+    def test_pid_reuse_between_census_brackets_is_hold(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = self._fixture_root(directory)
+            mainui_stat = root / "proc/100/stat"
+            original = Path.read_text
+            calls = 0
+            def reuse_pid(path, *args, **kwargs):
+                nonlocal calls
+                if path == mainui_stat:
+                    calls += 1
+                    return proc_stat(100, "MainUI", starttime=200 if calls == 1 else 201)
+                return original(path, *args, **kwargs)
+            with patch.object(Path, "read_text", reuse_pid):
+                snap = collect_snapshot(root=str(root))
+            self.assertGreaterEqual(calls, 2)
+            self.assertEqual(snap["processes"]["pid_reuse_count"], 1)
+            self.assertEqual(snap["processes"]["status"], "partial")
+            self.assertEqual(snap["sample_status"], "partial")
+
     def test_dma_buf_inventory_keeps_inode_size_and_exporter(self):
         with tempfile.TemporaryDirectory() as directory:
             root = self._fixture_root(directory)
@@ -222,13 +357,15 @@ class ReadOnlySnapshotTests(unittest.TestCase):
     def test_kernel_threads_without_executable_do_not_make_census_partial(self):
         with tempfile.TemporaryDirectory() as directory:
             root = self._fixture_root(directory)
-            task = root / "proc/102"
+            task = root / "proc/103"
             task.mkdir()
             (task / "comm").write_text("kworker/0:1\n")
-            (task / "stat").write_text(proc_stat(102, "kworker/0:1", starttime=202))
+            (task / "stat").write_text(proc_stat(103, "kworker/0:1", starttime=203))
             (task / "cmdline").write_bytes(b"")
+            (task / "status").write_text("Name:\tkworker/0:1\nPPid:\t2\n")
             snap = collect_snapshot(root=str(root))
             self.assertEqual(snap["processes"]["status"], "ok")
+            self.assertEqual(snap["processes"]["kernel_threads_skipped"], 1)
             self.assertEqual(snap["sample_status"], "complete")
 
     def test_missing_mainui_makes_snapshot_partial(self):

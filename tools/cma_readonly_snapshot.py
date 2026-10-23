@@ -8,6 +8,7 @@ allocates test buffers, reads process memory, or changes allocator policy.
 from __future__ import annotations
 
 import argparse
+import errno
 import gzip
 import hashlib
 import io
@@ -280,6 +281,35 @@ def _parse_starttime(text: str):
     return fields[0], int(fields[19])
 
 
+def _proc_dir_disappeared(process: Path):
+    try:
+        process.stat()
+    except OSError as exc:
+        return exc.errno in (errno.ENOENT, errno.ESRCH)
+    return False
+
+
+def _proc_stat_identity(process: Path, pid: int):
+    text = (process / "stat").read_text()
+    proc_pid = int(text.split("(", 1)[0].strip())
+    state, starttime = _parse_starttime(text)
+    if proc_pid != pid:
+        raise ValueError("proc pid mismatch")
+    return state, starttime
+
+
+def _proc_parent_pid(process: Path):
+    text, capture = _text_capture(process / "status", 8192)
+    if text is None or capture.get("truncated"):
+        raise ValueError("process status unavailable or truncated")
+    for line in text.splitlines():
+        if line.startswith("PPid:"):
+            fields = line.split()
+            if len(fields) == 2:
+                return int(fields[1])
+    raise ValueError("process status lacks PPid")
+
+
 def _display_target(link: str, root: Path):
     target = Path(link)
     try:
@@ -291,10 +321,15 @@ def _display_target(link: str, root: Path):
 
 def _process_inventory(proc_root: Path, root: Path):
     mainui = []
+    principal = []
     game_processes = []
     scanned = 0
     unreadable_exe_count = 0
     truncated = False
+    transient_exits = []
+    persistent_read_errors = []
+    pid_reuse_count = 0
+    kernel_threads_skipped = 0
     runtime_path = root / "mnt/SDCARD/Roms/PORTS/lamentum-switch/lamentum-nextos"
     try:
         runtime = os.stat(runtime_path)
@@ -307,41 +342,80 @@ def _process_inventory(proc_root: Path, root: Path):
     except OSError as exc:
         return {"status": "unavailable", "error": type(exc).__name__, "mainui": [], "game_processes": [],
                 "target_runtime": target_runtime}
+
+    def read_error(process, pid, stage, exc):
+        if (isinstance(exc, OSError) and exc.errno in (errno.ENOENT, errno.ESRCH)
+                and _proc_dir_disappeared(process)):
+            transient_exits.append({"pid": pid, "stage": stage, "errno": exc.errno})
+            return True
+        persistent_read_errors.append({"pid": pid, "stage": stage,
+                                        "error": type(exc).__name__,
+                                        "errno": getattr(exc, "errno", None)})
+        return False
+
+    def record_reuse(pid, start_before, start_after, stage):
+        nonlocal pid_reuse_count
+        pid_reuse_count += 1
+        persistent_read_errors.append({"pid": pid, "stage": stage, "error": "pid_reused",
+                                        "starttime_before": start_before,
+                                        "starttime_after": start_after})
+
     for process in entries:
         scanned += 1
         if scanned > MAX_PROCESS_ENTRIES:
             truncated = True
             break
+        pid = int(process.name)
         try:
+            state_before, starttime_before = _proc_stat_identity(process, pid)
             comm = (process / "comm").read_text().strip()
-        except OSError:
+        except (OSError, ValueError, IndexError) as exc:
+            read_error(process, pid, "stat_comm_before", exc)
             continue
-        if comm == "MainUI":
-            is_mainui = True
-        elif comm.startswith("["):
-            continue
-        else:
-            is_mainui = False
+
         try:
             exe = os.stat(process / "exe")
-        except OSError:
-            if not is_mainui:
+            exe_link = os.readlink(process / "exe")
+        except OSError as exc:
+            if exc.errno in (errno.ENOENT, errno.ESRCH) and not _proc_dir_disappeared(process):
                 try:
-                    command_line = (process / "cmdline").read_bytes()
-                except OSError:
+                    command_line = (process / "cmdline").read_bytes()[:MAX_PROC_TEXT_BYTES]
+                    parent_pid = _proc_parent_pid(process)
+                    _, starttime_after = _proc_stat_identity(process, pid)
+                except (OSError, ValueError, IndexError) as check_exc:
                     unreadable_exe_count += 1
-                else:
-                    if command_line:
-                        unreadable_exe_count += 1
+                    read_error(process, pid, "kernel_thread_check", check_exc)
+                    continue
+                if not command_line and parent_pid in (0, 2):
+                    if starttime_before != starttime_after:
+                        record_reuse(pid, starttime_before, starttime_after, "kernel_thread_identity")
+                    else:
+                        kernel_threads_skipped += 1
+                    continue
+                unreadable_exe_count += 1
+                persistent_read_errors.append({"pid": pid, "stage": "exe_identity_ambiguous",
+                                                "error": "missing_exe_without_kernel_thread_proof",
+                                                "parent_pid": parent_pid,
+                                                "cmdline_bytes": len(command_line)})
+                continue
+            if not read_error(process, pid, "exe", exc):
+                unreadable_exe_count += 1
             continue
-        is_target = (runtime is not None and (exe.st_dev, exe.st_ino) == (runtime.st_dev, runtime.st_ino))
-        if not is_mainui and not is_target:
-            continue
-        try:
-            state, starttime = _parse_starttime((process / "stat").read_text())
-        except (OSError, ValueError, IndexError):
-            state, starttime = None, None
-        item = {"pid": int(process.name), "comm": comm, "state": state, "starttime": starttime,
+        exe_basename = Path(exe_link).name
+        is_mainui = comm == "MainUI"
+        is_principal = "principal" in comm.lower() or "principal" in exe_basename.lower()
+        is_target = runtime is not None and (exe.st_dev, exe.st_ino) == (runtime.st_dev, runtime.st_ino)
+        is_game = is_target or comm == "lamentum-nextos" or exe_basename == "lamentum-nextos"
+
+        if not is_principal and exe_basename in ("bash", "sh", "ash", "busybox"):
+            try:
+                command_line = (process / "cmdline").read_bytes()[:8192].decode("utf-8", "replace")
+            except OSError as exc:
+                read_error(process, pid, "principal_cmdline", exc)
+                continue
+            is_principal = "principal.sh" in command_line
+
+        item = {"pid": pid, "comm": comm, "state": state_before, "starttime": starttime_before,
                 "exe_dev": exe.st_dev, "exe_ino": exe.st_ino}
         if is_mainui:
             dma_fds = []
@@ -349,9 +423,10 @@ def _process_inventory(proc_root: Path, root: Path):
             fd_dir = process / "fd"
             try:
                 fds = sorted(fd_dir.iterdir(), key=lambda p: int(p.name) if p.name.isdigit() else MAX_PROCESS_FDS)
-            except OSError:
-                fds = []
+            except OSError as exc:
                 item["fd_status"] = "unavailable"
+                read_error(process, pid, "mainui_fd_dir", exc)
+                fds = []
             for index, fd in enumerate(fds):
                 if index >= MAX_PROCESS_FDS:
                     fds_truncated = True
@@ -360,20 +435,79 @@ def _process_inventory(proc_root: Path, root: Path):
                     target = _display_target(os.readlink(fd), root)
                     if not any(token in target.lower() for token in ("dma_heap", "dma_buf", "dmabuf", "/dev/dri/")):
                         continue
-                    stat = os.stat(fd)
+                    fd_stat = os.stat(fd)
                     dma_fds.append({"fd": int(fd.name) if fd.name.isdigit() else None,
-                                    "target": target, "dev": stat.st_dev, "ino": stat.st_ino})
-                except (OSError, ValueError):
-                    continue
+                                    "target": target, "dev": fd_stat.st_dev, "ino": fd_stat.st_ino})
+                except OSError as exc:
+                    if exc.errno in (errno.ENOENT, errno.ESRCH):
+                        item["fd_scan_races"] = item.get("fd_scan_races", 0) + 1
+                    else:
+                        item["fd_status"] = "unavailable"
+                        read_error(process, pid, "mainui_fd", exc)
             item["dma_fds"] = dma_fds
             item["fd_scan_truncated"] = fds_truncated
+
+        try:
+            _, starttime_after = _proc_stat_identity(process, pid)
+            comm_after = (process / "comm").read_text().strip()
+            exe_after = os.stat(process / "exe")
+        except (OSError, ValueError, IndexError) as exc:
+            read_error(process, pid, "identity_after", exc)
+            continue
+        if (starttime_before != starttime_after or comm != comm_after
+                or (exe.st_dev, exe.st_ino) != (exe_after.st_dev, exe_after.st_ino)):
+            record_reuse(pid, starttime_before, starttime_after, "identity_changed_during_scan")
+            continue
+
+        if is_mainui:
             mainui.append(item)
-        else:
+        if is_principal:
+            principal.append(item)
+        if is_game:
             game_processes.append(item)
-    status = "ok" if runtime is not None and not truncated and unreadable_exe_count == 0 else "partial"
+
+    status = "ok" if (runtime is not None and not truncated and unreadable_exe_count == 0
+                       and not persistent_read_errors and pid_reuse_count == 0) else "partial"
+    pending_path = root / "tmp/cmd_to_run.sh"
+    try:
+        pending_path.lstat()
+        pending_command = True
+        pending_status = "ok"
+    except OSError as exc:
+        if exc.errno in (errno.ENOENT, errno.ESRCH):
+            pending_command = False
+            pending_status = "ok"
+        else:
+            pending_command = None
+            pending_status = "unavailable"
+            persistent_read_errors.append({"pid": None, "stage": "pending_principal_command",
+                                           "error": type(exc).__name__, "errno": exc.errno})
+            status = "partial"
+    mainui_valid = (len(mainui) == 1 and
+                    all(type(mainui[0].get(key)) is int for key in ("pid", "starttime", "exe_dev", "exe_ino")))
+    principal_valid = (len(principal) == 1 and
+                       all(type(principal[0].get(key)) is int for key in ("pid", "starttime", "exe_dev", "exe_ino")))
+    stage_checks = {
+        "process_census_complete": status == "ok",
+        "mainui_unique_identity": mainui_valid,
+        "principal_unique_identity": principal_valid,
+        "no_game_process": not game_processes,
+        "no_pending_principal_command": pending_status == "ok" and pending_command is False,
+    }
     return {"status": status, "scanned_processes": min(scanned, MAX_PROCESS_ENTRIES),
             "unreadable_exe_count": unreadable_exe_count, "truncated": truncated,
-            "target_runtime": target_runtime, "mainui": mainui, "game_processes": game_processes}
+            "kernel_threads_skipped": kernel_threads_skipped,
+            "transient_exits": transient_exits, "transient_exit_count": len(transient_exits),
+            "persistent_read_errors": persistent_read_errors,
+            "persistent_read_error_count": len(persistent_read_errors),
+            "pid_reuse_count": pid_reuse_count,
+            "snapshot_consistency": "sequential_non_atomic",
+            "pending_principal_command": pending_command,
+            "pending_command_status": pending_status,
+            "process_identity_checks": stage_checks,
+            "process_identity_status": "ready" if all(stage_checks.values()) else "hold",
+            "target_runtime": target_runtime, "mainui": mainui,
+            "principal": principal, "game_processes": game_processes}
 
 
 def _dmabuf_inventory(sys_root: Path):

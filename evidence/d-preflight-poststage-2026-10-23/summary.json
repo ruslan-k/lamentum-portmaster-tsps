@@ -1,0 +1,145 @@
+{
+  "schema_version": 1,
+  "recorded_utc": "2026-10-23T13:15:54Z",
+  "phase": "K1-F continuation: isolated S launcher readback and fresh post-stage D preflight",
+  "target": {
+    "boot_id": "15b97fe4-5c48-412c-ba39-92efb1823286",
+    "kernel_release": "5.15.147",
+    "firmware_version": "1.0.1"
+  },
+  "S_stage": {
+    "decision": "STAGED_READBACK_VERIFIED_NOT_RUN",
+    "post_stage_readback_utc": "2026-10-23T12:51:43.062604Z",
+    "candidate_directory": "/mnt/SDCARD/Roms/PORTS/lamentum-switch/.candidate-h2a-20261023",
+    "candidate_directory_entries": ["Lamentum.sh", "lamentum-nextos", "run_identity.py"],
+    "candidate_files": {
+      "Lamentum.sh": {"bytes": 1773, "sha256": "1a90c4efc55074d2d6ae4ac51134522e1cc7ac33cca6025ccb14d269715c18a7", "mode": "0777", "executable": true},
+      "lamentum-nextos": {"bytes": 2203096, "sha256": "c46714403f22074d92710192d1164cfe0b7a4f62f1a4890ffb7a1e224c542332", "mode": "0777", "executable": true},
+      "run_identity.py": {"bytes": 8310, "sha256": "abe8e4847b18a750c0796af33d887cf43714126c9751ccdc8236715cb752401a", "mode": "0777", "executable": true}
+    },
+    "launcher_transfer": "scp -p to Lamentum.sh.tmp, sync, hash/mode readback, same-directory mv to Lamentum.sh, sync, final readback",
+    "pre_transfer_S_decision": "ALLOW_STAGING",
+    "pre_transfer_proc_races": [{"errno": 2, "type": "FileNotFoundError", "classification": "PID directory absent on recheck"}],
+    "pre_transfer_blocking_proc_errors": [],
+    "post_transfer_checks": {
+      "launcher_hash_match": true,
+      "launcher_executable": true,
+      "temporary_file_absent": true,
+      "directory_entries_exact": true,
+      "active_build259_hash_unchanged": true,
+      "active_root_launcher_hash_unchanged": true,
+      "root_lamentum_launcher_count": 1,
+      "mainui": [2369, 1079],
+      "principal": [2196, 1023],
+      "game_processes": 0,
+      "pending_principal_command": false,
+      "candidate_path_fd_owners": [],
+      "blocking_proc_errors": [],
+      "sd_free_bytes": 3320807424
+    },
+    "active_build259_sha256": "d72e2f69afa16dd5b846950f3fba80bc9926edcab9b2d45c57ed23faa14b9066",
+    "active_root_launcher_sha256": "f32204ff1b271dd66e38f79573f75c6f562af49174ea436e81dd9417dba1354a",
+    "rollback": "remove only the newly-added hidden candidate Lamentum.sh; no existing file was overwritten",
+    "non_autostart": true,
+    "game_launched": false
+  },
+  "D_pair": {
+    "timestamps_utc": ["2026-10-23T12:52:30.558321Z", "2026-10-23T12:52:56.246752Z"],
+    "comparison_status": "complete",
+    "pair_status": "ok",
+    "boot_id_same": true,
+    "kernel_release_same": true,
+    "sample_status": ["complete", "complete"],
+    "cma_total_kib": [131072, 131072],
+    "cma_free_kib": [792, 1332],
+    "cma_total_minus_free_kib": [130280, 129740],
+    "memavailable_kib": [669760, 669572],
+    "cached_kib": [573868, 572668],
+    "swapfree_kib": [2065116, 2065116],
+    "nr_free_cma_pages": [198, 333],
+    "cma_free_pages_from_pagetype_histogram": [195, 334],
+    "cma_histogram_minus_nr_free_pages": [-3, 1],
+    "cma_free_blocks_by_order": [
+      {"0": 93, "1": 15, "2": 8, "3": 1, "4": 2, "5": 0, "6": 0, "7": 0, "8": 0, "9": 0, "10": 0},
+      {"0": 108, "1": 25, "2": 10, "3": 3, "4": 7, "5": 0, "6": 0, "7": 0, "8": 0, "9": 0, "10": 0}
+    ],
+    "zoneinfo_dma": [
+      {"pages_free": 1706, "cma": 32768, "min": 991, "low": 1238, "high": 1485, "nr_free_cma": 198},
+      {"pages_free": 1959, "cma": 32768, "min": 991, "low": 1238, "high": 1485, "nr_free_cma": 333}
+    ],
+    "cma_alloc_success_fail": [[8, 0], [8, 0]],
+    "global_counter_deltas": {"cma_alloc_success": 0, "cma_alloc_fail": 0, "pgfault": 119568, "pgmajfault": 0, "pgmigrate_success": 233, "pgmigrate_fail": 9, "pswpin": 0, "pswpout": 0, "compact_stall": 0, "compact_fail": 0, "compact_success": 0},
+    "mainui_identity_same": true,
+    "mainui_dma_fds_same": true,
+    "target_runtime_identity_same": true,
+    "game_processes": [0, 0],
+    "dma_buf_inventory": {"status": "ok", "entry_count": 6, "exporters": ["system"], "inodes": [1, 3, 4, 5, 6, 7]},
+    "raw_snapshot_sha256": ["e3b0fc77de3fca34d9897b935fcde449cbb317e6f6c56b716201e143b53fbc34", "320f48c799136ad4a6075352f87b3786dacf4e33525771dbeda0acb8315c3e09"],
+    "raw_comparison_sha256": "cb1ebe2bfc015e639cf35067d38568abf284ce7e1ad32e8ccdfcaa5286a129ac"
+  },
+  "dmesg_filter": {
+    "captured_utc": "2026-10-23T12:53:44.010442Z",
+    "returncode": 0,
+    "matching_lines": 0,
+    "pattern_class": "page-allocation failure, OOM, CMA failure, Mali OOM notifier"
+  },
+  "post_code_process_census": {
+    "captured_utc": "2026-10-23T13:11:28.910289Z",
+    "sample_status": "complete",
+    "process_status": "ok",
+    "process_identity_status": "ready",
+    "snapshot_consistency": "sequential_non_atomic",
+    "scanned_processes": 180,
+    "kernel_threads_skipped": 131,
+    "transient_exit_count": 1,
+    "persistent_read_error_count": 0,
+    "pid_reuse_count": 0,
+    "mainui": [2369, 1079],
+    "principal": [2196, 1023],
+    "game_processes": 0,
+    "pending_principal_command": false,
+    "cmafree_single_kib": 1996,
+    "snapshot_sha256": "569b574b6eaa44f0b7dd2536a322e5318ea81f4499a907616f765a189b7ca906"
+  },
+  "cma_variability": {
+    "historical_pre_romfs_hash_pair_cmafree_kib": [130412, 130412],
+    "historical_post_hash_pair_cmafree_kib": [532, 576],
+    "k1f_pair_cmafree_kib": [608, 608],
+    "pre_transfer_s_single_cmafree_kib": 3244,
+    "pre_transfer_s_single_timestamp_utc": null,
+    "post_stage_s_single_cmafree_kib": 700,
+    "post_stage_s_single_timestamp_utc": "2026-10-23T12:51:43.062604Z",
+    "latest_complete_d_pair_cmafree_kib": [792, 1332],
+    "later_single_cmafree_kib": 1996,
+    "later_single_timestamp_utc": "2026-10-23T13:11:28.910289Z",
+    "boot_id": "15b97fe4-5c48-412c-ba39-92efb1823286",
+    "causation_proven": false,
+    "leak_proven": false,
+    "recovery_proven": false
+  },
+  "allocator_classification": {
+    "movable_cma_occupants": "unknown; page-owner/CMA debugfs unavailable; pageblock types are not active ownership",
+    "pinned_dma_allocations": "unknown; visible system-exporter buffers map to platform processes but do not establish private Kbase or CMA backing",
+    "fragmentation": "no free CMA blocks at orders 7-10 in the complete D pair",
+    "allocation_failure": "none observed in this pair/log window; not proof of lifetime success"
+  },
+  "runtime_disposition": {
+    "gate": "HOLD_RUNTIME",
+    "exact_blocker": "CmaFree=792→1332 KiB with zero order-7+ CMA blocks; GL/scratch class requirements and uncertainty reserve are unqualified",
+    "T2_STORAGE_MARGIN_MIB": "unset",
+    "game_launched": false,
+    "newgame_entered": false,
+    "fps_claim": false
+  },
+  "device_mutations": {
+    "candidate_launcher_added_to_hidden_path": true,
+    "candidate_files_overwritten": false,
+    "active_build259_or_root_launcher_modified": false,
+    "game_launched": false,
+    "system_processes_stopped": false,
+    "rebooted": false,
+    "cache_reclaimed": false,
+    "compaction_triggered": false,
+    "kernel_settings_changed": false
+  }
+}
