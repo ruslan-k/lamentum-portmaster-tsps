@@ -861,6 +861,17 @@ int main(void) {
         self.assertLess(begin, gl_call)
         self.assertLess(gl_call, returned)
         self.assertLess(returned, stored)
+        init_start = textures.index('unsigned lc2_probe_ticket=lc2_storage_begin(t->host_scaled?t->host_width:width')
+        init_end = textures.index('lc2_m3b_texture_storage_generation(m3b,t);', init_start)
+        init_path = textures[init_start:init_end]
+        init_begin = init_path.index('lc2_life_events_storage_attempt_begin(')
+        init_gl = init_path.index('glTexImage2D(')
+        init_result = init_path.index('lc2_life_events_storage_attempt_result(')
+        init_storage = init_path.index('lc2_life_events_storage_key(')
+        self.assertLess(init_begin,init_gl)
+        self.assertLess(init_gl,init_result)
+        self.assertLess(init_result,init_storage)
+        self.assertIn('texture-init-glTexImage2D',init_path)
 
         marker = 'diff --git a/native/lc2_life_events.h b/native/lc2_life_events.h'
         block = patch.decode().split(marker, 1)[1].split('diff --git ', 1)[0]

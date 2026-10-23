@@ -1,5 +1,5 @@
 {
-  "adapter_patch_sha256": "9fb2e3bcb2607f1f27641ea39c7d96a57fc584a2efb82a8f298832250332a8c3",
+  "adapter_patch_sha256": "6c1c881181ed8f33f106fa442206df945490bea5032c9b54fef830616a7cf74a",
   "audit_scope": "All C/C++ files under native/ and framework/ in the exact current patched source tree based on the recovered build-262 baseline. Runtime reachability and physical backing are not inferred.",
   "call_sites": [
     {
@@ -390,5 +390,5 @@
   ],
   "schema_version": 1,
   "source_base_commit": "c8d01ca1fed5adab1ae7ad920605f199bb83a72e",
-  "source_tree_sha256": "0e1eae300e079a398dd73f4d55707fcc2e74d8832a17d97966de3bce9cfd887a"
+  "source_tree_sha256": "00f785f1f953888a9b0b072fb6e1a5856f824d3cf668b1239764dc41089231e3"
 }
