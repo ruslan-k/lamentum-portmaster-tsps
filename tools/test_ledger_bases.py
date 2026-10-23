@@ -97,6 +97,11 @@ class BudgetReplayTests(unittest.TestCase):
             'storage-bytes=399 source-write-generation=untracked status=call-result-unobserved')
         with self.assertRaisesRegex(ValueError,'storage_call_id_mismatch:1'):
             replay_texture_budget(mismatched, BUDGET_RUN)
+        incomplete_ring = make_log(True).replace(
+            'dropped=0 format-errors=0 complete=1',
+            'dropped=1 format-errors=0 complete=0')
+        with self.assertRaisesRegex(ValueError,'storage_call_id_owner_ring_incomplete'):
+            replay_texture_budget(incomplete_ring, BUDGET_RUN)
 
     def test_replays_same_subresource_redefinition_and_mip_extension(self):
         lines=[]

@@ -4993,7 +4993,7 @@ index 0fb14ec..9e2ccfc 100644
              free(premul);free(probe);free(sprite);free(flat);free(scaled);free(awf);free(mipped);free(r8);free(advent);free(lowered);free(wrapped);free(interface_source);
              if(!status){char log[2048]={0};glGetShaderInfoLog(shaders[i],sizeof(log),NULL,log);printf("NVN_SHADER_COMPILE_ERROR %s\n",log);stop("NVN_SHADER_COMPILE_FAILED",nvn_caller,p->sources[i],21);}
 diff --git a/native/nvn_textures.h b/native/nvn_textures.h
-index 0feaef1..2226806 100644
+index 0feaef1..96d1711 100644
 --- a/native/nvn_textures.h
 +++ b/native/nvn_textures.h
 @@ -6,6 +6,14 @@
@@ -5473,7 +5473,7 @@ index 0feaef1..2226806 100644
      t=zero_texture_storage_state(t);
      if(!__atomic_exchange_n(&t->zero_cpu_dirty,0,__ATOMIC_ACQ_REL))return;
      t2_page_require_rgba8(t,"T2_PAGE_CPU_REFRESH_REQUIRED");
-@@ -494,25 +852,84 @@ static void zero_texture_refresh(struct nvn_texture *t) {
+@@ -494,25 +852,89 @@ static void zero_texture_refresh(struct nvn_texture *t) {
          stop("ZERO_TEXTURE_CPU_GPU_COHERENCE_REQUIRED",nvn_caller,t->id,20);
      unsigned width=t->b.width,height=t->b.height,bc=zero_bc_bytes(t->b.format);
      unsigned type=nvn_cpu_image_upload_type(t),output_bpp=nvn_texture_upload_bytes(type);
@@ -5526,11 +5526,16 @@ index 0feaef1..2226806 100644
 -        glTexSubImage2D(GL_TEXTURE_2D,level,0,0,width,height,zero_bc_srgb(t->b.format)?0x8c42U:GL_RGBA,type,pixels);free(pixels);
 +        if(m3b)lc2_m3b_decode_mark(m3b,decode_begin,lc2_life_events_now_ns());
 +        if(t->lc2_bc_pending) {
-+            uint64_t gl_begin=m3b?lc2_life_events_now_ns():0;
-+            glTexImage2D(GL_TEXTURE_2D,level,spec.internal,width,height,0,spec.external,spec.type,pixels);
-+            if(m3b){uint64_t gl_end=lc2_life_events_now_ns();lc2_m3b_gl_alloc_mark(m3b,gl_begin,gl_end);lc2_m3b_upload_mark(m3b,gl_begin,gl_end);}
 +            uint64_t payload=(uint64_t)width*height*output_bpp;
 +            struct lc2_life_storage_key key=nvn_gl_storage_key(t->name,1,GL_TEXTURE_2D,0,level,0);
++            uint64_t storage_call_id=lc2_life_events_storage_attempt_begin(t->id,t->id,&key,payload,
++                t->pool?t->pool->object:0,t->pool?t->pool->generation:0,t->cpu_generation,"bc-materialize-glTexImage2D");
++            uint64_t gl_begin=m3b?lc2_life_events_now_ns():0;
++            glTexImage2D(GL_TEXTURE_2D,level,spec.internal,width,height,0,spec.external,spec.type,pixels);
++            uint64_t gl_end=m3b?lc2_life_events_now_ns():0;
++            if(m3b){lc2_m3b_gl_alloc_mark(m3b,gl_begin,gl_end);lc2_m3b_upload_mark(m3b,gl_begin,gl_end);}
++            lc2_life_events_storage_attempt_result(storage_call_id,t->id,t->id,&key,payload,
++                t->pool?t->pool->object:0,t->pool?t->pool->generation:0,t->cpu_generation,"bc-materialize-glTexImage2D");
 +            lc2_life_events_storage_key(t->id,&key,payload);
 +            lc2_life_events_tex(level,payload,t->host_scaled?1U:0U,t->host_half?1U:0U,t->t2_budget_bytes?1U:0U);
 +            if(!level && t->t2_budget_bytes)lc2_life_events_tex_guest(t->size);
@@ -5563,7 +5568,7 @@ index 0feaef1..2226806 100644
      printf("ZERO_TEXTURE_FLUSH_UPLOADED id=%"PRIu64" format=0x%x native-cpu-bytes=preserved before-sampler\n",t->id,t->b.format);
  }
  #include "zero_texture_writes.h"
-@@ -602,11 +1019,14 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -602,11 +1024,14 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
          }
          if(slot==4096)stop("NVN_TEXTURE_CAPACITY",nvn_caller,slot,21);
          struct nvn_texture *t=&nvn_textures[slot];*t=(struct nvn_texture){.object=a[0],.id=zero_next_object_id(),.size=size,.b=b,.pool=pool};
@@ -5580,7 +5585,7 @@ index 0feaef1..2226806 100644
          else if(t2_pages.deferred_logged++<4)printf("T2_PAGE_DEFERRED id=%"PRIu64" size=%ux%u rgba8-bytes=%"PRIu64" pool-flags=0x%x storage=none-until-copy\n",t->id,b.width,b.height,size,pool->flags);
  #ifdef MOMO_SHADERS
          momo_texture_stamp(t->object,t->id);
-@@ -648,8 +1068,20 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -648,8 +1073,20 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
          else if(nvn_texture_format_depth(b.format)) {
              const char *extensions=(const char *)glGetString(GL_EXTENSIONS);
              if(!extensions || !strstr(extensions,b.format==0x35?"GL_OES_packed_depth_stencil":"GL_OES_depth24"))stop("NVN_DEPTH_BACKEND_REQUIRED",nvn_caller,b.format,20);
@@ -5602,7 +5607,7 @@ index 0feaef1..2226806 100644
              glBindRenderbuffer(GL_RENDERBUFFER,0);
              if(b.format==0x34)printf("NVN_DEPTH_CONVERSION guest=DEPTH32F host=DEPTH24 precision-reduced rendering-validation-pending\n");
          } else {
-@@ -664,6 +1096,7 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -664,6 +1101,7 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
                  const char *extensions=(const char *)glGetString(GL_EXTENSIONS);
                  if(!extensions || !strstr(extensions,"GL_EXT_sRGB"))stop("ZERO_SRGB_TEXTURE_BACKEND_REQUIRED",nvn_caller,b.format,20);
              }
@@ -5610,7 +5615,7 @@ index 0feaef1..2226806 100644
              glGenTextures(1,&t->name);if(!t->name)stop("NVN_TEXTURE_GL_NAME",nvn_caller,t->id,21);glBindTexture(GL_TEXTURE_2D,t->name);
  #if ZERO_ZX_GAME
              /* This backend exposes NVN's storage-level limit directly. Mali
-@@ -673,17 +1106,47 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -673,17 +1111,47 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
                  glTexParameteri(GL_TEXTURE_2D,0x813d,b.levels-1);
  #endif
              unsigned width=b.width,height=b.height;
@@ -5665,7 +5670,7 @@ index 0feaef1..2226806 100644
                      const uint8_t *src=nvn_pointer(pool->address+b.offset,size,PROT_READ);
                      if(!megaman_blocklinear_rgba8_decode(rgba,bytes,src,size,width,height,b.packaged_layout))
                          stop("NVN_TEXTURE_PACKAGED_DECODE",nvn_caller,b.packaged_layout,20);
-@@ -693,12 +1156,29 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -693,12 +1161,29 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
                      for(unsigned y=0;y<height;y++)if(!nvn_texture_decode_upload(b.format,b.swizzle,upload_type,rgba+(size_t)y*width*upload_bpp,src+y*stride,width))
                          stop("NVN_TEXTURE_INITIAL_FORMAT",nvn_caller,b.format,20);
                  }
@@ -5697,7 +5702,7 @@ index 0feaef1..2226806 100644
  #if MEGAMAN_HOST_DIAGNOSTIC
                  /* Observation remains an independent RGBA8 reference; packed
                   * UNORM5 may truthfully differ by one readback code value. */
-@@ -715,11 +1195,12 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -715,11 +1200,12 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
  #endif
                  nvn_texdiag_initialize_end(t,i,rgba);
                  free(rgba);
@@ -5711,7 +5716,7 @@ index 0feaef1..2226806 100644
  #endif
              nvn_texture_parameters(t,GL_NEAREST,GL_NEAREST,GL_CLAMP_TO_EDGE,GL_CLAMP_TO_EDGE);
              glBindTexture(GL_TEXTURE_2D,0);
-@@ -731,6 +1212,16 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -731,6 +1217,16 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
              if(slot<4096 && slot+1>__atomic_load_n(&nvn_textures_high,__ATOMIC_RELAXED))
                  __atomic_store_n(&nvn_textures_high,slot+1,__ATOMIC_RELEASE);
          }
@@ -5728,7 +5733,7 @@ index 0feaef1..2226806 100644
          pool->references++;nvn_gl_release();
          /* MOMO_TEXTURE_IDENTITY: pool+offset of every texture, so two render targets of the same size can
           * be told apart from two names for one piece of memory (the scene lands in one target while the post
-@@ -749,7 +1240,9 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -749,7 +1245,9 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
      if(id==NI_nvnTexturePoolRegisterTexture) {
          struct nvn_descriptor_pool *d=NULL;
          for(unsigned i=0;i<32;i++)if(nvn_descriptor_pools[i].live&&nvn_descriptor_pools[i].object==a[0]&&nvn_descriptor_pools[i].type==1)d=&nvn_descriptor_pools[i];
@@ -5739,7 +5744,7 @@ index 0feaef1..2226806 100644
          struct nvn_texture *t=nvn_texture_find(a[2]);struct nvn_descriptor *slot=&d->entries[a[1]];
          if(a[3] && !megaman_texture_view_identity(nvn_pointer(a[3],MEGAMAN_TEXTURE_VIEW_BYTES,PROT_READ),t->b.levels) &&
             !aw_texture_view_identity_native(nvn_pointer(a[3],MEGAMAN_TEXTURE_VIEW_BYTES,PROT_READ),&t->b,t->aw_native_format))
-@@ -787,6 +1280,9 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -787,6 +1285,9 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
      }
      struct nvn_texture *t=nvn_texture_find(a[0]);
      if(id==NI_nvnTextureFinalize) {
@@ -5749,7 +5754,7 @@ index 0feaef1..2226806 100644
          /* Descriptors keep the old identity so a later stale draw is rejected;
           * they do not keep freed guest storage alive. GL completes/deletes the
           * actual resource, while a replacement receives a new identity. */
-@@ -802,10 +1298,20 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -802,10 +1303,20 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
          unsigned delete_storage=zero_texture_storage_release(t);
          if(delete_storage) {
              zero_depth_framebuffer_forget(storage->id);
@@ -5773,7 +5778,7 @@ index 0feaef1..2226806 100644
              free(storage->cpu_snapshot);storage->cpu_snapshot=NULL;
          }
          t->cpu_snapshot=NULL;
-@@ -815,7 +1321,7 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
+@@ -815,7 +1326,7 @@ static unsigned nvn_texture_dispatch(unsigned id,struct nvn_frame *f,uint64_t *r
          nvn_texture_alias_epoch_advance();
          t2_page_finalize(t);
          t->name=0;t->depth_buffer=0;t->live=0;nvn_gl_release();

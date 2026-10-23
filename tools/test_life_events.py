@@ -872,6 +872,18 @@ int main(void) {
         self.assertLess(init_gl,init_result)
         self.assertLess(init_result,init_storage)
         self.assertIn('texture-init-glTexImage2D',init_path)
+        bc_call = textures.index('glTexImage2D(GL_TEXTURE_2D,level,spec.internal,width,height,0,spec.external,spec.type,pixels);')
+        bc_start = textures.rfind('if(t->lc2_bc_pending) {',0,bc_call)
+        bc_end = textures.index('lc2_life_events_tex(level,payload',bc_call)
+        bc_path = textures[bc_start:bc_end]
+        bc_begin = bc_path.index('lc2_life_events_storage_attempt_begin(')
+        bc_gl = bc_path.index('glTexImage2D(')
+        bc_result = bc_path.index('lc2_life_events_storage_attempt_result(')
+        bc_storage = bc_path.index('lc2_life_events_storage_key(')
+        self.assertLess(bc_begin,bc_gl)
+        self.assertLess(bc_gl,bc_result)
+        self.assertLess(bc_result,bc_storage)
+        self.assertIn('bc-materialize-glTexImage2D',bc_path)
 
         marker = 'diff --git a/native/lc2_life_events.h b/native/lc2_life_events.h'
         block = patch.decode().split(marker, 1)[1].split('diff --git ', 1)[0]
