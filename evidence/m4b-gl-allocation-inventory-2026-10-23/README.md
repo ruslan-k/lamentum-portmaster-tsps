@@ -26,3 +26,7 @@ The source census remains a source-tree superset; exact compiler-unit/include-cl
 Next M4-B work: exact compiler-unit/include closure and callsite reachability; context teardown/recreation epochs; full alias/view, transactional re-spec/delete and deferred-completion cases; buffer/EGL owner-generation accounting; then the separated owner/memory-class waterfall. Keep logical, requested, process, driver and physical-CMA bases distinct.
 
 Machine-readable source census and per-callsite dispositions are in [`summary.json`](summary.json); the reviewed policy used by builds is [`tools/gl_storage_callsite_policy.json`](../../tools/gl_storage_callsite_policy.json).
+
+## Current source refresh after H2a alias telemetry (2026-10-23)
+
+The checked-in `summary.json` has been regenerated against the current 390-file source tree (SHA-256 `3fcc9e78155ecdfd71507e860c5120d313a6a2d81967eed2ece572215cf38689`) and adapter overlay (SHA-256 `5ab2d36f5dcb1fdc275bfcaa55b9be8cfcc2dace10044bc9c932f5083a0dee62`). It still reports **77** sites with **12 wrapped+unmeasured / 65 unknown**. The build262 ELF and 370/370 suite listed above are historical artifacts from the earlier M4-B generation-history step, not builds from this new digest. Current verification is recorded in [H2a/D0](../m4b-h2a-alias-d0-2026-10-23/README.md): host suite **405/405**, zero skips; no game ELF/device launch.

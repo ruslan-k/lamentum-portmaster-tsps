@@ -1,4 +1,5 @@
 """Compile+run the observation-ledger contract extracted from the public overlay."""
+import os
 import pathlib
 import subprocess
 import tempfile
@@ -42,11 +43,15 @@ int main(void) {
  lc2_life_events_storage(1,10,1,100,1);         /* second mip extends one image */
  assert(lc2_life_events_state()->retained_bytes==500);
  assert(lc2_life_events_state()->extends==1);
- lc2_life_events_alias(10,1,1);
- lc2_life_events_alias(10,1,1);
- assert(lc2_life_events_state()->alias_views==2);
- lc2_life_events_alias(10,1,-1);
- assert(lc2_life_events_state()->alias_views==1);
+ struct lc2_life_event *alias_entry=lc2_life_event_find(10,1,1);assert(alias_entry);
+ uint64_t alias_generation=alias_entry->generation;
+ lc2_life_events_alias(10,1,alias_generation,1);
+ lc2_life_events_alias(10,1,alias_generation,1);
+ assert(alias_entry->alias_views==2 && lc2_life_events_state()->alias_views==2);
+ lc2_life_events_alias(10,1,alias_generation,-1);
+ assert(alias_entry->alias_views==1 && lc2_life_events_state()->alias_views==1);
+ lc2_life_events_alias(10,1,alias_generation,-1);
+ assert(alias_entry->alias_views==0 && lc2_life_events_state()->alias_views==0);
  lc2_life_events_delete(10,1,0);               /* zero views: the expected path */
  assert(lc2_life_events_state()->deletes==1);
  assert(lc2_life_events_state()->delete_with_views==0);
@@ -179,6 +184,79 @@ int main(void) {
 '''
 
 class LifeEventTests(unittest.TestCase):
+    def test_alias_views_are_scoped_to_object_generation(self):
+        patch = (ROOT / 'runtime/lamentum-adapter.patch').read_text()
+        block = patch.split(MARKER, 1)[1].split('diff --git ', 1)[0]
+        header = '\n'.join(line[1:] for line in block.splitlines()
+                             if line.startswith('+') and not line.startswith('+++')) + '\n'
+        source = r'''
+#include "lc2_life_events.h"
+#include <assert.h>
+int main(void) {
+ setenv("LC2_LIFE_EVENTS","1",1);
+ struct lc2_life_events_state *s=lc2_life_events_state();
+ assert(sizeof(struct lc2_life_event)==64); /* alias_views occupies prior alignment padding */
+ const struct lc2_life_storage_key a={.share_group=1,.name=42,.kind=1,.target=0x0de1};
+ const struct lc2_life_storage_key b={.share_group=1,.name=43,.kind=1,.target=0x0de1};
+ lc2_life_events_storage_key(11,&a,64);lc2_life_events_storage_key(12,&b,96);
+ struct lc2_life_event *ea=lc2_life_event_find_group(1,42,1,1);
+ struct lc2_life_event *eb=lc2_life_event_find_group(1,43,1,1);
+ assert(ea && eb && ea->generation==1 && eb->generation==1);
+ uint64_t old_generation=ea->generation;
+ lc2_life_events_alias_group(1,42,1,old_generation,1);
+ lc2_life_events_alias_group(1,42,1,old_generation,1);
+ lc2_life_events_alias_group(1,43,1,eb->generation,1);
+ assert(ea->alias_views==2 && eb->alias_views==1 && s->alias_views==3);
+ lc2_life_events_alias_group(1,42,1,old_generation,-1);
+ assert(ea->alias_views==1 && eb->alias_views==1 && s->alias_views==2);
+ lc2_life_events_delete_key(&a,0); /* alias ledger detects caller's missing view count */
+ assert(s->delete_with_views==1);
+ lc2_life_events_storage_key(13,&a,128);
+ struct lc2_life_event *reused=lc2_life_event_find_group(1,42,1,1);
+ assert(reused && reused->generation==2 && reused->alias_views==0);
+ uint64_t before=s->overflow;
+ lc2_life_events_alias_group(1,42,1,old_generation,-1); /* stale generation */
+ assert(s->overflow==before+1 && reused->alias_views==0 && s->alias_views==2);
+ lc2_life_events_alias_group(1,42,1,reused->generation,1);
+ assert(reused->alias_views==1 && s->alias_views==3);
+ lc2_life_events_alias_group(1,42,1,reused->generation,-1);
+ assert(reused->alias_views==0 && s->alias_views==2);
+ before=s->overflow;
+ lc2_life_events_alias_group(1,42,1,reused->generation,-1); /* underflow is fail-closed */
+ assert(s->overflow==before+1 && reused->alias_views==0 && s->alias_views==2);
+ return 0;
+}
+'''
+        with tempfile.TemporaryDirectory() as d:
+            p=pathlib.Path(d)
+            (p/'lc2_life_events.h').write_text(header)
+            (p/'aliases.c').write_text(source)
+            built=subprocess.run(['cc','-std=gnu11','-Wall','-Wextra','-Werror','-I',d,
+                                  str(p/'aliases.c'),'-o',str(p/'aliases')],capture_output=True,text=True)
+            self.assertEqual(built.returncode,0,built.stderr)
+            ran=subprocess.run([str(p/'aliases')],capture_output=True,text=True)
+            self.assertEqual(ran.returncode,0,ran.stderr)
+
+    def test_zero_storage_join_release_updates_generation_scoped_aliases(self):
+        patch=(ROOT/'runtime/lamentum-adapter.patch').read_text()
+        adapter_src=pathlib.Path(os.environ.get('LAMENTUM_ADAPTER_SRC',ROOT.parent/'adapter-src'))
+        required=os.environ.get('LAMENTUM_REQUIRE_ZERO_STORAGE_ALIAS_TEST')=='1'
+        if not adapter_src.is_dir():
+            if required:self.fail(f'required adapter source missing: {adapter_src}')
+            self.skipTest(f'adapter source unavailable: {adapter_src}')
+        overlay=subprocess.run(['git','-C',str(adapter_src),'diff','--binary'],capture_output=True)
+        self.assertEqual(overlay.returncode,0,overlay.stderr.decode(errors='replace'))
+        self.assertEqual(overlay.stdout,(ROOT/'runtime/lamentum-adapter.patch').read_bytes())
+        fixture=ROOT/'tools/fixtures/zero-storage-alias-lifetime.c'
+        with tempfile.TemporaryDirectory() as d:
+            p=pathlib.Path(d)
+            built=subprocess.run(['cc','-std=gnu11','-Wall','-Wextra','-Werror',
+                '-Wno-unused-function','-Wno-unused-variable','-Wno-unused-parameter',
+                '-I',str(adapter_src/'native'),str(fixture),'-o',str(p/'aliases')],capture_output=True,text=True)
+            self.assertEqual(built.returncode,0,built.stderr)
+            ran=subprocess.run([str(p/'aliases')],capture_output=True,text=True)
+            self.assertEqual(ran.returncode,0,ran.stderr)
+
     def test_identical_gl_names_in_distinct_share_groups_have_independent_lifetimes(self):
         patch = (ROOT / 'runtime/lamentum-adapter.patch').read_text()
         block = patch.split(MARKER, 1)[1].split('diff --git ', 1)[0]

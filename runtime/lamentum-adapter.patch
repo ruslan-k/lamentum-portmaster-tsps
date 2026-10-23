@@ -1317,10 +1317,10 @@ index 0000000..fbe5673
 +#endif
 diff --git a/native/lc2_life_events.h b/native/lc2_life_events.h
 new file mode 100644
-index 0000000..63958bb
+index 0000000..bd7cfcf
 --- /dev/null
 +++ b/native/lc2_life_events.h
-@@ -0,0 +1,668 @@
+@@ -0,0 +1,672 @@
 +/* Bounded OBSERVATION ledger for GL storage events. Diagnostic only, default off.
 + *
 + * It answers design questions before any lifetime policy is integrated:
@@ -1375,7 +1375,7 @@ index 0000000..63958bb
 +    const char *stage,*mark;
 +};
 +struct lc2_life_storage_key {uint64_t share_group,name,kind,target;unsigned face,level,layer;};
-+struct lc2_life_event {uint64_t share_group,name,kind,bytes,mips,nvn_id,generation;unsigned live;};
++struct lc2_life_event {uint64_t share_group,name,kind,bytes,mips,nvn_id,generation;unsigned live,alias_views;};
 +struct lc2_life_subresource {uint64_t share_group,name,kind,generation,target,bytes;unsigned face,level,layer,live;};
 +struct lc2_life_generation_history {uint64_t share_group,name,kind,last_generation;};
 +struct lc2_life_texture_pair {
@@ -1812,16 +1812,20 @@ index 0000000..63958bb
 +static inline int lc2_life_events_renderbuffer_payload(uint64_t nvn_id,uint64_t *bytes,unsigned *records) {
 +    return lc2_life_events_storage_payload(nvn_id,2,bytes,records);
 +}
-+static inline void lc2_life_events_alias_group(uint64_t share_group,uint64_t name,uint64_t kind,int delta) {
-+    if(!lc2_life_events_on())return;
++static inline void lc2_life_events_alias_group(uint64_t share_group,uint64_t name,uint64_t kind,uint64_t generation,int delta) {
++    if(!lc2_life_events_on() || !delta)return;
 +    struct lc2_life_events_state *s=lc2_life_events_state();
 +    struct lc2_life_event *e=lc2_life_event_find_group(share_group,name,kind,1);
-+    if(!e)return;
-+    if(delta>0){s->alias_views++;return;}
-+    if(s->alias_views)s->alias_views--;
++    if(!e || !generation || e->generation!=generation) {s->overflow++;return;}
++    if(delta>0) {
++        if(e->alias_views==UINT_MAX || s->alias_views==UINT64_MAX) {s->overflow++;return;}
++        e->alias_views++;s->alias_views++;return;
++    }
++    if(!e->alias_views || !s->alias_views) {s->overflow++;return;}
++    e->alias_views--;s->alias_views--;
 +}
-+static inline void lc2_life_events_alias(uint64_t name,uint64_t kind,int delta) {
-+    lc2_life_events_alias_group(0,name,kind,delta);
++static inline void lc2_life_events_alias(uint64_t name,uint64_t kind,uint64_t generation,int delta) {
++    lc2_life_events_alias_group(0,name,kind,generation,delta);
 +}
 +static inline void lc2_life_delete_event(const struct lc2_life_storage_key *key,uint64_t views,const struct lc2_life_event *e) {
 +    struct lc2_life_events_state *s=lc2_life_events_state();
@@ -1830,14 +1834,14 @@ index 0000000..63958bb
 +    char line[640];int n;
 +    if(e) {
 +        n=snprintf(line,sizeof(line),"LC2_GL_STORAGE_DELETE run-id=%s t-ns=%llu owner=%llu gl-name=%llu kind=%llu"
-+            " storage-generation=%llu bytes=%llu subresource-count=%llu views=%llu matched=1"
++            " storage-generation=%llu bytes=%llu subresource-count=%llu views=%llu alias-views=%u matched=1"
 +            " share-group=%s share-group-id=%llu completion=unobserved\n",lc2_life_events_run_id(),
 +            (unsigned long long)lc2_life_events_now_ns(),(unsigned long long)e->nvn_id,(unsigned long long)key->name,
 +            (unsigned long long)key->kind,(unsigned long long)e->generation,(unsigned long long)e->bytes,
-+            (unsigned long long)e->mips,(unsigned long long)views,group_status,(unsigned long long)key->share_group);
++            (unsigned long long)e->mips,(unsigned long long)views,e->alias_views,group_status,(unsigned long long)key->share_group);
 +    } else {
 +        n=snprintf(line,sizeof(line),"LC2_GL_STORAGE_DELETE run-id=%s t-ns=%llu owner=unknown gl-name=%llu kind=%llu"
-+            " storage-generation=unknown bytes=unknown subresource-count=unknown views=%llu matched=0"
++            " storage-generation=unknown bytes=unknown subresource-count=unknown views=%llu alias-views=unknown matched=0"
 +            " share-group=%s share-group-id=%llu completion=unobserved\n",lc2_life_events_run_id(),
 +            (unsigned long long)lc2_life_events_now_ns(),(unsigned long long)(key?key->name:0),
 +            (unsigned long long)(key?key->kind:0),(unsigned long long)views,group_status,
@@ -1851,7 +1855,7 @@ index 0000000..63958bb
 +    struct lc2_life_events_state *s=lc2_life_events_state();
 +    struct lc2_life_event *e=lc2_life_event_find_group(key->share_group,key->name,key->kind,1);
 +    s->deletes++;
-+    if(views)s->delete_with_views++;
++    if(views || (e && e->alias_views))s->delete_with_views++;
 +    lc2_life_delete_event(key,views,e);
 +    if(!e)return;
 +    for(unsigned i=0;i<LC2_LIFE_EVENT_CAP;i++) {
@@ -6452,22 +6456,53 @@ index aa80bf7..72be8d1 100644
          if(height>1)height>>=1;
      }
 diff --git a/native/zero_texture_storage.h b/native/zero_texture_storage.h
-index 8fe159b..a0b39d9 100644
+index 8fe159b..8ec0db2 100644
 --- a/native/zero_texture_storage.h
 +++ b/native/zero_texture_storage.h
-@@ -145,6 +145,7 @@ static unsigned zero_texture_storage_join(struct nvn_texture *t) {
+@@ -14,6 +14,7 @@
+ struct zero_texture_storage {
+     struct nvn_texture state;
+     uint64_t pool_object,pool_address,pool_size;
++    uint64_t gl_generation;
+     uint32_t pool_flags;
+     unsigned active,views;
+ };
+@@ -145,6 +146,10 @@ static unsigned zero_texture_storage_join(struct nvn_texture *t) {
       * write must observe those current pixels, not the old native CPU bytes. */
      t->zero_storage=found;t->name=found->state.name;t->depth_buffer=found->state.depth_buffer;
      found->views++;
-+    lc2_life_events_alias_group(nvn_gl_share_group_id(),found->state.name,1,1);
++    if(found->state.name)
++        lc2_life_events_alias_group(nvn_gl_share_group_id(),found->state.name,1,found->gl_generation,1);
++    else if(found->state.depth_buffer)
++        lc2_life_events_alias_group(nvn_gl_share_group_id(),found->state.depth_buffer,2,found->gl_generation,1);
      printf("ZERO_STORAGE_ALIAS_JOIN id=%"PRIu64" owner=%"PRIu64" views=%u name=%u depth=%u contents=retained\n",
             t->id,found->state.id,found->views,t->name,t->depth_buffer);
      return 1;
-@@ -178,6 +179,7 @@ static unsigned zero_texture_storage_release(struct nvn_texture *t) {
+@@ -165,6 +170,16 @@ static void zero_texture_storage_publish(struct nvn_texture *t) {
+     struct zero_texture_storage *s=&zero_texture_storages[i];
+     *s=(struct zero_texture_storage){.state=*t,.pool_object=t->pool->object,
+         .pool_address=t->pool->address,.pool_size=t->pool->size,.pool_flags=t->pool->flags,.active=1,.views=1};
++    /* Preserve the diagnostic name generation across later GLuint reuse. */
++    if(lc2_life_events_on()) {
++        if(t->name) {
++            struct lc2_life_event *e=lc2_life_event_find_group(nvn_gl_share_group_id(),t->name,1,1);
++            if(e)s->gl_generation=e->generation;
++        } else if(t->depth_buffer) {
++            struct lc2_life_event *e=lc2_life_event_find_group(nvn_gl_share_group_id(),t->depth_buffer,2,1);
++            if(e)s->gl_generation=e->generation;
++        }
++    }
+     t->zero_storage=s;s->state.zero_storage=s;s->state.live=1;
+     printf("ZERO_STORAGE_OWNER id=%"PRIu64" logical=1280x720 actual=640x360 format=0x%x name=%u depth=%u\n",
+            t->id,t->b.format,t->name,t->depth_buffer);
+@@ -178,6 +193,10 @@ static unsigned zero_texture_storage_release(struct nvn_texture *t) {
      struct zero_texture_storage *s=t->zero_storage;
      if(t==&s->state)stop("ZERO_STORAGE_RELEASE_STATE_NOT_VIEW",nvn_caller,t->id,24);
      t->zero_storage=NULL;
-+    lc2_life_events_alias_group(nvn_gl_share_group_id(),s->state.name,1,-1);
++    if(s->state.name)
++        lc2_life_events_alias_group(nvn_gl_share_group_id(),s->state.name,1,s->gl_generation,-1);
++    else if(s->state.depth_buffer)
++        lc2_life_events_alias_group(nvn_gl_share_group_id(),s->state.depth_buffer,2,s->gl_generation,-1);
      if(--s->views)return 0;
      s->active=0; /* state intentionally retained for the immediate GL delete */
      return 1;

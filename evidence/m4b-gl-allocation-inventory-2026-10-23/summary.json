@@ -1,5 +1,4 @@
 {
-  "backing": "unknown",
   "call_site_count": 77,
   "call_sites": [
     {
@@ -96,7 +95,7 @@
       "dispatch": "direct",
       "id": "native/momo_stencil_bench.h|glTexImage2D|direct|glTexImage2D|1",
       "kind": "texture-storage",
-      "line": 32,
+      "line": 13,
       "path": "native/momo_stencil_bench.h",
       "rationale": "Inventoried source callsite; build261 runtime reach, live owner generation, and physical backing are not established.",
       "status": "unknown"
@@ -107,7 +106,7 @@
       "dispatch": "direct",
       "id": "native/momo_stencil_bench.h|glRenderbufferStorage|direct|glRenderbufferStorage|1",
       "kind": "renderbuffer-storage",
-      "line": 35,
+      "line": 16,
       "path": "native/momo_stencil_bench.h",
       "rationale": "Inventoried source callsite; build261 runtime reach, live owner generation, and physical backing are not established.",
       "status": "unknown"
@@ -118,7 +117,7 @@
       "dispatch": "direct",
       "id": "native/momo_stencil_bench.h|glFramebufferTexture2D|direct|glFramebufferTexture2D|1",
       "kind": "framebuffer-attachment",
-      "line": 37,
+      "line": 58,
       "path": "native/momo_stencil_bench.h",
       "rationale": "Inventoried source callsite; build261 runtime reach, live owner generation, and physical backing are not established.",
       "status": "unknown"
@@ -129,7 +128,7 @@
       "dispatch": "direct",
       "id": "native/momo_stencil_bench.h|glFramebufferRenderbuffer|direct|glFramebufferRenderbuffer|1",
       "kind": "framebuffer-attachment",
-      "line": 38,
+      "line": 59,
       "path": "native/momo_stencil_bench.h",
       "rationale": "Inventoried source callsite; build261 runtime reach, live owner generation, and physical backing are not established.",
       "status": "unknown"
@@ -140,7 +139,7 @@
       "dispatch": "direct",
       "id": "native/momo_stencil_bench.h|glFramebufferRenderbuffer|direct|glFramebufferRenderbuffer|2",
       "kind": "framebuffer-attachment",
-      "line": 39,
+      "line": 60,
       "path": "native/momo_stencil_bench.h",
       "rationale": "Inventoried source callsite; build261 runtime reach, live owner generation, and physical backing are not established.",
       "status": "unknown"
@@ -850,7 +849,6 @@
       "status": "unknown"
     }
   ],
-  "compile_scope": "source-tree superset; exact compiler-unit/include-closure reachability is not yet classified",
   "kind_counts": {
     "buffer-storage": 6,
     "egl-surface": 4,
@@ -859,76 +857,14 @@
     "texture-copy": 3,
     "texture-storage": 38
   },
-  "generation_history": {
-    "capacity": 2048,
-    "previous_capacity": 512,
-    "distinct_and_reused_keys_tested": 1200,
-    "create_delete_pairs_tested": 1024,
-    "same_name_reuses_after_delete_tested": 24,
-    "same_numeric_gl_name_in_distinct_share_groups_tested": true,
-    "storage_and_delete_event_ring_overflow_tested": true,
-    "capacity_exhaustion_fails_closed": true,
-    "uint64_generation_wrap_fails_closed": true,
-    "overflow_counters": ["generation_history_overflow", "live_owner_overflow"],
-    "existing_live_owner_capacity": 512,
-    "state_size_bytes": {"baseline": 155504, "candidate": 200576, "delta": 45072},
-    "aarch64_elf_bss_bytes": {"build261": 12809440, "build262": 12854512, "delta": 45072},
-    "dynamic_allocation_added": false,
-    "scope": "host and standalone target fixture; BSS/RSS/CMA effect not measured on device"
-  },
-  "limitations": [
-    "This inventory scans every C/C++ file in native/ and framework/ from the exact patched build262 source tree; it is a superset of compiler inputs, not a compiler-closure report.",
-    "A standalone AArch64 fixture exercised the generation code on target, but no game-runtime sample establishes callsite reach, allocation success, physical backing, retained bytes, RSS, CMA reclamation, gameplay, or FPS.",
-    "65 callsites remain unknown; 12 are statically wrapped but unmeasured. No callsite is marked wrapped+measured or not reached.",
-    "The indirect NXGL dispatcher candidates are recorded, but whether each is included in this adapter build is not yet proven."
-  ],
-  "provenance": {
-    "candidate_installed": false,
-    "device_actions": 1,
-    "device_fixture_runs": 1,
-    "device_game_runtime_launches": 0,
-    "host_candidate_build": "build262-m4b-generation",
-    "host_candidate_sha256": "dd13d4ab300fdaa1f51acd78e105a55a02af1de6de05526328d2242b07da1cbc",
-    "historical_readonly_cma_free_kib": 15456,
-    "runtime_preflight": "two complete same-boot read-only snapshots; CmaFree stable at 130412 KiB for 44.0 s, no allocator-warning matches or swap I/O; D game launch held because the launcher leaves T2_STORAGE_MARGIN_MIB unset and a per-run margin requires explicit authorization",
-    "runtime_adapter_patch_sha256": "6c549b09797a403390d4ced13e770bc35c65f74d70240a01f2ec77f6e258eba4",
-    "source_base_commit": "c8d01ca1fed5adab1ae7ad920605f199bb83a72e"
-  },
-  "target_device_fixture": {
-    "device": "Longan / SpruceOS",
-    "firmware": "1.0.1",
-    "kernel": "5.15.147",
-    "arch": "aarch64",
-    "libc": "glibc 2.33",
-    "page_size": 4096,
-    "source": "build262 patched native/lc2_life_events.h",
-    "fixture": {"result": "pass", "exit_code": 0, "duration_seconds": 0.183, "sha256": "f4da9806df30504a946ac7af45191451ff4564237be854744781b18b3978a2fa", "bytes": 22432, "build_id": "c173fc69d70fdce80890cda7781500e54217ffbf", "max_glibc": "2.17", "stdout_sha256": "9c1077ea30f6d50dd6979263c05cc87e8298d24322641d626a95ca7095dacf0f"},
-    "cases": ["1024 create/delete pairs", "24 same-name reuses", "same GLuint across two share groups", "full history refusal", "UINT64_MAX refusal", "separate live-owner overflow", "storage/delete event-ring overflow"],
-    "temporary_artifact_hash_readback": "pass",
-    "temporary_artifact_removed": true,
-    "mainui_remained_alive": true,
-    "game_runtime_launched": false,
-    "build262_installed": false,
-    "preflight": {"snapshot_count": 2, "elapsed_seconds": 44.009, "cma_free_kib": [130412,130412], "mem_available_kib": [703500,704048], "swap_free_kib": [2065884,2065884], "cma_alloc_fail_delta": 0, "pgmajfault_delta": 0, "swap_io_delta": {"in": 0, "out": 0}, "allocator_warning_matches": 0, "mainui_identity_stable": true, "game_processes": 0, "pending_principal_command": false, "cpu_online_before_after": ["4-7","4-7"], "raw_snapshot_sha256": ["2b8f13c86cf6d9f9181301543c6148fb6cd47a93f9cbaff12361fe8207f0a02c","1f122eee791723083b1e78829a8602a9067c1c5abea1d632ee069d222495a08d"]}
-  },
   "schema_version": 1,
-  "scope": "source census, host regression suite, and standalone target AArch64 lifecycle fixture; game runtime and physical backing remain unverified",
+  "scope": "static source census only; execution and physical backing remain unverified",
   "source_tree": {
     "file_count": 390,
-    "sha256": "1b995ea13bab7aa2afcf865f68006b095a401c3cc71b8321f83c778a052dabfb"
+    "sha256": "3fcc9e78155ecdfd71507e860c5120d313a6a2d81967eed2ece572215cf38689"
   },
   "status_counts": {
     "unknown": 65,
     "wrapped+unmeasured": 12
-  },
-  "verification": {
-    "focused_inventory_tests": {"tests_run": 7, "failures": 0, "errors": 0, "skipped": 0},
-    "focused_generation_lifetime_tests": {"tests_run": 10, "failures": 0, "errors": 0, "skipped": 0},
-    "full_python_suite": {"tests_run": 370, "failures": 0, "errors": 0, "skipped": 0},
-    "baseline_manifest": {"files": 435, "status": "pass"},
-    "actual_source_tree_cli_scan": {"call_sites": 77, "source_files": 390, "status": "pass"},
-    "pinned_aarch64_cross_build": {"container_digest": "sha256:e437308c01ce7af4a035c3f0652bc886e258889f66803f805bce53d05af75f0c", "build_id": "9395a24ac719269308b30476f8631349f47242a4", "max_glibc": "2.27", "binary_bytes": 2206936, "sha256": "dd13d4ab300fdaa1f51acd78e105a55a02af1de6de05526328d2242b07da1cbc", "installed": false},
-    "target_aarch64_generation_fixture": {"device": "Longan", "result": "pass", "exit_code": 0, "sha256": "f4da9806df30504a946ac7af45191451ff4564237be854744781b18b3978a2fa", "build_id": "c173fc69d70fdce80890cda7781500e54217ffbf"},
-    "build_script_bash_syntax": "pass"
   }
 }
