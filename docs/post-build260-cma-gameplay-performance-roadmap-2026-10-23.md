@@ -1,6 +1,8 @@
 # Lamentum TSPS — build260 / CMA-to-gameplay execution roadmap
 
-**Most recent evidence-first reassessment (2026-10-23, source main@1604ed9):** [§13 — measured facts, exact next host PRs, CMA/device NO-GO, true gameplay/FPS gates](#13-evidence-first-execution-gates-after-the-main1604ed9-re-audit-2026-10-23). This is an audit/documentation-only continuation: no fresh device launch or FPS measurement. §13 should be read before implementing the older queues below.
+**CURRENT EXECUTION POLICY (2026-10-23, M4-A merged at main@509cc985):** [§15 — host publication independent of CMA; separate safe staging and fresh-preflight runtime gates](#15-revised-publication-install-and-runtime-testing-gates-2026-10-23-overrides-indefinite-device-no-go). M4-A host work/source is **DONE**; build261 is a host-built, not device-qualified candidate. Historical low CMA is **not** a permanent ban on publishing or safely staging files; a runtime start still requires a fresh positive preflight and otherwise stays on HOLD. §15 supersedes conflicting older blanket prohibitions without changing measured evidence.
+
+**Historical evidence-first reassessment (2026-10-23, source main@1604ed9):** [§13 — measured facts, exact next host PRs, CMA/device NO-GO, true gameplay/FPS gates](#13-evidence-first-execution-gates-after-the-main1604ed9-re-audit-2026-10-23). This is an audit/documentation-only continuation: no fresh device launch or FPS measurement. §13 should be read before implementing the older queues below.
 
 **Additional post-A1 audit (2026-10-23):** §§11–12 below adds exact host-only M4-A implementation steps, an allocation-callsite census, further exact-firmware CMA investigation, a ranked sustained atlas-memory strategy, and evidence gates for W0/W1/F1. As of this review main is `c05f879`; nothing was run or deployed on TSPS and the CMA safety NO-GO is unchanged.
 
@@ -515,7 +517,7 @@ Select **one** candidate from the complete M4-B/K1-B waterfall. The large BC3 at
 
 | Ordered PR / report | Must include | Status now |
 | --- | --- | --- |
-| **M4-A** checked BC stripe sizing | Shared bound, native fixture actually run, overflow/BC pixel parity, manifest and AArch64 result | TODO host |
+| **M4-A** checked BC stripe sizing | Shared bound, native fixture actually run, overflow/BC pixel parity, manifest and AArch64 result | **DONE host at main@509cc985; build261 not device-qualified, see §14** |
 | **M4-B** complete memory-class inventory | Coverage gate, GL buffer/EGL unknowns, generation >512, retained-owner waterfall | TODO host |
 | **K1-B** exact allocator backing report | DTB/bootargs, exact-code allocator outcome map, read-only CMA order histogram, unknown classification | TODO host |
 | **M4-C** one persistent reduction | Proved duplicate lifetime or separately labeled compressed-format experiment | SELECT ONLY AFTER M4-B/K1-B |
@@ -554,3 +556,72 @@ For each PR publish: base/head commit, overlay sha, recovered-source manifest re
 **Cross-build:** pinned image `pmjs-arm64-spruce-local@sha256:e437308c01ce7af4a035c3f0652bc886e258889f66803f805bce53d05af75f0c`, owner image `image-09` with verified ROMFS section digest, AArch64 ELF64 PIE; size 2,206,776 B, Build ID `43aa590ec1209841671e9ad0d8de726d9f5f90a2`, max GLIBC 2.27, SHA-256 `0958651d1e9cb1333023c9a9418be781b6cf2b49d628dc5b9a8c122a80c96332`. It remains a local host artifact, not installed. Full receipt: [cumulative §94](performance-roadmap-30fps.md#94-m4-a-host-only-bc-stripe-sizing-and-native-fixture-2026-10-23) and [M4-A evidence](../evidence/m4a-bc-stripe-capacity-2026-10-23/README.md).
 
 **Qualification boundary:** no device install/run, live GL call, physical upload-region observation, KMS pixel capture, alias lifetime, RSS/CMA reclamation, gameplay or FPS was tested. `CmaFree=15,456 KiB` remains the last read-only value and the device gate remains **NO-GO**. Continue with §13.3 M4-B host-only lifetime/coverage work and §13.4 K1-B; do not deploy this candidate without a separately reopened safety gate.
+
+---
+
+## 15. Revised publication, install and runtime-testing gates (2026-10-23; overrides indefinite device NO-GO)
+
+**Correction and precedence.** Earlier instructions conflated (1) committing/publishing host-verified code, (2) transferring files to the handheld without running them, and (3) starting a memory-intensive runtime. The historical idle CmaFree of **15,456 KiB** is a real warning **at the timestamp and boot measured**, not a permanent state and not proof that all occupied CMA is physically pinned. Linux may use CMA for movable pages, but their successful reclaim/migration and a usable contiguous allocation are not guaranteed. Historic allocator warnings and exhausted CMA must still be respected. **This section supersedes any older blanket “device NO-GO / no install / M4-A publication postponed” instructions for future work; historical measurements and their original run verdicts remain unchanged.**
+
+**M4-A is already host-published:** [main@509cc985](https://github.com/ruslan-k/lamentum-portmaster-tsps/commit/509cc985893e) and [M4-A evidence](../evidence/m4a-bc-stripe-capacity-2026-10-23/README.md). Build261 AArch64 SHA-256 0958651d1e9cb1333023c9a9418be781b6cf2b49d628dc5b9a8c122a80c96332 was compiled locally; there is **no recorded install or device gameplay result**. Native BC parity fixture, ASan/UBSan, 359/359 host tests (zero skipped), 435/435 baseline hashes and cross-build are recorded. Do not redo this PR or report it unpublished because the device is held.
+
+### 15.1 Independent work scopes and go/hold status
+
+| Stage | What it authorizes | CMA condition | Status/acceptance |
+| --- | --- | --- | --- |
+| **H: host development and publication** | Edit, run host suite, build, commit, push, merge PRs, publish source, public-only receipts and redistributable binaries (never proprietary game assets) | **None**: a historical low CMA must not block a host PR or release | M4-A **DONE**; M4-B / K1-B may proceed now |
+| **S: staged transfer / non-executing install** | Inspect device, back up previous ELF, copy candidate/launcher/helper to temporary path, verify hash; optionally activate installed files **without launching** | No CMA minimum for copying files. Require storage, device and busy-process safety checks, valid backup and rollback. | Outcome **STAGED** or **INSTALLED_NOT_RUN**, never device-qualified |
+| **D: bounded no-input game diagnostic** | Initial guarded runtime launch, first-present/admission evidence; no New Game | **New fresh stable read-only preflight**, conservative allocation headroom and a working runtime safety guard are mandatory | **ALLOW_BOUNDED** or **HOLD_RUNTIME**, recorded with reasons |
+| **W: actual menu/New Game/gameplay/FPS** | Navigation, world loading, interaction, saves, sustained timing | D passes repeatedly, stable memory margin, correct visuals and safe cleanup; W0 then W1 then F1 | **BLOCKED until positive independent qualification** |
+
+**Explicit agent instruction:** M4-A source publication is already done; do not say “publication skipped” because build261 was not installed. Host improvements and PR publication never require a device test. Publishing a binary is optional and subject to ownership/licensing and size limits. If staging is possible but running is unsafe, state exactly **STAGED / RUNTIME HELD**, not “all device work skipped”.
+
+### 15.2 Fresh read-only preflight: do not mistake an old CMA number for a new one
+
+Perform the existing bounded, read-only tools/cma_readonly_snapshot.py + tools/cma_readonly_compare.py process **before considering a D run**. A transfer-only S install may use a limited storage/busy-state preflight instead.
+
+1. Pin target model/firmware/kernel, boot ID, monotonic sample times, MainUI PID+starttime+executable inode, actual installed ELF/launcher/helper SHA and current CPU mask. Check for a live game, pending principal command, immutable/swap state and sufficient SD card space. A busy principal/game or mismatched hash blocks activation.
+2. Capture **at least two complete same-boot snapshots** separated by ~20–30 seconds of quiet operation: CmaTotal/CmaFree, nr_free_cma, free CMA buddy blocks *by order*, MemAvailable, MemFree, SwapFree, CMA alloc/fail, page faults, migration/compaction and swap deltas, MainUI DMA-BUF inode/FD inventory and recent fresh kernel OOM/allocation warnings. Do not reboot or run the game to obtain these samples.
+3. Reducer must reject partial captures, changed boot, process identity drift, negative/reset counters, nonmonotonic time and missing essential CMA order data; label UNKNOWN rather than guessing a safe value. Distinguish normal background noise from a consistent pressure trend.
+4. Compare with prior device phases (roughly 88–103 MiB free CMA in some earlier reads versus ~15 MiB at the last failure). These are **historical comparison points**, not certified safe thresholds. Free CMA alone does not certify contiguous allocation, physical driver backing or reclaimability. Do not equate MemAvailable or CPU scratch with guaranteed usable CMA.
+5. Publish a compact preflight receipt: boot, timestamps, same-state/deltas, allocator warnings, run/ELF hashes, projected allocation demand and separate uncertainty reserve, outcome, and rationale. Raw kernel/firmware data remains local-only.
+
+**Preflight decisions:**
+
+- **ALLOW_STAGING:** Device idle, hashes/storage/backup/atomic handoff credible. File staging is allowed even when CMA is too low to run the game. An installer that autostarts the runtime is **not** staging and must satisfy D.
+- **ALLOW_BOUNDED:** Two valid stable read-only samples; no fresh allocator/OOM warning or unsafe fragmentation; positive **justified** reserve for the selected bounded allocation path **plus uncertainty** under working strict GL, 96 MiB MemAvailable floor and 300 MiB texture budget; a recorded margin/rollback/watchdog. Base the reserve on the actual per-class requirement and historical device behavior, not an invented universal MiB threshold. Conservative all-requested-bytes-possibly-CMA arithmetic may be retained as a safety upper bound, but it is **not evidence** that CPU malloc always consumes CMA.
+- **HOLD_RUNTIME:** The historical danger state around 15 MiB persists without an explanation/proven reclaim and usable block order; samples incomplete or unstable; recent allocation warning; enough margin cannot be demonstrated; or safety tooling is unverified. No runtime launch. Host M4-B/K1-B and read-only diagnosis continue.
+- **WORLD_NOT_AUTHORIZED:** A single good preflight or successful game splash cannot authorize New Game, extended runs or a 30 FPS claim. W0/W1 have independent gates.
+
+No blind CMA-margin sweep below the tested 24 MiB; no disabling the admission checks or changing the floor, texture cap, strict-GL behavior, firmware/kernel, CPU governors, CMA knobs, drop_caches, compaction or boot state to force a green decision. Invasive recovery needs a separately justified operator decision.
+
+### 15.3 Safe install without runtime launch
+
+1. Verify the exact build261 architecture/GLIBC and SHA-256 against M4-A evidence, matching launcher and mandatory identity helper, correct target storage, available space, device idle and absence of pending principal command. Preserve prior build259 and its verified backup; no untracked in-place overwrite.
+2. Copy the ELF and matching helpers to an **inert temporary staging path** (or perform a verified atomic install only if its orchestration guarantees **no automatic execution**). Read back each SHA-256 and check permissions; document previous file/restore plan. Do not submit a launch command.
+3. If file/identity mismatches, restore the prior verified files; preserve MainUI and original CPU mask. Report stage/installed-not-run and no execution. A staged file must not be presented as device-qualified, GPU-safe or playable.
+4. If the installer or principal flow implicitly launches the game, leave the ELF staged only until D is authorized.
+
+If the user has already authorized ordinary device development/testing, host publication and safe staging do not require a fresh human approval for each harmless step. Destructive recovery actions or changes to safety limits do.
+
+### 15.4 First guarded runtime diagnostic, ONLY after a positive D preflight
+
+1. Select one exact ELF, same owner image and one behavior change. Keep T2_MEMORY_FLOOR_MIB=96, T2_TEXTURE_BUDGET_MIB=300, strict GL and default-off risky flags; do not silently invent or lower T2_STORAGE_MARGIN_MIB. An unresolved admission model must remain fail-closed, even when that means no run.
+2. Run a brief **15–30 s maximum initial no-input** title/admission smoke (or shorter when prudent). Pin boot/run UUID/PID+starttime/build hash. Use existing bounded watchdog, light memory sampling and typed STOP/error recording. Abort on new DMA/CMA allocator warning, exhausted safety margin, T2 refusal/floor, OOM/kill, present-serial identity error, lost MainUI or incomplete critical samples. Do not continue to New Game.
+3. Capture fresh preflight, during-run and postflight metrics with timestamps. Do not add declared GL storage + GPU metadata + RSS as if physically distinct, nor equate a CPU scratch request reduction with reclaimed CMA. Spruce cleanup image is not a game frame.
+4. Verify cleanup: game exited; original CPU mask/online modes restored; stable MainUI; no pending principal command; no fresh kernel warning; rollback available. If degraded, set HOLD_RUNTIME immediately. Only with repeatable safe startup and later proper owned menu/visual checks can W0 begin.
+
+**No optimistic shortcut:** If enough CMA and allocator backing cannot be established, the answer is **host work published and candidate staged; D held on fresh preflight**. An *old* low reading is reason to remeasure, not reason to ban all future device interaction.
+
+### 15.5 Required report fields and next tasks
+
+Every agent handoff must distinguish:
+
+- Source/PR publication: **DONE** for M4-A at main@509cc985 (or exact newer commit); host-only verified.
+- Build261: local AArch64 candidate SHA with host test counts, 0 native skips; binary publication, staging and device qualification each separately marked DONE/NOT DONE.
+- Device preflight: **NOT RUN**, **COMPLETE STABLE**, or **INCOMPLETE**; show *timestamp and boot* for the last CMA and order histogram. Never call the 15,456 KiB result current unless newly observed.
+- Stage decision: ALLOW_STAGING / HOLD_STAGING and reason.
+- Runtime decision: ALLOW_BOUNDED / HOLD_RUNTIME and measured reserve/warning rationale; gameplay W0/W1/F1 separately NOT VERIFIED until tested.
+- **Next host work:** M4-B complete GL/EGL/buffer lifetime/generation census and K1-B exact firmware DMA/CMA backing; M4-C persistent atlas optimization only with owner/lifetime proof.
+
+**Historical device result remains NOT PLAYABLE, gameplay FPS unmeasured.** This policy is not a finding that build261 works on device. It corrects agent scheduling: *do the independent safe work and publish it; perform a fresh safety decision before any demanding runtime operation.*
