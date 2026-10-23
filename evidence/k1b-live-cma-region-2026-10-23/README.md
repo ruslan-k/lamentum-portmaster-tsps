@@ -24,6 +24,18 @@ The live tree reports 1 GiB RAM at `0x40000000`, plus one explicit `/reserved-me
 - `/dev/dma_heap/system` maps to `/sys/devices/virtual/dma_heap/system` (character device 252:0); `/dev/dma_heap/reserved` maps to `/sys/devices/virtual/dma_heap/reserved` (252:1). No `/dev/dma_heap/cma` node was listed. The name `reserved` does not establish its allocator or physical backing.
 - One gauge sample during the probe: `CmaFree=130412 kB`, `MemAvailable=671620 kB`, `SwapFree=2065884 kB`, `nr_free_cma=32603`, `cma_alloc_success/fail=8/0`. This is explicitly **not** a paired D preflight and not launch clearance.
 
+## Matched-kernel heap paths — static evidence
+
+The exact matched `vmlinux` (`SHA-256 806182f8823b0db340f3f9beccf303e39571deb20b99386ee6a76442b8761b19`, Build ID `175a7f4d4731ebfbbdeb7695329115202f8b813a`) shows:
+
+- `system_heap_create` calls `dma_heap_add` with the literal heap name `system`.
+- `add_default_cma_heap` obtains the area name through `cma_get_name()` and passes it to `dma_heap_add`; `cma_get_name()` returns the CMA object's name field. `cma_heap_allocate` calls `cma_alloc`, so allocations through this implementation use the CMA API.
+- If `cma_init_reserved_mem` receives no explicit name, its compiled fallback formats `cma%d`. The live node `/dev/dma_heap/reserved` therefore cannot be tied to the default-CMA implementation merely from the word `reserved`; the name/instance join is still unresolved.
+- A bounded scan of the single executable `PT_LOAD` segment found exactly two direct AArch64 `BL` sites targeting `dma_heap_add`, at `0xffffffc0085396d8` (`system_heap_create`) and `0xffffffc00853a7a4` (`add_default_cma_heap`). This excludes other direct call sites in that linked image, not indirect/module call paths.
+- The live `/lib/modules/5.15.147/mali_kbase.ko` was read-only copied to local scratch and SHA-256-verified against the device: 29,984,864 bytes, SHA-256 `2aaf1556a7a352caffec4db8821ea9d2f847529671321caa1a667de992d1ceb5`, Build ID `0dcaa84a5579b1122f98f29d0214723a2dff9603`. Its undefined-symbol list contains `__alloc_pages` and `dma_buf_*` operations, but not `dma_heap_add` or `cma_alloc`. Thus this Mali module does not directly register the heap through those APIs; its `__alloc_pages` route still does not prove whether its pages use CMA.
+
+**Interpretation:** the kernel provides a CMA-backed DMA-heap implementation and the live `reserved` endpoint is a plausible match for that default CMA heap, but the available evidence does not yet establish that endpoint's registration identity or prove that game GL allocations use it. Keep `DMA_HEAP_RESERVED` at *possible/unknown* for per-request attribution until the name-to-instance path and runtime consumer are closed.
+
 ## Owner/backing matrix and gate
 
 | Class | Result |
@@ -32,11 +44,11 @@ The live tree reports 1 GiB RAM at `0x40000000`, plus one explicit `/reserved-me
 | `guest_malloc` pages | **Unknown** whether/how they consume CMA pages |
 | GLES GL texture/buffer/renderbuffer | **Unknown** driver allocation path, per-call success, and physical backing |
 | `DMA_HEAP_SYSTEM` | Heap endpoint exists; per-buffer backing and relation to GL remain unknown |
-| CMA heap | Kernel support is enabled, but no `cma` device node was exposed; usage remains unknown |
-| `DMA_HEAP_RESERVED` | Endpoint exists; implementation and backing remain unknown |
+| CMA heap implementation | **Proven in matched kernel** to allocate through `cma_alloc`; actual live `reserved` endpoint/name join remains *possible/unknown* |
+| `DMA_HEAP_RESERVED` | Endpoint exists; likely default-CMA candidate, but exact registration/backing for this node remains unproven |
 | Mali/KMS/GBM/EGL working buffers | **Unknown**; the DT register map does not assign a memory pool or identify runtime buffers |
 | Current CMA occupancy owner | **Unknown**; no game ran and the single free-space gauge identifies no owner |
 
-This closes only the reservation-geometry part of K1-B. It does not complete D-policy class attribution or provide a justified per-run uncertainty margin. Keep `T2_STORAGE_MARGIN_MIB` unset and `HOLD_RUNTIME`; build259 remains the installed runtime, and no current game ELF is available for a bounded launch.
+This closes only the reservation-geometry and part of the heap-implementation path in K1-B. It does not complete D-policy class attribution or provide a justified per-run uncertainty margin. Keep `T2_STORAGE_MARGIN_MIB` unset and `HOLD_RUNTIME`; build259 remains the installed runtime, and no current game ELF is available for a bounded launch.
 
-**Next handoff:** trace the exact `reserved` and `system` DMA-heap registration/allocation paths and the Mali/GBM allocation route against the matched firmware binary and available runtime artifacts. Keep user-space scratch and GL storage as possible/unknown CMA consumers until that mapping is demonstrated.
+**Next handoff:** close the live `reserved`-node-to-`cma_heap` registration/name join, then map Mali/GBM request consumers and measured overlap. Keep user-space scratch and GL storage as possible/unknown CMA consumers until that mapping is demonstrated.

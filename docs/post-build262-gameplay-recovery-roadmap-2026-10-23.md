@@ -305,3 +305,14 @@ The live device tree reports 1 GiB RAM at `0x40000000`, a separate 16 MiB BL31 r
 
 A single gauge sample reported `CmaFree=130412 kB`; it is **not** a paired D preflight or launch clearance. Pool geometry is now proven; occupancy ownership, worst-case request overlap, and uncertainty are not. No game launch or production change occurred. Keep D at **HOLD_RUNTIME**. Next host work is to trace the exact heap-registration and Mali/GBM allocation paths; any bounded launch still requires a current game ELF, fresh complete preflight, justified per-class headroom, and explicit review of a one-run margin.
 
+### 10.12 K1-B matched kernel heap paths (host and target module; 2026-10-23)
+
+The [K1-B receipt](../evidence/k1b-live-cma-region-2026-10-23/README.md) now includes targeted static analysis of the exact matched firmware `vmlinux` plus a read-only copy of the live Mali module. Local ELF identity was reverified as SHA-256 `806182f8823b0db340f3f9beccf303e39571deb20b99386ee6a76442b8761b19`, Build ID `175a7f4d4731ebfbbdeb7695329115202f8b813a`.
+
+- `system_heap_create` registers the literal heap name `system`; `add_default_cma_heap` registers the name returned by `cma_get_name()`. The matched `cma_heap_allocate` calls `cma_alloc`, so this implementation allocates through the CMA API. `cma_init_reserved_mem` uses a `cma%d` fallback only when no explicit name is provided.
+- A targeted AArch64 `BL` scan of the vmlinux executable segment found exactly two direct call sites to `dma_heap_add`: `system_heap_create` and `add_default_cma_heap`. This is a direct-call scan of linked vmlinux only; it does not cover indirect/module call paths.
+- Live `/dev/dma_heap` exposes `system` and `reserved`. The `reserved` endpoint is a plausible default-CMA-heap match, but the name-to-instance join is not closed: its name could be explicit or originate from another registration path. Do not yet classify the live endpoint as a proven CMA owner.
+- Live `mali_kbase.ko` identity: 29,984,864 bytes, SHA-256 `2aaf1556a7a352caffec4db8821ea9d2f847529671321caa1a667de992d1ceb5`, Build ID `0dcaa84a5579b1122f98f29d0214723a2dff9603`. Its relevant undefined symbols include `__alloc_pages` and `dma_buf_*`; it imports neither `dma_heap_add` nor `cma_alloc`. This rules out direct registration/allocation through those imports, not physical CMA use via movable pages.
+
+**Disposition:** heap implementation is partially classified, but GL/Mali/GBM/scratch-to-heap ownership and peak overlap are not. The live CMA geometry does not supply a justified margin. Keep `T2_STORAGE_MARGIN_MIB` unset and **HOLD_RUNTIME**; no game was launched. Next: close the `reserved`-name registration path and relate actual GL request paths to their allocator before considering a bounded run.
+

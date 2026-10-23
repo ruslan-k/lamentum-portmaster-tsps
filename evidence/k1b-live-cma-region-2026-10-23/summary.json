@@ -79,9 +79,46 @@
     "cma_device_node_visible": false,
     "physical_backing_by_heap": "unknown"
   },
+  "kernel_heap_implementation": {
+    "vmlinux_sha256": "806182f8823b0db340f3f9beccf303e39571deb20b99386ee6a76442b8761b19",
+    "vmlinux_build_id": "175a7f4d4731ebfbbdeb7695329115202f8b813a",
+    "system_heap_create": {"calls": "dma_heap_add", "heap_name": "system", "call_site": "0xffffffc0085396d8"},
+    "add_default_cma_heap": {"name_source": "cma_get_name()", "calls": "dma_heap_add", "call_site": "0xffffffc00853a7a4"},
+    "cma_get_name_returns": "CMA object name field",
+    "cma_heap_allocate_calls": "cma_alloc",
+    "cma_init_reserved_mem_default_name_format": "cma%d",
+    "direct_dma_heap_add_bl_sites_in_vmlinux": {
+      "executable_pt_load_segments_scanned": 1,
+      "count": 2,
+      "addresses": ["0xffffffc0085396d8", "0xffffffc00853a7a4"],
+      "scope_limit": "direct AArch64 BL call sites in linked vmlinux; excludes indirect calls and modules"
+    },
+    "live_reserved_heap_to_default_cma_heap": "possible, not proven; name-to-instance join open",
+    "mali_kbase_module": {
+      "device_path": "/lib/modules/5.15.147/mali_kbase.ko",
+      "bytes": 29984864,
+      "sha256": "2aaf1556a7a352caffec4db8821ea9d2f847529671321caa1a667de992d1ceb5",
+      "build_id": "0dcaa84a5579b1122f98f29d0214723a2dff9603",
+      "relevant_undefined_symbols": ["__alloc_pages", "dma_buf_attach", "dma_buf_detach", "dma_buf_get", "dma_buf_map_attachment", "dma_buf_mmap", "dma_buf_put", "dma_buf_unmap_attachment"],
+      "imports_dma_heap_add": false,
+      "imports_cma_alloc": false,
+      "interpretation": "no direct heap registration or cma_alloc import; __alloc_pages can still have unresolved physical page-class behavior"
+    },
+    "loaded_module_count": 9,
+    "loaded_modules": ["zram", "zsmalloc", "lzo_rle", "lzo", "lzo_compress", "aic8800_btlpm", "aic8800_fdrv", "aic8800_bsp", "mali_kbase"]
+  },
   "validation": {
     "probe_py_compile": "pass",
     "parser_self_checks": "4 assertions passed",
+    "vmlinux_sha256_matches_k1_receipt": true,
+    "mali_module_sha256_matches_device_probe": true,
+    "dma_heap_add_direct_bl_scan": {
+      "executable_pt_load_segments": 1,
+      "site_count": 2,
+      "expected_r2_sites_asserted": true,
+      "scope": "direct calls in linked vmlinux only"
+    },
+    "r2_procedures_checked": ["system_heap_create", "add_default_cma_heap", "cma_heap_allocate", "cma_get_name", "cma_init_reserved_mem", "system_heap_allocate"],
     "full_host_suite_run_this_phase": false
   },
   "disposition": {
