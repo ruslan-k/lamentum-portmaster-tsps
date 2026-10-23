@@ -100,6 +100,11 @@ def _floor_record(log_text, run_uuid):
         "floor-check-t-ns", "snapshot-start-ns", "snapshot-end-ns", "snapshot-read-ns",
         "floor-available-kib", "floor-swap-free-kib", "cmafree-kib", "vmrss-kib", "vmswap-kib",
         "meminfo-read", "status-read")}
+    budget_floors = [_fields(line) for line in log_text.splitlines()
+                     if line.startswith("LC2_TEXTURE_BUDGET_FLOOR ")]
+    result["budget_sample_t_ns"] = (
+        _int_or_none(budget_floors[0].get("budget-sample-t-ns"))
+        if len(budget_floors) == 1 and budget_floors[0].get("run-id") == run_uuid else None)
     for key in ("floor_check_t_ns", "snapshot_start_ns", "snapshot_end_ns", "snapshot_read_ns",
                 "floor_available_kib", "floor_swap_free_kib", "cmafree_kib", "vmrss_kib", "vmswap_kib"):
         value = result.get(key)
@@ -291,6 +296,103 @@ def _owned_event_records(log_text, run_uuid):
     return result, list(dict.fromkeys(reasons))
 
 
+# Live-set rows have their own timestamp; never use a later snapshot to backfill floor pairs.
+def _live_set_snapshot(log_text, run_uuid, budget_sample_ns):
+    set_rows = [_fields(line) for line in log_text.splitlines() if line.startswith("LC2_TEXTURE_LIVE_SET ")]
+    pair_rows = [_fields(line) for line in log_text.splitlines() if line.startswith("LC2_TEXTURE_LIVE_PAIR ")]
+    life_rows = [_fields(line) for line in log_text.splitlines() if line.startswith("LC2_LIFE_SUMMARY ")]
+    if not set_rows and not pair_rows:
+        return {"status": "unavailable", "records": [], "physical_bytes": None}, []
+
+    reasons = []
+    if len(set_rows) != 1:
+        reasons.append("live_set_summary_missing_or_ambiguous")
+    summary = set_rows[0] if len(set_rows) == 1 else {}
+    if len(set_rows) == 1 and summary.get("run-id") != run_uuid:
+        raise ValueError("foreign live-set summary")
+    if any(row.get("run-id") != run_uuid for row in set_rows + pair_rows):
+        raise ValueError("foreign live-set record")
+
+    snapshot_ns = _int_or_none(summary.get("snapshot-t-ns"))
+    floor_check_ns = _int_or_none(summary.get("floor-check-t-ns"))
+    if snapshot_ns is None or floor_check_ns is None or snapshot_ns < floor_check_ns:
+        reasons.append("live_set_timestamps_missing_or_inconsistent")
+    if budget_sample_ns is None or snapshot_ns is None:
+        relation = "unknown"
+    elif snapshot_ns < budget_sample_ns:
+        relation = "before_budget_sample"
+    elif snapshot_ns == budget_sample_ns:
+        relation = "at_budget_sample"
+    else:
+        relation = "after_budget_sample"
+
+    records = []
+    ids, storage_owners = set(), set()
+    owner_first_count = 0
+    guest_sum = charge_sum = 0
+    for row in pair_rows:
+        timestamp = _int_or_none(row.get("t-ns"))
+        owner_id = _int_or_none(row.get("id"))
+        object_generation = _int_or_none(row.get("object-generation"))
+        storage_owner = _int_or_none(row.get("storage-owner"))
+        guest_bytes = _int_or_none(row.get("guest-bytes"))
+        charge_bytes = _int_or_none(row.get("charge-bytes"))
+        owner_first = row.get("storage-owner-first")
+        if (row.get("phase") != "live-set" or timestamp != snapshot_ns or owner_id is None or owner_id <= 0
+                or object_generation is None or storage_owner is None or storage_owner <= 0
+                or guest_bytes is None or charge_bytes is None or owner_first not in ("0", "1")):
+            reasons.append("live_set_pair_fields_invalid")
+        if owner_id in ids:
+            reasons.append("live_set_duplicate_owner_id")
+        ids.add(owner_id)
+        storage_owners.add(storage_owner)
+        owner_first_count += owner_first == "1"
+        guest_sum += guest_bytes or 0
+        charge_sum += charge_bytes or 0
+        size_match = re.fullmatch(r"(\d+)x(\d+)", row.get("size", ""))
+        try:
+            format_value = int(row["format"], 0) if "format" in row else None
+        except ValueError:
+            format_value = None
+        records.append({
+            "owner_id": owner_id, "object_generation_raw": object_generation,
+            "storage_owner": storage_owner, "storage_owner_first": owner_first == "1",
+            "guest_bytes": guest_bytes, "charge_bytes": charge_bytes, "size": row.get("size"),
+            "width": int(size_match.group(1)) if size_match else None,
+            "height": int(size_match.group(2)) if size_match else None,
+            "format": format_value, "levels": _int_or_none(row.get("levels")),
+            "pool_id": _int_or_none(row.get("pool-id")),
+            "pool_generation": _int_or_none(row.get("pool-generation")),
+        })
+
+    views = _int_or_none(summary.get("views"))
+    unique_owners = _int_or_none(summary.get("unique-owners"))
+    guest_bytes = _int_or_none(summary.get("guest-bytes"))
+    charge_bytes = _int_or_none(summary.get("charge-bytes"))
+    budget_live_bytes = _int_or_none(summary.get("budget-live-bytes"))
+    if views != len(pair_rows) or unique_owners != len(storage_owners) or owner_first_count != unique_owners:
+        reasons.append("live_set_count_mismatch")
+    if guest_bytes != guest_sum or charge_bytes != charge_sum or charge_bytes != budget_live_bytes:
+        reasons.append("live_set_charge_reconciliation_failed")
+    if (summary.get("charge-match") != "1" or summary.get("life-events") != "1"
+            or any(summary.get(key) != "0" for key in ("owner-overflow", "registry-overflow", "arithmetic-overflow"))):
+        reasons.append("live_set_summary_not_complete")
+    if (len(life_rows) != 1
+            or _int_or_none(life_rows[0].get("tex-live-pair-lines")) != len(pair_rows)
+            or _int_or_none(life_rows[0].get("tex-live-pair-overflow")) != 0):
+        reasons.append("live_set_ring_incomplete")
+
+    return {
+        "status": "complete" if not reasons else "incomplete",
+        "timestamp_ns": snapshot_ns, "floor_check_ns": floor_check_ns,
+        "budget_sample_ns": budget_sample_ns, "timestamp_relation": relation,
+        "views": views, "unique_owners": unique_owners, "guest_bytes": guest_bytes,
+        "charge_bytes": charge_bytes, "budget_live_bytes": budget_live_bytes,
+        "records": records, "incomplete_reasons": list(dict.fromkeys(reasons)),
+        "physical_bytes": None,
+    }, list(dict.fromkeys(reasons))
+
+
 def _cma_records(snapshots, expected):
     reasons = []
     if not isinstance(snapshots, list) or len(snapshots) not in (2, 3):
@@ -388,6 +490,9 @@ def build_waterfall(log_text, memory_timeline, cma_snapshots, expected_run, *,
     floor, floor_error = _floor_record(log_text, expected_run["run_uuid"])
     if floor_error:
         reasons.append(floor_error)
+    live_set_snapshot, live_set_reasons = _live_set_snapshot(
+        log_text, expected_run["run_uuid"], floor.get("budget_sample_t_ns") if floor else None)
+    reasons.extend("live_set_snapshot:" + reason for reason in live_set_reasons)
     windows, marks, m3b_summary, m3b_reasons = _m3b_records(log_text, expected_run["run_uuid"], m3b_required)
     reasons.extend(m3b_reasons)
     owned_events, owned_event_reasons = _owned_event_records(log_text, expected_run["run_uuid"])
@@ -482,6 +587,7 @@ def build_waterfall(log_text, memory_timeline, cma_snapshots, expected_run, *,
         "memory_floor_mib": memory_floor_mib, "floor_snapshot": floor,
         "accounting_status": accounting_status, "accounting": accounting,
         "m3b_status": m3b_status, "m3b_windows": windows, "m3b_marks": marks,
+        "live_set_snapshot": live_set_snapshot,
         "owned_events": owned_events,
         "memwatch": {"records": memwatch, "join_status": memwatch_status},
         "time_joins": {"method": "exact captured interval overlap only; no nearest-sample interpolation",

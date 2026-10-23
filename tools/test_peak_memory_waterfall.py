@@ -188,6 +188,36 @@ class PeakMemoryWaterfallTests(unittest.TestCase):
                              hashlib.sha256(log.read_bytes()).hexdigest())
             self.assertNotIn("combined_bytes", payload)
 
+    def test_later_live_set_snapshot_does_not_backfill_floor_pairs(self):
+        text = owned_log()
+        text = "\n".join(line for line in text.splitlines()
+                           if not (line.startswith("LC2_TEXTURE_PAIR ") and " id=43 " in line)) + "\n"
+        live_pairs = [
+            "LC2_TEXTURE_LIVE_PAIR run-id=u-1 t-ns=180 phase=live-set id=43 object-generation=43 storage-owner=43 storage-owner-first=1 guest-bytes=30 charge-bytes=30 pool-id=99 pool-generation=1 cpu-write-generation=0 texture=1 renderbuffer=0 size=10x10 format=0x41 levels=1 target=0 depth=0 samples=0",
+            "LC2_TEXTURE_LIVE_PAIR run-id=u-1 t-ns=180 phase=live-set id=99 object-generation=99 storage-owner=99 storage-owner-first=1 guest-bytes=1 charge-bytes=1 pool-id=99 pool-generation=1 cpu-write-generation=0 texture=1 renderbuffer=0 size=1x1 format=0x41 levels=1 target=0 depth=0 samples=0",
+            "LC2_TEXTURE_LIVE_SET run-id=u-1 floor-check-t-ns=149 snapshot-t-ns=180 views=2 unique-owners=2 owner-overflow=0 life-events=1 guest-bytes=31 charge-bytes=31 budget-live-bytes=31 budget-charges=3 charge-match=1 registry-overflow=0 arithmetic-overflow=0",
+        ]
+        text = text.replace("LC2_LIFE_SUMMARY ", "\n".join(live_pairs) + "\nLC2_LIFE_SUMMARY ")
+        text = text.replace("delete-event-overflow=0", "delete-event-overflow=0 tex-live-pair-lines=2 tex-live-pair-overflow=0")
+        result = build_waterfall(text, timeline(),
+                                 [cma_snapshot(151, 2000), cma_snapshot(181, 2000)], RUN,
+                                 memory_floor_mib=64,
+                                 kernel_warning_deltas={"boot_id": RUN["boot_id"], "capture_status": "ok", "records": []})
+        self.assertEqual(result["accounting_status"], "incomplete")
+        self.assertIsNone(result["accounting"])
+        snapshot = result["live_set_snapshot"]
+        self.assertEqual(snapshot["status"], "complete")
+        self.assertEqual(snapshot["timestamp_relation"], "after_budget_sample")
+        self.assertEqual(snapshot["charge_bytes"], 31)
+        self.assertEqual([row["owner_id"] for row in snapshot["records"]], [43, 99])
+
+        overflow = build_waterfall(text.replace("owner-overflow=0", "owner-overflow=1"), timeline(),
+                                   [cma_snapshot(151, 2000), cma_snapshot(181, 2000)], RUN,
+                                   memory_floor_mib=64,
+                                   kernel_warning_deltas={"boot_id": RUN["boot_id"], "capture_status": "ok", "records": []})
+        self.assertEqual(overflow["live_set_snapshot"]["status"], "incomplete")
+        self.assertTrue(any(reason.startswith("live_set_snapshot:") for reason in overflow["incomplete_reasons"]))
+
     def test_prelaunch_system_sample_is_preserved_but_not_counted_as_runtime(self):
         data = timeline()
         prelaunch = dict(data["samples"][0], pid=None, starttime=None, seq=-1,
