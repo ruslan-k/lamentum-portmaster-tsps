@@ -1,5 +1,8 @@
 # Lamentum TSPS — build260 / CMA-to-gameplay execution roadmap
 
+**Post-A1 source re-audit (2026-10-23):** §11 below adds exact host-only M4-A implementation steps, an allocation-callsite census, further exact-firmware CMA investigation, a ranked sustained atlas-memory strategy, and evidence gates for W0/W1/F1. As of this review main is `c05f879`; nothing was run or deployed on TSPS and the CMA safety NO-GO is unchanged.
+
+
 > **CURRENT FOLLOW-UP — 2026-10-23, audited `main@c05f879`: K1 and A1 are DONE as host/evidence phases.** [K1 firmware/CMA evidence](../evidence/m2b-k1-kernel-cma-provenance-2026-10-23/README.md) pins the exact firmware kernel and validates order-4 fallback semantics but does not identify retained CMA pages or historical ioctl completion. [A1 replay evidence](../evidence/a1-storage-admission-offline-replay-2026-10-23/README.md) reproduces all four build259 denials with 15 focused/359 overall host tests; type-specific physical backing remains unknown. **Next actionable code: M4-A checked short-mip BC stripe scratch sizing, M4-B alloc/GL ownership coverage, and K1.4 host-side CMA-backing classification.** Do not repeat K1/A1 acquisition or deploy build260 while the CMA safety gate is closed. Detailed new source sites, patches, negative tests and branch decisions are in [§11 below](#11-post-k1a1-re-audit-at-main-c05f879-2026-10-23).
 
 **Audit date:** 2026-10-23. **Reviewed main:** [518603a](https://github.com/ruslan-k/lamentum-portmaster-tsps/commit/518603a043dab93554765d4d791517966a4b31e8). **Scope:** source, current docs, published evidence and upstream kernel behavior; **no new TSPS run, reboot, instrumented build, or benchmark was performed in this audit**. This document supersedes the *next-action queue*, not historical measurements, in [the post-build251 plan](post-build251-device-audit-roadmap-2026-10-23.md) and [the cumulative roadmap](performance-roadmap-30fps.md) §§78–89.
@@ -287,3 +290,129 @@ PYTHONPATH=tools python3 -m unittest discover -s tools -p 'test_*.py'
 ```
 
 **Evidence publishing contract:** one redacted README + machine-readable summary per PR (source/ELF and tools hashes, UUID when applicable, exact inputs, pass/fail/skip, strict identity, observer completeness, rejected hypotheses and rollback). Raw NSO/ROMFS, firmware ELF, game data, owned screenshots and full device memory/logs remain local-only. Only update the “latest” README/cumulative-roadmap pointer after those receipts actually exist. No new device result or FPS claim is created by writing this roadmap.
+
+
+---
+
+## 11. Post-A1 source re-audit: exact host-first work packages (2026-10-23)
+
+**Reviewed main:** \`c05f879\` (A1 offline replay), exact checked adapter patch and existing host fixtures; no new target run, source build, game install or measured FPS in this review. This section refines §§2, 5 and 9, and supersedes suggestions to deploy M4 merely because a host fixture passes. The prior audit already covered many alternatives; below are the *specific remaining correctness gaps, their potential effect and falsifiable tests*.
+
+### 11.1 Updated verdict, progress and priority distinctions
+
+- **K1 is partially solved, not "CMA solved".** The exact firmware-kernel binary and order {8,4,0} retry path are established, but nobody has attributed the missing idle CMA pages to reclaimable movable allocations versus pinned CMA consumers. Idle \`CmaFree=15,456 KiB\` remains a **NO-GO**. A single \`nr_free_cma\` scalar cannot predict a future higher-order contiguous allocation; \`MemAvailable\` is a separate resource.
+- **A1 is COMPLETE as a formula replay**, not an admissible new allocator policy. Its 359-test host suite reproduced all four build259 denials; no tested option identifies proven CMA backing or an uncertainty allowance. Do not deploy its \`proven_CMA_only\`/mixed model, choose a margin by trial, or present the denial as a GPU-allocation failure.
+- **M3-A / BC stripes are a temporary-memory improvement**, not a sustained-residency result. The source currently takes \`capacity = width * 128 * bpp\` before computing \`first_rows = min(height,128)\`; short mips can be over-allocated. However, \`LC2_BC_STRIPE_MEDIUM\` is OFF in the default launcher and the persistent GPU atlas is still allocated by \`glTexImage2D\`. Fixing a small-mip malloc can produce *zero improvement to peak GPU residency or to the current device gate*. Treat it as a bounded correctness/low-risk preparatory PR, not the headline solution.
+- **Persistent-resource candidates have more headroom potential but much higher correctness risk.** The source/evidence identifies BC3 atlas owners 92 (3600×3600) and 81 (3600×2160), roughly **49.44 MB + 29.66 MB of level-0 RGBA8 payload** respectively, before mips/driver overhead; these are nominal GL payloads, not physical CMA bytes. The 1920×1080 composition family can save at most 17.58 MiB nominal when scaled to 720p; it previously regressed performance and is not the first option.
+- **F1 remains blocked by W1.** A ~528-ms first BC decode, ~198-ms first GL upload, ~0.836-s historical Loading-main-thread interval, 709-MiB historical Mali/OOM report, or number of menu presents is *not* a steady playable-world frame benchmark. The first target is a correct, memory-safe, interactable world, not synthetic "30 FPS".
+
+### 11.2 PR M4-A — fix the actual stripe allocator contract (HOST ONLY, P0 preparatory)
+
+**Owner source:** \`runtime/lamentum-adapter.patch\` → \`native/nvn_textures.h::lc2_bc_upload_stripes\`; related \`native/zero_bc_layout.h\`, \`zero_bc_decode\`, \`zero_texture_bc_pixels\`, \`tools/test_bc_layout.c\`, \`tools/test_bc_layout.py\`. Modify the overlay source in the pinned, clean, **435/435** recovered tree and regenerate the patch, not a second runtime copy.
+
+1. First add a *pure, overflow-checked* \`lc2_bc_stripe_plan(format,width,height,bpp,block_bytes,rows_limit)\` helper or equivalent testable calculation in an adapter-owned header. Validate width/height, format, bpp and rows_limit against the actual texture/backend limits before arithmetic. Derive \`rows = min(height,128)\`; \`rgba_capacity = checked_mul(checked_mul(width,rows),bpp)\`, \`linear_capacity = checked_mul(checked_mul(ceil_div4(width),ceil_div4(rows)),block_bytes)\`. Use non-overflowing \`(width/4)+(width%4!=0)\`, not the pre-division \`(width+3)\` on unvalidated unsigned values. Require \`rgba_capacity + linear_capacity\` to be checked and representable as both \`size_t\` and \`uint64_t\`. Invalid geometry must STOP **before** malloc/GL calls.
+2. Replace only the existing fixed \`width*128*bpp\` reservation with that checked \`rgba_capacity\`. Do **not** shrink the full \`glTexImage2D(width,height)\` storage, the original guest extent, the \`t2_texture_budget\` charge, the shader catalogue or the frame dimensions. Pass exactly the same peak to the M3-B descriptor, \`t2_storage_admit\`, the allocated byte count and \`LC2_BC_STRIPED_UPLOAD\` receipt; no disagreement between claimed and actually requested CPU scratch.
+3. For every \`y += 128\`, derive \`rows = min(128,height-y)\` safely; independently prove \`width*rows*bpp <= rgba_capacity\` and the corresponding block-byte range fits its source. Non-multiple-of-four width/height and the final partial stripe need explicit BC block rounding, source offsets, alpha preservation and no write outside the destination. Retain pixel-store alignment save/restore and surface \`glGetError()\` after each bounded upload where diagnostic mode supports it. Record level, origin, row count and source span only in default-OFF bounded diagnostics.
+4. Extend **the existing self-authored** \`tools/test_bc_layout.c\` fixture rather than adding an unrelated decoder: test BC1/BC3 as supported by this overlay, random-but-reproducible compressed blocks, full-decode-versus-stripe **byte equality** and unchanged compressed source across **all valid mip levels**. Mandatory dimensions: \`1×1\`, \`3×5\`, \`7×5\`, \`63×1\`, \`127×129\`, \`128×128\`, \`129×129\`, \`1023×63\`, \`1920×1080\`, \`3600×2160\`, \`3600×3600\`, \`4096×1\`, \`4097×9\` (only if admitted by the *real* device limit), plus last-tile cases and invalid/overflow geometry. Assert byte-canaries or guard allocations and no GL calls after rejected planning. **Do not** force the runtime to admit 4097 if the backend limit rejects it.
+5. Run host ASan/UBSan where supported and the pinned fixture build; separately compile the production AArch64 overlay with unchanged compiler/ABI and \`git apply --check\` against the recovered tree. Keep \`LC2_BC_STRIPE_MEDIUM\` OFF. A host PASS is **not** permission to run build261 on current low-CMA device.
+
+**Acceptance:** identical decoded bytes for admitted formats/levels; accurate max simultaneous *requested* CPU scratch and checked bounds; prior tests, 435-file source baseline and compile unchanged; fail-closed negative tests. **Expected scope:** mostly short-mip scratch; no claim of persistent headroom or pass at the existing 24-MiB CMA gate. **Abort:** decoder corruption, format mismatch, unsupported height/stride, overflow, new allocation/free asymmetry, unexpected change to GL/depth geometry.
+
+### 11.3 PR M4-B — prove allocation coverage, not merely that hooks exist (HOST ONLY)
+
+**Owner source:** \`native/nvn_present.h\` (previously uncovered direct \`glBufferData\`), \`native/nvn_vertex_stream.h\`, \`native/nvn_textures.h\`, \`native/lc2_gl_admission.h\`, \`native/lc2_life_events.h\`, and EGL/KMS initialization; tests in \`tools/test_gl_storage_layout.py\`, \`tools/test_ledger_bases.py\` and a new pure reducer if necessary.
+
+1. Build a machine-checked *callsite inventory* in \`tools/gl_allocation_inventory.py\` with columns \`file:function:GL_API\`, target/context, logical owner, backing class \`CPU/GL_texture/GL_renderbuffer/GL_buffer/EGL_surface/DMA_heap/unknown\`, creation, respecification, retirement and existing admission/event hook. Scan direct and macro-wrapped invocations of \`glBufferData\`, \`glBufferStorage\` (if present), \`glTexImage*\`, \`glTexStorage*\`, \`glRenderbufferStorage*\`, \`eglCreate*\`, \`gbm_*\` and DMA-BUF allocation/import paths. Include uninstrumented paths as \`unobserved\`, never as zero.
+2. For \`nvn_present.h\` VBO and all \`nvn_vertex_stream.h\` paths, distinguish ***declared bytes*** from *respecification* and *in-flight old backing*. Never add \`glBufferData\` to a lifetime total as if every respec persisted forever. Use context+GL-name+generation; don't infer allocation from a reused GL name. For EGL/KMS, capture the format, width/height, buffer count and backing **hypothesis** separately; don't infer physical DMA/CMA from descriptor size.
+3. Add unit tests that deliberately insert an unwrapped GL storage call into a sample fixture and require the coverage audit to fail. Host tests must also reject double charge, missing deletion, context switch, GLuint reuse, incomplete ring, missing storage generation and partial final event. One owned event log is not a census when coverage can be incomplete.
+4. Derive \`peak_memory_waterfall.py\` from known logs only: request/retire per storage generation + non-additive resident process totals + memory-sample timestamps. Flag missing rows, owner-less buffers, host-pool aliases and unknown driver bytes. Never sum \`VmRSS + Mali descriptor total + GL-declared\` into a purported physical-memory total; they may overlap.
+
+**Acceptance:** every source storage allocation site accounted for *or explicitly marked unknown*, exact ledger replay on synthetic fixtures, zero false claims of physical equivalence. **No new device run until GATE-0 is independently reopened**. Discovered hook omission is not itself measured CMA recovery.
+
+### 11.4 PR K1-B — host static CMA provenance before new risky TSPS tests (P0 safety dependency)
+
+The exact extracted TG5050 vmlinux already matches the observed firmware layout. Work next from this **exact release image**, not a generic Linux 5.15 tree. Keep all firmware and proprietary extracts outside Git.
+
+1. On the host, inventory the boot image's **DTB/DTBO** and effective \`/reserved-memory\`, \`linux,cma-default\`, \`reusable\`, \`no-map\`, \`alloc-ranges\`, \`memory-region\`, \`cma=\` boot argument, IOMMU and display/GPU reserved carve-outs. Use read-only image/dtb decoding and record region addresses/sizes only if legitimately published; do not infer runtime pinned use from a static reservation.
+2. From the matching vmlinux, map \`system_heap_allocate\`, page-pool setup, \`dma_heap_ioctl\`, \`cma_alloc\`, GBM/EGL-related driver interfaces and Mali memory allocators; preserve branch behavior and which allocator *may* use MIGRATE_CMA/movable pages. Confirm compile options and call-chain membership; DWARF paths are build provenance, not access to the full vendor source.
+3. Classify the missing idle 115,616 KiB of \`CmaTotal-CmaFree\` as **unattributed**, not "stolen GPU memory"; enumerated MainUI system-exporter DMA-BUF sizes (~10.56 MiB) are not a physical backing map. The three-page difference between non-atomic \`/proc/pagetypeinfo\` and \`nr_free_cma\` is not a leak. Describe precisely what evidence would distinguish movable allocation from unmovable/pinned pages.
+4. The only target continuation under the current stop is *read-only*, scoped, same-boot snapshots through existing \`cma_readonly_snapshot.py\` / \`cma_readonly_compare.py\`: identity, CMA migratetype histogram, \`MemAvailable\`, \`CmaFree\`, buddyinfo/order histogram, MainUI/FD inventory and deltas. No new debugfs mount, page-owner toggles, compaction, \`drop_caches\`, automatic reboot, kernel patch, GPU knob, memory allocator probe or game launch. A later operator-approved reboot comparison is a **separate study**, with its own confounders and rollback, not a default suggestion.
+
+**Acceptance:** an auditable backing/owner hypothesis with a falsifiable non-mutating check, or an explicit \`unknown\`. An exact kernel match alone is not a go/no-go pass. An order-4 warning followed by a possible order-0 retry is not confirmed success, nor is \`cma_alloc_fail=0\` sufficient to permit launch.
+
+### 11.5 PR M4-C — qualify one *persistent* atlas/storage reduction (conditional P0, not deployable now)
+
+M4-A primarily reduces peak CPU staging. **To unlock gameplay the stronger hypothesis is removal of actual retained, unreclaimable GPU/guest memory**, while keeping semantic equivalence. Use M4-B owner generations and K1 backing evidence to select **one** of these mutually exclusive branches:
+
+**C1 — lossless first:**
+1. For owners 81 and 92 and their exact mip/storage generations, prove from traces whether guest BC source, CPU tiled copy, linear BC intermediate, decoded RGBA buffer, GL storage and file-backed mirror coexist; record creation and *last real consumer* (CPU refresh, texture readback, alias view, sampler, in-flight GPU draw). Show which parts are merely temporary and already freed.
+2. Only if a duplicate buffer outlives its last consumer and no generation/write dependency exists, remove or reuse **that one backing** under a default-OFF flag. Preserve compressed guest data and CPU texel-write semantics; ensure source-write generation, alias scope, texture view, context loss and GL fence retirement are correct. Explicitly refuse uncertain immutable-source assumptions.
+3. On host, induce a write between two reads and confirm the cache invalidates; test texture name reuse, mip changes, cancellation, alias overlap, stale write-generation, GL resource retirement and process-cleanup leakage. Compare exact bytes/GL pixels before marking quality-neutral. Without a measured retained duplication this candidate is **rejected**, not an optimization.
+
+**C2 — compressed GPU textures: quality trade-off requiring separate opt-in:**
+1. Mali GLES3 can in principle support formats different from desktop BC3, but **do not assume** a particular S3TC/ETC2/ASTC extension/profile works on the live target. After device safety opens, query GL version, compressed format list, sRGB/alpha support, \`GL_MAX_TEXTURE_SIZE\`, block alignment, mip and \`glCompressedTexImage2D\` outcomes on a small bounded synthetic fixture before committing to a format.
+2. A 3600×3600 RGBA8 level-zero atlas nominally uses 51,840,000 bytes; 3600×2160 uses 31,104,000 bytes. An 8-bit-per-pixel BC3/ETC2-RGBA representation would be 12,960,000 and 7,776,000 bytes *if* an allowed compressed format is supported and the whole asset fits. The level-zero declared reduction is **62,208,000 bytes** for both; extra levels, driver allocation and actual CMA changes are unknown. BC3 bytes cannot simply be uploaded as ETC2/ASTC: transcoding/encoding is necessary and usually lossy, with CPU/IO cost.
+3. Prototype BC3→target compressed form with synthetic assets **on the host**, preserving block padding and alpha/sRGB metadata, tracking source content generation, filtering/mips and sampler behavior. Never ship a proprietary converted atlas in Git; cache validation must use game-owned data locally. Benchmark cold/warm encode cost and saved live bytes; encode-on-every-load could trade OOM for intolerable launch times.
+4. Maintain separate labeled modes **quality-neutral** versus **compressed/quality-changed**. For a changed format compare correct world/publisher/menu images both perceptually and pixel-wise; report the trade-off, do not claim \`tolerance=0\` equality if conversion cannot meet it. Only the owner can accept visible degradation.
+
+**C3 — smaller composition targets:** \`ZERO_RENDER_SCALE=2\` already exists, was performance-negative and at best saves 17.58 MiB of **nominal** 1080p-family storage. Test only after data proves those specific allocations are retained and blocking the next gate. The guest's 1080p literals are hardcoded; the panel is already 720p. No blanket docking-mode fix is needed.
+
+**C4 — cheap diagnostic control:** \`LC2_BC_INPLACE_DECODE=1\` already exists. Host-test byte-equivalence for BC1/BC3 level tails and alias/readback; conditionally A/B on exact device scene *only after go/no-go*. It eliminates an overlapping linear decode allocation, not the persistent GPU texture. If the retention waterfall shows no long-lived effect, stop spending cycles here.
+
+**Pass to promote any C branch:** 3 phase-matched, single-toggle device A/B pairs **after explicit go**, complete run/pixel identity, no new order warnings or GL errors, lower *measured* persistent footprint at the same semantic point, improved minimum headroom across CMA and \`MemAvailable\` outside control variability, and unchanged required input/audio/save workflow. Any candidate that saves only the allocation-request counter remains unqualified.
+
+### 11.6 W0/W1 game-enablement checklist (blocked, but host testable)
+
+**Do not conflate launch, title UI, "Loading", and game world.** The original game reached a New Game/Controls/Loading sequence historically, but later builds 251/256b/259 stopped before the menu. Resume at the *latest safe executable* only after GATE-0; avoid trying to find a shader in an unsafe test.
+
+1. Add host test vectors to \`tools/page_oracle.py\` and \`tools/owned_navigation.py\` for \`MAIN_MENU→NEWGAME_CONFIG→CONTROLS→LOADING→WORLD_VISIBLE\`, including 1–2 FPS missed taps, long taps skipping rows, repeated serials, disappeared PID, stale capture, HOME overlay, incomplete logs, and no acknowledged button release. The page oracle must report an **ambiguous/refused** state rather than advancing on a plausible screenshot.
+2. On future safe W0 runs, require *current-game-owned* frame (boot+UUID+PID+starttime+ELF hash+present serial), not just a logo or Spruce UI. Three **120 s** stable real-menu sessions and clean CPU/SDL/DRM restore without admission stop, OOM, rising unsafe pressure, or new GL errors are required before any New Game command.
+3. For W1, add a bounded **per-draw** census to distinguish program linked from program actually used. Audit the **seven TEST-only shader substitutions** against visible scene attachments; don't regenerate IDs 0–45 or invent a substitute on a missing shader. Verify viewport/scissor/depth/blend, FBO completeness, texture format, GL error and final KMS pixels in the same owned frame.
+4. Follow actual physical gamepad press+release and character movement in **two directions**, one world interaction/dialogue/inventory return, audible audio (not only a nonzero queued PCM count), protected save+clean quit+cold-load of same checkpoint. Verify all three loops with separate run identities, no damaged existing saves and real scene progress. Loading spinner or automaton-injected input does not pass.
+5. A post-gate game run must use strict bounded watchdog and pre/post pinned kernel pressure+MainUI identity; abort on any CMA unsafe change, new allocator warning, storage refusal, OOM/kill, run identity drift, lost KMS present serial, missing cleanup or unexpected writes. Do not silently weaken floor96/cap300/GL policy as a workaround.
+
+### 11.7 F1 instrumentation and 30-FPS decision (only after W1)
+
+Use an FPS **budget ledger per accepted world present**, not gross presents or an averaged Loading frame:
+
+| Independent frame component | What to instrument | Error to avoid |
+| --- | --- | --- |
+| Guest IL2CPP/Horizon/SVC | TID+starttime-pinned CPU sample, call site, guest PC, exclusive interval | Mistaking a hot native thread for the guest main thread |
+| NVN→GL replay | CPU submission and command translation, per-frame GL-call volume | Double-counting CPU work and GPU wait |
+| Texture/materialization | BC decode, copies, repeated \`glTexSubImage2D\`, shaders compiled this frame | Treating cold first-load cost as steady FPS |
+| GPU completion/present | EGL swap, actual KMS serial delta, blocked/duplicate presents, optional reliable GPU timestamp | Equating fast CPU submit with a physically displayed frame |
+| Memory/IO | major faults, \`VmSwap\`, reclaim/compaction stalls, data-load IO and change in CMA | Attributing unrelated background-system pressure to the game |
+
+Keep \`tools/perf_sample.py\`'s already-fixed **target HZ** accounting. Require intact \`boot,run,PID,starttime,build,serial\` everywhere; use two distinct serial endpoints for an interval. Report P50/P95/P99 and **P95 ≤ 33.333 ms** on each of three ≥60-s routes (idle, motion+interaction, busy light/effects), after warm-up, plus drop ratio and cold scene-transition duration. Separate GPU-vsync multiples 16.67/33.33/50 ms from true CPU/GPU work. Qualify observer-OFF cost (<5%) and three reproducible one-variable A/B pairs before promotion.
+
+**Feasibility stop:** after M4-A/B and two source-selected structural memory candidates, if there is no safe, repeatable W0→W1 path or recovered sustained margin, report \`not feasible with current backend and measured safety envelope\` with reasons and confidence; possible next branches are target quality trade-off, independent texture backend, or a device with more RAM. Do not indefinitely repeat unsafe margin tests.
+
+### 11.8 Exact PR order and reproducibility receipts
+
+| Sequence | Proposed branch / smallest review unit | Files, proof and decision |
+| --- | --- | --- |
+| **1** | \`perf/m4a-bc-stripe-small-mips\` | \`runtime/lamentum-adapter.patch\`, \`tools/test_bc_layout.c/.py\`, host byte-equality/overflow/ASan, **no device** |
+| **2** | \`audit/m4b-gl-buffer-egl-census\` | New inventory tool+fixtures, \`tools/test_gl_storage_layout.py\`, ledger reducer; host-only source coverage or explicit unknown |
+| **3** | \`audit/k1b-firmware-memory-topology\` | Read-only offline vmlinux/DTB provenance, existing CMA reducer tests; **no target mutations** |
+| **4** | \`perf/m4c-retained-atlas-candidate\` | Exactly one lossless source-identified retention change, or separately labeled compressed quality experiment; no deploy until device gate |
+| **5** | \`test/e4-v1-device-qualification\` | Only after independently documented go: short one-factor observer and pixel parity tests; refuse if unsafe |
+| **6** | \`test/w0-w1-owned-gameplay\` | Three true-menu passes then three playable loops with audio and save/cold-load |
+| **7** | \`perf/f1-world-frame-budget\` | Exclusive stage timing, 3 world routes, three per-toggle A/B pairs and P95 proof |
+
+Host commands (no TSPS access needed):
+
+\`\`\`sh
+# Inside this public port repository
+PYTHONPATH=tools python3 -m unittest discover -s tools -p 'test_*.py'
+python3 -m py_compile tools/admission_offline_replay.py \
+  tools/cma_readonly_compare.py tools/ledger_bases.py tools/perf_sample.py
+git diff --check
+
+# With the independently recovered, pinned 435-file adapter source tree:
+# verify tools/baseline-manifest.sha256 first using its existing project contract,
+# then run:
+git apply --check /path/to/lamentum-portmaster-tsps/runtime/lamentum-adapter.patch
+# Rebuild with the pinned GCC10 AArch64 container; do not deploy under NO-GO.
+\`\`\`
+
+Every report must include \`phase\`, run/build hash, exact flag delta, capability/allocator provenance, complete/partial observation flags, safety disposition, pixel oracle status, and \`host_only / device_qualified / gameplay_qualified\` scope. **The absence of new target measurements in this roadmap is explicit; none of its proposed savings are established FPS or memory gains.**
