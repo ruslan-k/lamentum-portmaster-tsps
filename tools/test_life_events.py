@@ -1,9 +1,12 @@
 """Compile+run the observation-ledger contract extracted from the public overlay."""
+import json
 import os
 import pathlib
 import subprocess
 import tempfile
 import unittest
+
+from gl_allocation_inventory import source_tree_identity
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 MARKER = 'diff --git a/native/lc2_life_events.h b/native/lc2_life_events.h'
@@ -659,6 +662,100 @@ int main(void) {
             summary = next(line for line in ran.stdout.splitlines()
                            if line.startswith('LC2_TEXTURE_OWNER_EVENTS_SUMMARY '))
             self.assertIn('claimed=4 final-claimed=4 emitted=3 incomplete=0 active=0 dropped=1 format-errors=0 complete=0', summary)
+
+
+    def test_texture_owner_generation_tracks_nvn_identity_separately_from_gl_storage(self):
+        """Compile the source-bound identity/emitter seam; this is not a GL/game run."""
+        adapter_src = pathlib.Path(os.environ.get('LAMENTUM_ADAPTER_SRC', ROOT.parent / 'adapter-src'))
+        required = os.environ.get('LAMENTUM_REQUIRE_ZERO_STORAGE_ALIAS_TEST') == '1'
+        if not adapter_src.is_dir():
+            if required:
+                self.fail(f'required adapter source missing: {adapter_src}')
+            self.skipTest(f'adapter source unavailable: {adapter_src}')
+        patch = (ROOT / 'runtime/lamentum-adapter.patch').read_bytes()
+        diff = subprocess.run(['git', '-C', str(adapter_src), 'diff', '--binary'], capture_output=True)
+        self.assertEqual(diff.returncode, 0, diff.stderr.decode(errors='replace'))
+        self.assertEqual(diff.stdout, patch)
+        policy = json.loads((ROOT / 'tools/gl_storage_callsite_policy.json').read_text())
+        self.assertEqual(source_tree_identity(adapter_src)['sha256'], policy['source_tree_sha256'])
+
+        textures = (adapter_src / 'native/nvn_textures.h').read_text()
+        self.assertIn('.id=zero_next_object_id()', textures)
+        self.assertIn('lc2_life_events_owner("initialize-start",t->id,t->id,0,0,pool->object,pool->generation,', textures)
+        self.assertIn('lc2_life_events_owner("alias-resolve",t->id,t->id,storage_owner->id,', textures)
+        self.assertIn('.nvn_id=t->id,.storage_owner=storage_owner->id', textures)
+        memory = (adapter_src / 'native/nvn_memory.h').read_text()
+        start = memory.index('static uint64_t nvn_next_object_id;')
+        end = memory.index('static struct nvn_pool *nvn_pool_find', start)
+        id_generator = memory[start:end]
+        patch_text = patch.decode()
+        block = patch_text.split(MARKER, 1)[1].split('diff --git ', 1)[0]
+        events = '\n'.join(line[1:] for line in block.splitlines()
+                            if line.startswith('+') and not line.startswith('+++')) + '\n'
+        source = r'''
+#include <assert.h>
+#include <stdint.h>
+#include <stdlib.h>
+static uint64_t nvn_caller=1;
+static void stop(const char *reason,uint64_t caller,uint64_t detail,unsigned code) {
+    (void)reason;(void)caller;(void)detail;(void)code;abort();
+}
+''' + id_generator + r'''
+#include "lc2_life_events.h"
+struct mock_texture {uint64_t object,id;};
+static struct mock_texture make_texture(uint64_t object) {
+    return (struct mock_texture){.object=object,.id=zero_next_object_id()};
+}
+static void record_texture(uint64_t id) {
+    const struct lc2_life_storage_key key={.share_group=1,.name=7,.kind=1,.target=0x0de1};
+    lc2_life_events_storage_key(id,&key,64);
+    struct lc2_life_texture_pair pair={.phase="initialize",.timestamp_ns=100,
+        .nvn_id=id,.storage_owner=id,.texture_name=7,.width=4,.height=4,.levels=1,
+        .guest_bytes=64,.charge_bytes=64,.pool_id=9,.pool_generation=1,.owner_first=1};
+    lc2_life_events_texture_pair(&pair);
+}
+int main(void) {
+    setenv("LC2_LIFE_EVENTS","1",1);setenv("LAMENTUM_RUN_UUID","nvn-generation-test",1);
+    struct mock_texture first=make_texture(100),second=make_texture(101);
+    assert(first.id==1 && second.id==2);
+    assert(lc2_life_events_owner("initialize-start",first.id,first.id,0,0,9,1,0,1,"owner-unresolved"));
+    record_texture(first.id);
+    uint64_t min=0,max=0;
+    assert(lc2_life_events_storage_generation(first.id,1,&min,&max) && min==1 && max==1);
+    const struct lc2_life_storage_key key={.share_group=1,.name=7,.kind=1,.target=0x0de1};
+    lc2_life_events_delete_key(&key,0);
+    assert(lc2_life_events_owner("retire-start",first.id,first.id,first.id,64,9,1,0,1,"retire-started"));
+    assert(lc2_life_events_owner("initialize-start",second.id,second.id,0,0,9,1,0,1,"owner-unresolved"));
+    record_texture(second.id);
+    assert(lc2_life_events_storage_generation(second.id,1,&min,&max) && min==2 && max==2);
+    lc2_life_events_owner_report_fd(1);
+    return 0;
+}
+'''
+        with tempfile.TemporaryDirectory() as d:
+            p = pathlib.Path(d)
+            (p / 'lc2_life_events.h').write_text(events)
+            (p / 'owner_generation.c').write_text(source)
+            built = subprocess.run(['cc','-std=gnu11','-Wall','-Wextra','-Werror','-Wno-unused-function',
+                                    '-I',str(p),'-I',str(adapter_src/'native'),
+                                    str(p/'owner_generation.c'),'-o',str(p/'owner_generation')],
+                                   capture_output=True,text=True)
+            self.assertEqual(built.returncode,0,built.stderr)
+            ran = subprocess.run([str(p/'owner_generation')],capture_output=True,text=True)
+            self.assertEqual(ran.returncode,0,ran.stderr)
+        owner_events = [line for line in ran.stdout.splitlines() if line.startswith('LC2_TEXTURE_OWNER_EVENT ')]
+        first_owner_events = [line for line in owner_events if 'nvn-id=1 ' in line]
+        second_owner_events = [line for line in owner_events if 'nvn-id=2 ' in line]
+        self.assertTrue(first_owner_events and second_owner_events)
+        self.assertTrue(all('object-generation=1' in line for line in first_owner_events))
+        self.assertTrue(all('object-generation=2' in line for line in second_owner_events))
+        pairs = [line for line in ran.stdout.splitlines() if line.startswith('LC2_TEXTURE_PAIR ')]
+        self.assertEqual(len(pairs),2)
+        self.assertIn('id=1 object-generation=1 storage-owner=1',pairs[0])
+        self.assertIn('id=2 object-generation=2 storage-owner=2',pairs[1])
+        gl_events = [line for line in ran.stdout.splitlines() if line.startswith('LC2_GL_STORAGE_EVENT ')]
+        self.assertIn('owner=1 gl-name=7 kind=1 storage-generation=1',gl_events[0])
+        self.assertIn('owner=2 gl-name=7 kind=1 storage-generation=2',gl_events[-1])
 
 
 if __name__ == '__main__':

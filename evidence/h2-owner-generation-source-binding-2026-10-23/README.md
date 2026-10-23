@@ -18,6 +18,10 @@ Therefore, for a run whose recorded ELF SHA-256 is exactly the candidate hash ab
 
 This source interpretation does **not** apply to the historical build256b ON log: its ELF differs, so that run's `owner-generation` remains raw/semantically unknown. No runtime behavior, admission rule, deletion, margin, firmware, or device state was changed for this receipt.
 
+## Host fixture
+
+`tools/test_life_events.py::test_texture_owner_generation_tracks_nvn_identity_separately_from_gl_storage` checks the applied tree/overlay, compiles the exact `zero_next_object_id()` implementation with the `lc2_life_events` event header, and pins the production `nvn_textures.h` owner/pair callsite expressions. It verifies NVN IDs 1/2 remain distinct when the same GL name is reused at storage generations 1/2. This is source-linked host evidence, **not** execution of `nvnTextureInitialize`, a GL call, or a game. Focused `test_life_events`: **12/12**; full tools suite with required source fixture: **430/430**, zero skips.
+
 ## Next gate
 
 Use this interpretation only when future telemetry is bound to the exact ELF SHA above. Persistent owner-event coverage, per-call GL outcomes, GPU completion, matched CMA snapshots, and a positive independently justified reserve are still required before any runtime probe. `T2_STORAGE_MARGIN_MIB` remains unset.
