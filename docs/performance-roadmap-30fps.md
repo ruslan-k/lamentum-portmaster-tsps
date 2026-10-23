@@ -1,5 +1,5 @@
 # Lamentum (TrimUI Smart Pro S): Roadmap to Stable 30 FPS
-> **CURRENT EXECUTION ORDER — 2026-10-23: read [§85](#85-m2b-e3-build259-device-margin-sweep-hard-stop-2026-10-23) first, then [§84](#84-m2b-e3-build259-host-checkpoint-before-any-device-run-2026-10-22) and [§83](#83-build256b-m3-b-device-offon-selected-allocation-windows-complete-dma-heap-failure-observed-2026-10-22).** The user authorized per-run margin selection. Build259 was tested at 64/48/32/24 MiB; all arms stopped at typed CMA admission. The 24 MiB arm left `CmaFree=15,384 KiB` after 20 s idle, below the earlier order-4 warning context. Do not lower the margin or launch again until read-only CMA investigation and recovery. The port remains **NOT PLAYABLE**; no gameplay FPS is verified.
+> **CURRENT EXECUTION ORDER — 2026-10-23:** read [§78 latest post-build251 audit](#78-post-build251-device-ab-audit-memory-headroom-and-playability-critical-path-2026-10-23) and its [detailed implementation plan](post-build251-device-audit-roadmap-2026-10-23.md). M3-A1 is done/inconclusive and remains default-off. This PR contains M3-B/E3 implementation and the build259 margin sweep ([§86](#86-m2b-e3-build259-device-margin-sweep-hard-stop-2026-10-23)); all tested margins stopped before the menu. Latest read-only `CmaFree=15,456 KiB` stayed flat over 30 s, below the earlier page-allocation warning context. Next safe work: host/source trace the 4/6 missing live pair joins (IDs 280/288), then complete the M3-B waterfall and live KMS parity. No further device launch or New Game until CMA headroom is safe. Goal remains **NOT PLAYABLE**; gameplay ≥30 FPS is unverified.
 
 > **HISTORICAL REASSESSMENT — 2026-10-21, audited HEAD [a0aa160](https://github.com/ruslan-k/lamentum-portmaster-tsps/commit/a0aa16053191e25d86f764ae4451c19923f0361a). Read [§48](#48-post-build232-audit-surviving-the-menu-reliable-new-game-world-pixels-and-a-credible-30-fps-path-2026-10-21) first for the next implementation queue.** §§0–47 contain historical diagnostics and owner receipts. Game remains **NOT PLAYABLE**; no verified real-world FPS exists. The §48 audit adds source-level navigation/observer findings and corrects the theoretical 1080p→720p memory delta (17.58 MiB, not 31.64 MiB). This documentation update does not represent a new device run or a performance gain.
 
@@ -3674,7 +3674,34 @@ The installed AArch64 ELF was the same build251 hash `1bcb32a4bac2e1e30e4c64ab8b
 
 **Classification: INCONCLUSIVE; keep the candidate default OFF.** Source-requested scratch and first-present memory counters improved, but the pixel gate is incomplete, all runs still cross the 96 MiB floor and the 120-second menu gate is unmet. Continue with **M3-B**, reconstructing the owner-qualified pre-first-present peak and instrumentation overhead per the detailed plan. Do not enter New Game or lower the safety floor.
 
-## 78. Build253 M3-B observer: host green, device waterfall pending (2026-10-22)
+---
+
+## 78. Post-build251 device A/B audit: memory headroom and playability critical path (2026-10-23)
+
+**CURRENT / SUPERSEDES §76 IMPLEMENTATION STATUS AND §77 “NEXT GATE”; no new device arm in this documentation audit.** See [the detailed 2026-10-23 implementation roadmap](post-build251-device-audit-roadmap-2026-10-23.md) for function-level edits, experiment design, host fixtures, required receipts, exact pass/fail and rollback conditions. Ground truth: [six-arm build251 A/B report](../evidence/m3a-bcstripe-b251-01/README.md) and [machine-readable run summary](../evidence/m3a-bcstripe-b251-01/ab-summary.json). Reviewed original source at main `00e5388fe71384dec98e98b6a303391b35771f17`; writing this section is not another test.
+
+**What changed since §76/§77:** the earlier plan's “run M3-A1” is **DONE/INCONCLUSIVE**. On build251 the stripe ON arm reduced 1920×1080 owner105 requested overlapping CPU BC scratch per upload `10368000 -> 1228800 B`, and three matched first-present pairs had higher `MemAvailable` (+15572/+23520/+25936 KiB). Yet **all six** OFF/ON arms still reached `STOP status=T2_MEMORY_FLOOR`, had **zero menu events**, swap was still consumed and the floor `MemAvailable` comparison was unfavorable in 2/3 ON arms. One owned baseline live KMS image is **publisher splash**; no owner-qualified ON image, so **pixel parity is unproven**. All six runs had clean cleanup and no owned OOM evidence. Keep `LC2_BC_STRIPE_MEDIUM` OFF; not a 30-FPS result.
+
+**New concrete blocker that §76 did not incorporate:** budget/pair replay rejects 4/6 arms because active budget ID **288** or **280** has no matching texture-pair record, even though 119 pair lines/arm were emitted and overflow counters are zero. Source audit shows `lc2_life_events_texture_pair` is called from initialisation and striped BC materialisation; it does **not** establish why those IDs are missing. Do not weaken `tools/ledger_bases.py:replay_texture_budget` to silently omit them. Resolve event ownership/temporal generation before claiming a complete per-owner memory waterfall.
+
+| Order | New PR/gate | Must produce | Hard stop |
+| --- | --- | --- | --- |
+| **P0-1 E4** | Trace **280/288** missing `LC2_TEXTURE_PAIR` vs budget charge in raw owner logs; add bounded generation-stamped owner transitions and strict reducer fixtures | Qualified live-ID join at the exact floor sample or explicit incomplete classification | Missing/incomplete identities, overflow, owner ambiguity |
+| **P0-2 M3-B** | First-present **peak memory waterfall**: bounded events for BC scratch malloc/free, GL allocations, driver snapshots and safe proc system metrics; observer OFF control | Top current transient + persistent owner, phase-aligned `VmHWM/MemAvailable/CmaFree/SwapFree`, bounded overhead | >5% tracing overhead, unsafe headroom, invented physical attribution |
+| **P0-3 V1** | Trigger owned **live** KMS on a fresh present event, not a fixed time delay, for OFF and ON | Same-phase 1280×720 parity + post-capture owner verification; compare mips, alpha/sRGB | Candidate exited/capture missing; no pixel-proof claim |
+| **P0-4 E3** | Make GL subresource overwrite vs extension exact, recycle deleted table slots with monotonic generations, and add safe pre-GL storage admission | C/Python fixtures incl. >512 create/delete cycles; typed `T2_STORAGE_ADMISSION` and no new OOM | No clean resource lifetime or missing GL context |
+| **P0-5 M3-C** | ONE measured structural memory reduction: duplicate/coherent BC copies, qualified GPU atlas format/lifetime, or scoped 1080p family | Three repeated same-phase pairs with real sustained headroom + pixels; 96 MiB floor unchanged | Scratch-only delta, lower floor, unsafe eviction/GL, content mismatch |
+| **P0-6 W0** | Three **120-s owned live menu** runs with KMS, menu event and strict cleanup | No memory floor, safe CMA, stable swap, real menu state and unique present serials | Publisher splash, clock/home image, floor/OOM/GL error |
+| **P0-7 W1** | New Game -> first world, physical movement/interaction, inventory/dialogue, audible sound, cold save/reload | Three clean independently playable loops; no TEST-only critical draw | Any real-world or functional gate missing |
+| **P1 F1** | Correct *world*-frame P50/P95/P99, CPU/GPU/wait/fault profiling and one-variable performance PR | P95 <=33.33 ms in declared matched world scenes, intact pixels/audio/input/memory | Startup/menu/Loading present count substituted for gameplay FPS |
+
+**Code-level audited risks:** `runtime/lamentum-adapter.patch:lc2_life_events_storage` adds `bytes` on repeated same-name texture storage without distinguishing a redefinition of one mip from a new level; `LC2_LIFE_EVENT_CAP=512` uses `!entry.name` for free slots even though delete leaves an entry name. Neither is proved to be the cause of the build251 floor or four missing pairs. `lc2_bc_upload_stripes` currently requests `width*128*bpp` decoded scratch even for short mips; correct/test `min(height,128)` in a **separate** pinned code change, not retroactively inside the completed build251 A/B.
+
+**Platform feasibility checkpoint:** If two carefully *selected* persistent-memory changes still cannot produce a stable menu with appropriate CMA/swap headroom, explicitly review the minimum guest+Mali working set and alternative rendering/asset-quality/backend cost. The internal 1080p composition family has an **upper-bound nominal** 17.58 MiB saving to 720p, not a proven menu fix. The historic 8192² deferred BC texture hazard is later in Loading, **not** evidence of why today's no-input menu arms stop. Avoid a 32 MiB “success”, larger swap/budget, unsound `glFlush` completion, unvalidated pageout, or generic performance claims while W0/W1 are closed.
+
+**Bottom line:** solve true memory residency and capture correctness first; make New Game playable next; pursue stable 30 FPS **only with measured world frames**.
+
+## 79. Build253 M3-B observer: host green, device waterfall pending (2026-10-22)
 
 **Reviewed source:** `origin/main` at `00e5388`, §77 and [the M3-B implementation plan](build251-evidence-and-gameplay-roadmap.md#3-p0-pr-m3-b--reconstruct-the-actual-pre-first-present-memory-peak-not-just-final-live-gl-totals).
 
@@ -3686,9 +3713,9 @@ The native overlay adds `LC2_M3B_TIMELINE` (exact value `1`, default off) and a 
 
 **Host/build checks:** 292 Python tests passed; the compiled C M3-B ring fixture and BC decode fixture passed; the 435-file recovered baseline manifest passed. Runtime patch SHA-256 `dbb6bb5703ac15774637842edc78f92a49dcd4ff97f6d86f09c7cb78f7c75e7a`. Build253 from the pinned Spruce container is AArch64 ELF64, 2,181,728 bytes, SHA-256 `7acd58704b662184d4f2103d782d911b06c40e18fe7f4505f2753a06242bc6b9`, GLIBC requirements through 2.27. This is an instrumentation build, not a device measurement or optimization result.
 
-**Checkpoint state:** this was the pre-deployment checkpoint. The subsequent same-build device pair and its limits are recorded in §79.
+**Checkpoint state:** this was the pre-deployment checkpoint. The subsequent same-build device pair and its limits are recorded in §80.
 
-## 79. Build253 M3-B first device OFF/ON pair: BC ring captured, memory attribution incomplete (2026-10-22)
+## 80. Build253 M3-B first device OFF/ON pair: BC ring captured, memory attribution incomplete (2026-10-22)
 
 **Evidence:** [paired device report and compact receipt](../evidence/m3b-build253-pair-20261022-01/README.md). The runtime was installed through the TSPS workflow after a read-only idle preflight. Build253 SHA-256 `7acd58704b662184d4f2103d782d911b06c40e18fe7f4505f2753a06242bc6b9` was read back after both arms; build251 backup `.before-253` remains verified at SHA-256 `1bcb32a4bac2e1e30e4c64ab8bb5d8ddd58c3cc59363a785919991eac4ab6b78`. Launcher/helper hashes were unchanged.
 
@@ -3698,17 +3725,17 @@ The largest emitted BC window was owner 105, 1920×1080: 2,949,120 B compressed 
 
 **New limitation found:** the ON timeline's nearest live sample was 64.8 ms before the floor and showed `MemAvailable=124,384 KiB`; the floor record was `84,140 KiB`, 40,244 KiB lower. The floor-side menu ledger could not acquire the GL lock, so exact floor CMA/RSS/VmSwap are unavailable. Thus `complete=true` means the bounded sampler ran through process exit, not that it captured the transient peak. The sequential pair also recorded different debug present-probe counts (13 OFF, 2 ON; not FPS), so it cannot establish a causal ring-overhead or memory-improvement result. Swap was consumed in both arms (62,208 KiB OFF and 17,664 KiB ON from prelaunch to floor); neither is a no-swap success.
 
-**Cleanup:** both runs ended with MainUI only, no game process, the principal command absent, online mask `4-7`, and CPU0–3 offline with sysfs mode `0444`. The ON cleanup capture initially showed the idle clock; a released agent-injected 100 ms BACK restored awake MainUI, then KMS verified the home screen. These captures are cleanup evidence only. The lock-independent floor snapshot was implemented and built as build254, but is not yet device-verified; broader non-BC GL/EGL/renderbuffer/buffer owner coverage remains open. See §80. Keep floor96/cap300/strict GL; do not enter New Game. **The port remains NOT PLAYABLE; gameplay 30 FPS and no-swap operation are unverified.**
+**Cleanup:** both runs ended with MainUI only, no game process, the principal command absent, online mask `4-7`, and CPU0–3 offline with sysfs mode `0444`. The ON cleanup capture initially showed the idle clock; a released agent-injected 100 ms BACK restored awake MainUI, then KMS verified the home screen. These captures are cleanup evidence only. The lock-independent floor snapshot was implemented and built as build254, but is not yet device-verified; broader non-BC GL/EGL/renderbuffer/buffer owner coverage remains open. See §81. Keep floor96/cap300/strict GL; do not enter New Game. **The port remains NOT PLAYABLE; gameplay 30 FPS and no-swap operation are unverified.**
 
-## 80. Build254 lock-independent floor snapshot: host green, device validation pending (2026-10-22)
+## 81. Build254 lock-independent floor snapshot: host green, device validation pending (2026-10-22)
 
 `native/lc2_proc_memory_snapshot.h` reads `CmaFree` from `/proc/meminfo` and `VmRSS`/`VmSwap` from `/proc/self/status` once at the T2 pre-stop boundary. The timestamp bracket and existing T2 floor-check timestamp are recorded separately; absent fields print `unknown`, not zero. The call is before `lc2_menu_ledger_floor_preflight`'s GL `trylock`, and runs only when the opt-in `LC2_MENU_LEDGER=1` observer is enabled. It changes neither the floor decision nor the storage ledger. The same `LC2_MENU_LEDGER=1` setting must be used in both ring-OFF/ON arms.
 
 **Host/build:** 294 Python tests passed, including the compiled floor-snapshot fixture for present/missing fields; the life-event and BC-layout fixtures passed; the recovered baseline manifest passed 435/435. Overlay SHA-256 `1a087c052dd1c36354283d92c48817a41a037de85f3c65f617e16cb8c506bdbe`. Build254 is AArch64 ELF64, 2,185,960 bytes, SHA-256 `b6a84e4cd423cbbd88661502c53f1f6de81ab81d1de9c504700d289e96d417e1`, GLIBC requirements through 2.27; the `LC2_MENU_FLOOR_MEMORY` marker is present.
 
-**Checkpoint state:** this was the pre-deployment note; build254 has since been installed and tested. See §81 for the paired device result, which supersedes the pending status above.
+**Checkpoint state:** this was the pre-deployment note; build254 has since been installed and tested. See §82 for the paired device result, which supersedes the pending status above.
 
-## 81. Build254 first floor-snapshot OFF/ON pair: floor telemetry validated, waterfall partial (2026-10-22)
+## 82. Build254 first floor-snapshot OFF/ON pair: floor telemetry validated, waterfall partial (2026-10-22)
 
 **Evidence:** [paired report and compact receipt](../evidence/m3b-build254-pair-20261022-01/README.md). The exact build254 runtime SHA-256 `b6a84e4cd423cbbd88661502c53f1f6de81ab81d1de9c504700d289e96d417e1` was installed and read back after both arms. Build253 is preserved at `.before-254` (SHA-256 `7acd58704b662184d4f2103d782d911b06c40e18fe7f4505f2753a06242bc6b9`); build251 remains at `.before-253` (SHA-256 `1bcb32a4bac2e1e30e4c64ab8bb5d8ddd58c3cc59363a785919991eac4ab6b78`).
 
@@ -3722,15 +3749,15 @@ The OFF floor live-set recorded 253,465,904 B of combined declared GL texture/re
 
 Both cleanups had no game process, zero cleanup errors, MainUI restored, CPU mask `4-7`, and CPU0–3 offline/mode `0444`. KMS captures showed the awake MainUI home, cleanup only. The next step is to reconcile the owner92/81 staging/declared-GL footprint and fill non-BC allocation coverage before any memory-saving patch. Keep floor96/cap300/strict GL; do not enter New Game. **The port remains NOT PLAYABLE; no-swap operation and gameplay 30 FPS remain unverified.**
 
-## 82. Build256b non-BC owner windows prepared; pre-device checkpoint (2026-10-22)
+## 83. Build256b non-BC owner windows prepared; pre-device checkpoint (2026-10-22)
 
 The build254 OFF floor live-set was parsed by owner and GL class: 95 owners, 30 BC textures with 188,899,072 B declared GL texture payload, 63 non-BC textures with 52,586,032 B, and two depth renderbuffers with 11,980,800 B. Combined declared payload 253,465,904 B versus 117,441,536 B T2 charges; this is not physical residency. The largest non-BC owners are 2/3/4 (each 1920×1080, 8,294,400 B), 60 (955×2048, 7,823,360 B), 82 (1032×1122, 4,631,616 B), and 172/206 (each 1280×720, 3,686,400 B). The same run's life summary reported no live buffer storage (`buf-bytes=0`, `buf-live=0`, `respecs=0`), but the buffer class is not proven absent: source audit found `nvn_present.h` creates a VBO with `glBufferData` and does not update the lifecycle ledger. The EGL route was an 8×8 pbuffer. Driver allocation and Mali physical residency remain unknown.
 
 Build256b now records ≥1 MiB non-BC NVN texture initialization/refresh windows and depth-renderbuffer storage windows in the opt-in M3-B ring. The BC in-place decoder candidate remains strictly opt-in (`LC2_BC_INPLACE_DECODE=1`); the launcher does not set it, and no device run has enabled it. Host tests passed: 294 Python tests, life-event/BC-layout/floor-snapshot fixtures, baseline manifest 435/435. Overlay SHA-256 `ea6a4d103f3893ad0420973dcf3077ec84ccd806053b4b017ede1a7fc1ad657c`; build256b is AArch64 ELF64, 2,189,968 B, SHA-256 `27a2f9a8fcb00761ac6673937145929e675a75c641afde221dc01f96df39d771`, GLIBC ≤2.27.
 
-**Pre-device checkpoint:** at this point build254 remained installed and build256b had not yet been deployed. The subsequent same-build M3-B OFF/ON pair is recorded in §83. This remains instrumentation validation, not a memory win, no-swap result, playable-port result, or FPS measurement.
+**Pre-device checkpoint:** at this point build254 remained installed and build256b had not yet been deployed. The subsequent same-build M3-B OFF/ON pair is recorded in §84. This remains instrumentation validation, not a memory win, no-swap result, playable-port result, or FPS measurement.
 
-## 83. Build256b M3-B device OFF/ON: selected allocation windows complete, DMA-heap failure observed (2026-10-22)
+## 84. Build256b M3-B device OFF/ON: selected allocation windows complete, DMA-heap failure observed (2026-10-22)
 
 **Evidence:** [paired report and compact receipt](../evidence/m3b-build256b-pair-20261022-01/README.md). Build256b (`27a2f9a8fcb00761ac6673937145929e675a75c641afde221dc01f96df39d771`) was installed and read back on TSPS; build254 remains preserved at `.before-256b` (`b6a84e4cd423cbbd88661502c53f1f6de81ab81d1de9c504700d289e96d417e1`). Build253 `.before-254` and build251 `.before-253` hashes also remained intact.
 
@@ -3742,11 +3769,11 @@ ON `df657097-c8f2-4635-b7a9-eb02ada2689b`: floor `MemAvailable=91,616 KiB`, `Swa
 
 The captured owner-qualified windows extend M3-B coverage to the large non-BC texture and depth paths; storage generations are known, but source-write/content epochs remain untracked, and stage-local GL errors, driver backing, GPU in-flight work, fileback shadows and physical Mali residency remain unknown. The life summary's zero buffer bytes are not an absence proof: `nvn_present.h` creates a VBO through an uninstrumented `glBufferData` call, and M3-B has no buffer window. Owners 92/81 still have requested CPU scratch peaks of 64,800,000 B/38,880,000 B; the declared GL payload remains a separate logical measure. The floor samples and nearest periodic samples are asynchronous; the two sequential runs differ in floor/CMA state, and swap fell by 71,424 KiB OFF and 58,624 KiB ON. Thus the pair does not establish a causal memory or ring-overhead effect. DMA allocation owner correlation and the missing periodic intervals remain unknown. Post-cleanup KMS confirmed awake MainUI after OFF's explicit agent-injected BACK and after ON; the single DMA-heap page-allocation failure is not an OOM-kill but is a real low-memory warning. A fresh preflight then showed `MemAvailable=688,148 KiB`, `CmaFree=102,600 KiB`, `SwapFree=2,032,836 KiB`, MainUI only, and the expected runtime hash.
 
-**Next gate:** §85 records four per-run margin tests; every arm stopped on `cmafree-margin` before the menu. Build259 remains installed. Do not launch below 24 MiB or enter New Game while `CmaFree` remains near 15 MiB; first investigate the CMA drop through read-only evidence and re-establish a safe baseline. Keep floor96/cap300/strict GL.
+**Next gate:** §86 records four per-run margin tests; every arm stopped on `cmafree-margin` before the menu. Build259 remains installed. Do not launch below 24 MiB or enter New Game while `CmaFree` remains near 15 MiB; first investigate the CMA drop through read-only evidence and re-establish a safe baseline. Keep floor96/cap300/strict GL.
 
-## 84. M2B-E3 build259 host checkpoint before any device run (2026-10-22)
+## 85. M2B-E3 build259 host checkpoint before any device run (2026-10-22)
 
-**Phase start:** remote branch `perf/m3b-memory-waterfall` was fetched and verified at `3590137aa419a3e3092d09d45636e818b13cae39`; this phase follows roadmap-v2 order 3 and the §83 stop conditions. The companion requirements are in [build251 roadmap §5](build251-evidence-and-gameplay-roadmap.md#5-p0--pr-m2b-e3--safetyadmission-and-accounting-correctness).
+**Phase start:** remote branch `perf/m3b-memory-waterfall` was fetched and verified at `3590137aa419a3e3092d09d45636e818b13cae39`; this phase follows roadmap-v2 order 3 and the §84 stop conditions. The companion requirements are in [build251 roadmap §5](build251-evidence-and-gameplay-roadmap.md#5-p0--pr-m2b-e3--safetyadmission-and-accounting-correctness).
 
 **Implemented in the candidate:**
 
@@ -3759,9 +3786,9 @@ The captured owner-qualified windows extend M3-B coverage to the large non-BC te
 
 **Not a device result:** build259 is not installed. A fresh read-only preflight confirmed TSPS still has build256b installed (`27a2f9a8...`) and only MainUI running (PID/starttime `31619/2258075`), with `MemAvailable=687,036 KiB`, `CmaFree=102,644 KiB`, and `SwapFree=2,032,836 KiB`; CPUs 0–3 remain offline and `/tmp/cmd_to_run.sh` is absent. No game run has demonstrated the admission decision, complete buffer lifecycle journal, menu, no-swap behavior, gameplay or FPS. The target reports Linux 5.15.147 on `sun55iw3`, with `CONFIG_DMABUF_HEAPS_SYSTEM`, `CONFIG_CMA` and `CONFIG_DMA_CMA` enabled. Public [REG-Linux/linux-t527 commit `9ed9cb975e8ee303c6b0d4e40a57a81f8110f8ed`](https://github.com/REG-Linux/linux-t527/tree/9ed9cb975e8ee303c6b0d4e40a57a81f8110f8ed) is a matching-version T527 source analogue: its `system_heap.c` retries orders 8, 4, 0 after failed page allocations. That is **not proven to be the exact Dec-2025 device vendor tree**; the build256b order-4 failure may be an intermediate retry, while overall request success and allocation owner remain unknown. The share-group/context token and physical Mali residency are not independently proven.
 
-**Historical stop gate at phase start (2026-10-22):** `T2_STORAGE_MARGIN_MIB` intentionally had no default; the idle preflight did not establish a working threshold. The user later authorized testing different per-run values; see §85. Floor96, cap300 and strict GL remain unchanged.
+**Historical stop gate at phase start (2026-10-22):** `T2_STORAGE_MARGIN_MIB` intentionally had no default; the idle preflight did not establish a working threshold. The user later authorized testing different per-run values; see §86. Floor96, cap300 and strict GL remain unchanged.
 
-## 85. M2B-E3 build259 device margin sweep — hard stop (2026-10-23)
+## 86. M2B-E3 build259 device margin sweep — hard stop (2026-10-23)
 
 **Authorization and procedure:** the user explicitly delegated margin selection (“Тестируй разные значения сам”). Installed build259 after pinning the device state and preserving the previous build256b runtime at `.before-259`. Four no-input principal-flow arms used margins **64, 48, 32, 24 MiB**; all other test settings were held constant: floor96, texture cap300, strict GL, life events/menu ledger on, M3-B ring off, external 100 ms memory timeline, no New Game. `T2_STORAGE_MARGIN_MIB` remains unset in the launcher; these were per-run values only.
 
