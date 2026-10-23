@@ -1,5 +1,8 @@
 # Lamentum — experimental Switch-to-Linux-ARM64 port (TSPS / SpruceOS)
 
+**Newest execution roadmap (2026-10-23, build260/CMA audit):** [detailed CMA-to-gameplay plan](docs/post-build260-cma-gameplay-performance-roadmap-2026-10-23.md) and [cumulative roadmap §90](docs/performance-roadmap-30fps.md#90-build260-cma-to-gameplay-execution-update-2026-10-23). **Device launch remains blocked:** idle `CmaFree=15,456 KiB`; read-only exact-kernel/CMA provenance and OFFLINE admission-policy replay are next. Build259 is installed; build260 is host-only; no stable menu/gameplay or 30 FPS has been demonstrated. Historical status paragraphs below are preserved for context.
+
+
 **Latest device diagnostic (build259 margin sweep, 2026-10-23):** [report](evidence/m2b-e3-build259-margin-sweep/README.md). Per-run margins 64/48/32/24 MiB all stopped at typed `T2_STORAGE_ADMISSION:cmafree-margin` before the menu. The 24 MiB arm left `CmaFree=14,244 KiB`; a later 30 s idle pair stayed at `15,456 KiB`, below the previous order-4 warning context. No gameplay/FPS claim; port remains **NOT PLAYABLE**.
 
 **Installed diagnostic artifact:** build259 SHA-256 `d72e2f69afa16dd5b846950f3fba80bc9926edcab9b2d45c57ed23faa14b9066`; `.before-259` preserves verified build256b. Floor96/cap300/strict GL were unchanged and no margin is set in the launcher. The 302-test host suite and 435/435 source baseline passed; this is an instrumentation/admission candidate, not a performance win.
