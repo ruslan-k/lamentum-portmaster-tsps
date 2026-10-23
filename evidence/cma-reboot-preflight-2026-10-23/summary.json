@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "stage": "PREPARED_AWAITING_EXPLICIT_OPERATOR_AUTHORIZATION",
+  "reboot_executed": false,
+  "captured_utc": "2026-10-23T13:43:29.448215Z",
+  "target": {
+    "boot_id": "15b97fe4-5c48-412c-ba39-92efb1823286",
+    "kernel_release": "5.15.147",
+    "firmware": "1.0.1"
+  },
+  "device_readiness": {
+    "snapshot_status": "complete",
+    "snapshot_consistency": "sequential_non_atomic",
+    "process_census_status": "ok",
+    "process_identity_status": "ready",
+    "transient_exit_races": 1,
+    "persistent_read_errors": 0,
+    "pid_reuse": 0,
+    "mainui": {"pid": 2369, "starttime": 1079, "exe_dev": 45833, "exe_ino": 76},
+    "principal": {"pid": 2196, "starttime": 1023, "exe_dev": 45828, "exe_ino": 20},
+    "game_processes": 0,
+    "pending_principal_command": false,
+    "candidate_path_fd_scan": {
+      "status": "complete_except_confirmed_transient_races",
+      "snapshot_consistency": "sequential_non_atomic",
+      "scanned_pids": 180,
+      "candidate_fd_owners": [],
+      "transient_races": 2,
+      "persistent_errors": 0,
+      "pid_reuse": 0
+    }
+  },
+  "cma_preboot_sample": {
+    "cma_total_kib": 131072,
+    "cma_free_kib": 2008,
+    "memavailable_kib": 662936,
+    "cached_kib": 568972,
+    "swapfree_kib": 2065116,
+    "nr_free_cma_pages": 502,
+    "free_cma_blocks_by_order": {"0": 93, "1": 21, "2": 13, "3": 7, "4": 6, "5": 3, "6": 1, "7": 0, "8": 0, "9": 0, "10": 0},
+    "histogram_free_pages": 499,
+    "histogram_minus_nr_free_cma_pages": -3,
+    "dma_zone": {"cma_pages": 32768, "pages_free": 3199, "min": 2015, "low": 2262, "high": 2509},
+    "cma_alloc_success_fail": [8, 0],
+    "global_vmstat": {"pgmajfault": 828, "pswpin": 0, "pswpout": 49, "compact_stall": 0, "compact_fail": 0},
+    "dma_buf_inventory": {
+      "status": "ok",
+      "entries": [
+        {"inode": 1, "exporter": "system", "size_bytes": 16384},
+        {"inode": 3, "exporter": "system", "size_bytes": 3686400},
+        {"inode": 4, "exporter": "system", "size_bytes": 3686400},
+        {"inode": 5, "exporter": "system", "size_bytes": 3686400},
+        {"inode": 6, "exporter": "system", "size_bytes": 16384},
+        {"inode": 7, "exporter": "system", "size_bytes": 3686400}
+      ]
+    }
+  },
+  "pressure_and_warnings": {
+    "captured_utc": "2026-10-23T13:47:34.332501Z",
+    "device_uptime_seconds": 33536.61,
+    "memory_psi": null,
+    "dmesg_filter_status": "ok",
+    "matching_page_allocation_oom_cma_mali_warning_lines": 0
+  },
+  "staged_non_autostart_candidate": {
+    "directory": "/mnt/SDCARD/Roms/PORTS/lamentum-switch/.candidate-h2a-20261023",
+    "entries": ["Lamentum.sh", "lamentum-nextos", "run_identity.py"],
+    "files": {
+      "Lamentum.sh": {"bytes": 1773, "mode": "0777", "sha256": "1a90c4efc55074d2d6ae4ac51134522e1cc7ac33cca6025ccb14d269715c18a7", "executable": true},
+      "lamentum-nextos": {"bytes": 2203096, "mode": "0777", "sha256": "c46714403f22074d92710192d1164cfe0b7a4f62f1a4890ffb7a1e224c542332", "executable": true},
+      "run_identity.py": {"bytes": 8310, "mode": "0777", "sha256": "abe8e4847b18a750c0796af33d887cf43714126c9751ccdc8236715cb752401a", "executable": true}
+    },
+    "root_port_lamentum_launcher_count": 1,
+    "active_root_launcher_sha256": "f32204ff1b271dd66e38f79573f75c6f562af49174ea436e81dd9417dba1354a",
+    "active_build259_sha256": "d72e2f69afa16dd5b846950f3fba80bc9926edcab9b2d45c57ed23faa14b9066",
+    "candidate_menu_entry_absent": true
+  },
+  "verified_local_backups": {
+    "directory": "/var/home/ruslan/.hermes/cache/scratch/lamentum-cma-reboot-prep-20261023-1344",
+    "active_root_launcher": {"file": "active-Lamentum.sh", "bytes": 3400, "sha256": "f32204ff1b271dd66e38f79573f75c6f562af49174ea436e81dd9417dba1354a"},
+    "active_build259": {"file": "active-build259", "bytes": 2198560, "sha256": "d72e2f69afa16dd5b846950f3fba80bc9926edcab9b2d45c57ed23faa14b9066"},
+    "storage": "local Hermes scratch only; no device file changed"
+  },
+  "recovery_access": {
+    "key_forward_script_result": "ok",
+    "ssh_alias_test": {"command": "ssh tsps uname -m", "result": "aarch64"},
+    "running_ssh_daemons": 3,
+    "boot_init_script": "/etc/init.d/S50sshd",
+    "boot_keys_script": "/etc/init.d/S65ssh_keys",
+    "init_runner": "/etc/init.d/rcS invokes /etc/init.d/S??* start",
+    "post_reboot_ssh_recovery_verified": false,
+    "reboot_binary_available": "/sbin/reboot"
+  },
+  "planned_experiment_after_authorization": {
+    "reboot_count": 1,
+    "method": "one normal controlled reboot; no force flag",
+    "baseline": "earliest complete stable post-boot snapshot with boot ID, MainUI/principal identity, no game/pending command, allocator and DMA-BUF inventory",
+    "followup_target_uptime_seconds": [60, 300, 900],
+    "each_sample_includes": ["CmaFree and CmaTotal", "buddy/free-CMA blocks by order", "zoneinfo and vmstat deltas", "DMA-BUF inventory", "MainUI/principal/game process identities", "memory PSI if available", "filtered allocation/OOM/CMA/Mali warnings"],
+    "prohibited_actions": ["compaction", "drop_caches", "kernel-parameter changes", "firmware changes", "admission bypass", "game launch"],
+    "T2_STORAGE_MARGIN_MIB": "unset"
+  }
+}
