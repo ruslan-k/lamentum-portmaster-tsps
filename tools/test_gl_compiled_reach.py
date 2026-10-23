@@ -172,6 +172,20 @@ active_early_call();
             result = analyze_trace_bundle(*args)
             self.assertEqual(result["compiled_status_counts"], {"unknown": 1})
 
+    def test_trace_metadata_supplies_path_roots_and_effective_wrapper_flags(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            source = "void draw(void) { glTexImage2D(0,0,0,1,1,0,0,0,0); }\n"
+            pre = ('# 1 "/work/project/source/native/unit.c"\n'
+                   '# 1 "/work/project/source/native/calls.h" 1\n'
+                   'lc2_gl_tex_image2d_admit();\n')
+            args = self._make_bundle(tmp, source, pre)
+            metadata = {"schema_version": 1, "container_source_root": args[4],
+                        "container_trace_root": args[5], "wrapper_flags": ["-DTRACE_ONLY=1"]}
+            (args[3] / "trace_metadata.json").write_text(json.dumps(metadata))
+            result = analyze_trace_bundle(args[0], args[1], args[2], args[3], None, None)
+            self.assertIn("TRACE_ONLY=1", result["compiler_flags"]["defines"])
+            self.assertEqual(result["compiled_status_counts"], {"compiled-reachable": 1})
+
     def test_missing_dependency_file_fails_closed(self):
         with tempfile.TemporaryDirectory() as tmp:
             source = "void draw(void) { glTexImage2D(0,0,0,1,1,0,0,0,0); }\n"

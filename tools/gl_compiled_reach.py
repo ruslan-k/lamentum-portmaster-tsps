@@ -264,8 +264,8 @@ def analyze_trace_bundle(
     inventory_path: str | Path,
     policy_path: str | Path,
     trace_dir: str | Path,
-    container_source_root: str,
-    container_trace_root: str,
+    container_source_root: str | None = None,
+    container_trace_root: str | None = None,
     expected_commands_sha256: str | None = None,
     wrapper_flags: tuple[str, ...] = (),
 ) -> dict:
@@ -274,6 +274,28 @@ def analyze_trace_bundle(
     trace_dir = Path(trace_dir).resolve()
     inventory_path = Path(inventory_path)
     policy_path = Path(policy_path)
+    trace_metadata_path = trace_dir / "trace_metadata.json"
+    trace_metadata = {}
+    if trace_metadata_path.is_file():
+        trace_metadata = _load_json(trace_metadata_path, "trace metadata")
+        if not isinstance(trace_metadata, dict) or trace_metadata.get("schema_version") != 1:
+            raise CompileReachError("unsupported or malformed trace metadata")
+        metadata_source_root = trace_metadata.get("container_source_root")
+        metadata_trace_root = trace_metadata.get("container_trace_root")
+        metadata_wrapper_flags = trace_metadata.get("wrapper_flags", [])
+        if not isinstance(metadata_wrapper_flags, list) or not all(isinstance(flag, str) for flag in metadata_wrapper_flags):
+            raise CompileReachError("trace metadata wrapper_flags must be a string list")
+        if container_source_root and metadata_source_root != container_source_root:
+            raise CompileReachError("container source root conflicts with trace metadata")
+        if container_trace_root and metadata_trace_root != container_trace_root:
+            raise CompileReachError("container trace root conflicts with trace metadata")
+        if wrapper_flags and list(wrapper_flags) != metadata_wrapper_flags:
+            raise CompileReachError("wrapper flags conflict with trace metadata")
+        container_source_root = container_source_root or metadata_source_root
+        container_trace_root = container_trace_root or metadata_trace_root
+        wrapper_flags = tuple(wrapper_flags) or tuple(metadata_wrapper_flags)
+    if not isinstance(container_source_root, str) or not isinstance(container_trace_root, str):
+        raise CompileReachError("container path mappings are required directly or in trace metadata")
     for dirname in ("native", "framework"):
         if not (source_root / dirname).is_dir():
             raise CompileReachError(f"source tree missing {dirname}/")
@@ -455,6 +477,7 @@ def analyze_trace_bundle(
         "source_tree": identity,
         "source_base_commit": policy.get("source_base_commit"),
         "adapter_patch_sha256": policy.get("adapter_patch_sha256"),
+        "trace_metadata": trace_metadata,
         "compiler_flags": {
             "include_dirs": include_dirs,
             "defines": defines,
@@ -489,8 +512,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--inventory", required=True)
     parser.add_argument("--policy", required=True)
     parser.add_argument("--trace-dir", required=True)
-    parser.add_argument("--container-source-root", required=True)
-    parser.add_argument("--container-trace-root", required=True)
+    parser.add_argument("--container-source-root")
+    parser.add_argument("--container-trace-root")
     parser.add_argument("--expected-commands-sha256")
     parser.add_argument("--wrapper-flag", action="append", default=[])
     parser.add_argument("--output")

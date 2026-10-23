@@ -1,13 +1,13 @@
 {
   "adapter_patch_sha256": "6c549b09797a403390d4ced13e770bc35c65f74d70240a01f2ec77f6e258eba4",
   "analysis_tool": {
-    "commands_sha256_checked": "b95fc3c0175c658f4c089482e765785e1b6bebc2159faaf68a1d6da64a3b71a4",
+    "commands_sha256_checked": "bfb73385a938fa801b7c21cabbeb8a0ef438ba6082a3dcb2b43a0f0398fb3bcb",
     "path": "tools/gl_compiled_reach.py",
-    "sha256": "f31a452619c987078dba8d66a8251ef5d3feaba45028faf154ca52cb48d16196"
+    "sha256": "4042cbf225f1dfc809071acd0b725532f3729d3d6b38b7c13979ee75537f4845"
   },
   "build_trace": {
-    "commands_jsonl_sha256": "b95fc3c0175c658f4c089482e765785e1b6bebc2159faaf68a1d6da64a3b71a4",
-    "commands_sha256": "b95fc3c0175c658f4c089482e765785e1b6bebc2159faaf68a1d6da64a3b71a4",
+    "commands_jsonl_sha256": "bfb73385a938fa801b7c21cabbeb8a0ef438ba6082a3dcb2b43a0f0398fb3bcb",
+    "commands_sha256": "bfb73385a938fa801b7c21cabbeb8a0ef438ba6082a3dcb2b43a0f0398fb3bcb",
     "compile_invocations": 35,
     "compiler_invocations": 36,
     "direct_link_source_units": [
@@ -22,15 +22,13 @@
       "native/t2_runtime_health.c",
       "native/t2_video.c"
     ],
-    "final_link_invocations": 1,
     "link_input_archives": 1,
     "link_input_objects": 32,
     "link_invocations": 1,
     "link_uses_gc_sections": true,
-    "per_tu_dependency_and_preprocess_records": 45,
     "per_unit_dependency_preprocessor_records": 45,
-    "preprocessed_bytes": 24986688,
-    "preprocessed_summaries_sha256": "425c70f9f10cc4e8d9a4c9b4ea4c16a68981c4c290d73cfcbcc1cdc308883e36",
+    "preprocessed_bytes": 24963826,
+    "preprocessed_summaries_sha256": "0336e2485fa87858bd76a23131c388de590229f90cc759135c33faf0832f0685",
     "response_file_uses": 0,
     "translation_unit_extensions": {
       ".S": 2,
@@ -1861,17 +1859,16 @@
   },
   "inventory_sha256": "31222396afb2d009ca4fcfe1407e16a5867141fbab17e4a3bf83944ca39fadb2",
   "limitations": [
-    "Compiled reach is separate from linker section retention, runtime execution, allocation success, and physical backing.",
-    "The final link uses --gc-sections; no link map/retained-section proof was collected.",
-    "Eight included-path callsites remain unknown because their exact preprocessed line/token was not matched.",
-    "No device action or game runtime was part of this H1 trace phase.",
-    "The trace-capture wrapper and preprocessing materializer remain scratch-only; this committed analyzer consumes their local trace outputs."
+    "Eight included-path callsites remain explicitly unknown because the exact active source line/token was not matched; unknown is retained rather than inferred away.",
+    "The link uses --gc-sections; direct link input does not prove per-function section retention.",
+    "No runtime execution, wrapper observation, driver allocation success, physical backing, RSS/CMA refund, gameplay, or FPS was measured.",
+    "Raw commands, dependency files, and preprocessed expansions remain local; the tracked wrapper/materializer regenerate them from the pinned build."
   ],
   "link_input_status_counts": {
     "link-input-confirmed": 66,
     "not-in-link-input": 11
   },
-  "phase": "M4-B H1 compile-reach trace checkpoint (partial)",
+  "phase": "M4-B H1 compile/link-input analysis (host-only; complete at stated scope)",
   "schema_version": 1,
   "source_base_commit": "c8d01ca1fed5adab1ae7ad920605f199bb83a72e",
   "source_status_counts": {
@@ -1884,6 +1881,8 @@
   },
   "toolchain": {
     "compiler": "aarch64-linux-gnu-gcc 9.4.0",
+    "compiler_path": "/usr/bin/aarch64-linux-gnu-gcc-9",
+    "compiler_version": "aarch64-linux-gnu-gcc (Ubuntu 9.4.0-1ubuntu1~20.04.2) 9.4.0",
     "container_id": "sha256:e437308c01ce7af4a035c3f0652bc886e258889f66803f805bce53d05af75f0c",
     "container_image": "pmjs-arm64-spruce-local:20261002-gcc10",
     "defines": [
@@ -1896,19 +1895,19 @@
     "include_dirs": [
       "/image",
       "/usr/include/SDL2",
-      "/work/build-263-h1-compile-reach/provider-build/nxaudio",
-      "/work/build-263-h1-compile-reach/shaders",
-      "/work/build-263-h1-compile-reach/source/framework/nxcompat/include",
-      "/work/build-263-h1-compile-reach/source/framework/nxgl/adapters",
-      "/work/build-263-h1-compile-reach/source/framework/nxgl/include",
-      "/work/build-263-h1-compile-reach/source/framework/nxgl/src",
-      "/work/build-263-h1-compile-reach/source/framework/nxinput/engine-glue",
-      "/work/build-263-h1-compile-reach/source/framework/nxinput/include",
-      "/work/build-263-h1-compile-reach/source/framework/nxloader/include"
+      "/work/build-265-h1-trace-final/provider-build/nxaudio",
+      "/work/build-265-h1-trace-final/shaders",
+      "/work/build-265-h1-trace-final/source/framework/nxcompat/include",
+      "/work/build-265-h1-trace-final/source/framework/nxgl/adapters",
+      "/work/build-265-h1-trace-final/source/framework/nxgl/include",
+      "/work/build-265-h1-trace-final/source/framework/nxgl/src",
+      "/work/build-265-h1-trace-final/source/framework/nxinput/engine-glue",
+      "/work/build-265-h1-trace-final/source/framework/nxinput/include",
+      "/work/build-265-h1-trace-final/source/framework/nxloader/include"
     ],
     "response_files": [],
     "target": "aarch64-linux-gnu",
-    "trace_wrapper_sha256": "7238c6c523412497ec0242fa3d1c8b0af356be48e4013b8fc4162e17c1bf8a5c",
+    "trace_wrapper_sha256": "0afcb86668db9fad93d72179f80af6e84419ffbf1d668019278bc6983100cd9b",
     "wrapper_extra_flags": [
       "-DZERO_ZX_GAME=0",
       "-Wno-error=unused-result",
@@ -1916,12 +1915,32 @@
     ]
   },
   "trace_build_artifact": {
-    "build_id": "827b6d7413b3ebeee9100f905b34ffb86278593b",
-    "bytes": 2206944,
+    "build_id": "5c60e42b66321320580fb62e1801dd7ffa27b266",
+    "bytes": 2206936,
     "installed": false,
     "max_glibc": "2.27",
-    "purpose": "compile-trace rebuild only; not a deployment candidate",
-    "sha256": "54d280b9ca7c76b1417f80ffc9480b632ef55b29524138b59fea9fd4c3e07026"
+    "path": "build-265-h1-trace-final/lamentum-nextos",
+    "purpose": "pinned compile-trace rebuild only; not a deployment candidate",
+    "sha256": "278612aab77012c09c3287f8e21a7fbb81dec3abea9eb81af60f6cba82e68b54"
+  },
+  "trace_metadata": {
+    "compiler": "aarch64-linux-gnu-gcc",
+    "compiler_path": "/usr/bin/aarch64-linux-gnu-gcc-9",
+    "compiler_version": "aarch64-linux-gnu-gcc (Ubuntu 9.4.0-1ubuntu1~20.04.2) 9.4.0",
+    "container_source_root": "/work/build-265-h1-trace-final/source",
+    "container_trace_root": "/scratch/h1-compile-trace-final",
+    "target": "aarch64-linux-gnu",
+    "wrapper_flags": [
+      "-DZERO_ZX_GAME=0",
+      "-Wno-error=unused-result",
+      "-Wno-error=unused-function"
+    ]
+  },
+  "trace_tools": {
+    "compiler_wrapper": "tools/cc_trace_lamentum.py",
+    "compiler_wrapper_sha256": "0afcb86668db9fad93d72179f80af6e84419ffbf1d668019278bc6983100cd9b",
+    "materializer": "tools/gl_compiled_reach_trace.py",
+    "materializer_sha256": "b11553d0166e6fd685b04bcc206dd47ad21de62646ed3e6bd3cef333497f5bcd"
   },
   "unknown_paths": {
     "native/nvn_present.h": 2,
@@ -1936,14 +1955,16 @@
     "native/zero_texture_readback.h": 1
   },
   "verification": {
-    "compiled_statuses_match_receipt": true,
-    "focused_tests": "16/16 passed",
-    "full_host_suite": "386/386 passed",
+    "compile_statuses_match_prior_receipt": true,
+    "device_actions": 0,
+    "focused_tests": "26/26 passed",
+    "full_host_suite": "396/396 passed",
     "link_input_statuses": {
       "link-input-confirmed": 66,
       "not-in-link-input": 11
     },
+    "raw_trace_committed": false,
     "reproduced_trace_sites": 77,
-    "response_files": []
+    "status_delta": 0
   }
 }
