@@ -4,7 +4,7 @@
 
 ## 0. One-page decision
 
-**Do next on host:** H1 is complete at compile/preprocessor and final-link-input scope. The tracked pipeline rebuilt the exact patched tree in the pinned container and reproduced **58 compiled-reachable, 11 compiled-unreachable, 8 unknown**; 66 site paths are link inputs and 11 are not. Keep the eight unknowns explicit and do not infer post-`--gc-sections` retention. Next: **M4-B3 transactional GL/GBM/EGL lifetimes → M4-B4 reconciled memory-class waterfall**, in parallel with **K1-B exact-firmware allocator/backing analysis** and **W-prep offline gameplay-oracle/shader tests**. Do not redo M4-A BC geometry, the 2,048-history fix, K1 kernel identity, or A1's four-denial replay.
+**Active host work:** H1 is complete at compile/preprocessor and final-link-input scope. The tracked pipeline reproduced **58/11/8** compile statuses and **66/11** link-input statuses. H2 has begun with a standalone context/share-group epoch contract; next is transactional begin → actual GL result → commit at real storage paths, then aliases, buffer/EGL owners and completion. Keep the eight H1 unknowns explicit and do not infer post-`--gc-sections` retention. In parallel: **K1-B exact-firmware allocator/backing analysis** and **W-prep offline gameplay-oracle/shader tests**. Do not redo M4-A BC geometry, the 2,048-history fix, K1 kernel identity, or A1's four-denial replay.
 
 **Then choose exactly one measured, lossless retained-memory optimization (M4-C)**, not another speculative BC scratch or render-scale arm. Independently perform a *fresh* read-only same-boot device preflight before any launch. Non-autostart staging of a verified candidate is a separate operation and is not a gameplay test. Proceed D → W0 → W1 → F1 in that order, only when each previous gate passes. A failed or inconclusive gate means HOLD, never a silent margin/floor change.
 
@@ -21,7 +21,7 @@
 | CMA snapshot | In recorded idle *same-boot* reads: `CmaTotal=131,072 KiB`, `CmaFree=15,456 KiB`, `nr_free_cma=3,864`, stable counters 36/0; MainUI `system` exporter FDs total 11,075,584 B | That all unavailable CMA is pinned/leaked or attributable to MainUI; that this is today's device state |
 | Build260 E4 | Host owner-event ring + missing-pair classification; 317 test checkpoint; IDs 280/288 unresolved in original build251 logs | On-device owner/pair reconciliation |
 | Build261 M4-A | Checked short-mip BC stripe/reservation geometry; 86 native byte-parity cases, ASan/UBSan, 359/359 suite, pinned AArch64 build | Runtime usage, visual parity, RSS/CMA or FPS gain; stripe flag still default-OFF |
-| Build262 M4-B (partial) | 390-source/77-callsite census; 2,048-key generation history; tracked H1 trace pipeline; 26 focused H1 tests and 396/396 full suite; regenerated 45-TU trace: 58/11/8 compile statuses, 66/11 link-input statuses | Eight explicit compile unknowns, per-section linker retention, transactional lifetime correctness, a device run, backing or gameplay. Static .bss +45,072 B is **not** measured runtime RSS/CMA |
+| Build262 M4-B (partial) | 390-source/77-callsite census; 2,048-key generation history; tracked H1 trace pipeline; standalone H2 context/share-group identity contract; 26 H1 tests, 3 lifetime-core tests, full suite 398/398; regenerated 45-TU trace: 58/11/8 compile, 66/11 link inputs | Eight explicit compile unknowns, production transactional GL wiring, per-section linker retention, a device run, backing or gameplay. Static .bss +45,072 B is **not** measured runtime RSS/CMA |
 | FPS | Historical title/Loading timing and CPU attribution, including a no-win 640×360 window render-scale arm | **Any** live playable-world FPS or sustained 30 FPS |
 
 Primary receipts: [M4-B](../evidence/m4b-gl-allocation-inventory-2026-10-23/README.md), [M4-A](../evidence/m4a-bc-stripe-capacity-2026-10-23/README.md), [K1](../evidence/m2b-k1-kernel-cma-provenance-2026-10-23/README.md), [A1](../evidence/a1-storage-admission-offline-replay-2026-10-23/README.md), [build259 sweep](../evidence/m2b-e3-build259-margin-sweep/README.md), [build256b](../evidence/m3b-build256b-pair-20261022-01/README.md), [E4](../evidence/e4-owner-pair-host-2026-10-23/README.md), [historical FPS baseline](fps-baseline-2026-10-20.md).
@@ -57,7 +57,7 @@ Primary receipts: [M4-B](../evidence/m4b-gl-allocation-inventory-2026-10-23/READ
 
 ### 2.2 P0-H2: transactional ownership, generations, storage and GPU-completion semantics
 
-**Files:** `runtime/lamentum-adapter.patch` (patched `native/nvn_textures.h`, `native/nvn_present.h`, `native/nvn_vertex_stream.h`, `native/nvn_framebuffers.h`, `native/nvn_bridge.h`/window, lifetime/GL admission headers), `tools/test_life_events.py`, `tools/test_gl_storage_layout.py`, new reducer fixtures.
+**Files:** `runtime/lamentum-adapter.patch` (patched `native/nvn_textures.h`, `native/nvn_present.h`, `native/nvn_vertex_stream.h`, `native/nvn_framebuffers.h`, `native/nvn_bridge.h`/window and lifetime/GL admission headers), `tools/test_life_events.py`, `tools/test_lifetime_core.py`, `tools/test_gl_storage_layout.py`, `docs/lifetime-core.md`, and new reducer fixtures.
 
 1. Retain the implemented `LC2_LIFE_GENERATION_CAP=2048` and distinct `generation_history_overflow` / `live_owner_overflow`; **do not** repeat the already-passing 1,200-name and 1,024-pair basics. The separate 512-entry live owner/subresource tables and bounded event rings can still exhaust. Refuse uncertain ledger updates on overflow, report lost event capacity, and do **not** silently recycle an observable history generation. Increasing caps alone is not memory optimization.
 2. Define an explicit key: `(EGL share-group epoch, context epoch when required, GLuint name, object kind, object generation, storage generation, target, level, face, layer)`. Track context teardown/recreate, share-group boundaries, name reuse, and resource orphaning. Do not conflate an NVN texture ID, GL name, guest pool-write generation and physical driver allocation.
@@ -68,6 +68,8 @@ Primary receipts: [M4-B](../evidence/m4b-gl-allocation-inventory-2026-10-23/READ
 7. Keep hooks lightweight/default-OFF for device telemetry. Compare profiler-OFF vs ON on the *same* ELF only after D is safe; do not infer performance from host fixture time.
 
 **Acceptance:** synthetic histories reconcile all logical live totals, cannot undercount on failed GL/reuse/overlap, retain unknown backing, and fail closed on incomplete evidence. Device data is still needed to change `wrapped+unmeasured` to measured.
+
+**H2 host contract checkpoint (2026-10-23):** [portable lifetime contract](lifetime-core.md). `lc2_lifetime.h` now keys records by `(share-group epoch, context epoch, name, kind)`; epoch zero is reserved for share-group-scoped objects, and context loss preserves only that context's unresolved entries. Full share-group loss leaves a non-recyclable tombstone. The 3 focused lifetime-core fixtures and full host suite **398/398** pass; the generated overlay applies to the recovered baseline. This is still a standalone host model: no production GL caller, transactional storage hook, real fence, buffer/EGL ownership, device or game validation. Next H2 step is a real-path mocked `begin → GL result → commit` seam without enabling a runtime policy.
 
 ### 2.3 P0-H3: memory waterfall on **non-overlapping bases**
 
@@ -165,7 +167,7 @@ For every PR publish: **base/head commit**, scope and one variable changed; sour
 
 1. **DONE, do not duplicate:** build261 M4-A checked BC capacities/native fixture; build262 generation capacity/overflow, 77-site source census and 370-test checkpoint; firmware-kernel match; offline admission replay.
 2. **H1 DONE at compile/link-input scope:** tracked capture/materialization regenerated the pinned trace with zero site-status delta; keep the 8 compile unknowns and post-GC retention explicitly unknown. The original 65 source-policy unknowns are **not** 65 proven bugs.
-3. **NEXT PR:** H2 GL/EGL/buffer lifetimes, all transactional edge cases and explicit context epochs; avoid a fake physical-memory ledger.
+3. **H2 IN PROGRESS:** explicit context/share-group identity is represented in the standalone host core. Next integrate transactional per-call storage results and then aliases, buffers/EGL and completion; avoid a fake physical-memory ledger.
 4. **NEXT PR:** H3 joined phase-specific memory waterfall; baseline evidence has missing samples and unresolved ID280/288 owners.
 5. **PARALLEL:** H4 exact-firmware DT/CMA/DMA physical-class provenance and fresh read-only device safety if/when evaluating a launch; H5 offline W0/W1 fixtures.
 6. **ONLY THEN:** one qualified M4-C retained-memory candidate → fresh D gate → W0 → W1 → real F1.

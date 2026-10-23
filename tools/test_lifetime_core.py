@@ -7,6 +7,95 @@ import unittest
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
 class LifetimeCoreTests(unittest.TestCase):
+    def test_lost_share_group_epoch_tombstones_are_not_recycled(self):
+        patch = (ROOT / 'runtime/lamentum-adapter.patch').read_text()
+        marker = 'diff --git a/native/lc2_lifetime.h b/native/lc2_lifetime.h'
+        self.assertIn(marker, patch)
+        block = patch.split(marker, 1)[1].split('diff --git ', 1)[0]
+        header = '\n'.join(line[1:] for line in block.splitlines()
+                            if line.startswith('+') and not line.startswith('+++')) + '\n'
+        fixture = r'''
+#include "lc2_lifetime.h"
+#include <assert.h>
+int main(void) {
+ struct lc2_lifetime l={0};uint64_t token;
+ const struct lc2_life_identity old={.share_group_epoch=77,.name=1,.kind=1};
+ assert(lc2_life_begin_scoped(&l,&old,1,1,&token));
+ assert(lc2_life_commit(&l,token,1));
+ assert(lc2_life_retire(&l,token) && lc2_life_detach(&l,token));
+ assert(lc2_life_can_delete(&l,token) && lc2_life_deleted(&l,token,1));
+ lc2_life_share_group_lost(&l,77);
+ for(uint64_t i=0;i<LC2_LIFE_CAP-1;i++) {
+  const struct lc2_life_identity other={.share_group_epoch=1000+i,.name=i+1,.kind=1};
+  assert(lc2_life_begin_scoped(&l,&other,1,1,&token));
+  assert(lc2_life_commit(&l,token,1));
+ }
+ const struct lc2_life_identity reused={.share_group_epoch=77,.name=2,.kind=1};
+ assert(!lc2_life_begin_scoped(&l,&reused,1,1,&token));
+ return 0;
+}
+'''
+        with tempfile.TemporaryDirectory() as d:
+            p=pathlib.Path(d)
+            (p/'lc2_lifetime.h').write_text(header)
+            (p/'test.c').write_text(fixture)
+            built=subprocess.run(['cc','-std=c11','-Wall','-Wextra','-Werror','-I',d,
+                                  str(p/'test.c'),'-o',str(p/'test')],capture_output=True,text=True)
+            self.assertEqual(built.returncode,0,built.stderr)
+            ran=subprocess.run([str(p/'test')],capture_output=True,text=True)
+            self.assertEqual(ran.returncode,0,ran.stderr)
+
+    def test_context_epochs_scope_identical_names_and_context_loss(self):
+        patch = (ROOT / 'runtime/lamentum-adapter.patch').read_text()
+        marker = 'diff --git a/native/lc2_lifetime.h b/native/lc2_lifetime.h'
+        self.assertIn(marker, patch)
+        block = patch.split(marker, 1)[1].split('diff --git ', 1)[0]
+        header = '\n'.join(line[1:] for line in block.splitlines()
+                            if line.startswith('+') and not line.startswith('+++')) + '\n'
+        fixture = r'''
+#include "lc2_lifetime.h"
+#include <assert.h>
+int main(void) {
+ struct lc2_lifetime l={0};uint64_t shared_a,shared_b,local_a,local_b,local_new,stale;
+ const struct lc2_life_identity shared={.share_group_epoch=1,.name=7,.kind=1};
+ const struct lc2_life_identity ctx_a={.share_group_epoch=1,.context_epoch=11,.name=7,.kind=3};
+ const struct lc2_life_identity ctx_b={.share_group_epoch=1,.context_epoch=12,.name=7,.kind=3};
+ const struct lc2_life_identity ctx_new={.share_group_epoch=1,.context_epoch=13,.name=7,.kind=3};
+ assert(lc2_life_begin_scoped(&l,&shared,1,64,&shared_a));
+ assert(lc2_life_commit(&l,shared_a,1));
+ assert(lc2_life_begin_scoped(&l,&shared,1,64,&shared_b));
+ assert(lc2_life_commit(&l,shared_b,1));
+ assert(lc2_life_find(&l,shared_a)->object_generation==lc2_life_find(&l,shared_b)->object_generation);
+ assert(lc2_life_begin_scoped(&l,&ctx_a,1,32,&local_a));
+ assert(lc2_life_commit(&l,local_a,1));
+ assert(lc2_life_begin_scoped(&l,&ctx_b,1,48,&local_b));
+ assert(lc2_life_commit(&l,local_b,1));
+ assert(lc2_life_find(&l,local_a)->object_generation!=lc2_life_find(&l,local_b)->object_generation);
+ uint64_t retained=l.retained_bytes;
+ lc2_life_context_lost(&l,1,11);
+ assert(lc2_life_find(&l,local_a)->lost);
+ assert(!lc2_life_find(&l,local_b)->lost && !lc2_life_find(&l,shared_a)->lost);
+ assert(l.retained_bytes==retained);
+ assert(!lc2_life_use(&l,local_a,1,1));
+ assert(lc2_life_use(&l,local_b,1,1) && lc2_life_use(&l,shared_a,1,1));
+ assert(!lc2_life_begin_scoped(&l,&ctx_a,1,8,&stale));
+ assert(lc2_life_begin_scoped(&l,&ctx_new,1,16,&local_new));
+ assert(lc2_life_commit(&l,local_new,1));
+ assert(lc2_life_find(&l,local_new)->object_generation!=lc2_life_find(&l,local_a)->object_generation);
+ assert(l.retained_bytes==retained+16);
+ return 0;
+}
+'''
+        with tempfile.TemporaryDirectory() as d:
+            p = pathlib.Path(d)
+            (p / 'lc2_lifetime.h').write_text(header)
+            (p / 'test.c').write_text(fixture)
+            built = subprocess.run(['cc','-std=c11','-Wall','-Wextra','-Werror','-I',d,
+                                    str(p/'test.c'),'-o',str(p/'test')],capture_output=True,text=True)
+            self.assertEqual(built.returncode,0,built.stderr)
+            ran = subprocess.run([str(p/'test')],capture_output=True,text=True)
+            self.assertEqual(ran.returncode,0,ran.stderr)
+
     def test_generation_alias_and_completion_contract(self):
         patch = (ROOT / 'runtime/lamentum-adapter.patch').read_text()
         marker = 'diff --git a/native/lc2_lifetime.h b/native/lc2_lifetime.h'
@@ -68,7 +157,7 @@ int main(void) {
  assert(!lc2_life_can_delete(&l,reused)); /* glDelete would delete replacement too */
  assert(lc2_life_find(&l,replacement)->object_generation==lc2_life_find(&l,reused)->object_generation);
  assert(lc2_life_find(&l,reused)->object_generation!=a);
- lc2_life_context_lost(&l,1);
+ lc2_life_share_group_lost(&l,1);
  assert(!lc2_life_can_delete(&l,reused));
  assert(!lc2_life_deleted(&l,reused,1));
  assert(l.retained_bytes==575); /* loss is not a physical refund */

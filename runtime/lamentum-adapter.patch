@@ -1991,12 +1991,12 @@ index 0000000..63958bb
 +#endif
 diff --git a/native/lc2_lifetime.h b/native/lc2_lifetime.h
 new file mode 100644
-index 0000000..c25256f
+index 0000000..fa8bd5b
 --- /dev/null
 +++ b/native/lc2_lifetime.h
-@@ -0,0 +1,112 @@
+@@ -0,0 +1,139 @@
 +/* Portable accounting contract, NOT connected to GL or enabled in the runtime.
-+ * Caller must serialize access and supply verified share-group/timeline identities.
++ * Caller must serialize access and supply verified share-group/context epochs and timelines.
 + * Counters represent declared payload intents, NEVER physical driver residency.
 + * No GL calls, host allocation, guessed completion, admission or automatic free.
 + */
@@ -2005,9 +2005,11 @@ index 0000000..c25256f
 +#include <stdint.h>
 +#include <stddef.h>
 +#define LC2_LIFE_CAP 64U
++struct lc2_life_identity {uint64_t share_group_epoch,context_epoch,name,kind;};
 +struct lc2_life_record {
-+    uint64_t token,object_generation,name,group,kind,timeline,bytes,last_reader;
-+    unsigned pending,live,views,retiring,lost;
++    uint64_t token,object_generation,timeline,bytes,last_reader;
++    struct lc2_life_identity identity;
++    unsigned pending,live,views,retiring,lost,share_group_lost;
 +};
 +struct lc2_life_timeline {uint64_t id,completed;};
 +struct lc2_lifetime {
@@ -2024,16 +2026,22 @@ index 0000000..c25256f
 +    for(unsigned i=0;i<LC2_LIFE_CAP;i++)if(id && l->timelines[i].id==id)return &l->timelines[i];
 +    return NULL;
 +}
-+static inline int lc2_life_begin(struct lc2_lifetime *l,uint64_t name,uint64_t group,
-+        uint64_t kind,uint64_t timeline,uint64_t bytes,uint64_t *token) {
-+    if(!name||!group||!kind||!timeline||!bytes||!token||l->sequence==UINT64_MAX)return 0;
++static inline int lc2_life_identity_equal(const struct lc2_life_identity *a,
++        const struct lc2_life_identity *b) {
++    return a->share_group_epoch==b->share_group_epoch && a->context_epoch==b->context_epoch &&
++        a->name==b->name && a->kind==b->kind;
++}
++static inline int lc2_life_begin_scoped(struct lc2_lifetime *l,const struct lc2_life_identity *identity,
++        uint64_t timeline,uint64_t bytes,uint64_t *token) {
++    if(!l||!identity||!identity->name||!identity->share_group_epoch||!identity->kind||
++       !timeline||!bytes||!token||l->sequence==UINT64_MAX)return 0;
 +    if(bytes>UINT64_MAX-l->reserved_bytes || l->retained_bytes>UINT64_MAX-l->reserved_bytes-bytes)return 0;
 +    unsigned slot=LC2_LIFE_CAP,clock_slot=LC2_LIFE_CAP;uint64_t object_generation=0;
 +    for(unsigned i=0;i<LC2_LIFE_CAP;i++) {
 +        struct lc2_life_record *r=&l->records[i];
-+        if(r->lost && r->group==group)return 0; /* new group requires a new identity */
-+        if(!r->live&&!r->pending){if(slot==LC2_LIFE_CAP)slot=i;continue;}
-+        if(r->name==name && r->group==group && r->kind==kind) {
++        if(r->share_group_lost && r->identity.share_group_epoch==identity->share_group_epoch)return 0;
++        if(!r->live&&!r->pending&&!r->share_group_lost){if(slot==LC2_LIFE_CAP)slot=i;continue;}
++        if(lc2_life_identity_equal(&r->identity,identity)) {
 +            if(r->pending||r->lost||r->retiring||r->timeline!=timeline)return 0;
 +            object_generation=r->object_generation;
 +        }
@@ -2044,9 +2052,14 @@ index 0000000..c25256f
 +    if(!clock)l->timelines[clock_slot]=(struct lc2_life_timeline){.id=timeline};
 +    uint64_t generation=++l->sequence;
 +    l->records[slot]=(struct lc2_life_record){.token=generation,
-+        .object_generation=object_generation?object_generation:generation,.name=name,
-+        .group=group,.kind=kind,.timeline=timeline,.bytes=bytes,.pending=1,.views=1};
++        .object_generation=object_generation?object_generation:generation,.identity=*identity,
++        .timeline=timeline,.bytes=bytes,.pending=1,.views=1};
 +    l->reserved_bytes+=bytes;*token=generation;return 1;
++}
++static inline int lc2_life_begin(struct lc2_lifetime *l,uint64_t name,uint64_t group,
++        uint64_t kind,uint64_t timeline,uint64_t bytes,uint64_t *token) {
++    const struct lc2_life_identity identity={.share_group_epoch=group,.name=name,.kind=kind};
++    return lc2_life_begin_scoped(l,&identity,timeline,bytes,token);
 +}
 +static inline int lc2_life_commit(struct lc2_lifetime *l,uint64_t token,int success) {
 +    struct lc2_life_record *r=lc2_life_find(l,token);
@@ -2091,7 +2104,7 @@ index 0000000..c25256f
 +     * Without an independent old-storage retirement receipt keep both charged. */
 +    for(unsigned i=0;i<LC2_LIFE_CAP;i++) {
 +        struct lc2_life_record *s=&l->records[i];
-+        if(s!=r && (s->live||s->pending) && s->group==r->group && s->kind==r->kind && s->name==r->name)return 0;
++        if(s!=r && (s->live||s->pending) && lc2_life_identity_equal(&s->identity,&r->identity))return 0;
 +    }
 +    return 1;
 +}
@@ -2100,11 +2113,25 @@ index 0000000..c25256f
 +    struct lc2_life_record *r=lc2_life_find(l,token);
 +    l->retained_bytes-=r->bytes;r->live=0;return 1;
 +}
-+/* Invalidate the WHOLE proven share group, not one arbitrary sharing context.
-+ * Counter retention is deliberate: context disappearance is not a refund. */
-+static inline void lc2_life_context_lost(struct lc2_lifetime *l,uint64_t group) {
-+    for(unsigned i=0;i<LC2_LIFE_CAP;i++)if(l->records[i].group==group &&
-+        (l->records[i].live||l->records[i].pending))l->records[i].lost=1;
++/* A lost context invalidates only context-owned entries; epoch-zero entries are share-group storage. */
++static inline void lc2_life_context_lost(struct lc2_lifetime *l,uint64_t share_group_epoch,
++        uint64_t context_epoch) {
++    if(!l||!share_group_epoch||!context_epoch)return;
++    for(unsigned i=0;i<LC2_LIFE_CAP;i++) {
++        struct lc2_life_record *r=&l->records[i];
++        if(r->identity.share_group_epoch==share_group_epoch && r->identity.context_epoch==context_epoch &&
++           (r->live||r->pending))r->lost=1;
++    }
++}
++/* A destroyed share group requires a new caller-supplied epoch; lost payload remains charged. */
++static inline void lc2_life_share_group_lost(struct lc2_lifetime *l,uint64_t share_group_epoch) {
++    if(!l||!share_group_epoch)return;
++    for(unsigned i=0;i<LC2_LIFE_CAP;i++) {
++        struct lc2_life_record *r=&l->records[i];
++        if(r->identity.share_group_epoch==share_group_epoch) {
++            r->lost=1;r->share_group_lost=1;
++        }
++    }
 +}
 +#endif
 diff --git a/native/lc2_menu_ledger.h b/native/lc2_menu_ledger.h
