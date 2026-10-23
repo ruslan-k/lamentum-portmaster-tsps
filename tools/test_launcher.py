@@ -6,6 +6,7 @@ import subprocess
 import tempfile
 import unittest
 import json
+import hashlib
 
 class LauncherTests(unittest.TestCase):
     def test_defaults_exit_and_cpu_restore(self):
@@ -54,6 +55,62 @@ class LauncherTests(unittest.TestCase):
             self.assertNotEqual(first['run_uuid'], second['run_uuid'])
             self.assertEqual(''.join((cpu / ('cpu%d' % i) / 'online').read_text()
                                     for i in range(4)), '0101')
+
+    def test_candidate_launcher_uses_isolated_elf_and_preserves_guards(self):
+        repo = pathlib.Path(__file__).parents[1]
+        source = (repo / 'evidence/current-host-elf-staging-preflight-2026-10-23/'
+                  'candidate-Lamentum.sh').read_text()
+        self.assertNotIn('/sys/devices/system/cpu', source)
+        self.assertNotIn('CPU_RESTORE', source)
+        self.assertIn('export MEGAMAN_PROBE_SECONDS=30', source)
+        self.assertIn('export LAMENTUM_PROBE_SECONDS=30', source)
+        self.assertIn('export T2_MEMORY_FLOOR_MIB=96 T2_TEXTURE_BUDGET_MIB=300', source)
+        self.assertNotIn('T2_STORAGE_MARGIN_MIB=', source)
+        with tempfile.TemporaryDirectory(prefix='lamentum-candidate-') as directory:
+            root = pathlib.Path(directory)
+            game = root / 'game'
+            candidate = game / '.candidate-h2a-20261023'
+            candidate.mkdir(parents=True)
+            helper = candidate / 'run_identity.py'
+            helper.write_bytes((repo / 'tools/run_identity.py').read_bytes())
+            runtime = candidate / 'lamentum-nextos'
+            runtime.write_text(
+                '#!/bin/bash\n'
+                'printenv > defaults.txt\n'
+                'exit 7\n')
+            runtime.chmod(0o755)
+            launcher = candidate / 'Lamentum.sh'
+            launcher.write_text(source.replace(
+                'GAMEDIR=/mnt/SDCARD/Roms/PORTS/lamentum-switch', f'GAMEDIR={game}'))
+            launcher.chmod(0o755)
+            syntax = subprocess.run(['bash', '-n', str(launcher)], capture_output=True, text=True)
+            self.assertEqual(syntax.returncode, 0, syntax.stderr)
+            env = {key: value for key, value in os.environ.items()
+                   if not key.startswith(('LC2_', 'COTM_', 'T2_', 'LAMENTUM_', 'MEGAMAN_'))}
+            env.update({'LAMENTUM_PROBE_SECONDS': '0', 'MEGAMAN_PROBE_SECONDS': '0',
+                        'T2_MEMORY_FLOOR_MIB': '32', 'T2_TEXTURE_BUDGET_MIB': '420',
+                        'T2_LAZY_MESH': '1', 'AW_RELEASE': '0', 'LC2_GLES3': '0',
+                        'COTM_ASYNC_QUEUE': '1', 'T2_GPU_PIPELINE': '1',
+                        'COTM_FB_PRESENT': '1', 'COTM_GL_ERROR_IGNORE': '1',
+                        'LC2_TEXTURE_PAGEOUT': '1', 'LC2_BC_STRIPE_MEDIUM': '1'})
+            result = subprocess.run(['bash', str(launcher)], env=env, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 7, result.stderr)
+            runtime_env = dict(line.split('=', 1) for line in (game / 'defaults.txt').read_text().splitlines())
+            for key, value in {
+                'MEGAMAN_PROBE_SECONDS': '30', 'LAMENTUM_PROBE_SECONDS': '30',
+                'T2_MEMORY_FLOOR_MIB': '96', 'T2_TEXTURE_BUDGET_MIB': '300',
+                'T2_LAZY_MESH': '0', 'AW_RELEASE': '1', 'LC2_GLES3': '1',
+                'COTM_ASYNC_QUEUE': '0', 'T2_GPU_PIPELINE': '0',
+                'COTM_FB_PRESENT': '0', 'COTM_GL_ERROR_IGNORE': '0',
+                'LC2_TEXTURE_PAGEOUT': '0', 'LC2_BC_STRIPE_MEDIUM': '0',
+            }.items():
+                self.assertEqual(runtime_env.get(key), value, key)
+            self.assertNotIn('T2_STORAGE_MARGIN_MIB', runtime_env)
+            lines = (candidate / 'logs/latest.log').read_text().splitlines()
+            header = json.loads(lines[0].split(' ', 1)[1])
+            self.assertEqual(header['launcher_sha256'], hashlib.sha256(launcher.read_bytes()).hexdigest())
+            self.assertEqual(header['helper_sha256'], hashlib.sha256(helper.read_bytes()).hexdigest())
+            self.assertEqual(header['elf_sha256'], hashlib.sha256(runtime.read_bytes()).hexdigest())
 
 if __name__ == '__main__':
     unittest.main()

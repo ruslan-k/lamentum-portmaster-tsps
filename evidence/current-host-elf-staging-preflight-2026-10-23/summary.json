@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "recorded_utc": "2026-10-23T11:35:20Z",
+  "recorded_utc": "2026-10-23T11:55:05Z",
   "phase": "current host ELF inert staging and D preflight",
   "target": {
     "firmware_version": "1.0.1",
@@ -29,6 +29,22 @@
     "principal_pid_starttime": [2196, 1023],
     "game_processes": [],
     "pending_principal_command": false
+  },
+  "candidate_launcher": {
+    "path": "evidence/current-host-elf-staging-preflight-2026-10-23/candidate-Lamentum.sh",
+    "sha256": "1a90c4efc55074d2d6ae4ac51134522e1cc7ac33cca6025ccb14d269715c18a7",
+    "bytes": 1773,
+    "mode": "0755",
+    "device_path": "/mnt/SDCARD/Roms/PORTS/lamentum-switch/.candidate-h2a-20261023/Lamentum.sh",
+    "status": "HOST_VERIFIED_NOT_STAGED",
+    "non_autostart": "hidden candidate directory; no PortMaster root launcher entry changed",
+    "runtime_and_helper_target": "candidate ELF and run_identity.py in the same hidden directory; production asset CWD retained",
+    "device_sysfs_mutations": false,
+    "probe_window_seconds": 30,
+    "fixed_guard_environment": {"T2_MEMORY_FLOOR_MIB": 96, "T2_TEXTURE_BUDGET_MIB": 300, "COTM_GL_ERROR_IGNORE": 0, "COTM_ASYNC_QUEUE": 0, "T2_GPU_PIPELINE": 0, "LC2_TEXTURE_PAGEOUT": 0, "LC2_BC_STRIPE_MEDIUM": 0},
+    "T2_STORAGE_MARGIN_MIB": "not assigned by launcher; current environment is unset and future D run remains gated",
+    "focused_tests_passed": 18,
+    "full_tools_suite_passed": 406
   },
   "d_preflight": {
     "pre_hash_pair": {
@@ -126,7 +142,36 @@
         "comparison_sha256": "a00884818c08960fac79ddb4b9b4542295f7a5d07d7ec92cb5da2a8a07455288"
       }
     },
-    "dmesg_pressure_filter": {"returncode": 0, "matching_lines": 0, "captured_after_section_hash_before_recovery_recheck": true},
+    "latest_single_snapshot_11_49": {
+      "captured_utc": "2026-10-23T11:49:29.002583Z",
+      "boot_id": "15b97fe4-5c48-412c-ba39-92efb1823286",
+      "sample_status": "complete",
+      "cmafree_kib": 608,
+      "memavailable_kib": 663068,
+      "swapfree_kib": 2065116,
+      "nr_free_cma_pages": 152,
+      "cma_free_blocks_order7_to10": [0, 0, 0, 0],
+      "mainui_pid_starttime": [2369, 1079],
+      "mainui_fd_scan_truncated": false,
+      "game_processes": 0,
+      "target_runtime_status": "ok",
+      "target_runtime_inode": 6656,
+      "dma_buf_status": "ok",
+      "dma_buf_count": 6,
+      "dma_buf_exporters": ["system"],
+      "pending_principal_command": false,
+      "pending_check_utc": "2026-10-23T11:49:29.744804Z",
+      "scope": "complete single snapshot; not a paired D preflight",
+      "local_snapshot_sha256": "1f991ec6096fab552e3b9ee64059cddbe09a4a18a72e8e43c4131c3d57f5e388"
+    },
+    "subsequent_k1f_followup": {
+      "receipt": "../k1f-cma-owners-debugfs-2026-10-23/summary.json",
+      "latest_complete_pair_timestamps_utc": ["2026-10-23T12:11:19.540873Z", "2026-10-23T12:11:55.851181Z"],
+      "cmafree_kib": [608, 608],
+      "owner_debugfs_status": "read-only audit; all six visible DMA-BUFs mapped; CMA_DEBUGFS/PAGE_OWNER unavailable; no safe lifecycle identified",
+      "runtime_gate": "HOLD_RUNTIME"
+    },
+    "dmesg_pressure_filter": {"returncode": 0, "matching_lines": 0, "captured_after_section_hash_before_later_rechecks": true},
     "page_size_bytes": 4096,
     "cpu_online": "4-7"
   },

@@ -620,11 +620,11 @@ If the user has already authorized ordinary device development/testing, host pub
 Every agent handoff must distinguish:
 
 - Source/PR publication: **DONE** for M4-A at main@509cc985 (or exact newer commit); host-only verified.
-- Build261: local AArch64 candidate SHA with host test counts, 0 native skips; binary publication, staging and device qualification each separately marked DONE/NOT DONE.
+- Host candidates: M4-A build261 is source-published and host-verified; the refreshed post-H2a current-source ELF is host-built and staged inertly but not activated. Report each binary's hash/test scope and keep staging, activation and runtime qualification separate.
 - Device preflight: **NOT RUN**, **COMPLETE STABLE**, or **INCOMPLETE**; show *timestamp and boot* for the last CMA and order histogram. Never call the 15,456 KiB result current unless newly observed.
 - Stage decision: ALLOW_STAGING / HOLD_STAGING and reason.
 - Runtime decision: ALLOW_BOUNDED / HOLD_RUNTIME and measured reserve/warning rationale; gameplay W0/W1/F1 separately NOT VERIFIED until tested.
-- **Next host work:** M4-B complete GL/EGL/buffer lifetime/generation census and K1-B exact firmware DMA/CMA backing; M4-C persistent atlas optimization only with owner/lifetime proof.
+- **Next host work:** complete H2 transactional resource/storage lifetime and buffer/EGL ownership; K1-F's read-only CMA owner/debugfs/lifecycle audit is recorded in the current [gameplay-recovery roadmap §10.18](post-build262-gameplay-recovery-roadmap-2026-10-23.md#1018-k1-f-read-only-cma-owner-debugfs-availability-and-lifecycle-audit-2026-10-23). Continue K1-G expected loader-closure and API-to-backend mapping from K1-E as supporting work; build H3's non-additive, owner/time-qualified memory waterfall. K1-B/C/D allocator paths are classified only at their stated generic scope; M4-C requires proven retained overlap and byte/pixel correctness. D remains **HOLD_RUNTIME** at the latest low-CMA checkpoint.
 
 **Historical device result remains NOT PLAYABLE, gameplay FPS unmeasured.** This policy is not a finding that build261 works on device. It corrects agent scheduling: *do the independent safe work and publish it; perform a fresh safety decision before any demanding runtime operation.*
 

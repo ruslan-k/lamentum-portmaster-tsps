@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "audit_date": "2026-10-23",
+  "recorded_utc": "2026-10-23T12:17:37Z",
+  "phase": "K1-F read-only CMA occupancy, DMA-BUF ownership and lifecycle check",
+  "target": {
+    "boot_id": "15b97fe4-5c48-412c-ba39-92efb1823286",
+    "firmware_version": "1.0.1",
+    "kernel_release": "5.15.147"
+  },
+  "fresh_D_pair": {
+    "timestamps_utc": ["2026-10-23T12:11:19.540873Z", "2026-10-23T12:11:55.851181Z"],
+    "comparison_status": "complete",
+    "cma_total_kib": [131072, 131072],
+    "cma_free_kib": [608, 608],
+    "cma_total_minus_free_kib": 130464,
+    "memavailable_kib": [662652, 663192],
+    "cached_kib": [579288, 579288],
+    "swapfree_kib": [2065116, 2065116],
+    "nr_free_cma_pages": [152, 152],
+    "cma_alloc_success_fail": [[8, 0], [8, 0]],
+    "cma_order7_to10_free_blocks": [[0, 0, 0, 0], [0, 0, 0, 0]],
+    "cma_free_pages_from_histogram_sample1": 149,
+    "nr_free_cma_histogram_page_difference": 3,
+    "cma_free_order0_to6_sample1": {"0": 37, "1": 6, "2": 3, "3": 1, "4": 1, "5": 0, "6": 1},
+    "zoneinfo_DMA_sample1": {"pages_free": 3506, "cma": 32768, "min": 2015, "low": 2262, "high": 2509, "nr_free_cma": 152},
+    "pagetypeinfo_pageblocks_sample1": {"Unmovable": 48, "Movable": 162, "Reclaimable": 14, "HighAtomic": 0, "CMA": 32, "Isolate": 0},
+    "mainui_identity_same": true,
+    "mainui_dma_fds_same": true,
+    "installed_runtime_identity_same": true,
+    "game_processes": [0, 0],
+    "comparison_deltas": {"CmaFree_kib": 0, "MemAvailable_kib": 540, "MemFree_kib": 532, "SwapFree_kib": 0, "nr_free_cma_pages": 0, "cma_alloc_success_delta": 0, "cma_alloc_fail_delta": 0, "pgfault_delta": 167424, "pgmajfault_delta": 0, "compact_stall_delta": 0, "compact_fail_delta": 0, "compact_success_delta": 0, "pgmigrate_success_delta": 0, "pgmigrate_fail_delta": 0, "pswpin_delta": 0, "pswpout_delta": 0},
+    "raw_snapshots_sha256": ["bc707ec99bc0af303899dfcd1cf7a10845aa22ecbb8b52274e7e86ebb8032cbc", "acb74faf0a3f33243eff70063b9d243186f11e9854af429f33932f33a1b20484"],
+    "raw_comparison_sha256": "3c66c20ea2ff1bc7998386f394b32a3699b3cf2d091a76d92cb30b49c873d74b"
+  },
+  "allocator_support": {
+    "config": {"CONFIG_CMA": "y", "CONFIG_DMA_CMA": "y", "CONFIG_CMA_DEBUGFS": "not_set", "CONFIG_DEBUG_FS": "y", "CONFIG_PAGE_OWNER": "not_set", "CONFIG_COMPACTION": "y", "CONFIG_DMABUF_HEAPS_SYSTEM": "y"},
+    "debugfs_mounted": false,
+    "tracefs_mounted": false,
+    "tracepoints_status": "unavailable",
+    "sys_kernel_mm_cma_exists": false,
+    "page_owner_available": false,
+    "cma_debugfs_available": false,
+    "no_mount_or_enable_performed": true
+  },
+  "dma_buf_inventory": {
+    "status": "ok",
+    "entry_count": 6,
+    "all_exporters": ["system"],
+    "entries": [
+      {"inode": 1, "size_bytes": 16384, "exporter": "system", "observed_owner": "MainUI PID2369/starttime1079"},
+      {"inode": 3, "size_bytes": 3686400, "exporter": "system", "observed_owner": "MainUI PID2369/starttime1079"},
+      {"inode": 4, "size_bytes": 3686400, "exporter": "system", "observed_owner": "MainUI PID2369/starttime1079"},
+      {"inode": 5, "size_bytes": 3686400, "exporter": "system", "observed_owner": "MainUI PID2369/starttime1079"},
+      {"inode": 6, "size_bytes": 16384, "exporter": "system", "observed_owner": "display_text.elf PID31142/starttime1800687"},
+      {"inode": 7, "size_bytes": 3686400, "exporter": "system", "observed_owner": "display_text.elf PID31142/starttime1800687"}
+    ],
+    "reserved_exporter_observed": false,
+    "visible_inventory_identical_across_pre_post_idle_recovery_samples": true,
+    "sample_count_with_identity_match": 8,
+    "owner_file_sha256": "c5a0e88f50a64078c56bf3c1d2dcabb9b71b23b35dfed7d12d7860a2f7759edf",
+    "owner_only_recheck_sha256": "74bdb7c050c02fa8de394ffba36dab06a67252b589cd2101f17fe181bfa0a8e5"
+  },
+  "resource_owner_processes": [
+    {"comm": "MainUI", "pid": 2369, "starttime": 1079, "exe_dev": 45833, "exe_ino": 76, "fds": ["/dev/dri/card0", "/dev/dma_heap/system", "/dev/mali0", "dmabuf inodes 1,3,4,5"]},
+    {"comm": "display_text.el", "pid": 31142, "starttime": 1800687, "exe_path": "/mnt/sdcard/mmcblk1p1/spruce/bin64/display_text.elf", "exe_dev": 45833, "exe_ino": 6664, "parent_chain": ["battery_level_w", "runtime.sh", "updater"], "fds": ["/dev/dri/card0", "/dev/dma_heap/system", "/dev/mali0", "dmabuf inodes 6,7"]}
+  ],
+  "owner_scan_quality": {
+    "process_scan_status": "partial",
+    "scanned_processes": 181,
+    "kernel_threads_skipped": 132,
+    "process_limit_hit": false,
+    "fd_errors": 0,
+    "fd_scan_truncated_pids": [],
+    "exe_errors": 1,
+    "owner_scan_cmafree_before_after_kib": [608, 608],
+    "note": "One /proc process-identity read was unavailable; all six visible DMA-BUF inodes were nevertheless mapped to open FDs. The scan is not a complete census."
+  },
+  "allocation_failure_evidence": {
+    "dmesg_filter_status": "ok",
+    "dmesg_matching_lines": 0,
+    "cma_alloc_fail_delta": 0,
+    "oom_evidence_observed": false,
+    "actual_request_failure_proven": false
+  },
+  "historical_change_interpretation": {
+    "pre_hash_cmafree_kib": [130412, 130412],
+    "post_hash_cmafree_kib": [532, 576],
+    "pre_hash_cached_kib": 145640,
+    "post_hash_cached_kib": [578624, 578652],
+    "sameboot_visible_dma_buf_inventory_stable": true,
+    "sameboot_mainui_fd_set_stable": true,
+    "causation_proven": false,
+    "leak_proven": false
+  },
+  "lifecycle_assessment": {
+    "supported_safe_user_process_to_close_identified": false,
+    "observed_dma_buf_holders_are_platform_processes": true,
+    "system_processes_stopped": false,
+    "restore_cma_headroom_by_process_lifecycle_proven": false,
+    "reason": "Visible exporters are system heap and owners are MainUI/display_text.elf; no reserved exporter was observed, and both are platform-managed. Private GPU allocations and page owners remain unknown."
+  },
+  "runtime_disposition": {
+    "candidate_status": "STAGED_READBACK_VERIFIED_NOT_RUN",
+    "active_runtime": "build259",
+    "latest_CmaFree_kib": 608,
+    "T2_STORAGE_MARGIN_MIB": "unset",
+    "runtime_gate": "HOLD_RUNTIME",
+    "game_launched": false,
+    "newgame_entered": false
+  },
+  "device_mutations": {
+    "game_launched": false,
+    "system_process_killed_or_stopped": false,
+    "debugfs_mounted": false,
+    "cache_reclaimed": false,
+    "compaction_triggered": false,
+    "rebooted": false,
+    "kernel_settings_changed": false,
+    "test_buffer_allocated": false
+  }
+}

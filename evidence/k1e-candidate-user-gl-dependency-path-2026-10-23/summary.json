@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "audit_date": "2026-10-23",
+  "phase": "K1-E candidate user-mode GL dependency path",
+  "candidate_elf": {
+    "path": "Hermes scratch/lamentum-build-k1c-20261023-01/lamentum-nextos",
+    "sha256": "c46714403f22074d92710192d1164cfe0b7a4f62f1a4890ffb7a1e224c542332",
+    "build_id": "5b1b3412da7b43442a0ebf097e904cb8cbef0c8e",
+    "bytes": 2203096,
+    "elf_class": "ELF64",
+    "endianness": "little",
+    "machine": "AArch64",
+    "type": "PIE",
+    "interpreter": "/lib/ld-linux-aarch64.so.1",
+    "glibc_undefined_versions": ["GLIBC_2.17", "GLIBC_2.27"],
+    "max_glibc": "2.27",
+    "dt_needed": ["libSDL2-2.0.so.0", "libEGL.so.1", "libGLESv2.so.2", "libm.so.6", "libz.so.1", "libdl.so.2", "libpthread.so.0", "libc.so.6", "ld-linux-aarch64.so.1"],
+    "rpath_runpath": []
+  },
+  "candidate_undefined_symbols": {
+    "unique_total": 345,
+    "SDL_prefix": 46,
+    "EGL_prefix": 20,
+    "GL_prefix": 91,
+    "GBM_prefix": 0,
+    "DRM_prefix": 0,
+    "direct_GBM_or_DRM_DT_NEEDED": false
+  },
+  "launcher_and_loader_environment": {
+    "launcher_sets_sdl_video_driver": "kmsdrm",
+    "launcher_sets_sdl_audio_driver": "alsa",
+    "launcher_sets_LD_LIBRARY_PATH": false,
+    "run_identity_copies_os_environ": true,
+    "run_identity_uses_execve_fd": true,
+    "standard_launch_dispatches_PORTS_to_run_port": true,
+    "run_port_prepends_PORTS_LD_LIBRARY_PATH": true,
+    "principal_LD_LIBRARY_PATH": "/usr/trimui/lib:/usr/lib:/lib",
+    "principal_PORTS_LD_LIBRARY_PATH": "/mnt/SDCARD/spruce/flip/lib/:/usr/lib:/mnt/SDCARD/spruce/flip/muOS/usr/lib/:/mnt/SDCARD/spruce/flip/muOS/lib/:/usr/lib32:/mnt/SDCARD/spruce/flip/lib32/:/mnt/SDCARD/spruce/flip/muOS/usr/lib32/:/usr/trimui/lib:/usr/lib:/lib",
+    "first_matching_library_search_dir": "/usr/lib"
+  },
+  "resolved_aarch64_system_files": {
+    "libSDL2-2.0.so.0": {"realpath": "/usr/lib/libSDL2-2.0.so.0.3200.6", "dev_inode": "b3:04/1268", "elf_class": 2, "e_machine": 183},
+    "libEGL.so.1": {"realpath": "/usr/lib/libEGL.so.1.4.0", "dev_inode": "b3:04/1244", "elf_class": 2, "e_machine": 183},
+    "libGLESv2.so.2": {"realpath": "/usr/lib/libGLESv2.so.2.1.0", "dev_inode": "b3:04/1256", "elf_class": 2, "e_machine": 183},
+    "libmali.so.0": {"realpath": "/usr/lib/libmali.so.0.32.0", "bytes": 49377264, "dev_inode": "b3:04/1750", "content_hash_obtained": false},
+    "libgbm.so.1": {"realpath": "/usr/lib/libgbm.so.1.0.0", "dev_inode": "b3:04/1623", "elf_class": 2, "e_machine": 183},
+    "libdrm.so.2": {"realpath": "/usr/lib/libdrm.so.2.4.0", "dev_inode": "b3:04/1539", "elf_class": 2, "e_machine": 183}
+  },
+  "egl_gles_wrappers": {
+    "libEGL.so.1.4.0": {
+      "bytes": 5864,
+      "sha256": "0a1a6d494bd3ad2b6a72d7139a05242efd3f9eb2760e124395b3ea7169a3c2b8",
+      "build_id": "6415989a5667de92571e8bc4217b9b5268c98e9e",
+      "soname": "libEGL.so.1",
+      "dt_needed": ["libmali.so.0", "libpthread.so.0", "librt.so.1", "libdl.so.2", "libstdc++.so.6", "libm.so.6", "libc.so.6", "libgcc_s.so.1"],
+      "rpath_runpath": []
+    },
+    "libGLESv2.so.2.1.0": {
+      "bytes": 5864,
+      "sha256": "2148bdf031d9efa63295fbdf1cc484e4d573afa378e4b7ded88b74ad01b76745",
+      "build_id": "f9848707b94a15b09513a4ae13909b37177e2f23",
+      "soname": "libGLESv2.so.2",
+      "dt_needed": ["libmali.so.0", "libpthread.so.0", "librt.so.1", "libdl.so.2", "libstdc++.so.6", "libm.so.6", "libc.so.6", "libgcc_s.so.1"],
+      "rpath_runpath": []
+    }
+  },
+  "mainui_live_maps": {
+    "captured_utc": "2026-10-23T11:42:37.893597Z",
+    "boot_id": "15b97fe4-5c48-412c-ba39-92efb1823286",
+    "pid_starttime": [2369, 1079],
+    "maps_process_identity_same_before_after": true,
+    "mapped_same_system_libraries": ["libSDL2-2.0.so.0.3200.6", "libEGL.so.1.4.0", "libGLESv2.so.2.1.0", "libmali.so.0.32.0", "libgbm.so.1.0.0", "libdrm.so.2.4.0"],
+    "scope": "MainUI mapping, not a Lamentum process"
+  },
+  "latest_device_state": {
+    "last_complete_D_pair_utc": ["2026-10-23T11:32:56.701Z", "2026-10-23T11:33:32.568Z"],
+    "latest_complete_pair_CmaFree_kib": [608, 608],
+    "latest_single_snapshot_utc": "2026-10-23T11:49:29.002583Z",
+    "latest_single_snapshot_CmaFree_kib": 608,
+    "latest_single_snapshot_MemAvailable_kib": 663068,
+    "latest_single_snapshot_SwapFree_kib": 2065116,
+    "latest_single_snapshot_game_processes": 0,
+    "latest_single_snapshot_pending_principal_command": false,
+    "T2_STORAGE_MARGIN_MIB": "unset",
+    "runtime_gate": "HOLD_RUNTIME",
+    "game_launched": false
+  },
+  "subsequent_k1f_followup": {
+    "receipt": "../k1f-cma-owners-debugfs-2026-10-23/summary.json",
+    "latest_complete_pair_utc": ["2026-10-23T12:11:19.540873Z", "2026-10-23T12:11:55.851181Z"],
+    "cmafree_kib": [608, 608],
+    "runtime_gate": "HOLD_RUNTIME"
+  },
+  "limits": [
+    "No Lamentum process loaded these libraries; dependency resolution is expected from the observed PortMaster environment, not a runtime observation.",
+    "MainUI mapping does not establish candidate EGL/GLES initialization or which buffers the game allocates.",
+    "No direct GBM/DRM imports does not exclude transitive or dlopen use by SDL2 KMSDRM.",
+    "The 49,377,264-byte libmali file was not copied, hashed or disassembled; its internal heap/ioctl allocation route remains unknown.",
+    "K1-C/K1-D classify matched kernel allocator mechanisms but do not join Lamentum GL requests to any one mechanism."
+  ],
+  "validation": {
+    "candidate_hash_checked": true,
+    "target_wrapper_remote_read_bytes": 11728,
+    "wrapper_sha256_readback_matches": true,
+    "cmafree_before_wrapper_read_kib": 608,
+    "cmafree_after_wrapper_read_kib": 608,
+    "latest_snapshot_sha256": "1f991ec6096fab552e3b9ee64059cddbe09a4a18a72e8e43c4131c3d57f5e388",
+    "host_suite_run_in_this_phase": false,
+    "device_files_changed": false,
+    "game_launched": false
+  }
+}
