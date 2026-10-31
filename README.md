@@ -10,7 +10,8 @@ What the conversion changes:
 
 - **shaders** — the build ships Direct3D 11 programs only; `pmhlslcc` (Unity's HLSLcc) translates
   them to GLES3.
-- **textures** — BC/DXT pixels re-encoded as ASTC (the Mali GPU cannot sample BC).
+- **textures** — BC/DXT pixels re-encoded as ASTC **8x8** (the Mali GPU cannot sample BC; 4x4 pushed
+  the data to 1.7 GB and ua_host died of OOM on the 1 GB handheld, 8x8 gives 482 MB).
 - **settings** — graphics API set to GLES3.
 - **audio** — clips kept compressed where the data allows.
 - **quality** — the handheld profile (1 pixel light, hard shadows, 2 cascades, no MSAA) applied to
@@ -62,14 +63,20 @@ The launcher `Lamentum.sh` keeps one instance (flock), stops MainUI (it holds th
 ALSA device), runs `ua_host` with KMSDRM/ALSA, and brings MainUI back on exit. Launch it from the
 Spruce Ports menu, so the principal flow owns the handoff.
 
-## Port-specific fix: the resolution menu
+## Port-specific fixes
 
-`ManagerMenuPrincipal.Start()` builds the resolution list from `Screen.resolutions` and then reads
-`PosiblesResoluciones[Length - 1]` without checking for an empty list. The Android player behind
-`ua_host` reports no display modes, so the list is empty and the menu dies with
-`IndexOutOfRangeException`. `tools/lampatch` (Mono.Cecil) appends the panel's own 1280x720@60 to
-`ResolucionesCompatibles()` when the list would be empty; the patched `Assembly-CSharp.dll` goes
-through IL2CPP like any other assembly.
+**Input.** The game reads Unity's Input System package (373 call sites), and a desktop build's copy
+has no layout for the Android player's game controller: `asmpatch --only=inputsystem-android` adds
+the `AndroidGamepadForPlayer` / `AndroidXboxGamepadForPlayer` layouts (build.sh runs it).
+`asmpatch --survey` also reports that `GameManager`'s gamepad check reads `Mouse.current` with no
+null check, so the port needs pointer mode (`UA_POINTER=1`) if that coroutine runs.
+
+**The resolution menu.** `ManagerMenuPrincipal.Start()` builds the resolution list from
+`Screen.resolutions` and then reads `PosiblesResoluciones[Length - 1]` without checking for an
+empty list. The Android player behind `ua_host` reports no display modes, so the list is empty and
+the menu dies with `IndexOutOfRangeException`. `tools/lampatch` (Mono.Cecil) appends the panel's own
+1280x720@60 to `ResolucionesCompatibles()` when the list would be empty; the patched
+`Assembly-CSharp.dll` goes through IL2CPP like any other assembly.
 
 ```sh
 DOTNET_ROLL_FORWARD=Major dotnet run --project tools/lampatch -- <Managed>/Assembly-CSharp.dll out/patched
