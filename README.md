@@ -65,22 +65,25 @@ Spruce Ports menu, so the principal flow owns the handoff.
 
 ## Port-specific fixes
 
-**Input.** The game reads Unity's Input System package (373 call sites), and a desktop build's copy
-has no layout for the Android player's game controller: `asmpatch --only=inputsystem-android` adds
-the `AndroidGamepadForPlayer` / `AndroidXboxGamepadForPlayer` layouts (build.sh runs it).
-`asmpatch --survey` also reports that `GameManager`'s gamepad check reads `Mouse.current` with no
-null check, so the port needs pointer mode (`UA_POINTER=1`) if that coroutine runs.
+**Input.** The pad's *buttons* reach the game (Unity's Android KeyEvents), its *axes* do not: neither
+`<Gamepad>/leftStick` nor `<Gamepad>/dpad` ever reports a value, although `ua_host` delivers the
+joystick MotionEvents and Unity reports them as handled. Menus therefore could be navigated by
+mouse only. The port moves navigation and movement onto the keyboard instead:
 
-**The resolution menu.** `ManagerMenuPrincipal.Start()` builds the resolution list from
-`Screen.resolutions` and then reads `PosiblesResoluciones[Length - 1]` without checking for an
-empty list. The Android player behind `ua_host` reports no display modes, so the list is empty and
-the menu dies with `IndexOutOfRangeException`. `tools/lampatch` (Mono.Cecil) appends the panel's own
-1280x720@60 to `ResolucionesCompatibles()` when the list would be empty; the patched
-`Assembly-CSharp.dll` goes through IL2CPP like any other assembly.
+- `tools/actionpatch` rewrites the game's embedded Input System action asset
+  (`port/actions-keyboard.json`) so `Navigate` also listens to `<Keyboard>/upArrow|downArrow|
+  leftArrow|rightArrow` (the game's `Move` action already has WASD and the arrows);
+- `port/port.env` sets `UA_KEYMAP="up:up,down:down,left:left,right:right,a:return,b:escape,
+  start:escape"`: the d-pad presses those keys, A presses Enter, B and Start press Escape.
 
-```sh
-DOTNET_ROLL_FORWARD=Major dotnet run --project tools/lampatch -- <Managed>/Assembly-CSharp.dll out/patched
-```
+`asmpatch --only=inputsystem-android` still runs, so the pad is a `Gamepad` for anything else that
+asks (the package's own UI module); it does not fix the axes.
+
+**Resolution.** The panel is 1280×720, but the Android player reports 1920×1080 as the display mode;
+`ManagerMenuPrincipal.Start()` then falls back to the last entry of the resolution list and applies
+1920×1080 — a 1080p render target on a 1 GB device. `tools/resfix` rewrites
+`ResolucionesCompatibles()` to return a single 1280×720@60 entry, so the game starts and stays at
+the panel's own size.
 
 ## Licence
 

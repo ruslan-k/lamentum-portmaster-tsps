@@ -34,9 +34,18 @@ cp -a "$UNITY_DATA" "$OUT/src"
 cp -a "$OUT/conv/." "$OUT/src/"
 
 echo "== managed patches"
-"$DOTNET" build -c Release -o "$OUT/build/lampatch" "$HERE/tools/lampatch" >/dev/null
-"$DOTNET" "$OUT/build/lampatch/lampatch.dll" "$OUT/src/Managed/Assembly-CSharp.dll" "$OUT/patched"
-cp "$OUT/patched"/*.dll "$OUT/src/Managed/"
+# resolution: the panel is 720p, the Android player reports 1080p, and the game applies the last
+# entry of its resolution list -> rewrite ResolucionesCompatibles() to a single 1280x720
+"$DOTNET" build -c Release -o "$OUT/build/resfix" "$HERE/tools/resfix" >/dev/null
+"$DOTNET" "$OUT/build/resfix/resfix.dll" "$OUT/src/Managed/Assembly-CSharp.dll" "$OUT/res"
+cp "$OUT/res"/*.dll "$OUT/src/Managed/"
+# input: the pad's buttons reach the game but its axes never do, so menu navigation and movement are
+# bound to keyboard in the port: the action asset gets arrow-key Navigate bindings (UA_KEYMAP in
+# port/port.env turns the d-pad into those keys)
+"$DOTNET" build -c Release -o "$OUT/build/actionpatch" "$HERE/tools/actionpatch" >/dev/null
+"$DOTNET" "$OUT/build/actionpatch/actionpatch.dll" "$OUT/src/Managed/Assembly-CSharp.dll" \
+    "$HERE/port/actions-keyboard.json" "$OUT/act"
+cp "$OUT/act"/*.dll "$OUT/src/Managed/"
 # the desktop build's Input System has no layout for the Android player's game controller
 "$DOTNET" build -c Release -o "$OUT/build/asmpatch" "$TOOLKIT/tools/asmpatch" >/dev/null
 "$DOTNET" "$OUT/build/asmpatch/asmpatch.dll" --only=inputsystem-android "$OUT/src/Managed" "$OUT/asmp"
