@@ -1,7 +1,0 @@
-{
-  "probe": "load-probe-02",
-  "build": "build218",
-  "stop": "TIME_LIMIT, navigation aborted on a splash capture",
-  "device_after": "clean",
-  "phase": "no load-phase data"
-}

@@ -1,5 +1,0 @@
-b-east rc=0  
-a-south rc=0  
-x-west rc=0  
-y-north rc=0  
-start rc=0  

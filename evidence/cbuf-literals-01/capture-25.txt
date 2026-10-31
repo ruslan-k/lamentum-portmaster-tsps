@@ -1,2 +1,0 @@
-mainui=port=17322
-Screenshot saved to /mnt/SDCARD/Roms/PORTS/lamentum-switch/literal-25.png (FB ID: 160, 1280x720)

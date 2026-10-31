@@ -1,20 +1,20 @@
-# Portable layout
+# port/
+
+What goes on the SD card:
 
 ```
-Lamentum.sh              PortMaster-style launcher; launch only through the Spruce principal flow
-lamentum-switch/
-  lamentum-nextos        runtime binary (GPL-3.0; built from the recovered baseline + runtime/lamentum-adapter.patch)
-  lamentum-romfs.section ← YOU must add this from your own game copy (not distributed)
-  logs/latest.log        written by the launcher on every run
-  save-laboratory/       isolated save directory used by diagnostic runs
+port/
+  Lamentum.sh       launcher (SpruceOS Ports menu)
+  port.env          runtime options (pad name)
+  lamentum/         game directory, filled from the build output
 ```
 
-Before runtime start, the launcher temporarily enables CPU0–3 as needed and restores each CPU's original online value and sysfs permissions on exit.
+After `build.sh`, `lamentum/` holds `Lamentum.apk`, `android_package.json`, `plugins.map`,
+`Game_Data/`, and — added by hand from the player package and the IL2CPP output —
+`lib/{libmain,libunity,libil2cpp}.so` plus `ua_host`.
 
-The launcher verifies nothing about the game data beyond the runtime's own checks: the runtime
-compares the section file's size with the size pinned in the owner image and refuses to start
-(`VERIFIED_ROMFS_SECTION_UNAVAILABLE`) when they differ. Validate the image offline (segment
-hashes, RomFS section hash, module identities) instead of trusting the device.
+The launcher switches to KMSDRM, stops MainUI (it holds the panel and the ALSA device), runs
+`ua_host`, and brings MainUI back on exit. Log: `lamentum/log.txt`.
 
-Nothing extracted from the game — NSO segments, RomFS, NPDM, saves, textures, shaders — may be
-committed to this repository or uploaded anywhere. The owner image is owner data.
+Environment: `SDL_AUDIODRIVER=alsa`, `AUDIODEV=plughw:0,0`, `UA_AUDIO_SINK=pipe` — one sink only,
+two leave ALSA in `PREPARED` and the game is silent.

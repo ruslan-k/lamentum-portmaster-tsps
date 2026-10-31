@@ -1,0 +1,7 @@
+{
+ "version": 1,
+ "steps": ["textures", "settings", "audio", "quality"],
+ "settings": {"graphics_apis": [11]},
+ "quality": {"profile": "handheld"},
+ "audio": {"pcm_budget_mb": 16, "compressed_min_s": 2.0, "resident_scenes": 2}
+}

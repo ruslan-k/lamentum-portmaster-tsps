@@ -1,3 +1,0 @@
-port=7693
-MemAvailable:     144604 kB
-Screenshot saved to /mnt/SDCARD/Roms/PORTS/lamentum-switch/long420-300.png (FB ID: 160, 1280x720)

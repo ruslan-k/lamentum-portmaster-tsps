@@ -1,1 +1,0 @@
-confirm-a rc=0  
